@@ -1,0 +1,31 @@
+import { createBrowserRouter } from 'react-router-dom';
+import AppLayout from '../layouts/AppLayout';
+import DashboardPage from '../pages/DashboardPage';
+import NotFoundPage from '../pages/NotFoundPage';
+import NotificationsPage from '../pages/NotificationsPage';
+import SchedulePage from '../pages/SchedulePage';
+
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <AppLayout />,
+    children: [
+      {
+        index: true,
+        element: <DashboardPage />,
+      },
+      {
+        path: 'schedule',
+        element: <SchedulePage />,
+      },
+      {
+        path: 'notifications',
+        element: <NotificationsPage />,
+      },
+      {
+        path: '*',
+        element: <NotFoundPage />,
+      },
+    ],
+  },
+]);
