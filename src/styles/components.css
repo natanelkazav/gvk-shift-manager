@@ -1,0 +1,166 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 42px;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.button-primary {
+  background: var(--color-primary-600);
+  color: var(--color-white);
+}
+
+.button-primary:hover {
+  background: var(--color-primary-700);
+}
+
+.button-secondary {
+  border-color: var(--color-gray-300);
+  background: var(--color-white);
+  color: var(--color-gray-700);
+}
+
+.button-secondary:hover {
+  background: var(--color-gray-50);
+}
+
+.button-danger {
+  background: var(--color-danger-600);
+  color: var(--color-white);
+}
+
+.card {
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-header {
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.card-body {
+  padding: var(--space-6);
+}
+
+.card-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-gray-900);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+}
+
+.badge-success {
+  background: var(--color-success-50);
+  color: var(--color-success-600);
+}
+
+.badge-warning {
+  background: var(--color-warning-50);
+  color: var(--color-warning-600);
+}
+
+.badge-danger {
+  background: var(--color-danger-50);
+  color: var(--color-danger-600);
+}
+
+.badge-info {
+  background: var(--color-info-50);
+  color: var(--color-info-600);
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.page-header-title {
+  margin-bottom: var(--space-1);
+}
+
+.page-header-description {
+  margin: 0;
+}
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.stat-card {
+  padding: var(--space-5);
+}
+
+.stat-label {
+  margin-bottom: var(--space-2);
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+}
+
+.stat-value {
+  margin: 0;
+  color: var(--color-gray-900);
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+}
+
+@media (max-width: 1000px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
