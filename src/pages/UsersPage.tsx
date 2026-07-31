@@ -17,6 +17,7 @@ import {
 } from '../components/ui';
 import { useUsers } from '../hooks/useUsers';
 import type {
+  PermissionKey,
   UserProfile,
 } from '../types/auth';
 import type {
@@ -37,6 +38,7 @@ function UsersPage() {
   const {
     user: authenticatedUser,
     refreshProfile,
+    refreshPermissions,
     hasPermission,
   } = useAuth();
 
@@ -73,10 +75,14 @@ function UsersPage() {
     statistics,
     updatingUserId,
     isCreatingUser,
+    userPermissionsState,
     loadUsers,
     createUser,
     updateUser,
     toggleActiveStatus,
+    loadUserPermissions,
+    saveUserPermissions,
+    resetUserPermissionsState,
     clearError,
   } = useUsers({
     authenticatedUserId:
@@ -86,8 +92,27 @@ function UsersPage() {
     refreshAuthenticatedProfile:
       refreshProfile,
 
+    refreshAuthenticatedPermissions:
+      refreshPermissions,
+
     filters,
   });
+
+  const isSelectedUserSaving =
+    Boolean(
+      selectedUser &&
+        (
+          updatingUserId ===
+            selectedUser.id ||
+          (
+            userPermissionsState
+              .userId ===
+              selectedUser.id &&
+            userPermissionsState
+              .isSaving
+          )
+        ),
+    );
 
   const openCreateModal =
     (): void => {
@@ -116,18 +141,31 @@ function UsersPage() {
     }
 
     clearError();
+    resetUserPermissionsState();
+
     setSelectedUser(profile);
     setIsEditModalOpen(true);
+
+    void loadUserPermissions(
+      profile.id,
+    ).catch(() => {
+      /*
+       * השגיאה נשמרת בתוך
+       * userPermissionsState ומוצגת
+       * בתוך חלון העריכה.
+       */
+    });
   };
 
   const closeEditModal =
     (): void => {
-      if (updatingUserId) {
+      if (isSelectedUserSaving) {
         return;
       }
 
       setIsEditModalOpen(false);
       setSelectedUser(null);
+      resetUserPermissionsState();
     };
 
   const handleCreateUser =
@@ -150,6 +188,8 @@ function UsersPage() {
       userId: string,
       input:
         UpdateUserProfileInput,
+      permissions:
+        PermissionKey[],
     ): Promise<void> => {
       if (!canManageUsers) {
         throw new Error(
@@ -162,8 +202,25 @@ function UsersPage() {
         input,
       );
 
+      await saveUserPermissions(
+        userId,
+        permissions,
+      );
+
       setIsEditModalOpen(false);
       setSelectedUser(null);
+      resetUserPermissionsState();
+    };
+
+  const handleRetryPermissions =
+    async (): Promise<void> => {
+      if (!selectedUser) {
+        return;
+      }
+
+      await loadUserPermissions(
+        selectedUser.id,
+      );
     };
 
   const handleToggleActiveStatus =
@@ -304,14 +361,43 @@ function UsersPage() {
             isOpen={
               isEditModalOpen
             }
-            isSaving={Boolean(
-              selectedUser &&
-                updatingUserId ===
-                  selectedUser.id,
-            )}
+            isSaving={
+              isSelectedUserSaving
+            }
             currentUserId={
               authenticatedUser?.id ??
               null
+            }
+            permissions={
+              selectedUser &&
+              userPermissionsState
+                .userId ===
+                selectedUser.id
+                ? userPermissionsState
+                    .permissions
+                : []
+            }
+            isPermissionsLoading={
+              Boolean(
+                selectedUser &&
+                  userPermissionsState
+                    .userId ===
+                    selectedUser.id &&
+                  userPermissionsState
+                    .isLoading,
+              )
+            }
+            permissionsError={
+              selectedUser &&
+              userPermissionsState
+                .userId ===
+                selectedUser.id
+                ? userPermissionsState
+                    .error
+                : null
+            }
+            onRetryPermissions={
+              handleRetryPermissions
             }
             onClose={
               closeEditModal

@@ -1,6 +1,10 @@
 import {
+  KeyRound,
+  LoaderCircle,
+  RefreshCw,
   Save,
   UserCog,
+  UserRound,
   X,
 } from 'lucide-react';
 import {
@@ -9,7 +13,9 @@ import {
   type FormEvent,
 } from 'react';
 import { Button, Input } from '../ui';
+import UserPermissionsTab from './UserPermissionsTab';
 import type {
+  PermissionKey,
   UserProfile,
   UserRole,
 } from '../../types/auth';
@@ -17,15 +23,31 @@ import type {
   UpdateUserProfileInput,
 } from '../../types/users';
 
+import './EditUserModalTabs.css';
+
 interface EditUserModalProps {
   user: UserProfile | null;
   isOpen: boolean;
   isSaving: boolean;
   currentUserId: string | null;
+
+  permissions: PermissionKey[];
+
+  isPermissionsLoading:
+    boolean;
+
+  permissionsError:
+    string | null;
+
+  onRetryPermissions:
+    () => Promise<void>;
+
   onClose: () => void;
+
   onSave: (
     userId: string,
     input: UpdateUserProfileInput,
+    permissions: PermissionKey[],
   ) => Promise<void>;
 }
 
@@ -37,7 +59,14 @@ interface EditUserFormState {
   mustChangePassword: boolean;
 }
 
-const roleLabels: Record<UserRole, string> = {
+type EditUserTab =
+  | 'details'
+  | 'permissions';
+
+const roleLabels: Record<
+  UserRole,
+  string
+> = {
   admin: 'מנהל מערכת',
   manager: 'מנהלת',
   dispatcher: 'מוקדן',
@@ -49,10 +78,18 @@ function createFormState(
   user: UserProfile,
 ): EditUserFormState {
   return {
-    displayName: user.displayName,
-    scheduleName: user.scheduleName ?? '',
-    role: user.role,
-    isActive: user.isActive,
+    displayName:
+      user.displayName,
+
+    scheduleName:
+      user.scheduleName ?? '',
+
+    role:
+      user.role,
+
+    isActive:
+      user.isActive,
+
     mustChangePassword:
       user.mustChangePassword,
   };
@@ -63,23 +100,92 @@ function EditUserModal({
   isOpen,
   isSaving,
   currentUserId,
+  permissions,
+  isPermissionsLoading,
+  permissionsError,
+  onRetryPermissions,
   onClose,
   onSave,
 }: EditUserModalProps) {
-  const [formState, setFormState] =
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState<EditUserTab>(
+    'details',
+  );
+
+  const [
+    formState,
+    setFormState,
+  ] =
     useState<EditUserFormState | null>(
-      user ? createFormState(user) : null,
+      user
+        ? createFormState(user)
+        : null,
     );
 
-  const [formError, setFormError] =
-    useState<string | null>(null);
+  const [
+    selectedPermissions,
+    setSelectedPermissions,
+  ] = useState<PermissionKey[]>(
+    [],
+  );
+
+  const [
+    formError,
+    setFormError,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    isRetryingPermissions,
+    setIsRetryingPermissions,
+  ] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setFormState(createFormState(user));
-      setFormError(null);
+    if (!user) {
+      return;
     }
+
+    setFormState(
+      createFormState(user),
+    );
+
+    setSelectedPermissions([]);
+    setFormError(null);
+    setIsRetryingPermissions(
+      false,
+    );
+    setActiveTab('details');
   }, [user]);
+
+  useEffect(() => {
+    if (
+      !isOpen ||
+      isPermissionsLoading ||
+      permissionsError
+    ) {
+      return;
+    }
+
+    setSelectedPermissions(
+      permissions,
+    );
+  }, [
+    isOpen,
+    isPermissionsLoading,
+    permissionsError,
+    permissions,
+  ]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setActiveTab('details');
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -88,7 +194,7 @@ function EditUserModal({
 
     const handleKeyDown = (
       event: KeyboardEvent,
-    ) => {
+    ): void => {
       if (
         event.key === 'Escape' &&
         !isSaving
@@ -116,7 +222,11 @@ function EditUserModal({
         'modal-open',
       );
     };
-  }, [isOpen, isSaving, onClose]);
+  }, [
+    isOpen,
+    isSaving,
+    onClose,
+  ]);
 
   if (
     !isOpen ||
@@ -129,14 +239,26 @@ function EditUserModal({
   const isCurrentUser =
     user.id === currentUserId;
 
+  const isPermissionsUnavailable =
+    isPermissionsLoading ||
+    Boolean(permissionsError);
+
+  const isInteractionDisabled =
+    isSaving ||
+    isPermissionsLoading ||
+    isRetryingPermissions;
+
   const validateForm =
     (): string | null => {
-      if (!formState.displayName.trim()) {
+      const normalizedDisplayName =
+        formState.displayName.trim();
+
+      if (!normalizedDisplayName) {
         return 'יש להזין שם תצוגה.';
       }
 
       if (
-        formState.displayName.trim().length <
+        normalizedDisplayName.length <
         2
       ) {
         return 'שם התצוגה חייב להכיל לפחות שני תווים.';
@@ -147,6 +269,14 @@ function EditUserModal({
         !formState.isActive
       ) {
         return 'לא ניתן להשבית את המשתמש המחובר כעת.';
+      }
+
+      if (isPermissionsLoading) {
+        return 'יש להמתין לסיום טעינת ההרשאות.';
+      }
+
+      if (permissionsError) {
+        return 'לא ניתן לשמור לפני שהרשאות המשתמש נטענו בהצלחה.';
       }
 
       return null;
@@ -161,29 +291,50 @@ function EditUserModal({
       validateForm();
 
     if (validationError) {
-      setFormError(validationError);
+      setFormError(
+        validationError,
+      );
+
+      if (
+        isPermissionsUnavailable
+      ) {
+        setActiveTab(
+          'permissions',
+        );
+      } else {
+        setActiveTab('details');
+      }
+
       return;
     }
 
     setFormError(null);
 
     try {
-      await onSave(user.id, {
-        displayName:
-          formState.displayName.trim(),
+      await onSave(
+        user.id,
+        {
+          displayName:
+            formState.displayName
+              .trim(),
 
-        scheduleName:
-          formState.scheduleName.trim() ||
-          null,
+          scheduleName:
+            formState.scheduleName
+              .trim() ||
+            null,
 
-        role: formState.role,
+          role:
+            formState.role,
 
-        isActive:
-          formState.isActive,
+          isActive:
+            formState.isActive,
 
-        mustChangePassword:
-          formState.mustChangePassword,
-      });
+          mustChangePassword:
+            formState
+              .mustChangePassword,
+        },
+        selectedPermissions,
+      );
     } catch (error) {
       setFormError(
         error instanceof Error
@@ -193,20 +344,60 @@ function EditUserModal({
     }
   };
 
-  const handleBackdropClick = () => {
-    if (!isSaving) {
-      onClose();
+  const handleBackdropClick =
+    (): void => {
+      if (!isInteractionDisabled) {
+        onClose();
+      }
+    };
+
+  const handleTabChange = (
+    tab: EditUserTab,
+  ): void => {
+    if (isInteractionDisabled) {
+      return;
     }
+
+    setActiveTab(tab);
   };
+
+  const handleRetryPermissions =
+    async (): Promise<void> => {
+      if (
+        isRetryingPermissions ||
+        isSaving
+      ) {
+        return;
+      }
+
+      setIsRetryingPermissions(true);
+      setFormError(null);
+
+      try {
+        await onRetryPermissions();
+      } catch (error) {
+        setFormError(
+          error instanceof Error
+            ? error.message
+            : 'לא ניתן היה לטעון מחדש את ההרשאות.',
+        );
+      } finally {
+        setIsRetryingPermissions(
+          false,
+        );
+      }
+    };
 
   return (
     <div
       className="edit-user-modal-backdrop"
       role="presentation"
-      onMouseDown={handleBackdropClick}
+      onMouseDown={
+        handleBackdropClick
+      }
     >
       <section
-        className="edit-user-modal"
+        className="edit-user-modal edit-user-modal-with-tabs"
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-user-title"
@@ -236,12 +427,99 @@ function EditUserModal({
             type="button"
             className="edit-user-modal-close"
             aria-label="סגירת חלון עריכת משתמש"
-            disabled={isSaving}
+            disabled={
+              isInteractionDisabled
+            }
             onClick={onClose}
           >
             <X size={20} />
           </button>
         </header>
+
+        <div
+          className="edit-user-tabs"
+          role="tablist"
+          aria-label="אפשרויות עריכת משתמש"
+        >
+          <button
+            type="button"
+            role="tab"
+            id="edit-user-details-tab"
+            aria-selected={
+              activeTab === 'details'
+            }
+            aria-controls="edit-user-details-panel"
+            className={[
+              'edit-user-tab',
+              activeTab === 'details'
+                ? 'edit-user-tab-active'
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            disabled={
+              isInteractionDisabled
+            }
+            onClick={() => {
+              handleTabChange(
+                'details',
+              );
+            }}
+          >
+            <UserRound
+              size={18}
+              aria-hidden="true"
+            />
+
+            <span>
+              פרטי משתמש
+            </span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            id="edit-user-permissions-tab"
+            aria-selected={
+              activeTab ===
+              'permissions'
+            }
+            aria-controls="edit-user-permissions-panel"
+            className={[
+              'edit-user-tab',
+              activeTab ===
+                'permissions'
+                ? 'edit-user-tab-active'
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            disabled={
+              isSaving ||
+              isRetryingPermissions
+            }
+            onClick={() => {
+              handleTabChange(
+                'permissions',
+              );
+            }}
+          >
+            <KeyRound
+              size={18}
+              aria-hidden="true"
+            />
+
+            <span>הרשאות</span>
+
+            {isPermissionsLoading ? (
+              <LoaderCircle
+                size={15}
+                className="edit-user-permissions-loading-icon"
+                aria-hidden="true"
+              />
+            ) : null}
+          </button>
+        </div>
 
         <form
           className="edit-user-form"
@@ -256,188 +534,343 @@ function EditUserModal({
             </div>
           ) : null}
 
-          <div className="edit-user-form-grid">
-            <Input
-              id="edit-user-display-name"
-              label="שם תצוגה"
-              type="text"
-              value={formState.displayName}
-              disabled={isSaving}
-              onChange={(event) => {
-                setFormState(
-                  (currentState) =>
-                    currentState
-                      ? {
-                          ...currentState,
-                          displayName:
-                            event.target.value,
-                        }
-                      : currentState,
-                );
+          {activeTab ===
+          'details' ? (
+            <div
+              id="edit-user-details-panel"
+              role="tabpanel"
+              aria-labelledby="edit-user-details-tab"
+              className="edit-user-tab-panel"
+            >
+              <div className="edit-user-form-grid">
+                <Input
+                  id="edit-user-display-name"
+                  label="שם תצוגה"
+                  type="text"
+                  value={
+                    formState.displayName
+                  }
+                  disabled={
+                    isInteractionDisabled
+                  }
+                  onChange={(
+                    event,
+                  ) => {
+                    setFormState(
+                      (
+                        currentState,
+                      ) =>
+                        currentState
+                          ? {
+                              ...currentState,
 
-                setFormError(null);
-              }}
-              required
-            />
+                              displayName:
+                                event
+                                  .target
+                                  .value,
+                            }
+                          : currentState,
+                    );
 
-            <Input
-              id="edit-user-schedule-name"
-              label="שם בשיבוץ"
-              type="text"
-              value={formState.scheduleName}
-              placeholder="לדוגמה: נתנאל"
-              disabled={isSaving}
-              onChange={(event) => {
-                setFormState(
-                  (currentState) =>
-                    currentState
-                      ? {
-                          ...currentState,
-                          scheduleName:
-                            event.target.value,
-                        }
-                      : currentState,
-                );
+                    setFormError(null);
+                  }}
+                  required
+                />
 
-                setFormError(null);
-              }}
-            />
+                <Input
+                  id="edit-user-schedule-name"
+                  label="שם בשיבוץ"
+                  type="text"
+                  value={
+                    formState.scheduleName
+                  }
+                  placeholder="לדוגמה: נתנאל"
+                  disabled={
+                    isInteractionDisabled
+                  }
+                  onChange={(
+                    event,
+                  ) => {
+                    setFormState(
+                      (
+                        currentState,
+                      ) =>
+                        currentState
+                          ? {
+                              ...currentState,
 
-            <label className="edit-user-field">
-              <span>תפקיד</span>
+                              scheduleName:
+                                event
+                                  .target
+                                  .value,
+                            }
+                          : currentState,
+                    );
 
-              <select
-                value={formState.role}
-                disabled={isSaving}
-                onChange={(event) => {
-                  setFormState(
-                    (currentState) =>
-                      currentState
-                        ? {
-                            ...currentState,
-                            role:
-                              event.target
-                                .value as UserRole,
-                          }
-                        : currentState,
-                  );
+                    setFormError(null);
+                  }}
+                />
 
-                  setFormError(null);
-                }}
-              >
-                {(
-                  Object.entries(
-                    roleLabels,
-                  ) as Array<
-                    [UserRole, string]
+                <label className="edit-user-field">
+                  <span>תפקיד</span>
+
+                  <select
+                    value={
+                      formState.role
+                    }
+                    disabled={
+                      isInteractionDisabled
+                    }
+                    onChange={(
+                      event,
+                    ) => {
+                      setFormState(
+                        (
+                          currentState,
+                        ) =>
+                          currentState
+                            ? {
+                                ...currentState,
+
+                                role:
+                                  event
+                                    .target
+                                    .value as UserRole,
+                              }
+                            : currentState,
+                      );
+
+                      setFormError(null);
+                    }}
                   >
-                ).map(
-                  ([
-                    roleValue,
-                    roleLabel,
-                  ]) => (
-                    <option
-                      key={roleValue}
-                      value={roleValue}
-                    >
-                      {roleLabel}
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
-          </div>
-
-          <div className="edit-user-options">
-            <label className="edit-user-option">
-              <input
-                type="checkbox"
-                checked={formState.isActive}
-                disabled={
-                  isSaving ||
-                  isCurrentUser
-                }
-                onChange={(event) => {
-                  setFormState(
-                    (currentState) =>
-                      currentState
-                        ? {
-                            ...currentState,
-                            isActive:
-                              event.target
-                                .checked,
+                    {(
+                      Object.entries(
+                        roleLabels,
+                      ) as Array<
+                        [
+                          UserRole,
+                          string,
+                        ]
+                      >
+                    ).map(
+                      ([
+                        roleValue,
+                        roleLabel,
+                      ]) => (
+                        <option
+                          key={
+                            roleValue
                           }
-                        : currentState,
-                  );
-
-                  setFormError(null);
-                }}
-              />
-
-              <span>
-                <strong>
-                  משתמש פעיל
-                </strong>
-
-                <small>
-                  משתמש פעיל יכול להיכנס
-                  למערכת ולהשתמש בהרשאות
-                  שהוגדרו לו.
-                </small>
-              </span>
-            </label>
-
-            <label className="edit-user-option">
-              <input
-                type="checkbox"
-                checked={
-                  formState
-                    .mustChangePassword
-                }
-                disabled={isSaving}
-                onChange={(event) => {
-                  setFormState(
-                    (currentState) =>
-                      currentState
-                        ? {
-                            ...currentState,
-                            mustChangePassword:
-                              event.target
-                                .checked,
+                          value={
+                            roleValue
                           }
-                        : currentState,
-                  );
+                        >
+                          {roleLabel}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </label>
+              </div>
 
-                  setFormError(null);
-                }}
-              />
+              <div className="edit-user-options">
+                <label className="edit-user-option">
+                  <input
+                    type="checkbox"
+                    checked={
+                      formState.isActive
+                    }
+                    disabled={
+                      isInteractionDisabled ||
+                      isCurrentUser
+                    }
+                    onChange={(
+                      event,
+                    ) => {
+                      setFormState(
+                        (
+                          currentState,
+                        ) =>
+                          currentState
+                            ? {
+                                ...currentState,
 
-              <span>
-                <strong>
-                  דרוש שינוי סיסמה
-                </strong>
+                                isActive:
+                                  event
+                                    .target
+                                    .checked,
+                              }
+                            : currentState,
+                      );
 
-                <small>
-                  המשתמש יידרש להחליף את
-                  סיסמתו לאחר הכניסה
-                  הבאה.
-                </small>
-              </span>
-            </label>
-          </div>
+                      setFormError(null);
+                    }}
+                  />
 
-          {isCurrentUser ? (
-            <div className="edit-user-current-user-note">
-              לא ניתן להשבית את המשתמש
-              המחובר כעת.
+                  <span>
+                    <strong>
+                      משתמש פעיל
+                    </strong>
+
+                    <small>
+                      משתמש פעיל יכול
+                      להיכנס למערכת
+                      ולהשתמש בהרשאות
+                      שהוגדרו לו.
+                    </small>
+                  </span>
+                </label>
+
+                <label className="edit-user-option">
+                  <input
+                    type="checkbox"
+                    checked={
+                      formState
+                        .mustChangePassword
+                    }
+                    disabled={
+                      isInteractionDisabled
+                    }
+                    onChange={(
+                      event,
+                    ) => {
+                      setFormState(
+                        (
+                          currentState,
+                        ) =>
+                          currentState
+                            ? {
+                                ...currentState,
+
+                                mustChangePassword:
+                                  event
+                                    .target
+                                    .checked,
+                              }
+                            : currentState,
+                      );
+
+                      setFormError(null);
+                    }}
+                  />
+
+                  <span>
+                    <strong>
+                      דרוש שינוי סיסמה
+                    </strong>
+
+                    <small>
+                      המשתמש יידרש
+                      להחליף את סיסמתו
+                      לאחר הכניסה הבאה.
+                    </small>
+                  </span>
+                </label>
+              </div>
+
+              {isCurrentUser ? (
+                <div className="edit-user-current-user-note">
+                  לא ניתן להשבית את
+                  המשתמש המחובר כעת.
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          ) : (
+            <div
+              id="edit-user-permissions-panel"
+              role="tabpanel"
+              aria-labelledby="edit-user-permissions-tab"
+              className="edit-user-tab-panel"
+            >
+              {isPermissionsLoading ||
+              isRetryingPermissions ? (
+                <div
+                  className="edit-user-permissions-status"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <LoaderCircle
+                    size={28}
+                    className="edit-user-permissions-loading-icon"
+                    aria-hidden="true"
+                  />
+
+                  <strong>
+                    טוען הרשאות
+                  </strong>
+
+                  <span>
+                    יש להמתין בזמן
+                    שהרשאות המשתמש
+                    נטענות.
+                  </span>
+                </div>
+              ) : permissionsError ? (
+                <div
+                  className="edit-user-permissions-status edit-user-permissions-error"
+                  role="alert"
+                >
+                  <KeyRound
+                    size={28}
+                    aria-hidden="true"
+                  />
+
+                  <strong>
+                    טעינת ההרשאות נכשלה
+                  </strong>
+
+                  <span>
+                    {permissionsError}
+                  </span>
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={
+                      isRetryingPermissions ||
+                      isSaving
+                    }
+                    onClick={() => {
+                      void handleRetryPermissions();
+                    }}
+                  >
+                    <RefreshCw
+                      size={17}
+                      aria-hidden="true"
+                    />
+
+                    ניסיון חוזר
+                  </Button>
+                </div>
+              ) : (
+                <UserPermissionsTab
+                  selectedPermissions={
+                    selectedPermissions
+                  }
+                  isDisabled={
+                    isSaving
+                  }
+                  onChange={(
+                    nextPermissions,
+                  ) => {
+                    setSelectedPermissions(
+                      nextPermissions,
+                    );
+
+                    setFormError(null);
+                  }}
+                />
+              )}
+            </div>
+          )}
 
           <footer className="edit-user-modal-actions">
             <Button
               type="button"
               variant="secondary"
-              disabled={isSaving}
+              disabled={
+                isInteractionDisabled
+              }
               onClick={onClose}
             >
               ביטול
@@ -445,16 +878,31 @@ function EditUserModal({
 
             <Button
               type="submit"
-              disabled={isSaving}
+              disabled={
+                isInteractionDisabled ||
+                Boolean(
+                  permissionsError,
+                )
+              }
             >
-              <Save
-                size={18}
-                aria-hidden="true"
-              />
+              {isSaving ? (
+                <LoaderCircle
+                  size={18}
+                  className="edit-user-permissions-loading-icon"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Save
+                  size={18}
+                  aria-hidden="true"
+                />
+              )}
 
               {isSaving
                 ? 'שומר...'
-                : 'שמירת שינויים'}
+                : isPermissionsLoading
+                  ? 'טוען הרשאות...'
+                  : 'שמירת שינויים'}
             </Button>
           </footer>
         </form>

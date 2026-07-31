@@ -1,5 +1,7 @@
 import { supabase } from '../lib/supabase';
+import { permissionsService } from './permissionsService';
 import type {
+  PermissionKey,
   UserProfile,
   UserRole,
 } from '../types/auth';
@@ -54,31 +56,42 @@ function mapProfileRow(
   return {
     id: profileRow.id,
     email: profileRow.email,
-    displayName: profileRow.display_name,
-    scheduleName: profileRow.schedule_name,
+    displayName:
+      profileRow.display_name,
+    scheduleName:
+      profileRow.schedule_name,
     role: profileRow.role,
     isActive: profileRow.is_active,
     mustChangePassword:
       profileRow.must_change_password,
-    lastLoginAt: profileRow.last_login_at,
-    createdAt: profileRow.created_at,
-    updatedAt: profileRow.updated_at,
+    lastLoginAt:
+      profileRow.last_login_at,
+    createdAt:
+      profileRow.created_at,
+    updatedAt:
+      profileRow.updated_at,
   };
 }
 
 function buildProfileUpdate(
   input: UpdateUserProfileInput,
 ): ProfileDatabaseUpdate {
-  const updateData: ProfileDatabaseUpdate = {
-    updated_at: new Date().toISOString(),
-  };
+  const updateData:
+    ProfileDatabaseUpdate = {
+      updated_at:
+        new Date().toISOString(),
+    };
 
-  if (input.displayName !== undefined) {
+  if (
+    input.displayName !== undefined
+  ) {
     updateData.display_name =
       input.displayName.trim();
   }
 
-  if (input.scheduleName !== undefined) {
+  if (
+    input.scheduleName !== undefined
+  ) {
     const normalizedScheduleName =
       input.scheduleName?.trim() ?? '';
 
@@ -90,12 +103,16 @@ function buildProfileUpdate(
     updateData.role = input.role;
   }
 
-  if (input.isActive !== undefined) {
-    updateData.is_active = input.isActive;
+  if (
+    input.isActive !== undefined
+  ) {
+    updateData.is_active =
+      input.isActive;
   }
 
   if (
-    input.mustChangePassword !== undefined
+    input.mustChangePassword !==
+    undefined
   ) {
     updateData.must_change_password =
       input.mustChangePassword;
@@ -118,7 +135,9 @@ async function getFunctionErrorMessage(
       }
     ).context;
 
-    if (context instanceof Response) {
+    if (
+      context instanceof Response
+    ) {
       try {
         const body =
           (await context.json()) as
@@ -140,60 +159,72 @@ async function getFunctionErrorMessage(
   return 'אירעה שגיאה בלתי צפויה.';
 }
 
-async function getUsers(): Promise<UserProfile[]> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select(PROFILE_COLUMNS)
-    .order('display_name', {
-      ascending: true,
-    });
+async function getUsers():
+  Promise<UserProfile[]> {
+  const { data, error } =
+    await supabase
+      .from('profiles')
+      .select(PROFILE_COLUMNS)
+      .order('display_name', {
+        ascending: true,
+      });
 
   if (error) {
+    console.error(
+      'GET USERS ERROR:',
+      error,
+    );
+
     throw new Error(
       'לא ניתן היה לטעון את רשימת המשתמשים.',
     );
   }
 
   return (
-    (data as ProfileDatabaseRow[] | null) ?? []
+    (
+      data as
+        | ProfileDatabaseRow[]
+        | null
+    ) ?? []
   ).map(mapProfileRow);
 }
 
 async function createUser(
   input: CreateUserInput,
 ): Promise<UserProfile> {
-  const {
-    data,
-    error,
-  } = await supabase.functions.invoke<
-    CreateUserResponse
-  >('create-user', {
-    body: {
-      email: input.email
-        .trim()
-        .toLowerCase(),
+  const { data, error } =
+    await supabase.functions.invoke<
+      CreateUserResponse
+    >('create-user', {
+      body: {
+        email: input.email
+          .trim()
+          .toLowerCase(),
 
-      password: input.password,
+        password: input.password,
 
-      displayName:
-        input.displayName.trim(),
+        displayName:
+          input.displayName.trim(),
 
-      scheduleName:
-        input.scheduleName?.trim() ||
-        null,
+        scheduleName:
+          input.scheduleName?.trim() ||
+          null,
 
-      role: input.role,
+        role: input.role,
 
-      isActive: input.isActive,
+        isActive:
+          input.isActive,
 
-      mustChangePassword:
-        input.mustChangePassword,
-    },
-  });
+        mustChangePassword:
+          input.mustChangePassword,
+      },
+    });
 
   if (error) {
     const errorMessage =
-      await getFunctionErrorMessage(error);
+      await getFunctionErrorMessage(
+        error,
+      );
 
     throw new Error(errorMessage);
   }
@@ -214,14 +245,20 @@ async function updateUser(
   const updateData =
     buildProfileUpdate(input);
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(updateData)
-    .eq('id', userId)
-    .select(PROFILE_COLUMNS)
-    .single();
+  const { data, error } =
+    await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', userId)
+      .select(PROFILE_COLUMNS)
+      .single();
 
   if (error) {
+    console.error(
+      'UPDATE USER ERROR:',
+      error,
+    );
+
     throw new Error(
       'לא ניתן היה לעדכן את המשתמש.',
     );
@@ -241,9 +278,45 @@ async function setUserActiveStatus(
   });
 }
 
+async function getUserPermissions(
+  userId: string,
+): Promise<PermissionKey[]> {
+  if (!userId.trim()) {
+    throw new Error(
+      'לא התקבל מזהה משתמש תקין לטעינת הרשאות.',
+    );
+  }
+
+  return permissionsService
+    .getUserPermissions(userId);
+}
+
+async function setUserPermissions(
+  userId: string,
+  permissions: PermissionKey[],
+): Promise<PermissionKey[]> {
+  if (!userId.trim()) {
+    throw new Error(
+      'לא התקבל מזהה משתמש תקין לשמירת הרשאות.',
+    );
+  }
+
+  const uniquePermissions = [
+    ...new Set(permissions),
+  ];
+
+  return permissionsService
+    .setUserPermissions(
+      userId,
+      uniquePermissions,
+    );
+}
+
 export const usersService = {
   getUsers,
   createUser,
   updateUser,
   setUserActiveStatus,
+  getUserPermissions,
+  setUserPermissions,
 };

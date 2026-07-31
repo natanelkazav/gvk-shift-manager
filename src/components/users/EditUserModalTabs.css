@@ -1,0 +1,492 @@
+.edit-user-modal-with-tabs {
+  width: min(720px, 100%);
+}
+
+.edit-user-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 10px 22px 0;
+  border-bottom: 1px solid
+    var(--color-border, #e2e8f0);
+  background:
+    var(
+      --color-background-subtle,
+      #f8fafc
+    );
+}
+
+.edit-user-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  color:
+    var(
+      --color-text-muted,
+      #64748b
+    );
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.edit-user-tab::after {
+  position: absolute;
+  right: 12px;
+  bottom: -1px;
+  left: 12px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: transparent;
+  content: '';
+}
+
+.edit-user-tab:hover:not(:disabled) {
+  background: rgb(255 255 255 / 75%);
+  color:
+    var(
+      --color-text,
+      #0f172a
+    );
+}
+
+.edit-user-tab-active {
+  background:
+    var(
+      --color-surface,
+      #ffffff
+    );
+  color:
+    var(
+      --color-primary,
+      #2563eb
+    );
+}
+
+.edit-user-tab-active::after {
+  background:
+    var(
+      --color-primary,
+      #2563eb
+    );
+}
+
+.edit-user-tab:focus-visible {
+  outline: 2px solid
+    var(
+      --color-primary,
+      #2563eb
+    );
+  outline-offset: -2px;
+}
+
+.edit-user-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.edit-user-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 320px;
+}
+
+.edit-user-permissions-placeholder {
+  display: flex;
+  min-height: 320px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 36px 24px;
+  border: 1px dashed
+    var(
+      --color-border,
+      #cbd5e1
+    );
+  border-radius:
+    var(--radius-lg, 14px);
+  background:
+    var(
+      --color-background-subtle,
+      #f8fafc
+    );
+  text-align: center;
+}
+
+.edit-user-permissions-placeholder-icon {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 4px;
+  border-radius: 18px;
+  background:
+    var(
+      --color-primary-soft,
+      #dbeafe
+    );
+  color:
+    var(
+      --color-primary,
+      #2563eb
+    );
+}
+
+.edit-user-permissions-placeholder h3 {
+  margin: 0;
+  color:
+    var(
+      --color-text,
+      #0f172a
+    );
+  font-size: 1.05rem;
+}
+
+.edit-user-permissions-placeholder p {
+  max-width: 420px;
+  margin: 0;
+  color:
+    var(
+      --color-text-muted,
+      #64748b
+    );
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.edit-user-permissions-placeholder span {
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .edit-user-tabs {
+    padding-inline: 12px;
+  }
+
+  .edit-user-tab {
+    flex: 1;
+    padding-inline: 10px;
+  }
+
+  .edit-user-tab-panel {
+    min-height: 280px;
+  }
+
+  .edit-user-permissions-placeholder {
+    min-height: 280px;
+    padding-inline: 18px;
+  }
+}
+.user-permissions-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.user-permissions-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid
+    var(--color-border, #e2e8f0);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.user-permissions-summary {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.user-permissions-summary-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 11px;
+  background:
+    var(--color-primary-soft, #dbeafe);
+  color:
+    var(--color-primary, #2563eb);
+}
+
+.user-permissions-summary > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.user-permissions-summary strong {
+  color:
+    var(--color-text, #0f172a);
+  font-size: 0.92rem;
+}
+
+.user-permissions-summary span {
+  color:
+    var(--color-text-muted, #64748b);
+  font-size: 0.8rem;
+}
+
+.user-permissions-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-permissions-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.user-permissions-group {
+  overflow: hidden;
+  border: 1px solid
+    var(--color-border, #e2e8f0);
+  border-radius: 13px;
+  background:
+    var(--color-surface, #ffffff);
+}
+
+.user-permissions-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid
+    var(--color-border, #e2e8f0);
+  background: #f8fafc;
+}
+
+.user-permissions-group-header h3 {
+  margin: 0;
+  color:
+    var(--color-text, #0f172a);
+  font-size: 0.94rem;
+}
+
+.user-permissions-group-header p {
+  margin: 4px 0 0;
+  color:
+    var(--color-text-muted, #64748b);
+  font-size: 0.8rem;
+}
+
+.user-permissions-group-header > span {
+  display: inline-flex;
+  min-width: 42px;
+  justify-content: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background:
+    var(--color-primary-soft, #dbeafe);
+  color:
+    var(--color-primary-dark, #1d4ed8);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.user-permissions-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-permission-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid
+    var(--color-border, #e2e8f0);
+  cursor: pointer;
+  transition:
+    background-color 150ms ease;
+}
+
+.user-permission-item:last-child {
+  border-bottom: 0;
+}
+
+.user-permission-item:hover {
+  background: #f8fafc;
+}
+
+.user-permission-item-selected {
+  background: #eff6ff;
+}
+
+.user-permission-item-selected:hover {
+  background: #eff6ff;
+}
+
+.user-permission-item-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.user-permission-item input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.user-permission-switch {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex: 0 0 42px;
+  margin-top: 1px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition:
+    background-color 160ms ease;
+}
+
+.user-permission-switch span {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 1px 3px rgb(15 23 42 / 24%);
+  transition:
+    transform 160ms ease;
+}
+
+.user-permission-item-selected
+  .user-permission-switch {
+  background:
+    var(--color-primary, #2563eb);
+}
+
+.user-permission-item-selected
+  .user-permission-switch
+  span {
+  transform: translateX(-18px);
+}
+
+.user-permission-content {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-permission-content strong {
+  color:
+    var(--color-text, #0f172a);
+  font-size: 0.9rem;
+}
+
+.user-permission-content small {
+  color:
+    var(--color-text-muted, #64748b);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.user-permission-content code {
+  width: fit-content;
+  margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  direction: ltr;
+  font-size: 0.7rem;
+}
+
+@media (max-width: 640px) {
+  .user-permissions-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .user-permissions-toolbar-actions {
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .user-permissions-toolbar-actions
+    .button {
+    width: 100%;
+  }
+}
+.edit-user-permissions-status {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px;
+  text-align: center;
+}
+
+.edit-user-permissions-status strong {
+  font-size: 16px;
+}
+
+.edit-user-permissions-status span {
+  max-width: 420px;
+  color: var(--text-muted, #667085);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.edit-user-permissions-error {
+  padding: 24px;
+  background: #fff7f7;
+  border: 1px solid #f2caca;
+  border-radius: 14px;
+}
+
+.edit-user-permissions-error strong {
+  color: #a61b1b;
+}
+
+.edit-user-permissions-loading-icon {
+  flex-shrink: 0;
+  animation:
+    edit-user-permissions-spin
+    0.85s linear infinite;
+}
+
+@keyframes edit-user-permissions-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

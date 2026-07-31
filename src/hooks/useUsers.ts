@@ -2,10 +2,14 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { usersService } from '../services/usersService';
-import type { UserProfile } from '../types/auth';
+import type {
+  PermissionKey,
+  UserProfile,
+} from '../types/auth';
 import type {
   CreateUserInput,
   UpdateUserProfileInput,
@@ -20,10 +24,23 @@ interface UsersStatisticsData {
   admins: number;
 }
 
+interface UserPermissionsState {
+  userId: string | null;
+  permissions: PermissionKey[];
+  isLoading: boolean;
+  isSaving: boolean;
+  error: string | null;
+}
+
 interface UseUsersOptions {
   authenticatedUserId: string | null;
+
   refreshAuthenticatedProfile:
     () => Promise<void>;
+
+  refreshAuthenticatedPermissions?:
+    () => Promise<void>;
+
   filters: UsersFilters;
 }
 
@@ -33,6 +50,9 @@ interface UseUsersResult {
   statistics: UsersStatisticsData;
   updatingUserId: string | null;
   isCreatingUser: boolean;
+
+  userPermissionsState:
+    UserPermissionsState;
 
   loadUsers: () => Promise<void>;
 
@@ -49,6 +69,18 @@ interface UseUsersResult {
     profile: UserProfile,
   ) => Promise<void>;
 
+  loadUserPermissions: (
+    userId: string,
+  ) => Promise<PermissionKey[]>;
+
+  saveUserPermissions: (
+    userId: string,
+    permissions: PermissionKey[],
+  ) => Promise<PermissionKey[]>;
+
+  resetUserPermissionsState:
+    () => void;
+
   clearError: () => void;
 }
 
@@ -57,6 +89,15 @@ const initialUsersState: UsersState = {
   isLoading: true,
   error: null,
 };
+
+const initialUserPermissionsState:
+  UserPermissionsState = {
+    userId: null,
+    permissions: [],
+    isLoading: false,
+    isSaving: false,
+    error: null,
+  };
 
 function getErrorMessage(
   error: unknown,
@@ -73,23 +114,30 @@ function sortUsersByDisplayName(
   users: UserProfile[],
 ): UserProfile[] {
   return [...users].sort(
-    (firstUser, secondUser) =>
-      firstUser.displayName.localeCompare(
-        secondUser.displayName,
-        'he',
-      ),
+    (
+      firstUser,
+      secondUser,
+    ) =>
+      firstUser.displayName
+        .localeCompare(
+          secondUser.displayName,
+          'he',
+        ),
   );
 }
 
 export function useUsers({
   authenticatedUserId,
   refreshAuthenticatedProfile,
+  refreshAuthenticatedPermissions,
   filters,
 }: UseUsersOptions): UseUsersResult {
-  const [usersState, setUsersState] =
-    useState<UsersState>(
-      initialUsersState,
-    );
+  const [
+    usersState,
+    setUsersState,
+  ] = useState<UsersState>(
+    initialUsersState,
+  );
 
   const [
     updatingUserId,
@@ -101,6 +149,17 @@ export function useUsers({
     setIsCreatingUser,
   ] = useState(false);
 
+  const [
+    userPermissionsState,
+    setUserPermissionsState,
+  ] =
+    useState<UserPermissionsState>(
+      initialUserPermissionsState,
+    );
+
+  const permissionsRequestIdRef =
+    useRef(0);
+
   const clearError =
     useCallback((): void => {
       setUsersState(
@@ -108,6 +167,16 @@ export function useUsers({
           ...currentState,
           error: null,
         }),
+      );
+    }, []);
+
+  const resetUserPermissionsState =
+    useCallback((): void => {
+      permissionsRequestIdRef.current +=
+        1;
+
+      setUserPermissionsState(
+        initialUserPermissionsState,
       );
     }, []);
 
@@ -119,6 +188,7 @@ export function useUsers({
         setUsersState(
           (currentState) => ({
             ...currentState,
+
             users:
               currentState.users.map(
                 (existingProfile) =>
@@ -127,6 +197,7 @@ export function useUsers({
                     ? updatedProfile
                     : existingProfile,
               ),
+
             error: null,
           }),
         );
@@ -142,11 +213,13 @@ export function useUsers({
         setUsersState(
           (currentState) => ({
             ...currentState,
+
             users:
               sortUsersByDisplayName([
                 ...currentState.users,
                 createdProfile,
               ]),
+
             error: null,
           }),
         );
@@ -167,7 +240,8 @@ export function useUsers({
 
         try {
           const users =
-            await usersService.getUsers();
+            await usersService
+              .getUsers();
 
           setUsersState({
             users,
@@ -178,11 +252,14 @@ export function useUsers({
           setUsersState(
             (currentState) => ({
               ...currentState,
+
               isLoading: false,
-              error: getErrorMessage(
-                error,
-                'אירעה שגיאה בטעינת המשתמשים.',
-              ),
+
+              error:
+                getErrorMessage(
+                  error,
+                  'אירעה שגיאה בטעינת המשתמשים.',
+                ),
             }),
           );
         }
@@ -204,11 +281,12 @@ export function useUsers({
 
         try {
           const createdProfile =
-            await usersService.createUser(
-              input,
-            );
+            await usersService
+              .createUser(input);
 
-          addLocalUser(createdProfile);
+          addLocalUser(
+            createdProfile,
+          );
 
           return createdProfile;
         } catch (error) {
@@ -240,7 +318,8 @@ export function useUsers({
     useCallback(
       async (
         userId: string,
-        input: UpdateUserProfileInput,
+        input:
+          UpdateUserProfileInput,
       ): Promise<UserProfile> => {
         setUpdatingUserId(userId);
         clearError();
@@ -257,10 +336,11 @@ export function useUsers({
           }
 
           const updatedProfile =
-            await usersService.updateUser(
-              userId,
-              input,
-            );
+            await usersService
+              .updateUser(
+                userId,
+                input,
+              );
 
           updateLocalUser(
             updatedProfile,
@@ -313,6 +393,7 @@ export function useUsers({
           setUsersState(
             (currentState) => ({
               ...currentState,
+
               error:
                 'לא ניתן להשבית את המשתמש המחובר כעת.',
             }),
@@ -335,7 +416,10 @@ export function useUsers({
           return;
         }
 
-        setUpdatingUserId(profile.id);
+        setUpdatingUserId(
+          profile.id,
+        );
+
         clearError();
 
         try {
@@ -353,10 +437,12 @@ export function useUsers({
           setUsersState(
             (currentState) => ({
               ...currentState,
-              error: getErrorMessage(
-                error,
-                'לא ניתן היה לעדכן את המשתמש.',
-              ),
+
+              error:
+                getErrorMessage(
+                  error,
+                  'לא ניתן היה לעדכן את המשתמש.',
+                ),
             }),
           );
         } finally {
@@ -367,6 +453,150 @@ export function useUsers({
         authenticatedUserId,
         clearError,
         updateLocalUser,
+      ],
+    );
+
+  const loadUserPermissions =
+    useCallback(
+      async (
+        userId: string,
+      ): Promise<PermissionKey[]> => {
+        const requestId =
+          permissionsRequestIdRef
+            .current + 1;
+
+        permissionsRequestIdRef.current =
+          requestId;
+
+        setUserPermissionsState({
+          userId,
+          permissions: [],
+          isLoading: true,
+          isSaving: false,
+          error: null,
+        });
+
+        try {
+          const permissions =
+            await usersService
+              .getUserPermissions(
+                userId,
+              );
+
+          if (
+            permissionsRequestIdRef
+              .current !== requestId
+          ) {
+            return permissions;
+          }
+
+          setUserPermissionsState({
+            userId,
+            permissions,
+            isLoading: false,
+            isSaving: false,
+            error: null,
+          });
+
+          return permissions;
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(
+              error,
+              'לא ניתן היה לטעון את הרשאות המשתמש.',
+            );
+
+          if (
+            permissionsRequestIdRef
+              .current === requestId
+          ) {
+            setUserPermissionsState({
+              userId,
+              permissions: [],
+              isLoading: false,
+              isSaving: false,
+              error: errorMessage,
+            });
+          }
+
+          throw error;
+        }
+      },
+      [],
+    );
+
+  const saveUserPermissions =
+    useCallback(
+      async (
+        userId: string,
+        permissions:
+          PermissionKey[],
+      ): Promise<PermissionKey[]> => {
+        setUserPermissionsState(
+          (currentState) => ({
+            userId,
+
+            permissions:
+              currentState.userId ===
+              userId
+                ? currentState.permissions
+                : permissions,
+
+            isLoading: false,
+            isSaving: true,
+            error: null,
+          }),
+        );
+
+        try {
+          const savedPermissions =
+            await usersService
+              .setUserPermissions(
+                userId,
+                permissions,
+              );
+
+          setUserPermissionsState({
+            userId,
+            permissions:
+              savedPermissions,
+            isLoading: false,
+            isSaving: false,
+            error: null,
+          });
+
+          if (
+            userId ===
+              authenticatedUserId &&
+            refreshAuthenticatedPermissions
+          ) {
+            await refreshAuthenticatedPermissions();
+          }
+
+          return savedPermissions;
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(
+              error,
+              'לא ניתן היה לשמור את הרשאות המשתמש.',
+            );
+
+          setUserPermissionsState(
+            (currentState) => ({
+              ...currentState,
+              userId,
+              isLoading: false,
+              isSaving: false,
+              error: errorMessage,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [
+        authenticatedUserId,
+        refreshAuthenticatedPermissions,
       ],
     );
 
@@ -392,7 +622,8 @@ export function useUsers({
                 normalizedSearchTerm,
               ) ||
             (
-              profile.scheduleName ?? ''
+              profile.scheduleName ??
+              ''
             )
               .toLowerCase()
               .includes(
@@ -405,7 +636,8 @@ export function useUsers({
               filters.role;
 
           const matchesStatus =
-            filters.status === 'all' ||
+            filters.status ===
+              'all' ||
             (
               filters.status ===
                 'active' &&
@@ -472,10 +704,14 @@ export function useUsers({
     statistics,
     updatingUserId,
     isCreatingUser,
+    userPermissionsState,
     loadUsers,
     createUser,
     updateUser,
     toggleActiveStatus,
+    loadUserPermissions,
+    saveUserPermissions,
+    resetUserPermissionsState,
     clearError,
   };
 }
