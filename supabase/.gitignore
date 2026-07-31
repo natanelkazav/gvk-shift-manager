@@ -6,3 +6,6 @@
 .env.keys
 .env.local
 .env.*.local
+supabase/.env
+supabase/.env.local
+supabase/.tempnpx supabase login

@@ -17,6 +17,20 @@ export interface UpdateUserProfileInput {
   mustChangePassword?: boolean;
 }
 
+export interface CreateUserInput {
+  email: string;
+  password: string;
+  displayName: string;
+  scheduleName: string | null;
+  role: UserRole;
+  isActive: boolean;
+  mustChangePassword: boolean;
+}
+
+export interface CreateUserResponse {
+  user: UserProfile;
+}
+
 export interface UsersState {
   users: UserProfile[];
   isLoading: boolean;

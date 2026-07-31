@@ -4,6 +4,8 @@ import type {
   UserRole,
 } from '../types/auth';
 import type {
+  CreateUserInput,
+  CreateUserResponse,
   UpdateUserProfileInput,
 } from '../types/users';
 
@@ -27,6 +29,10 @@ interface ProfileDatabaseUpdate {
   is_active?: boolean;
   must_change_password?: boolean;
   updated_at?: string;
+}
+
+interface FunctionErrorResponse {
+  error?: string;
 }
 
 const PROFILE_COLUMNS = `
@@ -98,6 +104,42 @@ function buildProfileUpdate(
   return updateData;
 }
 
+async function getFunctionErrorMessage(
+  error: unknown,
+): Promise<string> {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'context' in error
+  ) {
+    const context = (
+      error as {
+        context?: Response;
+      }
+    ).context;
+
+    if (context instanceof Response) {
+      try {
+        const body =
+          (await context.json()) as
+            FunctionErrorResponse;
+
+        if (body.error) {
+          return body.error;
+        }
+      } catch {
+        return 'לא ניתן היה לקרוא את תגובת השרת.';
+      }
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'אירעה שגיאה בלתי צפויה.';
+}
+
 async function getUsers(): Promise<UserProfile[]> {
   const { data, error } = await supabase
     .from('profiles')
@@ -115,6 +157,54 @@ async function getUsers(): Promise<UserProfile[]> {
   return (
     (data as ProfileDatabaseRow[] | null) ?? []
   ).map(mapProfileRow);
+}
+
+async function createUser(
+  input: CreateUserInput,
+): Promise<UserProfile> {
+  const {
+    data,
+    error,
+  } = await supabase.functions.invoke<
+    CreateUserResponse
+  >('create-user', {
+    body: {
+      email: input.email
+        .trim()
+        .toLowerCase(),
+
+      password: input.password,
+
+      displayName:
+        input.displayName.trim(),
+
+      scheduleName:
+        input.scheduleName?.trim() ||
+        null,
+
+      role: input.role,
+
+      isActive: input.isActive,
+
+      mustChangePassword:
+        input.mustChangePassword,
+    },
+  });
+
+  if (error) {
+    const errorMessage =
+      await getFunctionErrorMessage(error);
+
+    throw new Error(errorMessage);
+  }
+
+  if (!data?.user) {
+    throw new Error(
+      'המשתמש נוצר ללא נתוני פרופיל תקינים.',
+    );
+  }
+
+  return data.user;
 }
 
 async function updateUser(
@@ -153,6 +243,7 @@ async function setUserActiveStatus(
 
 export const usersService = {
   getUsers,
+  createUser,
   updateUser,
   setUserActiveStatus,
 };

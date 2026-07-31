@@ -1,6 +1,4 @@
 import {
-  CheckCircle2,
-  Pencil,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -16,6 +14,7 @@ import {
 } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import EditUserModal from '../components/users/EditUserModal';
+import UsersTable from '../components/users/UsersTable';
 import {
   Button,
   Input,
@@ -44,39 +43,6 @@ const initialFilters: UsersFilters = {
   role: 'all',
   status: 'all',
 };
-
-const roleLabels: Record<
-  UserRole,
-  string
-> = {
-  admin: 'מנהל מערכת',
-  manager: 'מנהלת',
-  dispatcher: 'מוקדן',
-  on_call: 'כונן',
-  viewer: 'צפייה בלבד',
-};
-
-function formatDate(
-  dateValue: string | null,
-): string {
-  if (!dateValue) {
-    return 'טרם התחבר';
-  }
-
-  const date = new Date(dateValue);
-
-  if (Number.isNaN(date.getTime())) {
-    return 'לא ידוע';
-  }
-
-  return new Intl.DateTimeFormat(
-    'he-IL',
-    {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    },
-  ).format(date);
-}
 
 function UsersPage() {
   const {
@@ -625,181 +591,22 @@ function UsersPage() {
         </label>
       </div>
 
-      <div className="users-table-container">
-        {usersState.isLoading ? (
-          <div className="users-empty-state">
-            <RefreshCw
-              className="users-loading-icon"
-              size={28}
-              aria-hidden="true"
-            />
-
-            <p>
-              טוען את רשימת המשתמשים...
-            </p>
-          </div>
-        ) : filteredUsers.length ===
-          0 ? (
-          <div className="users-empty-state">
-            <Users
-              size={32}
-              aria-hidden="true"
-            />
-
-            <p>
-              לא נמצאו משתמשים המתאימים
-              לסינון.
-            </p>
-          </div>
-        ) : (
-          <table className="users-table">
-            <thead>
-              <tr>
-                <th>משתמש</th>
-                <th>שם שיבוץ</th>
-                <th>תפקיד</th>
-                <th>סטטוס</th>
-                <th>התחברות אחרונה</th>
-                <th>פעולות</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredUsers.map(
-                (profile) => {
-                  const isCurrentUser =
-                    profile.id ===
-                    authenticatedUser?.id;
-
-                  const isUpdating =
-                    updatingUserId ===
-                    profile.id;
-
-                  return (
-                    <tr key={profile.id}>
-                      <td>
-                        <div className="users-user-cell">
-                          <div className="users-avatar">
-                            {profile.displayName
-                              .trim()
-                              .charAt(0)
-                              .toUpperCase() ||
-                              '?'}
-                          </div>
-
-                          <div>
-                            <strong>
-                              {
-                                profile.displayName
-                              }
-                            </strong>
-
-                            <span>
-                              {profile.email}
-                            </span>
-
-                            {isCurrentUser ? (
-                              <small>
-                                המשתמש הנוכחי
-                              </small>
-                            ) : null}
-                          </div>
-                        </div>
-                      </td>
-
-                      <td>
-                        {profile.scheduleName ??
-                          'לא הוגדר'}
-                      </td>
-
-                      <td>
-                        <span className="users-role-badge">
-                          {
-                            roleLabels[
-                              profile.role
-                            ]
-                          }
-                        </span>
-                      </td>
-
-                      <td>
-                        <span
-                          className={
-                            profile.isActive
-                              ? 'users-status users-status-active'
-                              : 'users-status users-status-inactive'
-                          }
-                        >
-                          <CheckCircle2
-                            size={15}
-                            aria-hidden="true"
-                          />
-
-                          {profile.isActive
-                            ? 'פעיל'
-                            : 'מושבת'}
-                        </span>
-                      </td>
-
-                      <td>
-                        {formatDate(
-                          profile.lastLoginAt,
-                        )}
-                      </td>
-
-                      <td>
-                        <div className="users-actions">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            disabled={isUpdating}
-                            onClick={() => {
-                              openEditModal(
-                                profile,
-                              );
-                            }}
-                          >
-                            <Pencil
-                              size={16}
-                              aria-hidden="true"
-                            />
-
-                            עריכה
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant={
-                              profile.isActive
-                                ? 'danger'
-                                : 'secondary'
-                            }
-                            disabled={
-                              isCurrentUser ||
-                              isUpdating
-                            }
-                            onClick={() => {
-                              void handleToggleActiveStatus(
-                                profile,
-                              );
-                            }}
-                          >
-                            {isUpdating
-                              ? 'מעדכן...'
-                              : profile.isActive
-                                ? 'השבת'
-                                : 'הפעל'}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                },
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <UsersTable
+        users={filteredUsers}
+        isLoading={
+          usersState.isLoading
+        }
+        currentUserId={
+          authenticatedUser?.id ?? null
+        }
+        updatingUserId={
+          updatingUserId
+        }
+        onEditUser={openEditModal}
+        onToggleActiveStatus={
+          handleToggleActiveStatus
+        }
+      />
 
       <EditUserModal
         user={selectedUser}
