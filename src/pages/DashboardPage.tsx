@@ -1,58 +1,65 @@
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  PageHeader,
+  StatCard,
+} from '../components/ui';
+
 function DashboardPage() {
   return (
     <>
-      <header className="page-header">
-        <div>
-          <h1 className="page-header-title">לוח בקרה</h1>
-          <p className="page-header-description">
-            תמונת מצב כללית של מערכת המשמרות.
-          </p>
-        </div>
+      <PageHeader
+        title="לוח בקרה"
+        description="תמונת מצב כללית של מערכת המשמרות."
+        actions={
+          <>
+            <Button variant="secondary">
+              צפייה בשיבוץ
+            </Button>
 
-        <div className="page-actions">
-          <button type="button" className="button button-secondary">
-            צפייה בשיבוץ
-          </button>
-
-          <button type="button" className="button button-primary">
-            יצירת שיבוץ
-          </button>
-        </div>
-      </header>
+            <Button>
+              יצירת שיבוץ
+            </Button>
+          </>
+        }
+      />
 
       <div className="stats-grid">
-        <article className="card stat-card">
-          <p className="stat-label">משמרות החודש</p>
-          <p className="stat-value">0</p>
-        </article>
+        <StatCard
+          label="משמרות החודש"
+          value={0}
+        />
 
-        <article className="card stat-card">
-          <p className="stat-label">מוקדנים פעילים</p>
-          <p className="stat-value">0</p>
-        </article>
+        <StatCard
+          label="מוקדנים פעילים"
+          value={0}
+        />
 
-        <article className="card stat-card">
-          <p className="stat-label">בקשות החלפה</p>
-          <p className="stat-value">0</p>
-        </article>
+        <StatCard
+          label="בקשות החלפה"
+          value={0}
+        />
 
-        <article className="card stat-card">
-          <p className="stat-label">התראות פעילות</p>
-          <p className="stat-value">0</p>
-        </article>
+        <StatCard
+          label="התראות פעילות"
+          value={0}
+        />
       </div>
 
-      <section className="card" style={{ marginTop: '24px' }}>
-        <div className="card-header">
-          <h2 className="card-title">פעילות אחרונה</h2>
-        </div>
+      <Card className="dashboard-activity-card">
+        <CardHeader>
+          <CardTitle>פעילות אחרונה</CardTitle>
+        </CardHeader>
 
-        <div className="card-body">
+        <CardBody>
           <p>עדיין אין פעילות להצגה.</p>
-
-          <span className="badge badge-info">המערכת בהקמה</span>
-        </div>
-      </section>
+          <Badge>המערכת בהקמה</Badge>
+        </CardBody>
+      </Card>
     </>
   );
 }

@@ -164,3 +164,6 @@
     grid-template-columns: 1fr;
   }
 }
+.dashboard-activity-card {
+  margin-top: var(--space-6);
+}
