@@ -12,6 +12,7 @@ import type {
 } from '../types/auth';
 import type {
   CreateUserInput,
+  DeleteUserInput,
   UpdateUserProfileInput,
   UsersFilters,
   UsersState,
@@ -49,6 +50,7 @@ interface UseUsersResult {
   filteredUsers: UserProfile[];
   statistics: UsersStatisticsData;
   updatingUserId: string | null;
+  deletingUserId: string | null;
   isCreatingUser: boolean;
 
   userPermissionsState:
@@ -67,6 +69,10 @@ interface UseUsersResult {
 
   toggleActiveStatus: (
     profile: UserProfile,
+  ) => Promise<void>;
+
+  deleteUser: (
+    input: DeleteUserInput,
   ) => Promise<void>;
 
   loadUserPermissions: (
@@ -145,6 +151,11 @@ export function useUsers({
   ] = useState<string | null>(null);
 
   const [
+    deletingUserId,
+    setDeletingUserId,
+  ] = useState<string | null>(null);
+
+  const [
     isCreatingUser,
     setIsCreatingUser,
   ] = useState(false);
@@ -219,6 +230,29 @@ export function useUsers({
                 ...currentState.users,
                 createdProfile,
               ]),
+
+            error: null,
+          }),
+        );
+      },
+      [],
+    );
+
+  const removeLocalUser =
+    useCallback(
+      (
+        deletedUserId: string,
+      ): void => {
+        setUsersState(
+          (currentState) => ({
+            ...currentState,
+
+            users:
+              currentState.users.filter(
+                (profile) =>
+                  profile.id !==
+                  deletedUserId,
+              ),
 
             error: null,
           }),
@@ -453,6 +487,60 @@ export function useUsers({
         authenticatedUserId,
         clearError,
         updateLocalUser,
+      ],
+    );
+
+  const deleteUser =
+    useCallback(
+      async (
+        input: DeleteUserInput,
+      ): Promise<void> => {
+        if (
+          input.userId ===
+          authenticatedUserId
+        ) {
+          throw new Error(
+            'לא ניתן למחוק את המשתמש המחובר כעת.',
+          );
+        }
+
+        setDeletingUserId(
+          input.userId,
+        );
+
+        clearError();
+
+        try {
+          const deletedUser =
+            await usersService
+              .deleteUser(input);
+
+          removeLocalUser(
+            deletedUser.id,
+          );
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(
+              error,
+              'לא ניתן היה למחוק את המשתמש.',
+            );
+
+          setUsersState(
+            (currentState) => ({
+              ...currentState,
+              error: errorMessage,
+            }),
+          );
+
+          throw error;
+        } finally {
+          setDeletingUserId(null);
+        }
+      },
+      [
+        authenticatedUserId,
+        clearError,
+        removeLocalUser,
       ],
     );
 
@@ -703,12 +791,14 @@ export function useUsers({
     filteredUsers,
     statistics,
     updatingUserId,
+    deletingUserId,
     isCreatingUser,
     userPermissionsState,
     loadUsers,
     createUser,
     updateUser,
     toggleActiveStatus,
+    deleteUser,
     loadUserPermissions,
     saveUserPermissions,
     resetUserPermissionsState,

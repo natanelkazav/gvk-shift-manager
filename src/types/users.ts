@@ -31,6 +31,23 @@ export interface CreateUserResponse {
   user: UserProfile;
 }
 
+export interface DeleteUserInput {
+  userId: string;
+  reason: string | null;
+}
+
+export interface DeletedUserSummary {
+  id: string;
+  email: string;
+  displayName: string;
+}
+
+export interface DeleteUserResponse {
+  success: boolean;
+  deletedUser: DeletedUserSummary;
+  auditLogged: boolean;
+}
+
 export interface UsersState {
   users: UserProfile[];
   isLoading: boolean;

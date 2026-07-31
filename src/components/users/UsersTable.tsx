@@ -2,6 +2,7 @@ import {
   CheckCircle2,
   Pencil,
   RefreshCw,
+  Trash2,
   Users,
 } from 'lucide-react';
 import { Button } from '../ui';
@@ -15,9 +16,16 @@ interface UsersTableProps {
   isLoading: boolean;
   currentUserId: string | null;
   updatingUserId: string | null;
+  deletingUserId: string | null;
+
   onEditUser: (
     profile: UserProfile,
   ) => void;
+
+  onDeleteUser: (
+    profile: UserProfile,
+  ) => void;
+
   onToggleActiveStatus: (
     profile: UserProfile,
   ) => Promise<void>;
@@ -41,9 +49,14 @@ function formatDate(
     return 'טרם התחבר';
   }
 
-  const date = new Date(dateValue);
+  const date =
+    new Date(dateValue);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
     return 'לא ידוע';
   }
 
@@ -61,7 +74,9 @@ function UsersTable({
   isLoading,
   currentUserId,
   updatingUserId,
+  deletingUserId,
   onEditUser,
+  onDeleteUser,
   onToggleActiveStatus,
 }: UsersTableProps) {
   if (isLoading) {
@@ -75,7 +90,8 @@ function UsersTable({
           />
 
           <p>
-            טוען את רשימת המשתמשים...
+            טוען את רשימת
+            המשתמשים...
           </p>
         </div>
       </div>
@@ -92,8 +108,8 @@ function UsersTable({
           />
 
           <p>
-            לא נמצאו משתמשים המתאימים
-            לסינון.
+            לא נמצאו משתמשים
+            המתאימים לסינון.
           </p>
         </div>
       </div>
@@ -115,124 +131,175 @@ function UsersTable({
         </thead>
 
         <tbody>
-          {users.map((profile) => {
-            const isCurrentUser =
-              profile.id === currentUserId;
+          {users.map(
+            (profile) => {
+              const isCurrentUser =
+                profile.id ===
+                currentUserId;
 
-            const isUpdating =
-              updatingUserId === profile.id;
+              const isUpdating =
+                updatingUserId ===
+                profile.id;
 
-            return (
-              <tr key={profile.id}>
-                <td>
-                  <div className="users-user-cell">
-                    <div className="users-avatar">
-                      {profile.displayName
-                        .trim()
-                        .charAt(0)
-                        .toUpperCase() || '?'}
+              const isDeleting =
+                deletingUserId ===
+                profile.id;
+
+              const isBusy =
+                isUpdating ||
+                isDeleting;
+
+              return (
+                <tr key={profile.id}>
+                  <td>
+                    <div className="users-user-cell">
+                      <div className="users-avatar">
+                        {profile
+                          .displayName
+                          .trim()
+                          .charAt(0)
+                          .toUpperCase() ||
+                          '?'}
+                      </div>
+
+                      <div>
+                        <strong>
+                          {
+                            profile
+                              .displayName
+                          }
+                        </strong>
+
+                        <span>
+                          {
+                            profile.email
+                          }
+                        </span>
+
+                        {isCurrentUser ? (
+                          <small>
+                            המשתמש
+                            הנוכחי
+                          </small>
+                        ) : null}
+                      </div>
                     </div>
+                  </td>
 
-                    <div>
-                      <strong>
-                        {profile.displayName}
-                      </strong>
+                  <td>
+                    {profile
+                      .scheduleName ??
+                      'לא הוגדר'}
+                  </td>
 
-                      <span>
-                        {profile.email}
-                      </span>
+                  <td>
+                    <span className="users-role-badge">
+                      {
+                        roleLabels[
+                          profile.role
+                        ]
+                      }
+                    </span>
+                  </td>
 
-                      {isCurrentUser ? (
-                        <small>
-                          המשתמש הנוכחי
-                        </small>
-                      ) : null}
-                    </div>
-                  </div>
-                </td>
-
-                <td>
-                  {profile.scheduleName ??
-                    'לא הוגדר'}
-                </td>
-
-                <td>
-                  <span className="users-role-badge">
-                    {roleLabels[profile.role]}
-                  </span>
-                </td>
-
-                <td>
-                  <span
-                    className={
-                      profile.isActive
-                        ? 'users-status users-status-active'
-                        : 'users-status users-status-inactive'
-                    }
-                  >
-                    <CheckCircle2
-                      size={15}
-                      aria-hidden="true"
-                    />
-
-                    {profile.isActive
-                      ? 'פעיל'
-                      : 'מושבת'}
-                  </span>
-                </td>
-
-                <td>
-                  {formatDate(
-                    profile.lastLoginAt,
-                  )}
-                </td>
-
-                <td>
-                  <div className="users-actions">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      disabled={isUpdating}
-                      onClick={() => {
-                        onEditUser(profile);
-                      }}
+                  <td>
+                    <span
+                      className={
+                        profile.isActive
+                          ? 'users-status users-status-active'
+                          : 'users-status users-status-inactive'
+                      }
                     >
-                      <Pencil
-                        size={16}
+                      <CheckCircle2
+                        size={15}
                         aria-hidden="true"
                       />
 
-                      עריכה
-                    </Button>
+                      {profile.isActive
+                        ? 'פעיל'
+                        : 'מושבת'}
+                    </span>
+                  </td>
 
-                    <Button
-                      type="button"
-                      variant={
-                        profile.isActive
-                          ? 'danger'
-                          : 'secondary'
-                      }
-                      disabled={
-                        isCurrentUser ||
-                        isUpdating
-                      }
-                      onClick={() => {
-                        void onToggleActiveStatus(
-                          profile,
-                        );
-                      }}
-                    >
-                      {isUpdating
-                        ? 'מעדכן...'
-                        : profile.isActive
-                          ? 'השבת'
-                          : 'הפעל'}
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
+                  <td>
+                    {formatDate(
+                      profile
+                        .lastLoginAt,
+                    )}
+                  </td>
+
+                  <td>
+                    <div className="users-actions">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={isBusy}
+                        onClick={() => {
+                          onEditUser(
+                            profile,
+                          );
+                        }}
+                      >
+                        <Pencil
+                          size={16}
+                          aria-hidden="true"
+                        />
+
+                        עריכה
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant={
+                          profile.isActive
+                            ? 'danger'
+                            : 'secondary'
+                        }
+                        disabled={
+                          isCurrentUser ||
+                          isBusy
+                        }
+                        onClick={() => {
+                          void onToggleActiveStatus(
+                            profile,
+                          );
+                        }}
+                      >
+                        {isUpdating
+                          ? 'מעדכן...'
+                          : profile.isActive
+                            ? 'השבת'
+                            : 'הפעל'}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="danger"
+                        disabled={
+                          isCurrentUser ||
+                          isBusy
+                        }
+                        onClick={() => {
+                          onDeleteUser(
+                            profile,
+                          );
+                        }}
+                      >
+                        <Trash2
+                          size={16}
+                          aria-hidden="true"
+                        />
+
+                        {isDeleting
+                          ? 'מוחק...'
+                          : 'מחיקה'}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            },
+          )}
         </tbody>
       </table>
     </div>

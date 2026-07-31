@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import CreateUserModal from '../components/users/CreateUserModal';
+import DeleteUserModal from '../components/users/DeleteUserModal';
 import EditUserModal from '../components/users/EditUserModal';
 import UsersFilters from '../components/users/UsersFilters';
 import UsersStatistics from '../components/users/UsersStatistics';
@@ -47,7 +48,10 @@ function UsersPage() {
       'users.manage',
     );
 
-  const [filters, setFilters] =
+  const [
+    filters,
+    setFilters,
+  ] =
     useState<UsersFiltersState>(
       initialFilters,
     );
@@ -55,9 +59,18 @@ function UsersPage() {
   const [
     selectedUser,
     setSelectedUser,
-  ] = useState<UserProfile | null>(
-    null,
-  );
+  ] =
+    useState<UserProfile | null>(
+      null,
+    );
+
+  const [
+    userToDelete,
+    setUserToDelete,
+  ] =
+    useState<UserProfile | null>(
+      null,
+    );
 
   const [
     isEditModalOpen,
@@ -69,17 +82,24 @@ function UsersPage() {
     setIsCreateModalOpen,
   ] = useState(false);
 
+  const [
+    isDeleteModalOpen,
+    setIsDeleteModalOpen,
+  ] = useState(false);
+
   const {
     usersState,
     filteredUsers,
     statistics,
     updatingUserId,
+    deletingUserId,
     isCreatingUser,
     userPermissionsState,
     loadUsers,
     createUser,
     updateUser,
     toggleActiveStatus,
+    deleteUser,
     loadUserPermissions,
     saveUserPermissions,
     resetUserPermissionsState,
@@ -114,6 +134,13 @@ function UsersPage() {
         ),
     );
 
+  const isDeletingSelectedUser =
+    Boolean(
+      userToDelete &&
+        deletingUserId ===
+          userToDelete.id,
+    );
+
   const openCreateModal =
     (): void => {
       if (!canManageUsers) {
@@ -126,7 +153,11 @@ function UsersPage() {
 
   const closeCreateModal =
     (): void => {
-      if (isCreatingUser) {
+      if (
+        isCreatingUser ||
+        userPermissionsState
+          .isSaving
+      ) {
         return;
       }
 
@@ -151,8 +182,7 @@ function UsersPage() {
     ).catch(() => {
       /*
        * השגיאה נשמרת בתוך
-       * userPermissionsState ומוצגת
-       * בתוך חלון העריכה.
+       * userPermissionsState.
        */
     });
   };
@@ -166,6 +196,35 @@ function UsersPage() {
       setIsEditModalOpen(false);
       setSelectedUser(null);
       resetUserPermissionsState();
+    };
+
+  const openDeleteModal = (
+    profile: UserProfile,
+  ): void => {
+    if (!canManageUsers) {
+      return;
+    }
+
+    if (
+      profile.id ===
+      authenticatedUser?.id
+    ) {
+      return;
+    }
+
+    clearError();
+    setUserToDelete(profile);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal =
+    (): void => {
+      if (isDeletingSelectedUser) {
+        return;
+      }
+
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
     };
 
   const handleCreateUser =
@@ -229,6 +288,26 @@ function UsersPage() {
       resetUserPermissionsState();
     };
 
+  const handleDeleteUser =
+    async (
+      userId: string,
+      reason: string | null,
+    ): Promise<void> => {
+      if (!canManageUsers) {
+        throw new Error(
+          'אין לך הרשאה למחוק משתמשים.',
+        );
+      }
+
+      await deleteUser({
+        userId,
+        reason,
+      });
+
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
+    };
+
   const handleRetryPermissions =
     async (): Promise<void> => {
       if (!selectedUser) {
@@ -287,7 +366,10 @@ function UsersPage() {
               }}
               disabled={
                 usersState.isLoading ||
-                isCreatingUser
+                isCreatingUser ||
+                Boolean(
+                  deletingUserId,
+                )
               }
             >
               <RefreshCw
@@ -308,8 +390,8 @@ function UsersPage() {
         >
           יש לך הרשאת צפייה
           במשתמשים, אך אין לך
-          הרשאה ליצור, לערוך או
-          להשבית משתמשים.
+          הרשאה ליצור, לערוך,
+          להשבית או למחוק משתמשים.
         </div>
       ) : null}
 
@@ -328,7 +410,9 @@ function UsersPage() {
         inactive={
           statistics.inactive
         }
-        admins={statistics.admins}
+        admins={
+          statistics.admins
+        }
       />
 
       <UsersFilters
@@ -348,8 +432,14 @@ function UsersPage() {
         updatingUserId={
           updatingUserId
         }
+        deletingUserId={
+          deletingUserId
+        }
         onEditUser={
           openEditModal
+        }
+        onDeleteUser={
+          openDeleteModal
         }
         onToggleActiveStatus={
           handleToggleActiveStatus
@@ -423,6 +513,26 @@ function UsersPage() {
             }
             onSave={
               handleSaveUser
+            }
+          />
+
+          <DeleteUserModal
+            user={userToDelete}
+            isOpen={
+              isDeleteModalOpen
+            }
+            isDeleting={
+              isDeletingSelectedUser
+            }
+            currentUserId={
+              authenticatedUser?.id ??
+              null
+            }
+            onClose={
+              closeDeleteModal
+            }
+            onDelete={
+              handleDeleteUser
             }
           />
         </>

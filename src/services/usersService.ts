@@ -8,6 +8,9 @@ import type {
 import type {
   CreateUserInput,
   CreateUserResponse,
+  DeletedUserSummary,
+  DeleteUserInput,
+  DeleteUserResponse,
   UpdateUserProfileInput,
 } from '../types/users';
 
@@ -61,7 +64,8 @@ function mapProfileRow(
     scheduleName:
       profileRow.schedule_name,
     role: profileRow.role,
-    isActive: profileRow.is_active,
+    isActive:
+      profileRow.is_active,
     mustChangePassword:
       profileRow.must_change_password,
     lastLoginAt:
@@ -312,6 +316,77 @@ async function setUserPermissions(
     );
 }
 
+async function deleteUser(
+  input: DeleteUserInput,
+): Promise<DeletedUserSummary> {
+  const normalizedUserId =
+    input.userId.trim();
+
+  if (!normalizedUserId) {
+    throw new Error(
+      'לא התקבל מזהה משתמש למחיקה.',
+    );
+  }
+
+  const normalizedReason =
+    input.reason?.trim() || null;
+
+  const { data, error } =
+    await supabase.functions.invoke<
+      DeleteUserResponse
+    >('delete-user', {
+      body: {
+        userId:
+          normalizedUserId,
+
+        reason:
+          normalizedReason,
+      },
+    });
+
+  console.log(
+    'DELETE USER FUNCTION RESPONSE:',
+    {
+      data,
+      error,
+    },
+  );
+
+  if (error) {
+    const errorMessage =
+      await getFunctionErrorMessage(
+        error,
+      );
+
+    throw new Error(errorMessage);
+  }
+
+  if (!data) {
+    throw new Error(
+      'פונקציית המחיקה לא החזירה נתונים.',
+    );
+  }
+
+  if (data.success !== true) {
+    throw new Error(
+      'השרת לא אישר שמחיקת המשתמש הצליחה.',
+    );
+  }
+
+  if (!data.deletedUser) {
+    throw new Error(
+      'המשתמש נמחק, אך פרטי המשתמש שנמחק לא הוחזרו מהשרת.',
+    );
+  }
+
+  if (!data.auditLogged) {
+    console.warn(
+      'המשתמש נמחק, אך רישום הפעולה ביומן המערכת נכשל.',
+    );
+  }
+
+  return data.deletedUser;
+}
 export const usersService = {
   getUsers,
   createUser,
@@ -319,4 +394,5 @@ export const usersService = {
   setUserActiveStatus,
   getUserPermissions,
   setUserPermissions,
+  deleteUser,
 };
