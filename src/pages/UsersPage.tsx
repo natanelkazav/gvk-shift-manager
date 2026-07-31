@@ -171,6 +171,8 @@ function UsersPage() {
   const handleCreateUser =
     async (
       input: CreateUserInput,
+      permissions:
+        PermissionKey[],
     ): Promise<void> => {
       if (!canManageUsers) {
         throw new Error(
@@ -178,9 +180,24 @@ function UsersPage() {
         );
       }
 
-      await createUser(input);
+      const createdUser =
+        await createUser(input);
+
+      try {
+        await saveUserPermissions(
+          createdUser.id,
+          permissions,
+        );
+      } catch (error) {
+        throw new Error(
+          error instanceof Error
+            ? `המשתמש נוצר בהצלחה, אך שמירת ההרשאות נכשלה: ${error.message}`
+            : 'המשתמש נוצר בהצלחה, אך שמירת ההרשאות נכשלה.',
+        );
+      }
 
       setIsCreateModalOpen(false);
+      resetUserPermissionsState();
     };
 
   const handleSaveUser =
@@ -346,7 +363,9 @@ function UsersPage() {
               isCreateModalOpen
             }
             isSaving={
-              isCreatingUser
+              isCreatingUser ||
+              userPermissionsState
+                .isSaving
             }
             onClose={
               closeCreateModal

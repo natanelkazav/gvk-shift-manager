@@ -490,3 +490,21 @@
     transform: rotate(360deg);
   }
 }
+.create-user-permissions-count {
+  min-width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.12);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.edit-user-tab-active
+  .create-user-permissions-count {
+  background: rgba(255, 255, 255, 0.22);
+}
