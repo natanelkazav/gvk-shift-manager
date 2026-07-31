@@ -1,4 +1,7 @@
-import { RefreshCw } from 'lucide-react';
+import {
+  RefreshCw,
+  UserPlus,
+} from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -6,6 +9,7 @@ import {
   useState,
 } from 'react';
 import { useAuth } from '../auth/AuthContext';
+import CreateUserModal from '../components/users/CreateUserModal';
 import EditUserModal from '../components/users/EditUserModal';
 import UsersFilters from '../components/users/UsersFilters';
 import UsersStatistics from '../components/users/UsersStatistics';
@@ -17,6 +21,7 @@ import {
 import { usersService } from '../services/usersService';
 import type { UserProfile } from '../types/auth';
 import type {
+  CreateUserInput,
   UpdateUserProfileInput,
   UsersFilters as UsersFiltersState,
   UsersState,
@@ -67,6 +72,16 @@ function UsersPage() {
   const [
     isEditModalOpen,
     setIsEditModalOpen,
+  ] = useState(false);
+
+  const [
+    isCreateModalOpen,
+    setIsCreateModalOpen,
+  ] = useState(false);
+
+  const [
+    isCreatingUser,
+    setIsCreatingUser,
   ] = useState(false);
 
   const loadUsers =
@@ -195,6 +210,27 @@ function UsersPage() {
     };
   }, [usersState.users]);
 
+  const openCreateModal =
+    (): void => {
+      setUsersState(
+        (currentState) => ({
+          ...currentState,
+          error: null,
+        }),
+      );
+
+      setIsCreateModalOpen(true);
+    };
+
+  const closeCreateModal =
+    (): void => {
+      if (isCreatingUser) {
+        return;
+      }
+
+      setIsCreateModalOpen(false);
+    };
+
   const openEditModal = (
     profile: UserProfile,
   ): void => {
@@ -219,6 +255,30 @@ function UsersPage() {
       setSelectedUser(null);
     };
 
+  const addLocalUser = (
+    createdProfile: UserProfile,
+  ): void => {
+    setUsersState(
+      (currentState) => {
+        const updatedUsers = [
+          ...currentState.users,
+          createdProfile,
+        ].sort((firstUser, secondUser) =>
+          firstUser.displayName.localeCompare(
+            secondUser.displayName,
+            'he',
+          ),
+        );
+
+        return {
+          ...currentState,
+          users: updatedUsers,
+          error: null,
+        };
+      },
+    );
+  };
+
   const updateLocalUser = (
     updatedProfile: UserProfile,
   ): void => {
@@ -237,6 +297,47 @@ function UsersPage() {
       }),
     );
   };
+
+  const handleCreateUser =
+    async (
+      input: CreateUserInput,
+    ): Promise<void> => {
+      setIsCreatingUser(true);
+
+      setUsersState(
+        (currentState) => ({
+          ...currentState,
+          error: null,
+        }),
+      );
+
+      try {
+        const createdProfile =
+          await usersService.createUser(
+            input,
+          );
+
+        addLocalUser(createdProfile);
+
+        setIsCreateModalOpen(false);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'לא ניתן היה ליצור את המשתמש.';
+
+        setUsersState(
+          (currentState) => ({
+            ...currentState,
+            error: errorMessage,
+          }),
+        );
+
+        throw error;
+      } finally {
+        setIsCreatingUser(false);
+      }
+    };
 
   const handleSaveUser =
     async (
@@ -371,23 +472,43 @@ function UsersPage() {
         title="ניהול משתמשים"
         description="ניהול משתמשים, תפקידים והרשאות במערכת."
         actions={
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              void loadUsers();
-            }}
-            disabled={
-              usersState.isLoading
-            }
-          >
-            <RefreshCw
-              size={18}
-              aria-hidden="true"
-            />
+          <>
+            <Button
+              type="button"
+              onClick={openCreateModal}
+              disabled={
+                authenticatedProfile?.role !==
+                  'admin' ||
+                isCreatingUser
+              }
+            >
+              <UserPlus
+                size={18}
+                aria-hidden="true"
+              />
 
-            רענון
-          </Button>
+              משתמש חדש
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                void loadUsers();
+              }}
+              disabled={
+                usersState.isLoading ||
+                isCreatingUser
+              }
+            >
+              <RefreshCw
+                size={18}
+                aria-hidden="true"
+              />
+
+              רענון
+            </Button>
+          </>
         }
       />
 
@@ -438,6 +559,13 @@ function UsersPage() {
         onToggleActiveStatus={
           handleToggleActiveStatus
         }
+      />
+
+      <CreateUserModal
+        isOpen={isCreateModalOpen}
+        isSaving={isCreatingUser}
+        onClose={closeCreateModal}
+        onCreate={handleCreateUser}
       />
 
       <EditUserModal

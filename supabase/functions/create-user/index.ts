@@ -407,58 +407,67 @@ Deno.serve(async (request: Request) => {
     const now =
       new Date().toISOString();
 
-    const {
-      data: createdProfile,
-      error: createProfileError,
-    } = await adminClient
-      .from('profiles')
-      .insert({
-        id: createdAuthUserId,
-        email: normalizedEmail,
-        display_name:
-          normalizedDisplayName,
-        schedule_name:
-          normalizedScheduleName,
-        role: requestBody.role!,
-        is_active:
-          requestBody.isActive ??
-          true,
-        must_change_password:
-          requestBody
-            .mustChangePassword ??
-          true,
-        last_login_at: null,
-        created_at: now,
-        updated_at: now,
-      })
-      .select(`
-        id,
-        email,
-        display_name,
-        schedule_name,
-        role,
-        is_active,
-        must_change_password,
-        last_login_at,
-        created_at,
-        updated_at
-      `)
-      .single<ProfileDatabaseRow>();
+const {
+  data: createdProfile,
+  error: createProfileError,
+} = await adminClient
+  .from('profiles')
+  .upsert(
+    {
+      id: createdAuthUserId,
+      email: normalizedEmail,
+      display_name:
+        normalizedDisplayName,
+      schedule_name:
+        normalizedScheduleName,
+      role: requestBody.role!,
+      is_active:
+        requestBody.isActive ??
+        true,
+      must_change_password:
+        requestBody
+          .mustChangePassword ??
+        true,
+      last_login_at: null,
+      updated_at: now,
+    },
+    {
+      onConflict: 'id',
+    },
+  )
+  .select(`
+    id,
+    email,
+    display_name,
+    schedule_name,
+    role,
+    is_active,
+    must_change_password,
+    last_login_at,
+    created_at,
+    updated_at
+  `)
+  .single<ProfileDatabaseRow>();
 
-    if (
-      createProfileError ||
-      !createdProfile
-    ) {
-      await adminClient.auth.admin.deleteUser(
-        createdAuthUserId,
-      );
+if (
+  createProfileError ||
+  !createdProfile
+) {
+  console.error(
+    'CREATE PROFILE ERROR:',
+    createProfileError,
+  );
 
-      createdAuthUserId = null;
+  await adminClient.auth.admin.deleteUser(
+    createdAuthUserId,
+  );
 
-      throw new Error(
-        'חשבון ההתחברות נוצר, אך יצירת פרופיל המשתמש נכשלה.',
-      );
-    }
+  createdAuthUserId = null;
+
+  throw new Error(
+    'חשבון ההתחברות נוצר, אך יצירת פרופיל המשתמש נכשלה.',
+  );
+}
 
     return createJsonResponse(
       {
