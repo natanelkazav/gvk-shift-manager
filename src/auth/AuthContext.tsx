@@ -1,4 +1,6 @@
-import type { Session } from '@supabase/supabase-js';
+import type {
+  Session,
+} from '@supabase/supabase-js';
 import {
   createContext,
   useCallback,
@@ -10,12 +12,16 @@ import {
 } from 'react';
 import { supabase } from '../lib/supabase';
 import { authService } from '../services/authService';
+import { permissionsService } from '../services/permissionsService';
 import type {
   AuthState,
+  PermissionKey,
   SignInCredentials,
+  UserProfile,
 } from '../types/auth';
 
-interface AuthContextValue extends AuthState {
+interface AuthContextValue
+  extends AuthState {
   signIn: (
     credentials: SignInCredentials,
   ) => Promise<void>;
@@ -24,6 +30,21 @@ interface AuthContextValue extends AuthState {
 
   refreshProfile: () => Promise<void>;
 
+  refreshPermissions:
+    () => Promise<void>;
+
+  hasPermission: (
+    permission: PermissionKey,
+  ) => boolean;
+
+  hasAnyPermission: (
+    permissions: PermissionKey[],
+  ) => boolean;
+
+  hasAllPermissions: (
+    permissions: PermissionKey[],
+  ) => boolean;
+
   clearError: () => void;
 }
 
@@ -31,20 +52,26 @@ const initialAuthState: AuthState = {
   session: null,
   user: null,
   profile: null,
+  permissions: [],
   isLoading: true,
   error: null,
 };
 
+const INACTIVE_USER_MESSAGE =
+  'המשתמש אינו פעיל. יש לפנות למנהל המערכת.';
+
 const AuthContext =
-  createContext<AuthContextValue | undefined>(
-    undefined,
-  );
+  createContext<
+    AuthContextValue | undefined
+  >(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-function getErrorMessage(error: unknown): string {
+function getErrorMessage(
+  error: unknown,
+): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -52,11 +79,75 @@ function getErrorMessage(error: unknown): string {
   return 'אירעה שגיאה בלתי צפויה.';
 }
 
+function ensureProfileIsActive(
+  profile: UserProfile,
+): void {
+  if (!profile.isActive) {
+    throw new Error(
+      INACTIVE_USER_MESSAGE,
+    );
+  }
+}
+
 export function AuthProvider({
   children,
 }: AuthProviderProps) {
   const [authState, setAuthState] =
-    useState<AuthState>(initialAuthState);
+    useState<AuthState>(
+      initialAuthState,
+    );
+
+  const handleInactiveUser =
+    useCallback(
+      async (): Promise<void> => {
+        try {
+          await authService.signOut();
+        } catch (error) {
+          console.error(
+            'INACTIVE USER SIGN OUT ERROR:',
+            error,
+          );
+        }
+
+        setAuthState({
+          session: null,
+          user: null,
+          profile: null,
+          permissions: [],
+          isLoading: false,
+          error:
+            INACTIVE_USER_MESSAGE,
+        });
+      },
+      [],
+    );
+
+  const loadAuthenticatedUserData =
+    useCallback(
+      async (
+        session: Session,
+      ): Promise<{
+        profile: UserProfile;
+        permissions: PermissionKey[];
+      }> => {
+        const profile =
+          await authService.getProfile(
+            session.user.id,
+          );
+
+        ensureProfileIsActive(profile);
+
+        const permissions =
+          await permissionsService
+            .getMyPermissions();
+
+        return {
+          profile,
+          permissions,
+        };
+      },
+      [],
+    );
 
   const applySession = useCallback(
     async (
@@ -64,57 +155,76 @@ export function AuthProvider({
       showLoading = true,
     ): Promise<void> => {
       if (!session) {
-        setAuthState({
-          session: null,
-          user: null,
-          profile: null,
-          isLoading: false,
-          error: null,
-        });
+        setAuthState(
+          (currentState) => ({
+            session: null,
+            user: null,
+            profile: null,
+            permissions: [],
+            isLoading: false,
+            error:
+              currentState.error,
+          }),
+        );
 
         return;
       }
 
       if (showLoading) {
-        setAuthState((currentState) => ({
-          ...currentState,
-          session,
-          user: session.user,
-          isLoading: true,
-          error: null,
-        }));
+        setAuthState(
+          (currentState) => ({
+            ...currentState,
+            session,
+            user: session.user,
+            isLoading: true,
+            error: null,
+          }),
+        );
       }
 
       try {
-        const profile =
-          await authService.getProfile(
-            session.user.id,
+        const {
+          profile,
+          permissions,
+        } =
+          await loadAuthenticatedUserData(
+            session,
           );
-
-        if (!profile) {
-          throw new Error(
-            'לא נמצא פרופיל משתמש מתאים במערכת.',
-          );
-        }
 
         setAuthState({
           session,
           user: session.user,
           profile,
+          permissions,
           isLoading: false,
           error: null,
         });
       } catch (error) {
+        const errorMessage =
+          getErrorMessage(error);
+
+        if (
+          errorMessage ===
+          INACTIVE_USER_MESSAGE
+        ) {
+          await handleInactiveUser();
+          return;
+        }
+
         setAuthState({
           session: null,
           user: null,
           profile: null,
+          permissions: [],
           isLoading: false,
-          error: getErrorMessage(error),
+          error: errorMessage,
         });
       }
     },
-    [],
+    [
+      handleInactiveUser,
+      loadAuthenticatedUserData,
+    ],
   );
 
   useEffect(() => {
@@ -124,7 +234,8 @@ export function AuthProvider({
       async (): Promise<void> => {
         try {
           const session =
-            await authService.getCurrentSession();
+            await authService
+              .getCurrentSession();
 
           if (!isMounted) {
             return;
@@ -140,8 +251,10 @@ export function AuthProvider({
             session: null,
             user: null,
             profile: null,
+            permissions: [],
             isLoading: false,
-            error: getErrorMessage(error),
+            error:
+              getErrorMessage(error),
           });
         }
       };
@@ -150,18 +263,61 @@ export function AuthProvider({
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        window.setTimeout(() => {
-          if (isMounted) {
-            void applySession(
-              session,
-              false,
-            );
-          }
-        }, 0);
-      },
-    );
+    } =
+      supabase.auth
+        .onAuthStateChange(
+          (event, session) => {
+            window.setTimeout(() => {
+              if (!isMounted) {
+                return;
+              }
+
+              if (
+                event ===
+                  'USER_UPDATED' ||
+                event ===
+                  'TOKEN_REFRESHED'
+              ) {
+                setAuthState(
+                  (currentState) => ({
+                    ...currentState,
+                    session:
+                      session ??
+                      currentState.session,
+                    user:
+                      session?.user ??
+                      currentState.user,
+                  }),
+                );
+
+                return;
+              }
+
+              if (
+                event === 'SIGNED_OUT'
+              ) {
+                setAuthState(
+                  (currentState) => ({
+                    session: null,
+                    user: null,
+                    profile: null,
+                    permissions: [],
+                    isLoading: false,
+                    error:
+                      currentState.error,
+                  }),
+                );
+
+                return;
+              }
+
+              void applySession(
+                session,
+                false,
+              );
+            }, 0);
+          },
+        );
 
     return () => {
       isMounted = false;
@@ -171,29 +327,52 @@ export function AuthProvider({
 
   const signIn = useCallback(
     async (
-      credentials: SignInCredentials,
+      credentials:
+        SignInCredentials,
     ): Promise<void> => {
-      setAuthState((currentState) => ({
-        ...currentState,
-        isLoading: true,
-        error: null,
-      }));
+      setAuthState(
+        (currentState) => ({
+          ...currentState,
+          isLoading: true,
+          error: null,
+        }),
+      );
 
       try {
         const session =
           await authService.signIn({
-            email: credentials.email.trim(),
-            password: credentials.password,
+            email:
+              credentials.email.trim(),
+            password:
+              credentials.password,
           });
 
-        const profile =
-          await authService.getProfile(
-            session.user.id,
+        const {
+          profile: loadedProfile,
+          permissions,
+        } =
+          await loadAuthenticatedUserData(
+            session,
           );
 
-        if (!profile) {
-          throw new Error(
-            'ההתחברות הצליחה, אך לא נמצא פרופיל משתמש במערכת.',
+        let profile = loadedProfile;
+
+        try {
+          const loginTime =
+            await authService
+              .recordLogin();
+
+          profile = {
+            ...loadedProfile,
+            lastLoginAt: loginTime,
+            updatedAt: loginTime,
+          };
+        } catch (
+          recordLoginError
+        ) {
+          console.error(
+            'LOGIN TIME UPDATE ERROR:',
+            recordLoginError,
           );
         }
 
@@ -201,6 +380,7 @@ export function AuthProvider({
           session,
           user: session.user,
           profile,
+          permissions,
           isLoading: false,
           error: null,
         });
@@ -208,10 +388,19 @@ export function AuthProvider({
         const errorMessage =
           getErrorMessage(error);
 
+        if (
+          errorMessage ===
+          INACTIVE_USER_MESSAGE
+        ) {
+          await handleInactiveUser();
+          throw error;
+        }
+
         setAuthState({
           session: null,
           user: null,
           profile: null,
+          permissions: [],
           isLoading: false,
           error: errorMessage,
         });
@@ -219,16 +408,21 @@ export function AuthProvider({
         throw error;
       }
     },
-    [],
+    [
+      handleInactiveUser,
+      loadAuthenticatedUserData,
+    ],
   );
 
   const signOut = useCallback(
     async (): Promise<void> => {
-      setAuthState((currentState) => ({
-        ...currentState,
-        isLoading: true,
-        error: null,
-      }));
+      setAuthState(
+        (currentState) => ({
+          ...currentState,
+          isLoading: true,
+          error: null,
+        }),
+      );
 
       try {
         await authService.signOut();
@@ -237,15 +431,19 @@ export function AuthProvider({
           session: null,
           user: null,
           profile: null,
+          permissions: [],
           isLoading: false,
           error: null,
         });
       } catch (error) {
-        setAuthState((currentState) => ({
-          ...currentState,
-          isLoading: false,
-          error: getErrorMessage(error),
-        }));
+        setAuthState(
+          (currentState) => ({
+            ...currentState,
+            isLoading: false,
+            error:
+              getErrorMessage(error),
+          }),
+        );
 
         throw error;
       }
@@ -254,44 +452,150 @@ export function AuthProvider({
   );
 
   const refreshProfile =
-    useCallback(async (): Promise<void> => {
-      if (!authState.user) {
-        return;
-      }
+    useCallback(
+      async (): Promise<void> => {
+        const currentUser =
+          authState.user;
 
-      try {
-        const profile =
-          await authService.getProfile(
-            authState.user.id,
-          );
-
-        if (!profile) {
+        if (!currentUser) {
           throw new Error(
-            'לא נמצא פרופיל משתמש מתאים במערכת.',
+            'לא נמצאה התחברות פעילה.',
           );
         }
 
-        setAuthState((currentState) => ({
+        try {
+          const profile =
+            await authService.getProfile(
+              currentUser.id,
+            );
+
+          ensureProfileIsActive(
+            profile,
+          );
+
+          setAuthState(
+            (currentState) => ({
+              ...currentState,
+              profile,
+              isLoading: false,
+              error: null,
+            }),
+          );
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(error);
+
+          if (
+            errorMessage ===
+            INACTIVE_USER_MESSAGE
+          ) {
+            await handleInactiveUser();
+            return;
+          }
+
+          setAuthState(
+            (currentState) => ({
+              ...currentState,
+              isLoading: false,
+              error: errorMessage,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [
+        authState.user,
+        handleInactiveUser,
+      ],
+    );
+
+  const refreshPermissions =
+    useCallback(
+      async (): Promise<void> => {
+        if (!authState.user) {
+          throw new Error(
+            'לא נמצאה התחברות פעילה.',
+          );
+        }
+
+        try {
+          const permissions =
+            await permissionsService
+              .getMyPermissions();
+
+          setAuthState(
+            (currentState) => ({
+              ...currentState,
+              permissions,
+              error: null,
+            }),
+          );
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(error);
+
+          setAuthState(
+            (currentState) => ({
+              ...currentState,
+              error: errorMessage,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [authState.user],
+    );
+
+  const hasPermission =
+    useCallback(
+      (
+        permission: PermissionKey,
+      ): boolean =>
+        authState.permissions.includes(
+          permission,
+        ),
+      [authState.permissions],
+    );
+
+  const hasAnyPermission =
+    useCallback(
+      (
+        permissions:
+          PermissionKey[],
+      ): boolean =>
+        permissions.some(
+          (permission) =>
+            authState.permissions
+              .includes(permission),
+        ),
+      [authState.permissions],
+    );
+
+  const hasAllPermissions =
+    useCallback(
+      (
+        permissions:
+          PermissionKey[],
+      ): boolean =>
+        permissions.every(
+          (permission) =>
+            authState.permissions
+              .includes(permission),
+        ),
+      [authState.permissions],
+    );
+
+  const clearError =
+    useCallback((): void => {
+      setAuthState(
+        (currentState) => ({
           ...currentState,
-          profile,
           error: null,
-        }));
-      } catch (error) {
-        setAuthState((currentState) => ({
-          ...currentState,
-          error: getErrorMessage(error),
-        }));
-
-        throw error;
-      }
-    }, [authState.user]);
-
-  const clearError = useCallback(() => {
-    setAuthState((currentState) => ({
-      ...currentState,
-      error: null,
-    }));
-  }, []);
+        }),
+      );
+    }, []);
 
   const contextValue =
     useMemo<AuthContextValue>(
@@ -300,6 +604,10 @@ export function AuthProvider({
         signIn,
         signOut,
         refreshProfile,
+        refreshPermissions,
+        hasPermission,
+        hasAnyPermission,
+        hasAllPermissions,
         clearError,
       }),
       [
@@ -307,6 +615,10 @@ export function AuthProvider({
         signIn,
         signOut,
         refreshProfile,
+        refreshPermissions,
+        hasPermission,
+        hasAnyPermission,
+        hasAllPermissions,
         clearError,
       ],
     );
@@ -320,8 +632,10 @@ export function AuthProvider({
   );
 }
 
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
+export function useAuth():
+  AuthContextValue {
+  const context =
+    useContext(AuthContext);
 
   if (!context) {
     throw new Error(

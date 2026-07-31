@@ -1,4 +1,12 @@
 import {
+  useEffect,
+  useState,
+} from 'react';
+import {
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
+import {
   Badge,
   Button,
   Card,
@@ -9,7 +17,44 @@ import {
   StatCard,
 } from '../components/ui';
 
+interface DashboardLocationState {
+  accessDenied?: boolean;
+  attemptedPath?: string;
+}
+
 function DashboardPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const locationState =
+    location.state as
+      | DashboardLocationState
+      | null;
+
+  const [
+    accessDeniedMessage,
+    setAccessDeniedMessage,
+  ] = useState<string | null>(
+    locationState?.accessDenied
+      ? 'אין לך הרשאה לגשת למסך זה.'
+      : null,
+  );
+
+  useEffect(() => {
+    if (!locationState?.accessDenied) {
+      return;
+    }
+
+    navigate(location.pathname, {
+      replace: true,
+      state: null,
+    });
+  }, [
+    location.pathname,
+    locationState?.accessDenied,
+    navigate,
+  ]);
+
   return (
     <>
       <PageHeader
@@ -27,6 +72,29 @@ function DashboardPage() {
           </>
         }
       />
+
+      {accessDeniedMessage ? (
+        <div
+          className="users-error"
+          role="alert"
+        >
+          <span>
+            {accessDeniedMessage}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => {
+              setAccessDeniedMessage(
+                null,
+              );
+            }}
+            aria-label="סגירת הודעת הרשאה"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
 
       <div className="stats-grid">
         <StatCard
@@ -52,12 +120,19 @@ function DashboardPage() {
 
       <Card className="dashboard-activity-card">
         <CardHeader>
-          <CardTitle>פעילות אחרונה</CardTitle>
+          <CardTitle>
+            פעילות אחרונה
+          </CardTitle>
         </CardHeader>
 
         <CardBody>
-          <p>עדיין אין פעילות להצגה.</p>
-          <Badge>המערכת בהקמה</Badge>
+          <p>
+            עדיין אין פעילות להצגה.
+          </p>
+
+          <Badge>
+            המערכת בהקמה
+          </Badge>
         </CardBody>
       </Card>
     </>

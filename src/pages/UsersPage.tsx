@@ -3,9 +3,6 @@ import {
   UserPlus,
 } from 'lucide-react';
 import {
-  useCallback,
-  useEffect,
-  useMemo,
   useState,
 } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -18,49 +15,40 @@ import {
   Button,
   PageHeader,
 } from '../components/ui';
-import { usersService } from '../services/usersService';
-import type { UserProfile } from '../types/auth';
+import { useUsers } from '../hooks/useUsers';
+import type {
+  UserProfile,
+} from '../types/auth';
 import type {
   CreateUserInput,
   UpdateUserProfileInput,
   UsersFilters as UsersFiltersState,
-  UsersState,
 } from '../types/users';
 import '../styles/users.css';
 
-const initialUsersState: UsersState = {
-  users: [],
-  isLoading: true,
-  error: null,
-};
-
-const initialFilters: UsersFiltersState = {
-  searchTerm: '',
-  role: 'all',
-  status: 'all',
-};
+const initialFilters:
+  UsersFiltersState = {
+    searchTerm: '',
+    role: 'all',
+    status: 'all',
+  };
 
 function UsersPage() {
   const {
     user: authenticatedUser,
-    profile: authenticatedProfile,
     refreshProfile,
+    hasPermission,
   } = useAuth();
 
-  const [usersState, setUsersState] =
-    useState<UsersState>(
-      initialUsersState,
+  const canManageUsers =
+    hasPermission(
+      'users.manage',
     );
 
   const [filters, setFilters] =
     useState<UsersFiltersState>(
       initialFilters,
     );
-
-  const [
-    updatingUserId,
-    setUpdatingUserId,
-  ] = useState<string | null>(null);
 
   const [
     selectedUser,
@@ -79,146 +67,35 @@ function UsersPage() {
     setIsCreateModalOpen,
   ] = useState(false);
 
-  const [
+  const {
+    usersState,
+    filteredUsers,
+    statistics,
+    updatingUserId,
     isCreatingUser,
-    setIsCreatingUser,
-  ] = useState(false);
+    loadUsers,
+    createUser,
+    updateUser,
+    toggleActiveStatus,
+    clearError,
+  } = useUsers({
+    authenticatedUserId:
+      authenticatedUser?.id ??
+      null,
 
-  const loadUsers =
-    useCallback(async (): Promise<void> => {
-      setUsersState(
-        (currentState) => ({
-          ...currentState,
-          isLoading: true,
-          error: null,
-        }),
-      );
+    refreshAuthenticatedProfile:
+      refreshProfile,
 
-      try {
-        const users =
-          await usersService.getUsers();
-
-        setUsersState({
-          users,
-          isLoading: false,
-          error: null,
-        });
-      } catch (error) {
-        setUsersState(
-          (currentState) => ({
-            ...currentState,
-            isLoading: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : 'אירעה שגיאה בטעינת המשתמשים.',
-          }),
-        );
-      }
-    }, []);
-
-  useEffect(() => {
-    void loadUsers();
-  }, [loadUsers]);
-
-  const filteredUsers =
-    useMemo(() => {
-      const normalizedSearchTerm =
-        filters.searchTerm
-          .trim()
-          .toLowerCase();
-
-      return usersState.users.filter(
-        (profile) => {
-          const matchesSearch =
-            !normalizedSearchTerm ||
-            profile.displayName
-              .toLowerCase()
-              .includes(
-                normalizedSearchTerm,
-              ) ||
-            profile.email
-              .toLowerCase()
-              .includes(
-                normalizedSearchTerm,
-              ) ||
-            (
-              profile.scheduleName ?? ''
-            )
-              .toLowerCase()
-              .includes(
-                normalizedSearchTerm,
-              );
-
-          const matchesRole =
-            filters.role === 'all' ||
-            profile.role === filters.role;
-
-          const matchesStatus =
-            filters.status === 'all' ||
-            (
-              filters.status ===
-                'active' &&
-              profile.isActive
-            ) ||
-            (
-              filters.status ===
-                'inactive' &&
-              !profile.isActive
-            );
-
-          return (
-            matchesSearch &&
-            matchesRole &&
-            matchesStatus
-          );
-        },
-      );
-    }, [
-      filters,
-      usersState.users,
-    ]);
-
-  const statistics = useMemo(() => {
-    const activeUsers =
-      usersState.users.filter(
-        (profile) => profile.isActive,
-      ).length;
-
-    const inactiveUsers =
-      usersState.users.length -
-      activeUsers;
-
-    const adminUsers =
-      usersState.users.filter(
-        (profile) =>
-          profile.role === 'admin',
-      ).length;
-
-    return {
-      total:
-        usersState.users.length,
-
-      active:
-        activeUsers,
-
-      inactive:
-        inactiveUsers,
-
-      admins:
-        adminUsers,
-    };
-  }, [usersState.users]);
+    filters,
+  });
 
   const openCreateModal =
     (): void => {
-      setUsersState(
-        (currentState) => ({
-          ...currentState,
-          error: null,
-        }),
-      );
+      if (!canManageUsers) {
+        return;
+      }
 
+      clearError();
       setIsCreateModalOpen(true);
     };
 
@@ -234,15 +111,13 @@ function UsersPage() {
   const openEditModal = (
     profile: UserProfile,
   ): void => {
+    if (!canManageUsers) {
+      return;
+    }
+
+    clearError();
     setSelectedUser(profile);
     setIsEditModalOpen(true);
-
-    setUsersState(
-      (currentState) => ({
-        ...currentState,
-        error: null,
-      }),
-    );
   };
 
   const closeEditModal =
@@ -255,215 +130,53 @@ function UsersPage() {
       setSelectedUser(null);
     };
 
-  const addLocalUser = (
-    createdProfile: UserProfile,
-  ): void => {
-    setUsersState(
-      (currentState) => {
-        const updatedUsers = [
-          ...currentState.users,
-          createdProfile,
-        ].sort((firstUser, secondUser) =>
-          firstUser.displayName.localeCompare(
-            secondUser.displayName,
-            'he',
-          ),
-        );
-
-        return {
-          ...currentState,
-          users: updatedUsers,
-          error: null,
-        };
-      },
-    );
-  };
-
-  const updateLocalUser = (
-    updatedProfile: UserProfile,
-  ): void => {
-    setUsersState(
-      (currentState) => ({
-        ...currentState,
-        users:
-          currentState.users.map(
-            (existingProfile) =>
-              existingProfile.id ===
-              updatedProfile.id
-                ? updatedProfile
-                : existingProfile,
-          ),
-        error: null,
-      }),
-    );
-  };
-
   const handleCreateUser =
     async (
       input: CreateUserInput,
     ): Promise<void> => {
-      setIsCreatingUser(true);
-
-      setUsersState(
-        (currentState) => ({
-          ...currentState,
-          error: null,
-        }),
-      );
-
-      try {
-        const createdProfile =
-          await usersService.createUser(
-            input,
-          );
-
-        addLocalUser(createdProfile);
-
-        setIsCreateModalOpen(false);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : 'לא ניתן היה ליצור את המשתמש.';
-
-        setUsersState(
-          (currentState) => ({
-            ...currentState,
-            error: errorMessage,
-          }),
+      if (!canManageUsers) {
+        throw new Error(
+          'אין לך הרשאה ליצור משתמשים.',
         );
-
-        throw error;
-      } finally {
-        setIsCreatingUser(false);
       }
+
+      await createUser(input);
+
+      setIsCreateModalOpen(false);
     };
 
   const handleSaveUser =
     async (
       userId: string,
-      input: UpdateUserProfileInput,
+      input:
+        UpdateUserProfileInput,
     ): Promise<void> => {
-      setUpdatingUserId(userId);
+      if (!canManageUsers) {
+        throw new Error(
+          'אין לך הרשאה לערוך משתמשים.',
+        );
+      }
 
-      setUsersState(
-        (currentState) => ({
-          ...currentState,
-          error: null,
-        }),
+      await updateUser(
+        userId,
+        input,
       );
 
-      try {
-        if (
-          userId ===
-            authenticatedUser?.id &&
-          input.isActive === false
-        ) {
-          throw new Error(
-            'לא ניתן להשבית את המשתמש המחובר כעת.',
-          );
-        }
-
-        const updatedProfile =
-          await usersService.updateUser(
-            userId,
-            input,
-          );
-
-        updateLocalUser(updatedProfile);
-
-        if (
-          updatedProfile.id ===
-          authenticatedUser?.id
-        ) {
-          await refreshProfile();
-        }
-
-        setIsEditModalOpen(false);
-        setSelectedUser(null);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : 'לא ניתן היה לעדכן את המשתמש.';
-
-        setUsersState(
-          (currentState) => ({
-            ...currentState,
-            error: errorMessage,
-          }),
-        );
-
-        throw error;
-      } finally {
-        setUpdatingUserId(null);
-      }
+      setIsEditModalOpen(false);
+      setSelectedUser(null);
     };
 
   const handleToggleActiveStatus =
     async (
       profile: UserProfile,
     ): Promise<void> => {
-      if (
-        profile.id ===
-        authenticatedUser?.id
-      ) {
-        setUsersState(
-          (currentState) => ({
-            ...currentState,
-            error:
-              'לא ניתן להשבית את המשתמש המחובר כעת.',
-          }),
-        );
-
+      if (!canManageUsers) {
         return;
       }
 
-      const actionLabel =
-        profile.isActive
-          ? 'להשבית'
-          : 'להפעיל';
-
-      const confirmed =
-        window.confirm(
-          `האם אתה בטוח שברצונך ${actionLabel} את המשתמש ${profile.displayName}?`,
-        );
-
-      if (!confirmed) {
-        return;
-      }
-
-      setUpdatingUserId(profile.id);
-
-      setUsersState(
-        (currentState) => ({
-          ...currentState,
-          error: null,
-        }),
+      await toggleActiveStatus(
+        profile,
       );
-
-      try {
-        const updatedProfile =
-          await usersService
-            .setUserActiveStatus(
-              profile.id,
-              !profile.isActive,
-            );
-
-        updateLocalUser(updatedProfile);
-      } catch (error) {
-        setUsersState(
-          (currentState) => ({
-            ...currentState,
-            error:
-              error instanceof Error
-                ? error.message
-                : 'לא ניתן היה לעדכן את המשתמש.',
-          }),
-        );
-      } finally {
-        setUpdatingUserId(null);
-      }
     };
 
   return (
@@ -473,22 +186,24 @@ function UsersPage() {
         description="ניהול משתמשים, תפקידים והרשאות במערכת."
         actions={
           <>
-            <Button
-              type="button"
-              onClick={openCreateModal}
-              disabled={
-                authenticatedProfile?.role !==
-                  'admin' ||
-                isCreatingUser
-              }
-            >
-              <UserPlus
-                size={18}
-                aria-hidden="true"
-              />
+            {canManageUsers ? (
+              <Button
+                type="button"
+                onClick={
+                  openCreateModal
+                }
+                disabled={
+                  isCreatingUser
+                }
+              >
+                <UserPlus
+                  size={18}
+                  aria-hidden="true"
+                />
 
-              משתמש חדש
-            </Button>
+                משתמש חדש
+              </Button>
+            ) : null}
 
             <Button
               type="button"
@@ -512,14 +227,15 @@ function UsersPage() {
         }
       />
 
-      {authenticatedProfile?.role !==
-      'admin' ? (
+      {!canManageUsers ? (
         <div
           className="users-error"
-          role="alert"
+          role="status"
         >
-          מסך זה מיועד למנהלי מערכת
-          בלבד.
+          יש לך הרשאת צפייה
+          במשתמשים, אך אין לך
+          הרשאה ליצור, לערוך או
+          להשבית משתמשים.
         </div>
       ) : null}
 
@@ -535,7 +251,9 @@ function UsersPage() {
       <UsersStatistics
         total={statistics.total}
         active={statistics.active}
-        inactive={statistics.inactive}
+        inactive={
+          statistics.inactive
+        }
         admins={statistics.admins}
       />
 
@@ -550,38 +268,60 @@ function UsersPage() {
           usersState.isLoading
         }
         currentUserId={
-          authenticatedUser?.id ?? null
+          authenticatedUser?.id ??
+          null
         }
         updatingUserId={
           updatingUserId
         }
-        onEditUser={openEditModal}
+        onEditUser={
+          openEditModal
+        }
         onToggleActiveStatus={
           handleToggleActiveStatus
         }
       />
 
-      <CreateUserModal
-        isOpen={isCreateModalOpen}
-        isSaving={isCreatingUser}
-        onClose={closeCreateModal}
-        onCreate={handleCreateUser}
-      />
+      {canManageUsers ? (
+        <>
+          <CreateUserModal
+            isOpen={
+              isCreateModalOpen
+            }
+            isSaving={
+              isCreatingUser
+            }
+            onClose={
+              closeCreateModal
+            }
+            onCreate={
+              handleCreateUser
+            }
+          />
 
-      <EditUserModal
-        user={selectedUser}
-        isOpen={isEditModalOpen}
-        isSaving={Boolean(
-          selectedUser &&
-            updatingUserId ===
-              selectedUser.id,
-        )}
-        currentUserId={
-          authenticatedUser?.id ?? null
-        }
-        onClose={closeEditModal}
-        onSave={handleSaveUser}
-      />
+          <EditUserModal
+            user={selectedUser}
+            isOpen={
+              isEditModalOpen
+            }
+            isSaving={Boolean(
+              selectedUser &&
+                updatingUserId ===
+                  selectedUser.id,
+            )}
+            currentUserId={
+              authenticatedUser?.id ??
+              null
+            }
+            onClose={
+              closeEditModal
+            }
+            onSave={
+              handleSaveUser
+            }
+          />
+        </>
+      ) : null}
     </section>
   );
 }

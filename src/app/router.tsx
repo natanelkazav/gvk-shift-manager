@@ -1,10 +1,12 @@
 import {
   createBrowserRouter,
 } from 'react-router-dom';
+import PermissionRoute from '../auth/PermissionRoute';
 import ProtectedRoute from '../auth/ProtectedRoute';
 import PublicOnlyRoute from '../auth/PublicOnlyRoute';
 import AppLayout from '../layouts/AppLayout';
 import ArchivePage from '../pages/ArchivePage';
+import ChangePasswordPage from '../pages/ChangePasswordPage';
 import DashboardPage from '../pages/DashboardPage';
 import DriverSchedulePage from '../pages/DriverSchedulePage';
 import LoginPage from '../pages/LoginPage';
@@ -31,6 +33,12 @@ export const router =
       element: <ProtectedRoute />,
       children: [
         {
+          path: '/change-password',
+          element: (
+            <ChangePasswordPage />
+          ),
+        },
+        {
           path: '/',
           element: <AppLayout />,
           children: [
@@ -38,42 +46,135 @@ export const router =
               index: true,
               element: <DashboardPage />,
             },
+
             {
-              path: 'schedule',
-              element: <SchedulePage />,
-            },
-            {
-              path: 'driver-schedule',
               element: (
-                <DriverSchedulePage />
+                <PermissionRoute
+                  permission="schedule.view"
+                />
               ),
+              children: [
+                {
+                  path: 'schedule',
+                  element: (
+                    <SchedulePage />
+                  ),
+                },
+              ],
             },
+
             {
-              path: 'users',
-              element: <UsersPage />,
-            },
-            {
-              path: 'notifications',
               element: (
-                <NotificationsPage />
+                <PermissionRoute
+                  permission="driver_schedule.view"
+                />
               ),
+              children: [
+                {
+                  path:
+                    'driver-schedule',
+                  element: (
+                    <DriverSchedulePage />
+                  ),
+                },
+              ],
             },
+
             {
-              path: 'statistics',
-              element: <StatisticsPage />,
+              element: (
+                <PermissionRoute
+                  permission="users.view"
+                />
+              ),
+              children: [
+                {
+                  path: 'users',
+                  element: <UsersPage />,
+                },
+              ],
             },
+
             {
-              path: 'shift-swaps',
-              element: <ShiftSwapsPage />,
+              element: (
+                <PermissionRoute
+                  permission="settings.view"
+                />
+              ),
+              children: [
+                {
+                  path: 'settings',
+                  element: (
+                    <SettingsPage />
+                  ),
+                },
+              ],
             },
+
             {
-              path: 'archive',
-              element: <ArchivePage />,
+              element: (
+                <PermissionRoute
+                  permission="notifications.view"
+                />
+              ),
+              children: [
+                {
+                  path:
+                    'notifications',
+                  element: (
+                    <NotificationsPage />
+                  ),
+                },
+              ],
             },
+
             {
-              path: 'settings',
-              element: <SettingsPage />,
+              element: (
+                <PermissionRoute
+                  permission="statistics.view"
+                />
+              ),
+              children: [
+                {
+                  path: 'statistics',
+                  element: (
+                    <StatisticsPage />
+                  ),
+                },
+              ],
             },
+
+            {
+              element: (
+                <PermissionRoute
+                  permission="shift_swaps.view"
+                />
+              ),
+              children: [
+                {
+                  path: 'shift-swaps',
+                  element: (
+                    <ShiftSwapsPage />
+                  ),
+                },
+              ],
+            },
+
+            {
+              element: (
+                <PermissionRoute
+                  permission="archive.view"
+                />
+              ),
+              children: [
+                {
+                  path: 'archive',
+                  element: (
+                    <ArchivePage />
+                  ),
+                },
+              ],
+            },
+
             {
               path: '*',
               element: <NotFoundPage />,

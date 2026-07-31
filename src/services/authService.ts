@@ -25,14 +25,21 @@ function mapProfileRow(
   return {
     id: profileRow.id,
     email: profileRow.email,
-    displayName: profileRow.display_name,
-    scheduleName: profileRow.schedule_name,
+    displayName:
+      profileRow.display_name,
+    scheduleName:
+      profileRow.schedule_name,
     role: profileRow.role,
-    isActive: profileRow.is_active,
-    mustChangePassword: profileRow.must_change_password,
-    lastLoginAt: profileRow.last_login_at,
-    createdAt: profileRow.created_at,
-    updatedAt: profileRow.updated_at,
+    isActive:
+      profileRow.is_active,
+    mustChangePassword:
+      profileRow.must_change_password,
+    lastLoginAt:
+      profileRow.last_login_at,
+    createdAt:
+      profileRow.created_at,
+    updatedAt:
+      profileRow.updated_at,
   };
 }
 
@@ -40,13 +47,15 @@ async function signIn({
   email,
   password,
 }: SignInCredentials): Promise<Session> {
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedEmail =
+    email.trim().toLowerCase();
 
   const { data, error } =
-    await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
+    await supabase.auth
+      .signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
 
   if (error) {
     throw new Error(
@@ -64,14 +73,18 @@ async function signIn({
 }
 
 async function signOut(): Promise<void> {
-  const { error } = await supabase.auth.signOut();
+  const { error } =
+    await supabase.auth.signOut();
 
   if (error) {
-    throw new Error('לא ניתן היה להתנתק מהמערכת.');
+    throw new Error(
+      'לא ניתן היה להתנתק מהמערכת.',
+    );
   }
 }
 
-async function getCurrentSession(): Promise<Session | null> {
+async function getCurrentSession():
+  Promise<Session | null> {
   const { data, error } =
     await supabase.auth.getSession();
 
@@ -87,22 +100,23 @@ async function getCurrentSession(): Promise<Session | null> {
 async function getProfile(
   userId: string,
 ): Promise<UserProfile> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select(`
-      id,
-      email,
-      display_name,
-      schedule_name,
-      role,
-      is_active,
-      must_change_password,
-      last_login_at,
-      created_at,
-      updated_at
-    `)
-    .eq('id', userId)
-    .single<ProfileDatabaseRow>();
+  const { data, error } =
+    await supabase
+      .from('profiles')
+      .select(`
+        id,
+        email,
+        display_name,
+        schedule_name,
+        role,
+        is_active,
+        must_change_password,
+        last_login_at,
+        created_at,
+        updated_at
+      `)
+      .eq('id', userId)
+      .single<ProfileDatabaseRow>();
 
   if (error) {
     throw new Error(
@@ -110,17 +124,146 @@ async function getProfile(
     );
   }
 
-  const profile = mapProfileRow(data);
+  return mapProfileRow(data);
+}
+async function recordLogin():
+  Promise<string> {
+  const {
+    data,
+    error,
+  } = await supabase.rpc(
+    'record_user_login',
+  );
 
-  if (!profile.isActive) {
-    await supabase.auth.signOut();
+  if (error) {
+    console.error(
+      'RECORD USER LOGIN ERROR:',
+      error,
+    );
 
     throw new Error(
-      'המשתמש אינו פעיל. יש לפנות למנהל המערכת.',
+      'לא ניתן היה לעדכן את זמן ההתחברות האחרון.',
     );
   }
 
-  return profile;
+  if (
+    typeof data !== 'string' ||
+    !data
+  ) {
+    throw new Error(
+      'השרת לא החזיר זמן התחברות תקין.',
+    );
+  }
+
+  return data;
+}
+async function changePassword(
+  userId: string,
+  newPassword: string,
+): Promise<void> {
+  const normalizedPassword =
+    newPassword.trim();
+
+  if (normalizedPassword.length < 8) {
+    throw new Error(
+      'הסיסמה החדשה חייבת להכיל לפחות שמונה תווים.',
+    );
+  }
+
+  const {
+    data: {
+      user: authenticatedUser,
+    },
+    error: getUserError,
+  } = await supabase.auth.getUser();
+
+  if (
+    getUserError ||
+    !authenticatedUser
+  ) {
+    throw new Error(
+      'לא נמצאה התחברות פעילה. יש להתחבר מחדש.',
+    );
+  }
+
+  if (
+    authenticatedUser.id !== userId
+  ) {
+    throw new Error(
+      'לא ניתן לעדכן סיסמה עבור משתמש אחר.',
+    );
+  }
+
+  const {
+    error: passwordUpdateError,
+  } = await supabase.auth.updateUser({
+    password: normalizedPassword,
+  });
+
+  if (passwordUpdateError) {
+    console.error(
+      'PASSWORD UPDATE ERROR:',
+      passwordUpdateError,
+    );
+
+    throw new Error(
+      'לא ניתן היה לעדכן את הסיסמה. ודא שהסיסמה עומדת בדרישות המערכת.',
+    );
+  }
+
+  const {
+    data: completionResult,
+    error: completionError,
+  } = await supabase.rpc(
+    'complete_initial_password_change',
+  );
+
+  if (
+    completionError ||
+    completionResult !== true
+  ) {
+    console.error(
+      'PASSWORD CHANGE COMPLETION ERROR:',
+      completionError,
+    );
+
+    throw new Error(
+      'הסיסמה עודכנה, אך לא ניתן היה להשלים את תהליך שינוי הסיסמה.',
+    );
+  }
+
+  const {
+    data: updatedProfile,
+    error: verificationError,
+  } = await supabase
+    .from('profiles')
+    .select('must_change_password')
+    .eq('id', userId)
+    .single<{
+      must_change_password: boolean;
+    }>();
+
+  if (
+    verificationError ||
+    !updatedProfile
+  ) {
+    console.error(
+      'PROFILE VERIFICATION ERROR:',
+      verificationError,
+    );
+
+    throw new Error(
+      'הסיסמה עודכנה, אך לא ניתן היה לאמת את פרופיל המשתמש.',
+    );
+  }
+
+  if (
+    updatedProfile.must_change_password
+  ) {
+    throw new Error(
+      'הסיסמה עודכנה, אך המשתמש עדיין מסומן כמי שנדרש לשנות סיסמה.',
+    );
+  }
 }
 
 export const authService = {
@@ -128,4 +271,6 @@ export const authService = {
   signOut,
   getCurrentSession,
   getProfile,
+  recordLogin,
+  changePassword,
 };

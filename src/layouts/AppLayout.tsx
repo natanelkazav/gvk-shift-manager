@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import {
+  useMemo,
   useState,
 } from 'react';
 import {
@@ -20,6 +21,9 @@ import {
   Outlet,
 } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import type {
+  PermissionKey,
+} from '../types/auth';
 import '../styles/layout.css';
 
 interface NavigationItem {
@@ -27,6 +31,7 @@ interface NavigationItem {
   path: string;
   end?: boolean;
   icon: typeof LayoutDashboard;
+  permission: PermissionKey;
 }
 
 const navigationItems: NavigationItem[] = [
@@ -35,46 +40,59 @@ const navigationItems: NavigationItem[] = [
     path: '/',
     end: true,
     icon: LayoutDashboard,
+    permission: 'dashboard.view',
   },
   {
     label: 'שיבוץ מוקדנים',
     path: '/schedule',
     icon: CalendarDays,
+    permission: 'schedule.view',
   },
   {
     label: 'לוח כוננים',
     path: '/driver-schedule',
     icon: Car,
+    permission:
+      'driver_schedule.view',
   },
   {
     label: 'ניהול משתמשים',
     path: '/users',
     icon: Users,
+    permission: 'users.view',
   },
   {
     label: 'התראות',
     path: '/notifications',
     icon: Bell,
+    permission:
+      'notifications.view',
   },
   {
     label: 'סטטיסטיקות',
     path: '/statistics',
     icon: BarChart3,
+    permission:
+      'statistics.view',
   },
   {
     label: 'החלפות משמרת',
     path: '/shift-swaps',
     icon: Repeat2,
+    permission:
+      'shift_swaps.view',
   },
   {
     label: 'ארכיון',
     path: '/archive',
     icon: Archive,
+    permission: 'archive.view',
   },
   {
     label: 'הגדרות',
     path: '/settings',
     icon: Settings,
+    permission: 'settings.view',
   },
 ];
 
@@ -102,37 +120,55 @@ function getInitial(
 function AppLayout() {
   const {
     profile,
+    hasPermission,
     signOut,
   } = useAuth();
 
-  const [isSidebarOpen, setIsSidebarOpen] =
-    useState(false);
+  const [
+    isSidebarOpen,
+    setIsSidebarOpen,
+  ] = useState(false);
 
-  const [isSigningOut, setIsSigningOut] =
-    useState(false);
+  const [
+    isSigningOut,
+    setIsSigningOut,
+  ] = useState(false);
 
-  const closeSidebar = () => {
+  const visibleNavigationItems =
+    useMemo(() => {
+      return navigationItems.filter(
+        (item) =>
+          hasPermission(
+            item.permission,
+          ),
+      );
+    }, [hasPermission]);
+
+  const closeSidebar = (): void => {
     setIsSidebarOpen(false);
   };
 
-  const toggleSidebar = () => {
+  const toggleSidebar = (): void => {
     setIsSidebarOpen(
-      (currentValue) => !currentValue,
+      (currentValue) =>
+        !currentValue,
     );
   };
 
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
+  const handleSignOut =
+    async (): Promise<void> => {
+      setIsSigningOut(true);
 
-    try {
-      await signOut();
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
+      try {
+        await signOut();
+      } finally {
+        setIsSigningOut(false);
+      }
+    };
 
   const displayName =
-    profile?.displayName ?? 'משתמש';
+    profile?.displayName ??
+    'משתמש';
 
   const roleLabel = profile
     ? roleLabels[profile.role]
@@ -166,7 +202,8 @@ function AppLayout() {
             </strong>
 
             <span>
-              מערכת ניהול ושיבוץ משמרות
+              מערכת ניהול ושיבוץ
+              משמרות
             </span>
           </div>
 
@@ -187,7 +224,7 @@ function AppLayout() {
           className="app-navigation"
           aria-label="ניווט ראשי"
         >
-          {navigationItems.map(
+          {visibleNavigationItems.map(
             (item) => {
               const Icon = item.icon;
 
@@ -212,7 +249,9 @@ function AppLayout() {
                     aria-hidden="true"
                   />
 
-                  <span>{item.label}</span>
+                  <span>
+                    {item.label}
+                  </span>
                 </NavLink>
               );
             },
@@ -270,7 +309,9 @@ function AppLayout() {
               className="app-user-avatar"
               aria-hidden="true"
             >
-              {getInitial(displayName)}
+              {getInitial(
+                displayName,
+              )}
             </div>
 
             <div className="app-user-details">
