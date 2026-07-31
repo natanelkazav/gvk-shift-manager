@@ -2,6 +2,7 @@ import {
   KeyRound,
   LoaderCircle,
   RefreshCw,
+  RotateCcw,
   Save,
   UserCog,
   UserRound,
@@ -9,11 +10,20 @@ import {
 } from 'lucide-react';
 import {
   useEffect,
+  useMemo,
   useState,
   type FormEvent,
 } from 'react';
-import { Button, Input } from '../ui';
+import {
+  Button,
+  Input,
+} from '../ui';
 import UserPermissionsTab from './UserPermissionsTab';
+import {
+  arePermissionListsEqual,
+  getDefaultPermissionsForRole,
+  ROLE_LABELS,
+} from '../../config/defaultRolePermissions';
 import type {
   PermissionKey,
   UserProfile,
@@ -46,8 +56,10 @@ interface EditUserModalProps {
 
   onSave: (
     userId: string,
-    input: UpdateUserProfileInput,
-    permissions: PermissionKey[],
+    input:
+      UpdateUserProfileInput,
+    permissions:
+      PermissionKey[],
   ) => Promise<void>;
 }
 
@@ -62,17 +74,6 @@ interface EditUserFormState {
 type EditUserTab =
   | 'details'
   | 'permissions';
-
-const roleLabels: Record<
-  UserRole,
-  string
-> = {
-  admin: 'מנהל מערכת',
-  manager: 'מנהלת',
-  dispatcher: 'מוקדן',
-  on_call: 'כונן',
-  viewer: 'צפייה בלבד',
-};
 
 function createFormState(
   user: UserProfile,
@@ -139,6 +140,13 @@ function EditUserModal({
   );
 
   const [
+    permissionsNotice,
+    setPermissionsNotice,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
     isRetryingPermissions,
     setIsRetryingPermissions,
   ] = useState(false);
@@ -154,6 +162,7 @@ function EditUserModal({
 
     setSelectedPermissions([]);
     setFormError(null);
+    setPermissionsNotice(null);
     setIsRetryingPermissions(
       false,
     );
@@ -172,6 +181,8 @@ function EditUserModal({
     setSelectedPermissions(
       permissions,
     );
+
+    setPermissionsNotice(null);
   }, [
     isOpen,
     isPermissionsLoading,
@@ -228,6 +239,30 @@ function EditUserModal({
     onClose,
   ]);
 
+  const defaultPermissions =
+    useMemo<PermissionKey[]>(
+      () =>
+        formState
+          ? getDefaultPermissionsForRole(
+              formState.role,
+            )
+          : [],
+      [formState],
+    );
+
+  const usesDefaultPermissions =
+    useMemo(
+      () =>
+        arePermissionListsEqual(
+          selectedPermissions,
+          defaultPermissions,
+        ),
+      [
+        selectedPermissions,
+        defaultPermissions,
+      ],
+    );
+
   if (
     !isOpen ||
     !user ||
@@ -283,7 +318,8 @@ function EditUserModal({
     };
 
   const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>,
+    event:
+      FormEvent<HTMLFormElement>,
   ): Promise<void> => {
     event.preventDefault();
 
@@ -361,6 +397,51 @@ function EditUserModal({
     setActiveTab(tab);
   };
 
+  const handleRoleChange = (
+    nextRole: UserRole,
+  ): void => {
+    const previousRole =
+      formState.role;
+
+    setFormState(
+      (currentState) =>
+        currentState
+          ? {
+              ...currentState,
+              role: nextRole,
+            }
+          : currentState,
+    );
+
+    setFormError(null);
+
+    if (
+      previousRole !== nextRole
+    ) {
+      setPermissionsNotice(
+        `התפקיד שונה ל־${ROLE_LABELS[nextRole]}. ההרשאות הקיימות לא שונו. ניתן לעבור לטאב ההרשאות ולהחיל את ברירת המחדל של התפקיד החדש.`,
+      );
+    }
+  };
+
+  const handleApplyRoleDefaults =
+    (): void => {
+      const nextPermissions =
+        getDefaultPermissionsForRole(
+          formState.role,
+        );
+
+      setSelectedPermissions(
+        nextPermissions,
+      );
+
+      setFormError(null);
+
+      setPermissionsNotice(
+        `הרשאות ברירת המחדל של התפקיד "${ROLE_LABELS[formState.role]}" הוחלו. השינוי יישמר רק לאחר לחיצה על "שמירת שינויים".`,
+      );
+    };
+
   const handleRetryPermissions =
     async (): Promise<void> => {
       if (
@@ -372,6 +453,7 @@ function EditUserModal({
 
       setIsRetryingPermissions(true);
       setFormError(null);
+      setPermissionsNotice(null);
 
       try {
         await onRetryPermissions();
@@ -534,6 +616,15 @@ function EditUserModal({
             </div>
           ) : null}
 
+          {permissionsNotice ? (
+            <div
+              className="edit-user-current-user-note"
+              role="status"
+            >
+              {permissionsNotice}
+            </div>
+          ) : null}
+
           {activeTab ===
           'details' ? (
             <div
@@ -624,28 +715,15 @@ function EditUserModal({
                     onChange={(
                       event,
                     ) => {
-                      setFormState(
-                        (
-                          currentState,
-                        ) =>
-                          currentState
-                            ? {
-                                ...currentState,
-
-                                role:
-                                  event
-                                    .target
-                                    .value as UserRole,
-                              }
-                            : currentState,
+                      handleRoleChange(
+                        event.target
+                          .value as UserRole,
                       );
-
-                      setFormError(null);
                     }}
                   >
                     {(
                       Object.entries(
-                        roleLabels,
+                        ROLE_LABELS,
                       ) as Array<
                         [
                           UserRole,
@@ -843,23 +921,72 @@ function EditUserModal({
                   </Button>
                 </div>
               ) : (
-                <UserPermissionsTab
-                  selectedPermissions={
-                    selectedPermissions
-                  }
-                  isDisabled={
-                    isSaving
-                  }
-                  onChange={(
-                    nextPermissions,
-                  ) => {
-                    setSelectedPermissions(
-                      nextPermissions,
-                    );
+                <>
+                  <div className="edit-user-current-user-note">
+                    <strong>
+                      ברירת מחדל לתפקיד:
+                      {' '}
+                      {
+                        ROLE_LABELS[
+                          formState.role
+                        ]
+                      }
+                    </strong>
 
-                    setFormError(null);
-                  }}
-                />
+                    <div>
+                      {usesDefaultPermissions
+                        ? 'ההרשאות הנוכחיות תואמות לברירת המחדל של התפקיד.'
+                        : 'ההרשאות הנוכחיות מותאמות אישית ואינן תואמות במלואן לברירת המחדל של התפקיד.'}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop:
+                          '12px',
+                      }}
+                    >
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={
+                          isSaving ||
+                          usesDefaultPermissions
+                        }
+                        onClick={
+                          handleApplyRoleDefaults
+                        }
+                      >
+                        <RotateCcw
+                          size={17}
+                          aria-hidden="true"
+                        />
+
+                        החלת ברירת המחדל
+                      </Button>
+                    </div>
+                  </div>
+
+                  <UserPermissionsTab
+                    selectedPermissions={
+                      selectedPermissions
+                    }
+                    isDisabled={
+                      isSaving
+                    }
+                    onChange={(
+                      nextPermissions,
+                    ) => {
+                      setSelectedPermissions(
+                        nextPermissions,
+                      );
+
+                      setFormError(null);
+                      setPermissionsNotice(
+                        null,
+                      );
+                    }}
+                  />
+                </>
               )}
             </div>
           )}
