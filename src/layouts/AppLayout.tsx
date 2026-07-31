@@ -5,14 +5,21 @@ import {
   CalendarDays,
   Car,
   LayoutDashboard,
+  LogOut,
   Menu,
   Repeat2,
   Settings,
   Users,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import {
+  useState,
+} from 'react';
+import {
+  NavLink,
+  Outlet,
+} from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 import '../styles/layout.css';
 
 interface NavigationItem {
@@ -71,16 +78,65 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
+const roleLabels = {
+  admin: 'מנהל מערכת',
+  manager: 'מנהל מוקד',
+  dispatcher: 'מוקדן',
+  on_call: 'כונן',
+  viewer: 'צפייה בלבד',
+} as const;
+
+function getInitial(
+  displayName: string,
+): string {
+  const normalizedName =
+    displayName.trim();
+
+  if (!normalizedName) {
+    return '?';
+  }
+
+  return normalizedName.charAt(0);
+}
+
 function AppLayout() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const {
+    profile,
+    signOut,
+  } = useAuth();
+
+  const [isSidebarOpen, setIsSidebarOpen] =
+    useState(false);
+
+  const [isSigningOut, setIsSigningOut] =
+    useState(false);
 
   const closeSidebar = () => {
     setIsSidebarOpen(false);
   };
 
   const toggleSidebar = () => {
-    setIsSidebarOpen((currentValue) => !currentValue);
+    setIsSidebarOpen(
+      (currentValue) => !currentValue,
+    );
   };
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+
+    try {
+      await signOut();
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  const displayName =
+    profile?.displayName ?? 'משתמש';
+
+  const roleLabel = profile
+    ? roleLabels[profile.role]
+    : '';
 
   return (
     <div className="app-layout">
@@ -94,12 +150,24 @@ function AppLayout() {
       ) : null}
 
       <aside
-        className={`app-sidebar ${isSidebarOpen ? 'app-sidebar-open' : ''}`}
+        className={[
+          'app-sidebar',
+          isSidebarOpen
+            ? 'app-sidebar-open'
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
         <div className="app-sidebar-header">
           <div className="app-logo">
-            <strong>GVK Shift Manager</strong>
-            <span>מערכת ניהול ושיבוץ משמרות</span>
+            <strong>
+              GVK Shift Manager
+            </strong>
+
+            <span>
+              מערכת ניהול ושיבוץ משמרות
+            </span>
           </div>
 
           <button
@@ -108,38 +176,70 @@ function AppLayout() {
             aria-label="סגירת התפריט"
             onClick={closeSidebar}
           >
-            <X size={22} aria-hidden="true" />
+            <X
+              size={22}
+              aria-hidden="true"
+            />
           </button>
         </div>
 
-        <nav className="app-navigation" aria-label="ניווט ראשי">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
+        <nav
+          className="app-navigation"
+          aria-label="ניווט ראשי"
+        >
+          {navigationItems.map(
+            (item) => {
+              const Icon = item.icon;
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.end}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'navigation-link navigation-link-active'
-                    : 'navigation-link'
-                }
-                onClick={closeSidebar}
-              >
-                <Icon
-                  className="navigation-link-icon"
-                  size={20}
-                  strokeWidth={2}
-                  aria-hidden="true"
-                />
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.end}
+                  className={({
+                    isActive,
+                  }) =>
+                    isActive
+                      ? 'navigation-link navigation-link-active'
+                      : 'navigation-link'
+                  }
+                  onClick={closeSidebar}
+                >
+                  <Icon
+                    className="navigation-link-icon"
+                    size={20}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
 
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
+                  <span>{item.label}</span>
+                </NavLink>
+              );
+            },
+          )}
         </nav>
+
+        <div className="sidebar-footer">
+          <button
+            type="button"
+            className="sidebar-sign-out-button"
+            disabled={isSigningOut}
+            onClick={() => {
+              void handleSignOut();
+            }}
+          >
+            <LogOut
+              size={20}
+              aria-hidden="true"
+            />
+
+            <span>
+              {isSigningOut
+                ? 'מתנתק...'
+                : 'התנתקות'}
+            </span>
+          </button>
+        </div>
       </aside>
 
       <div className="app-content-wrapper">
@@ -149,23 +249,38 @@ function AppLayout() {
               type="button"
               className="sidebar-menu-button"
               aria-label="פתיחת תפריט הניווט"
-              aria-expanded={isSidebarOpen}
+              aria-expanded={
+                isSidebarOpen
+              }
               onClick={toggleSidebar}
             >
-              <Menu size={24} aria-hidden="true" />
+              <Menu
+                size={24}
+                aria-hidden="true"
+              />
             </button>
 
-            <span className="app-header-brand">מערכת ניהול משמרות</span>
+            <span className="app-header-brand">
+              מערכת ניהול משמרות
+            </span>
           </div>
 
           <div className="app-user">
-            <div className="app-user-avatar" aria-hidden="true">
-              נ
+            <div
+              className="app-user-avatar"
+              aria-hidden="true"
+            >
+              {getInitial(displayName)}
             </div>
 
             <div className="app-user-details">
-              <span className="app-user-name">נתנאל</span>
-              <span className="app-user-role">מנהל מערכת</span>
+              <span className="app-user-name">
+                {displayName}
+              </span>
+
+              <span className="app-user-role">
+                {roleLabel}
+              </span>
             </div>
           </div>
         </header>
