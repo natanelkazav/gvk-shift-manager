@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   Repeat2,
+  ScrollText,
   Settings,
   Users,
   X,
@@ -61,6 +62,12 @@ const navigationItems: NavigationItem[] = [
     icon: Users,
     permission: 'users.view',
   },
+  {
+  label: 'יומן מערכת',
+  path: '/audit',
+  icon: ScrollText,
+  permission: 'audit.view',
+},
   {
     label: 'התראות',
     path: '/notifications',

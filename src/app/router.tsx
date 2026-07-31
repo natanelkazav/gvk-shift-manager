@@ -17,6 +17,7 @@ import SettingsPage from '../pages/SettingsPage';
 import ShiftSwapsPage from '../pages/ShiftSwapsPage';
 import StatisticsPage from '../pages/StatisticsPage';
 import UsersPage from '../pages/UsersPage';
+import AuditLogPage from '../pages/AuditLogPage';
 
 export const router =
   createBrowserRouter([
@@ -46,6 +47,19 @@ export const router =
               index: true,
               element: <DashboardPage />,
             },
+            {
+            element: (
+              <PermissionRoute
+                permission="audit.view"
+              />
+            ),
+            children: [
+              {
+                path: 'audit',
+                element: <AuditLogPage />,
+              },
+            ],
+          },
 
             {
               element: (

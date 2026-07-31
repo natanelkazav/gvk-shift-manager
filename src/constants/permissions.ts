@@ -108,6 +108,25 @@ export const permissionGroups:
       ],
     },
     {
+  id: 'audit',
+
+  title: 'יומן מערכת',
+
+  description:
+    'צפייה ביומן הפעולות שבוצעו במערכת.',
+
+  permissions: [
+    {
+      key: 'audit.view',
+
+      label: 'צפייה ביומן מערכת',
+
+      description:
+        'מאפשר לצפות בכל פעולות הניהול שבוצעו במערכת.',
+    },
+  ],
+},
+    {
       id: 'shift-swaps',
       title: 'החלפות משמרת',
       description:

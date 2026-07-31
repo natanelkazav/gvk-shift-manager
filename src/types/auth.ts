@@ -24,6 +24,7 @@ export type PermissionKey =
   | 'archive.view'
   | 'users.view'
   | 'users.manage'
+  | 'audit.view'
   | 'settings.view'
   | 'settings.manage';
 

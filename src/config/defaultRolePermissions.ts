@@ -19,6 +19,7 @@ export const ALL_PERMISSION_KEYS:
     'users.view',
     'users.manage',
     'settings.view',
+    'audit.view',
     'settings.manage',
   ];
 
