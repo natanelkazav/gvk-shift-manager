@@ -1,7 +1,4 @@
-import {
-  RefreshCw,
-  Search,
-} from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import {
   useCallback,
   useEffect,
@@ -10,21 +7,18 @@ import {
 } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import EditUserModal from '../components/users/EditUserModal';
+import UsersFilters from '../components/users/UsersFilters';
 import UsersStatistics from '../components/users/UsersStatistics';
 import UsersTable from '../components/users/UsersTable';
 import {
   Button,
-  Input,
   PageHeader,
 } from '../components/ui';
 import { usersService } from '../services/usersService';
-import type {
-  UserProfile,
-  UserRole,
-} from '../types/auth';
+import type { UserProfile } from '../types/auth';
 import type {
   UpdateUserProfileInput,
-  UsersFilters,
+  UsersFilters as UsersFiltersState,
   UsersState,
 } from '../types/users';
 import '../styles/users.css';
@@ -35,7 +29,7 @@ const initialUsersState: UsersState = {
   error: null,
 };
 
-const initialFilters: UsersFilters = {
+const initialFilters: UsersFiltersState = {
   searchTerm: '',
   role: 'all',
   status: 'all',
@@ -54,7 +48,7 @@ function UsersPage() {
     );
 
   const [filters, setFilters] =
-    useState<UsersFilters>(
+    useState<UsersFiltersState>(
       initialFilters,
     );
 
@@ -275,9 +269,7 @@ function UsersPage() {
             input,
           );
 
-        updateLocalUser(
-          updatedProfile,
-        );
+        updateLocalUser(updatedProfile);
 
         if (
           updatedProfile.id ===
@@ -357,9 +349,7 @@ function UsersPage() {
               !profile.isActive,
             );
 
-        updateLocalUser(
-          updatedProfile,
-        );
+        updateLocalUser(updatedProfile);
       } catch (error) {
         setUsersState(
           (currentState) => ({
@@ -428,102 +418,10 @@ function UsersPage() {
         admins={statistics.admins}
       />
 
-      <div className="users-filters">
-        <Input
-          id="users-search"
-          label="חיפוש"
-          type="search"
-          value={filters.searchTerm}
-          placeholder="שם, אימייל או שם שיבוץ"
-          startIcon={
-            <Search size={18} />
-          }
-          onChange={(event) => {
-            setFilters(
-              (currentFilters) => ({
-                ...currentFilters,
-                searchTerm:
-                  event.target.value,
-              }),
-            );
-          }}
-        />
-
-        <label className="users-filter-field">
-          <span>תפקיד</span>
-
-          <select
-            value={filters.role}
-            onChange={(event) => {
-              setFilters(
-                (currentFilters) => ({
-                  ...currentFilters,
-                  role:
-                    event.target
-                      .value as
-                      | UserRole
-                      | 'all',
-                }),
-              );
-            }}
-          >
-            <option value="all">
-              כל התפקידים
-            </option>
-
-            <option value="admin">
-              מנהל מערכת
-            </option>
-
-            <option value="manager">
-              מנהלת
-            </option>
-
-            <option value="dispatcher">
-              מוקדן
-            </option>
-
-            <option value="on_call">
-              כונן
-            </option>
-
-            <option value="viewer">
-              צפייה בלבד
-            </option>
-          </select>
-        </label>
-
-        <label className="users-filter-field">
-          <span>סטטוס</span>
-
-          <select
-            value={filters.status}
-            onChange={(event) => {
-              setFilters(
-                (currentFilters) => ({
-                  ...currentFilters,
-                  status:
-                    event.target
-                      .value as
-                      UsersFilters['status'],
-                }),
-              );
-            }}
-          >
-            <option value="all">
-              כל המשתמשים
-            </option>
-
-            <option value="active">
-              פעילים
-            </option>
-
-            <option value="inactive">
-              מושבתים
-            </option>
-          </select>
-        </label>
-      </div>
+      <UsersFilters
+        filters={filters}
+        onChange={setFilters}
+      />
 
       <UsersTable
         users={filteredUsers}
