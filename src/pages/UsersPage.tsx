@@ -1,10 +1,6 @@
 import {
   RefreshCw,
   Search,
-  ShieldCheck,
-  UserRoundCheck,
-  UserRoundX,
-  Users,
 } from 'lucide-react';
 import {
   useCallback,
@@ -14,6 +10,7 @@ import {
 } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import EditUserModal from '../components/users/EditUserModal';
+import UsersStatistics from '../components/users/UsersStatistics';
 import UsersTable from '../components/users/UsersTable';
 import {
   Button,
@@ -424,75 +421,12 @@ function UsersPage() {
         </div>
       ) : null}
 
-      <div className="users-statistics">
-        <article className="users-stat-card">
-          <Users
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <span>
-              סה״כ משתמשים
-            </span>
-
-            <strong>
-              {statistics.total}
-            </strong>
-          </div>
-        </article>
-
-        <article className="users-stat-card">
-          <UserRoundCheck
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <span>
-              משתמשים פעילים
-            </span>
-
-            <strong>
-              {statistics.active}
-            </strong>
-          </div>
-        </article>
-
-        <article className="users-stat-card">
-          <UserRoundX
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <span>
-              משתמשים מושבתים
-            </span>
-
-            <strong>
-              {statistics.inactive}
-            </strong>
-          </div>
-        </article>
-
-        <article className="users-stat-card">
-          <ShieldCheck
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <span>
-              מנהלי מערכת
-            </span>
-
-            <strong>
-              {statistics.admins}
-            </strong>
-          </div>
-        </article>
-      </div>
+      <UsersStatistics
+        total={statistics.total}
+        active={statistics.active}
+        inactive={statistics.inactive}
+        admins={statistics.admins}
+      />
 
       <div className="users-filters">
         <Input
