@@ -2,8 +2,8 @@ import {
   CalendarPlus,
   CheckCircle2,
   Download,
-  RotateCcw,
   RefreshCw,
+  RotateCcw,
   Send,
 } from 'lucide-react';
 import {
@@ -24,7 +24,7 @@ import type {
   SpecialDayScheduleType,
 } from '../types/availability';
 import '../styles/availability.css';
-
+import DispatcherAvailabilityPanel from '../components/availability/DispatcherAvailabilityPanel';
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -40,34 +40,25 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
-const statusLabels:
-  Record<
-    AvailabilityPeriodStatus,
-    string
-  > = {
-    draft: 'טיוטה',
-    open: 'פתוח להגשה',
-    closed: 'סגור',
-    archived: 'בארכיון',
-  };
+const statusLabels: Record<
+  AvailabilityPeriodStatus,
+  string
+> = {
+  draft: 'טיוטה',
+  open: 'פתוח להגשה',
+  closed: 'סגור',
+  archived: 'בארכיון',
+};
 
-const specialDayTypeLabels:
-  Record<
-    SpecialDayScheduleType,
-    string
-  > = {
-    holiday_eve:
-      'ערב חג',
-
-    holiday_full:
-      'חג מלא',
-
-    holiday_end:
-      'מוצאי / סיום חג',
-
-    chol_hamoed:
-      'חול המועד',
-  };
+const specialDayTypeLabels: Record<
+  SpecialDayScheduleType,
+  string
+> = {
+  holiday_eve: 'ערב חג',
+  holiday_full: 'חג מלא',
+  holiday_end: 'מוצאי / סיום חג',
+  chol_hamoed: 'חול המועד',
+};
 
 function formatDate(
   value: string | null,
@@ -76,14 +67,9 @@ function formatDate(
     return 'לא הוגדר';
   }
 
-  const date =
-    new Date(value);
+  const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return 'תאריך לא תקין';
   }
 
@@ -99,16 +85,11 @@ function formatDate(
 function formatDateOnly(
   value: string,
 ): string {
-  const date =
-    new Date(
-      `${value}T12:00:00`,
-    );
+  const date = new Date(
+    `${value}T12:00:00`,
+  );
 
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return value;
   }
 
@@ -121,17 +102,17 @@ function formatDateOnly(
 }
 
 function AvailabilityPage() {
-  const {
-    hasPermission,
-  } = useAuth();
+    const {
+      profile,
+      hasPermission,
+    } = useAuth();
 
   const canManage =
     hasPermission(
       'availability.manage',
     );
 
-  const now =
-    new Date();
+  const now = new Date();
 
   const defaultNextMonth =
     now.getMonth() === 11
@@ -179,36 +160,16 @@ function AvailabilityPage() {
     setDeadline,
   ] = useState('');
 
-const {
-  state,
-  loadPeriods,
-  createPeriod,
-  importSpecialDays,
-  rebuildPeriodSlots,
-  openPeriod,
-  clearError,
-} = useAvailabilityPeriods();
+  const {
+    state,
+    loadPeriods,
+    createPeriod,
+    importSpecialDays,
+    rebuildPeriodSlots,
+    openPeriod,
+    clearError,
+  } = useAvailabilityPeriods();
 
-const handleRebuildPeriod =
-  async (
-    periodId: string,
-    periodTitle: string,
-  ): Promise<void> => {
-    const confirmed =
-      window.confirm(
-        `האם לבנות מחדש את כל המשמרות עבור "${periodTitle}"?\n\nהפעולה תמחק את המשמרות הקיימות של החודש ותיצור אותן מחדש לפי החגים והמועדים המעודכנים.`,
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    clearError();
-
-    await rebuildPeriodSlots(
-      periodId,
-    );
-  };
   const availableYears =
     useMemo(
       () => {
@@ -224,6 +185,48 @@ const handleRebuildPeriod =
       },
       [],
     );
+
+  const handleRebuildPeriod =
+    async (
+      periodId: string,
+      periodTitle: string,
+    ): Promise<void> => {
+      const confirmed =
+        window.confirm(
+          `האם לבנות מחדש את כל המשמרות עבור "${periodTitle}"?\n\nהפעולה תמחק את המשמרות הקיימות של החודש ותיצור אותן מחדש לפי החגים והמועדים המעודכנים.`,
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      clearError();
+
+      await rebuildPeriodSlots(
+        periodId,
+      );
+    };
+
+  const handleOpenPeriod =
+    async (
+      periodId: string,
+      periodTitle: string,
+    ): Promise<void> => {
+      const confirmed =
+        window.confirm(
+          `האם לפתוח את "${periodTitle}" להגשת אילוצים?\n\nלאחר הפתיחה המוקדנים יוכלו להזין זמינות, ולא יהיה ניתן לבנות מחדש את משמרות החודש.`,
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      clearError();
+
+      await openPeriod(
+        periodId,
+      );
+    };
 
   const handleSubmit =
     async (
@@ -270,26 +273,7 @@ const handleRebuildPeriod =
         importYear,
       );
     };
-const handleOpenPeriod =
-  async (
-    periodId: string,
-    periodTitle: string,
-  ): Promise<void> => {
-    const confirmed =
-      window.confirm(
-        `האם לפתוח את "${periodTitle}" להגשת אילוצים?\n\nלאחר הפתיחה המוקדנים יוכלו להזין זמינות, ולא יהיה ניתן לבנות מחדש את משמרות החודש.`,
-      );
 
-    if (!confirmed) {
-      return;
-    }
-
-    clearError();
-
-    await openPeriod(
-      periodId,
-    );
-  };
   return (
     <section className="availability-page">
       <PageHeader
@@ -303,7 +287,11 @@ const handleOpenPeriod =
               state.isLoading ||
               state.isCreating ||
               state
-                .isImportingSpecialDays
+                .isImportingSpecialDays ||
+              state.rebuildingPeriodId !==
+                null ||
+              state.openingPeriodId !==
+                null
             }
             onClick={() => {
               void loadPeriods();
@@ -318,7 +306,9 @@ const handleOpenPeriod =
           </Button>
         }
       />
-
+      {profile?.role === 'dispatcher' ? (
+        <DispatcherAvailabilityPanel />
+) : null}
       {state.error ? (
         <div
           className="availability-error"
@@ -328,90 +318,94 @@ const handleOpenPeriod =
         </div>
       ) : null}
 
-        {state.lastCreatedResult ? (
-          <div
-            className="availability-success"
-            role="status"
-          >
-            <CheckCircle2
-              size={22}
-              aria-hidden="true"
-            />
+      {state.lastCreatedResult ? (
+        <div
+          className="availability-success"
+          role="status"
+        >
+          <CheckCircle2
+            size={22}
+            aria-hidden="true"
+          />
 
-            <div>
-              <strong>
-                תקופת האילוצים נוצרה בהצלחה
-              </strong>
+          <div>
+            <strong>
+              תקופת האילוצים נוצרה
+              בהצלחה
+            </strong>
 
-              <span>
-                נוצרו{' '}
-                {
-                  state
-                    .lastCreatedResult
-                    .createdSlots
-                }{' '}
-                משמרות במצב טיוטה.
-              </span>
-            </div>
+            <span>
+              נוצרו{' '}
+              {
+                state
+                  .lastCreatedResult
+                  .createdSlots
+              }{' '}
+              משמרות במצב טיוטה.
+            </span>
           </div>
-        ) : null}
+        </div>
+      ) : null}
 
-        {state.lastRebuildResult ? (
-          <div
-            className="availability-success"
-            role="status"
-          >
-            <CheckCircle2
-              size={22}
-              aria-hidden="true"
-            />
+      {state.lastRebuildResult ? (
+        <div
+          className="availability-success"
+          role="status"
+        >
+          <CheckCircle2
+            size={22}
+            aria-hidden="true"
+          />
 
-            <div>
-              <strong>
-                משמרות החודש נבנו מחדש
-              </strong>
+          <div>
+            <strong>
+              משמרות החודש נבנו מחדש
+            </strong>
 
-              <span>
-                נוצרו מחדש{' '}
-                {
-                  state
-                    .lastRebuildResult
-                    .createdSlots
-                }{' '}
-                משמרות בהתאם לחגים
-                ולמועדים המעודכנים.
-              </span>
-            </div>
+            <span>
+              נוצרו מחדש{' '}
+              {
+                state
+                  .lastRebuildResult
+                  .createdSlots
+              }{' '}
+              משמרות בהתאם לחגים
+              ולמועדים המעודכנים.
+            </span>
           </div>
-        ) : null}
-        {state.lastOpenedResult ? (
-          <div
-            className="availability-success"
-            role="status"
-          >
-            <CheckCircle2
-              size={22}
-              aria-hidden="true"
-            />
+        </div>
+      ) : null}
 
-            <div>
-              <strong>
-                תקופת האילוצים נפתחה להגשה
-              </strong>
+      {state.lastOpenedResult ? (
+        <div
+          className="availability-success"
+          role="status"
+        >
+          <CheckCircle2
+            size={22}
+            aria-hidden="true"
+          />
 
-              <span>
-                המוקדנים יכולים כעת להזין
-                אילוצים עבור{' '}
-                {
-                  state
-                    .lastOpenedResult
-                    .shiftSlotsCount
-                }{' '}
-                משמרות.
-              </span>
-            </div>
+          <div>
+            <strong>
+              תקופת האילוצים נפתחה
+              להגשה
+            </strong>
+
+            <span>
+              המוקדנים יכולים כעת
+              להזין אילוצים עבור{' '}
+              {
+                state
+                  .lastOpenedResult
+                  .shiftSlotsCount
+              }{' '}
+              משמרות.
+            </span>
           </div>
-        ) : null}
+        </div>
+      ) : null}
+
       {state.lastImportResult ? (
         <div className="availability-import-result">
           <div className="availability-import-summary">
@@ -515,7 +509,12 @@ const handleOpenPeriod =
                 value={importYear}
                 disabled={
                   state
-                    .isImportingSpecialDays
+                    .isImportingSpecialDays ||
+                  state.isCreating ||
+                  state.rebuildingPeriodId !==
+                    null ||
+                  state.openingPeriodId !==
+                    null
                 }
                 onChange={(
                   event,
@@ -546,7 +545,11 @@ const handleOpenPeriod =
               disabled={
                 state
                   .isImportingSpecialDays ||
-                state.isCreating
+                state.isCreating ||
+                state.rebuildingPeriodId !==
+                  null ||
+                state.openingPeriodId !==
+                  null
               }
               onClick={() => {
                 void handleImportSpecialDays();
@@ -600,7 +603,13 @@ const handleOpenPeriod =
                   selectedMonth
                 }
                 disabled={
-                  state.isCreating
+                  state.isCreating ||
+                  state
+                    .isImportingSpecialDays ||
+                  state.rebuildingPeriodId !==
+                    null ||
+                  state.openingPeriodId !==
+                    null
                 }
                 onChange={(
                   event,
@@ -619,12 +628,8 @@ const handleOpenPeriod =
                     index,
                   ) => (
                     <option
-                      key={
-                        monthName
-                      }
-                      value={
-                        index + 1
-                      }
+                      key={monthName}
+                      value={index + 1}
                     >
                       {monthName}
                     </option>
@@ -641,7 +646,13 @@ const handleOpenPeriod =
                   selectedYear
                 }
                 disabled={
-                  state.isCreating
+                  state.isCreating ||
+                  state
+                    .isImportingSpecialDays ||
+                  state.rebuildingPeriodId !==
+                    null ||
+                  state.openingPeriodId !==
+                    null
                 }
                 onChange={(
                   event,
@@ -676,7 +687,13 @@ const handleOpenPeriod =
                 type="datetime-local"
                 value={deadline}
                 disabled={
-                  state.isCreating
+                  state.isCreating ||
+                  state
+                    .isImportingSpecialDays ||
+                  state.rebuildingPeriodId !==
+                    null ||
+                  state.openingPeriodId !==
+                    null
                 }
                 onChange={(
                   event,
@@ -698,7 +715,13 @@ const handleOpenPeriod =
                 type="text"
                 value={title}
                 disabled={
-                  state.isCreating
+                  state.isCreating ||
+                  state
+                    .isImportingSpecialDays ||
+                  state.rebuildingPeriodId !==
+                    null ||
+                  state.openingPeriodId !==
+                    null
                 }
                 placeholder="אופציונלי"
                 onChange={(
@@ -724,7 +747,13 @@ const handleOpenPeriod =
                 instructions
               }
               disabled={
-                state.isCreating
+                state.isCreating ||
+                state
+                  .isImportingSpecialDays ||
+                state.rebuildingPeriodId !==
+                  null ||
+                state.openingPeriodId !==
+                  null
               }
               placeholder="לדוגמה: יש למלא את כל המשמרות עד למועד האחרון."
               onChange={(
@@ -744,7 +773,11 @@ const handleOpenPeriod =
               disabled={
                 state.isCreating ||
                 state
-                  .isImportingSpecialDays
+                  .isImportingSpecialDays ||
+                state.rebuildingPeriodId !==
+                  null ||
+                state.openingPeriodId !==
+                  null
               }
             >
               <CalendarPlus
@@ -778,36 +811,55 @@ const handleOpenPeriod =
         ) : (
           <div className="availability-periods-list">
             {state.periods.map(
-              (period) => (
-                <article
-                  key={period.id}
-                  className="availability-period-item"
-                >
-                  <div className="availability-period-main">
-                    <strong>
-                      {period.title ??
-                        `${hebrewMonths[
-                          period.month - 1
-                        ]} ${period.year}`}
-                    </strong>
+              (period) => {
+                const periodTitle =
+                  period.title ??
+                  `${hebrewMonths[
+                    period.month - 1
+                  ]} ${period.year}`;
 
-                    <span>
-                      מועד אחרון:{' '}
-                      {formatDate(
-                        period.submissionDeadline,
-                      )}
-                    </span>
-                  </div>
+                return (
+                  <article
+                    key={period.id}
+                    className="availability-period-item"
+                  >
+                    <div className="availability-period-main">
+                      <strong>
+                        {periodTitle}
+                      </strong>
+
+                      <span>
+                        מועד אחרון:{' '}
+                        {formatDate(
+                          period
+                            .submissionDeadline,
+                        )}
+                      </span>
+
+                      {period.openedAt ? (
+                        <span>
+                          נפתח להגשה:{' '}
+                          {formatDate(
+                            period.openedAt,
+                          )}
+                        </span>
+                      ) : null}
+                    </div>
 
                     <div className="availability-period-actions">
                       <span
                         className={`availability-status availability-status-${period.status}`}
                       >
-                        {statusLabels[period.status]}
+                        {
+                          statusLabels[
+                            period.status
+                          ]
+                        }
                       </span>
 
                       {canManage &&
-                      period.status === 'draft' ? (
+                      period.status ===
+                        'draft' ? (
                         <Button
                           type="button"
                           variant="secondary"
@@ -817,15 +869,13 @@ const handleOpenPeriod =
                             state.openingPeriodId !==
                               null ||
                             state.isCreating ||
-                            state.isImportingSpecialDays
+                            state
+                              .isImportingSpecialDays
                           }
                           onClick={() => {
                             void handleRebuildPeriod(
                               period.id,
-                              period.title ??
-                                `${hebrewMonths[
-                                  period.month - 1
-                                ]} ${period.year}`,
+                              periodTitle,
                             );
                           }}
                         >
@@ -842,7 +892,8 @@ const handleOpenPeriod =
                       ) : null}
 
                       {canManage &&
-                      period.status === 'draft' ? (
+                      period.status ===
+                        'draft' ? (
                         <Button
                           type="button"
                           disabled={
@@ -851,15 +902,13 @@ const handleOpenPeriod =
                             state.rebuildingPeriodId !==
                               null ||
                             state.isCreating ||
-                            state.isImportingSpecialDays
+                            state
+                              .isImportingSpecialDays
                           }
                           onClick={() => {
                             void handleOpenPeriod(
                               period.id,
-                              period.title ??
-                                `${hebrewMonths[
-                                  period.month - 1
-                                ]} ${period.year}`,
+                              periodTitle,
                             );
                           }}
                         >
@@ -875,8 +924,9 @@ const handleOpenPeriod =
                         </Button>
                       ) : null}
                     </div>
-                </article>
-              ),
+                  </article>
+                );
+              },
             )}
           </div>
         )}
@@ -885,4 +935,4 @@ const handleOpenPeriod =
   );
 }
 
-export default AvailabilityPage;
+export default AvailabilityPage;  

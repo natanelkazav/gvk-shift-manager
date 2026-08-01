@@ -341,3 +341,388 @@
     width: 100%;
   }
 }
+.dispatcher-availability-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.dispatcher-availability-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dispatcher-availability-header h2 {
+  margin: 3px 0 4px;
+  color: #0f172a;
+  font-size: 1.25rem;
+}
+
+.dispatcher-availability-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+.dispatcher-availability-eyebrow {
+  color: #2563eb;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.dispatcher-availability-instructions {
+  padding: 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+}
+
+.dispatcher-availability-instructions strong {
+  color: #1e40af;
+  font-size: 0.86rem;
+}
+
+.dispatcher-availability-instructions p {
+  margin: 6px 0 0;
+  color: #1e3a8a;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.dispatcher-availability-period-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 10px;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.dispatcher-availability-period-info strong {
+  color: #334155;
+}
+
+.dispatcher-availability-statistics {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dispatcher-availability-statistics article {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.dispatcher-availability-statistics article > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dispatcher-availability-statistics strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.dispatcher-availability-statistics span {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.dispatcher-availability-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dispatcher-availability-progress-header {
+  display: flex;
+  justify-content: space-between;
+  color: #475569;
+  font-size: 0.82rem;
+}
+
+.dispatcher-availability-progress-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.dispatcher-availability-progress-value {
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+  transition: width 180ms ease;
+}
+
+.dispatcher-availability-shifts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dispatcher-availability-shift-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  background: #ffffff;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.dispatcher-availability-shift-card-available {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.dispatcher-availability-shift-card-unavailable {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.dispatcher-availability-shift-card-premium {
+  box-shadow:
+    inset 4px 0 0 #f59e0b;
+}
+
+.dispatcher-availability-shift-main {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  grid-template-columns:
+    minmax(150px, 0.8fr)
+    minmax(180px, 1fr)
+    minmax(170px, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.dispatcher-availability-shift-date,
+.dispatcher-availability-shift-time {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dispatcher-availability-shift-date strong,
+.dispatcher-availability-shift-time strong {
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.dispatcher-availability-shift-date span,
+.dispatcher-availability-shift-time span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-size: 0.74rem;
+}
+
+.dispatcher-availability-shift-time {
+  position: relative;
+  padding-inline-start: 27px;
+}
+
+.dispatcher-availability-shift-time > svg {
+  position: absolute;
+  top: 1px;
+  inset-inline-start: 0;
+  color: #64748b;
+}
+
+.dispatcher-availability-shift-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.dispatcher-availability-holiday-badge,
+.dispatcher-availability-premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.dispatcher-availability-holiday-badge {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.dispatcher-availability-premium-badge {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.dispatcher-availability-shift-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.dispatcher-availability-status-button {
+  display: inline-flex;
+  min-width: 105px;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #475569;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dispatcher-availability-status-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.dispatcher-availability-status-button-available:hover,
+.dispatcher-availability-status-button-available.dispatcher-availability-status-button-selected {
+  border-color: #22c55e;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.dispatcher-availability-status-button-unavailable:hover,
+.dispatcher-availability-status-button-unavailable.dispatcher-availability-status-button-selected {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.dispatcher-availability-loading-state,
+.dispatcher-availability-empty-state {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #64748b;
+  text-align: center;
+}
+
+.dispatcher-availability-empty-state strong {
+  color: #334155;
+}
+
+.dispatcher-availability-empty-state span {
+  font-size: 0.84rem;
+}
+
+.dispatcher-availability-error {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #fecaca;
+  border-radius: 11px;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.dispatcher-availability-error span {
+  font-size: 0.82rem;
+}
+
+.dispatcher-availability-loading-icon {
+  animation:
+    dispatcher-availability-spin
+    850ms linear infinite;
+}
+
+@keyframes dispatcher-availability-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 950px) {
+  .dispatcher-availability-statistics {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .dispatcher-availability-shift-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dispatcher-availability-shift-main {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .dispatcher-availability-shift-labels {
+    grid-column: 1 / -1;
+  }
+
+  .dispatcher-availability-shift-actions {
+    width: 100%;
+  }
+
+  .dispatcher-availability-status-button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 620px) {
+  .dispatcher-availability-header {
+    flex-direction: column;
+  }
+
+  .dispatcher-availability-header
+    .button {
+    width: 100%;
+  }
+
+  .dispatcher-availability-statistics,
+  .dispatcher-availability-shift-main {
+    grid-template-columns: 1fr;
+  }
+
+  .dispatcher-availability-shift-labels {
+    grid-column: auto;
+  }
+
+  .dispatcher-availability-shift-actions {
+    flex-direction: column;
+  }
+
+  .dispatcher-availability-status-button {
+    width: 100%;
+  }
+}
