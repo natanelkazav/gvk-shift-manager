@@ -2,6 +2,7 @@ import {
   CalendarPlus,
   CheckCircle2,
   Download,
+  RotateCcw,
   RefreshCw,
 } from 'lucide-react';
 import {
@@ -175,14 +176,35 @@ function AvailabilityPage() {
     setDeadline,
   ] = useState('');
 
-  const {
-    state,
-    loadPeriods,
-    createPeriod,
-    importSpecialDays,
-    clearError,
-  } = useAvailabilityPeriods();
+const {
+  state,
+  loadPeriods,
+  createPeriod,
+  importSpecialDays,
+  rebuildPeriodSlots,
+  clearError,
+} = useAvailabilityPeriods();
 
+const handleRebuildPeriod =
+  async (
+    periodId: string,
+    periodTitle: string,
+  ): Promise<void> => {
+    const confirmed =
+      window.confirm(
+        `האם לבנות מחדש את כל המשמרות עבור "${periodTitle}"?\n\nהפעולה תמחק את המשמרות הקיימות של החודש ותיצור אותן מחדש לפי החגים והמועדים המעודכנים.`,
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    clearError();
+
+    await rebuildPeriodSlots(
+      periodId,
+    );
+  };
   const availableYears =
     useMemo(
       () => {
@@ -283,34 +305,62 @@ function AvailabilityPage() {
         </div>
       ) : null}
 
-      {state.lastCreatedResult ? (
-        <div
-          className="availability-success"
-          role="status"
-        >
-          <CheckCircle2
-            size={22}
-            aria-hidden="true"
-          />
+        {state.lastCreatedResult ? (
+          <div
+            className="availability-success"
+            role="status"
+          >
+            <CheckCircle2
+              size={22}
+              aria-hidden="true"
+            />
 
-          <div>
-            <strong>
-              תקופת האילוצים נוצרה
-              בהצלחה
-            </strong>
+            <div>
+              <strong>
+                תקופת האילוצים נוצרה בהצלחה
+              </strong>
 
-            <span>
-              נוצרו{' '}
-              {
-                state
-                  .lastCreatedResult
-                  .createdSlots
-              }{' '}
-              משמרות במצב טיוטה.
-            </span>
+              <span>
+                נוצרו{' '}
+                {
+                  state
+                    .lastCreatedResult
+                    .createdSlots
+                }{' '}
+                משמרות במצב טיוטה.
+              </span>
+            </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+
+        {state.lastRebuildResult ? (
+          <div
+            className="availability-success"
+            role="status"
+          >
+            <CheckCircle2
+              size={22}
+              aria-hidden="true"
+            />
+
+            <div>
+              <strong>
+                משמרות החודש נבנו מחדש
+              </strong>
+
+              <span>
+                נוצרו מחדש{' '}
+                {
+                  state
+                    .lastRebuildResult
+                    .createdSlots
+                }{' '}
+                משמרות בהתאם לחגים
+                ולמועדים המעודכנים.
+              </span>
+            </div>
+          </div>
+        ) : null}
 
       {state.lastImportResult ? (
         <div className="availability-import-result">
@@ -683,33 +733,68 @@ function AvailabilityPage() {
                   key={period.id}
                   className="availability-period-item"
                 >
-                  <div>
+                  <div className="availability-period-main">
                     <strong>
                       {period.title ??
                         `${hebrewMonths[
-                          period.month -
-                            1
+                          period.month - 1
                         ]} ${period.year}`}
                     </strong>
 
                     <span>
                       מועד אחרון:{' '}
                       {formatDate(
-                        period
-                          .submissionDeadline,
+                        period.submissionDeadline,
                       )}
                     </span>
                   </div>
 
-                  <span
-                    className={`availability-status availability-status-${period.status}`}
-                  >
-                    {
-                      statusLabels[
-                        period.status
-                      ]
-                    }
-                  </span>
+                  <div className="availability-period-actions">
+                    <span
+                      className={`availability-status availability-status-${period.status}`}
+                    >
+                      {
+                        statusLabels[
+                          period.status
+                        ]
+                      }
+                    </span>
+
+                    {canManage &&
+                    period.status ===
+                      'draft' ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={
+                          state.rebuildingPeriodId !==
+                            null ||
+                          state.isCreating ||
+                          state
+                            .isImportingSpecialDays
+                        }
+                        onClick={() => {
+                          void handleRebuildPeriod(
+                            period.id,
+                            period.title ??
+                              `${hebrewMonths[
+                                period.month - 1
+                              ]} ${period.year}`,
+                          );
+                        }}
+                      >
+                        <RotateCcw
+                          size={17}
+                          aria-hidden="true"
+                        />
+
+                        {state.rebuildingPeriodId ===
+                        period.id
+                          ? 'בונה מחדש...'
+                          : 'בנייה מחדש'}
+                      </Button>
+                    ) : null}
+                  </div>
                 </article>
               ),
             )}

@@ -9,16 +9,18 @@ import type {
   CreateAvailabilityPeriodInput,
   CreateAvailabilityPeriodResult,
   ImportSpecialDaysResult,
+  RebuildAvailabilityPeriodResult,
 } from '../types/availability';
 
 interface AvailabilityPeriodsState {
-  periods:
-    AvailabilityPeriod[];
+  periods: AvailabilityPeriod[];
 
   isLoading: boolean;
   isCreating: boolean;
-  isImportingSpecialDays:
-    boolean;
+  isImportingSpecialDays: boolean;
+
+  rebuildingPeriodId:
+    string | null;
 
   error: string | null;
 
@@ -27,31 +29,35 @@ interface AvailabilityPeriodsState {
 
   lastImportResult:
     ImportSpecialDaysResult | null;
+
+  lastRebuildResult:
+    RebuildAvailabilityPeriodResult | null;
 }
 
 interface UseAvailabilityPeriodsResult {
-  state:
-    AvailabilityPeriodsState;
+  state: AvailabilityPeriodsState;
 
-  loadPeriods:
-    () => Promise<void>;
+  loadPeriods: () => Promise<void>;
 
   createPeriod: (
-    input:
-      CreateAvailabilityPeriodInput,
+    input: CreateAvailabilityPeriodInput,
   ) => Promise<CreateAvailabilityPeriodResult>;
 
   importSpecialDays: (
     year: number,
   ) => Promise<ImportSpecialDaysResult>;
 
+  rebuildPeriodSlots: (
+    periodId: string,
+  ) => Promise<RebuildAvailabilityPeriodResult>;
+
   clearError: () => void;
 
-  clearCreatedResult:
-    () => void;
+  clearCreatedResult: () => void;
 
-  clearImportResult:
-    () => void;
+  clearImportResult: () => void;
+
+  clearRebuildResult: () => void;
 }
 
 const initialState:
@@ -59,11 +65,12 @@ const initialState:
     periods: [],
     isLoading: true,
     isCreating: false,
-    isImportingSpecialDays:
-      false,
+    isImportingSpecialDays: false,
+    rebuildingPeriodId: null,
     error: null,
     lastCreatedResult: null,
     lastImportResult: null,
+    lastRebuildResult: null,
   };
 
 function getErrorMessage(
@@ -115,11 +122,8 @@ export function useAvailabilityPeriods():
             (currentState) => ({
               ...currentState,
               isLoading: false,
-
               error:
-                getErrorMessage(
-                  error,
-                ),
+                getErrorMessage(error),
             }),
           );
         }
@@ -142,8 +146,7 @@ export function useAvailabilityPeriods():
             ...currentState,
             isCreating: true,
             error: null,
-            lastCreatedResult:
-              null,
+            lastCreatedResult: null,
           }),
         );
 
@@ -165,7 +168,6 @@ export function useAvailabilityPeriods():
               isLoading: false,
               isCreating: false,
               error: null,
-
               lastCreatedResult:
                 result,
             }),
@@ -180,8 +182,7 @@ export function useAvailabilityPeriods():
             (currentState) => ({
               ...currentState,
               isCreating: false,
-              error:
-                errorMessage,
+              error: errorMessage,
             }),
           );
 
@@ -199,13 +200,10 @@ export function useAvailabilityPeriods():
         setState(
           (currentState) => ({
             ...currentState,
-
             isImportingSpecialDays:
               true,
-
             error: null,
-            lastImportResult:
-              null,
+            lastImportResult: null,
           }),
         );
 
@@ -219,12 +217,9 @@ export function useAvailabilityPeriods():
           setState(
             (currentState) => ({
               ...currentState,
-
               isImportingSpecialDays:
                 false,
-
               error: null,
-
               lastImportResult:
                 result,
             }),
@@ -238,12 +233,68 @@ export function useAvailabilityPeriods():
           setState(
             (currentState) => ({
               ...currentState,
-
               isImportingSpecialDays:
                 false,
+              error: errorMessage,
+            }),
+          );
 
-              error:
-                errorMessage,
+          throw error;
+        }
+      },
+      [],
+    );
+
+  const rebuildPeriodSlots =
+    useCallback(
+      async (
+        periodId: string,
+      ): Promise<RebuildAvailabilityPeriodResult> => {
+        setState(
+          (currentState) => ({
+            ...currentState,
+            rebuildingPeriodId:
+              periodId,
+            error: null,
+            lastRebuildResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await availabilityService
+              .rebuildAvailabilityPeriodSlots(
+                periodId,
+              );
+
+          const periods =
+            await availabilityService
+              .getAvailabilityPeriods();
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+              periods,
+              rebuildingPeriodId:
+                null,
+              error: null,
+              lastRebuildResult:
+                result,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(error);
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+              rebuildingPeriodId:
+                null,
+              error: errorMessage,
             }),
           );
 
@@ -268,9 +319,7 @@ export function useAvailabilityPeriods():
       setState(
         (currentState) => ({
           ...currentState,
-
-          lastCreatedResult:
-            null,
+          lastCreatedResult: null,
         }),
       );
     }, []);
@@ -280,9 +329,17 @@ export function useAvailabilityPeriods():
       setState(
         (currentState) => ({
           ...currentState,
+          lastImportResult: null,
+        }),
+      );
+    }, []);
 
-          lastImportResult:
-            null,
+  const clearRebuildResult =
+    useCallback((): void => {
+      setState(
+        (currentState) => ({
+          ...currentState,
+          lastRebuildResult: null,
         }),
       );
     }, []);
@@ -292,8 +349,10 @@ export function useAvailabilityPeriods():
     loadPeriods,
     createPeriod,
     importSpecialDays,
+    rebuildPeriodSlots,
     clearError,
     clearCreatedResult,
     clearImportResult,
+    clearRebuildResult,
   };
 }

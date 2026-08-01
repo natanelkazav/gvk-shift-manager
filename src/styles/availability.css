@@ -316,3 +316,28 @@
     width: 100%;
   }
 }
+.availability-period-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.availability-period-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .availability-period-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .availability-period-actions
+    .button {
+    width: 100%;
+  }
+}

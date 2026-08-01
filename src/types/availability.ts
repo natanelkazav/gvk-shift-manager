@@ -56,3 +56,7 @@ export interface ImportSpecialDaysResult {
   importedDays:
     ImportedSpecialDay[];
 }
+export interface RebuildAvailabilityPeriodResult {
+  periodId: string;
+  createdSlots: number;
+}

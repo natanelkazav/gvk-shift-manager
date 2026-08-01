@@ -5,6 +5,7 @@ import type {
   CreateAvailabilityPeriodInput,
   CreateAvailabilityPeriodResult,
   ImportSpecialDaysResult,
+  RebuildAvailabilityPeriodResult,
 } from '../types/availability';
 
 interface AvailabilityPeriodDatabaseRow {
@@ -35,7 +36,10 @@ interface CreateAvailabilityPeriodDatabaseRow {
 interface FunctionErrorResponse {
   error?: string;
 }
-
+interface RebuildAvailabilityPeriodDatabaseRow {
+  period_id: string;
+  created_slots: number;
+}
 function mapAvailabilityPeriod(
   row:
     AvailabilityPeriodDatabaseRow,
@@ -290,9 +294,101 @@ async function importCalendarSpecialDays(
 
   return data;
 }
+async function rebuildAvailabilityPeriodSlots(
+  periodId: string,
+): Promise<RebuildAvailabilityPeriodResult> {
+  const normalizedPeriodId =
+    periodId.trim();
 
+  if (!normalizedPeriodId) {
+    throw new Error(
+      'לא התקבל מזהה תקופת אילוצים תקין.',
+    );
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase.rpc(
+    'rebuild_availability_period_slots',
+    {
+      requested_period_id:
+        normalizedPeriodId,
+    },
+  );
+
+  if (error) {
+    console.error(
+      'REBUILD AVAILABILITY PERIOD SLOTS ERROR:',
+      error,
+    );
+
+    const normalizedMessage =
+      error.message.toLowerCase();
+
+    if (
+      normalizedMessage.includes(
+        'only draft',
+      )
+    ) {
+      throw new Error(
+        'ניתן לבנות מחדש משמרות רק בתקופת אילוצים שנמצאת במצב טיוטה.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'dispatcher responses',
+      ) ||
+      normalizedMessage.includes(
+        'submission data',
+      )
+    ) {
+      throw new Error(
+        'לא ניתן לבנות מחדש את החודש לאחר שמוקדנים התחילו להזין אילוצים.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'not found',
+      )
+    ) {
+      throw new Error(
+        'תקופת האילוצים לא נמצאה.',
+      );
+    }
+
+    throw new Error(
+      'לא ניתן היה לבנות מחדש את משמרות החודש.',
+    );
+  }
+
+  const resultRows =
+    data as
+      | RebuildAvailabilityPeriodDatabaseRow[]
+      | null;
+
+  const result =
+    resultRows?.[0];
+
+  if (!result) {
+    throw new Error(
+      'הבנייה מחדש הסתיימה ללא תשובה תקינה מהשרת.',
+    );
+  }
+
+  return {
+    periodId:
+      result.period_id,
+
+    createdSlots:
+      result.created_slots,
+  };
+}
 export const availabilityService = {
   getAvailabilityPeriods,
   createAvailabilityPeriod,
   importCalendarSpecialDays,
+  rebuildAvailabilityPeriodSlots,
 };
