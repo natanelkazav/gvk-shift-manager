@@ -5,6 +5,7 @@ import type {
   CreateAvailabilityPeriodInput,
   CreateAvailabilityPeriodResult,
   ImportSpecialDaysResult,
+  OpenAvailabilityPeriodResult,
   RebuildAvailabilityPeriodResult,
 } from '../types/availability';
 
@@ -39,6 +40,12 @@ interface FunctionErrorResponse {
 interface RebuildAvailabilityPeriodDatabaseRow {
   period_id: string;
   created_slots: number;
+}
+interface OpenAvailabilityPeriodDatabaseRow {
+  period_id: string;
+  period_status: 'open';
+  opened_at: string;
+  shift_slots_count: number;
 }
 function mapAvailabilityPeriod(
   row:
@@ -386,9 +393,114 @@ async function rebuildAvailabilityPeriodSlots(
       result.created_slots,
   };
 }
+async function openAvailabilityPeriod(
+  periodId: string,
+): Promise<OpenAvailabilityPeriodResult> {
+  const normalizedPeriodId =
+    periodId.trim();
+
+  if (!normalizedPeriodId) {
+    throw new Error(
+      'לא התקבל מזהה תקופת אילוצים תקין.',
+    );
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase.rpc(
+    'open_availability_period',
+    {
+      requested_period_id:
+        normalizedPeriodId,
+    },
+  );
+
+if (error) {
+  console.error(
+    'OPEN AVAILABILITY PERIOD ERROR:',
+    JSON.stringify(
+      {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      },
+      null,
+      2,
+    ),
+  );
+const normalizedMessage =
+    error.message.toLowerCase();
+
+  if (
+    normalizedMessage.includes(
+      'only draft',
+    )
+  ) {
+    throw new Error(
+      'ניתן לפתוח להגשה רק תקופת אילוצים במצב טיוטה.',
+    );
+  }
+
+  if (
+    normalizedMessage.includes(
+      'does not contain shift slots',
+    )
+  ) {
+    throw new Error(
+      'לא ניתן לפתוח את התקופה משום שלא נוצרו עבורה משמרות.',
+    );
+  }
+
+  if (
+    normalizedMessage.includes(
+      'not found',
+    )
+  ) {
+    throw new Error(
+      'תקופת האילוצים לא נמצאה.',
+    );
+  }
+
+  throw new Error(
+    'לא ניתן היה לפתוח את תקופת האילוצים להגשה.',
+  );
+}
+
+// מכאן ממשיכים ישירות ל־resultRows
+const resultRows =
+  data as
+    | OpenAvailabilityPeriodDatabaseRow[]
+    | null;
+
+  const result =
+    resultRows?.[0];
+
+  if (!result) {
+    throw new Error(
+      'פתיחת תקופת האילוצים הסתיימה ללא תשובה תקינה מהשרת.',
+    );
+  }
+
+  return {
+    periodId:
+      result.period_id,
+
+    periodStatus:
+      result.period_status,
+
+    openedAt:
+      result.opened_at,
+
+    shiftSlotsCount:
+      result.shift_slots_count,
+  };
+}
 export const availabilityService = {
   getAvailabilityPeriods,
   createAvailabilityPeriod,
   importCalendarSpecialDays,
   rebuildAvailabilityPeriodSlots,
+  openAvailabilityPeriod,
 };

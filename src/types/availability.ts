@@ -60,3 +60,9 @@ export interface RebuildAvailabilityPeriodResult {
   periodId: string;
   createdSlots: number;
 }
+export interface OpenAvailabilityPeriodResult {
+  periodId: string;
+  periodStatus: 'open';
+  openedAt: string;
+  shiftSlotsCount: number;
+}

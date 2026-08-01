@@ -6,7 +6,8 @@ export type AuditAction =
   | 'user_permissions_updated'
   | 'user_password_change_required'
   | 'user_password_change_completed'
-  | 'user_deleted';
+  | 'user_deleted'
+  | 'availability_period_opened';
 
 export interface AuditLogEntry {
   id: string;

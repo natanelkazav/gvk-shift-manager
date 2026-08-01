@@ -9,6 +9,7 @@ import type {
   CreateAvailabilityPeriodInput,
   CreateAvailabilityPeriodResult,
   ImportSpecialDaysResult,
+  OpenAvailabilityPeriodResult,
   RebuildAvailabilityPeriodResult,
 } from '../types/availability';
 
@@ -31,7 +32,11 @@ interface AvailabilityPeriodsState {
     ImportSpecialDaysResult | null;
 
   lastRebuildResult:
-    RebuildAvailabilityPeriodResult | null;
+  RebuildAvailabilityPeriodResult | null;
+    openingPeriodId: string | null;
+
+lastOpenedResult:
+  OpenAvailabilityPeriodResult | null;
 }
 
 interface UseAvailabilityPeriodsResult {
@@ -58,6 +63,9 @@ interface UseAvailabilityPeriodsResult {
   clearImportResult: () => void;
 
   clearRebuildResult: () => void;
+  openPeriod: (
+  periodId: string,
+) => Promise<OpenAvailabilityPeriodResult>;
 }
 
 const initialState:
@@ -71,6 +79,8 @@ const initialState:
     lastCreatedResult: null,
     lastImportResult: null,
     lastRebuildResult: null,
+    openingPeriodId: null,
+lastOpenedResult: null,
   };
 
 function getErrorMessage(
@@ -343,7 +353,74 @@ export function useAvailabilityPeriods():
         }),
       );
     }, []);
+const openPeriod =
+  useCallback(
+    async (
+      periodId: string,
+    ): Promise<OpenAvailabilityPeriodResult> => {
+      setState(
+        (currentState) => ({
+          ...currentState,
 
+          openingPeriodId:
+            periodId,
+
+          error: null,
+
+          lastOpenedResult:
+            null,
+        }),
+      );
+
+      try {
+        const result =
+          await availabilityService
+            .openAvailabilityPeriod(
+              periodId,
+            );
+
+        const periods =
+          await availabilityService
+            .getAvailabilityPeriods();
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            periods,
+
+            openingPeriodId:
+              null,
+
+            error: null,
+
+            lastOpenedResult:
+              result,
+          }),
+        );
+
+        return result;
+      } catch (error) {
+        const errorMessage =
+          getErrorMessage(error);
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            openingPeriodId:
+              null,
+
+            error:
+              errorMessage,
+          }),
+        );
+
+        throw error;
+      }
+    },
+    [],
+  );
   return {
     state,
     loadPeriods,
@@ -354,5 +431,7 @@ export function useAvailabilityPeriods():
     clearCreatedResult,
     clearImportResult,
     clearRebuildResult,
+    openPeriod,
   };
+  
 }

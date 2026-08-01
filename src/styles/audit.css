@@ -280,3 +280,7 @@
     grid-template-columns: 1fr;
   }
 }
+.audit-action-availability_period_opened {
+  background: #ecfdf5;
+  color: #047857;
+}

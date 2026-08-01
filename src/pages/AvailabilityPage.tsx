@@ -4,6 +4,7 @@ import {
   Download,
   RotateCcw,
   RefreshCw,
+  Send,
 } from 'lucide-react';
 import {
   useMemo,
@@ -15,7 +16,9 @@ import {
   Button,
   PageHeader,
 } from '../components/ui';
-import { useAvailabilityPeriods } from '../hooks/useAvailabilityPeriods';
+import {
+  useAvailabilityPeriods,
+} from '../hooks/useAvailabilityPeriods';
 import type {
   AvailabilityPeriodStatus,
   SpecialDayScheduleType,
@@ -182,6 +185,7 @@ const {
   createPeriod,
   importSpecialDays,
   rebuildPeriodSlots,
+  openPeriod,
   clearError,
 } = useAvailabilityPeriods();
 
@@ -266,7 +270,26 @@ const handleRebuildPeriod =
         importYear,
       );
     };
+const handleOpenPeriod =
+  async (
+    periodId: string,
+    periodTitle: string,
+  ): Promise<void> => {
+    const confirmed =
+      window.confirm(
+        `האם לפתוח את "${periodTitle}" להגשת אילוצים?\n\nלאחר הפתיחה המוקדנים יוכלו להזין זמינות, ולא יהיה ניתן לבנות מחדש את משמרות החודש.`,
+      );
 
+    if (!confirmed) {
+      return;
+    }
+
+    clearError();
+
+    await openPeriod(
+      periodId,
+    );
+  };
   return (
     <section className="availability-page">
       <PageHeader
@@ -361,7 +384,34 @@ const handleRebuildPeriod =
             </div>
           </div>
         ) : null}
+        {state.lastOpenedResult ? (
+          <div
+            className="availability-success"
+            role="status"
+          >
+            <CheckCircle2
+              size={22}
+              aria-hidden="true"
+            />
 
+            <div>
+              <strong>
+                תקופת האילוצים נפתחה להגשה
+              </strong>
+
+              <span>
+                המוקדנים יכולים כעת להזין
+                אילוצים עבור{' '}
+                {
+                  state
+                    .lastOpenedResult
+                    .shiftSlotsCount
+                }{' '}
+                משמרות.
+              </span>
+            </div>
+          </div>
+        ) : null}
       {state.lastImportResult ? (
         <div className="availability-import-result">
           <div className="availability-import-summary">
@@ -749,52 +799,82 @@ const handleRebuildPeriod =
                     </span>
                   </div>
 
-                  <div className="availability-period-actions">
-                    <span
-                      className={`availability-status availability-status-${period.status}`}
-                    >
-                      {
-                        statusLabels[
-                          period.status
-                        ]
-                      }
-                    </span>
-
-                    {canManage &&
-                    period.status ===
-                      'draft' ? (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        disabled={
-                          state.rebuildingPeriodId !==
-                            null ||
-                          state.isCreating ||
-                          state
-                            .isImportingSpecialDays
-                        }
-                        onClick={() => {
-                          void handleRebuildPeriod(
-                            period.id,
-                            period.title ??
-                              `${hebrewMonths[
-                                period.month - 1
-                              ]} ${period.year}`,
-                          );
-                        }}
+                    <div className="availability-period-actions">
+                      <span
+                        className={`availability-status availability-status-${period.status}`}
                       >
-                        <RotateCcw
-                          size={17}
-                          aria-hidden="true"
-                        />
+                        {statusLabels[period.status]}
+                      </span>
 
-                        {state.rebuildingPeriodId ===
-                        period.id
-                          ? 'בונה מחדש...'
-                          : 'בנייה מחדש'}
-                      </Button>
-                    ) : null}
-                  </div>
+                      {canManage &&
+                      period.status === 'draft' ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          disabled={
+                            state.rebuildingPeriodId !==
+                              null ||
+                            state.openingPeriodId !==
+                              null ||
+                            state.isCreating ||
+                            state.isImportingSpecialDays
+                          }
+                          onClick={() => {
+                            void handleRebuildPeriod(
+                              period.id,
+                              period.title ??
+                                `${hebrewMonths[
+                                  period.month - 1
+                                ]} ${period.year}`,
+                            );
+                          }}
+                        >
+                          <RotateCcw
+                            size={17}
+                            aria-hidden="true"
+                          />
+
+                          {state.rebuildingPeriodId ===
+                          period.id
+                            ? 'בונה מחדש...'
+                            : 'בנייה מחדש'}
+                        </Button>
+                      ) : null}
+
+                      {canManage &&
+                      period.status === 'draft' ? (
+                        <Button
+                          type="button"
+                          disabled={
+                            state.openingPeriodId !==
+                              null ||
+                            state.rebuildingPeriodId !==
+                              null ||
+                            state.isCreating ||
+                            state.isImportingSpecialDays
+                          }
+                          onClick={() => {
+                            void handleOpenPeriod(
+                              period.id,
+                              period.title ??
+                                `${hebrewMonths[
+                                  period.month - 1
+                                ]} ${period.year}`,
+                            );
+                          }}
+                        >
+                          <Send
+                            size={17}
+                            aria-hidden="true"
+                          />
+
+                          {state.openingPeriodId ===
+                          period.id
+                            ? 'פותח להגשה...'
+                            : 'פתיחה להגשה'}
+                        </Button>
+                      ) : null}
+                    </div>
                 </article>
               ),
             )}

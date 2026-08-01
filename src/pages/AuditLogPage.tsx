@@ -42,6 +42,9 @@ const actionLabels: Record<
 
   user_deactivated:
     'השבתת משתמש',
+  
+  availability_period_opened:
+  'פתיחת תקופת אילוצים',
 
   user_permissions_updated:
     'עדכון הרשאות',
