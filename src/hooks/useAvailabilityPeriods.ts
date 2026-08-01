@@ -8,29 +8,50 @@ import type {
   AvailabilityPeriod,
   CreateAvailabilityPeriodInput,
   CreateAvailabilityPeriodResult,
+  ImportSpecialDaysResult,
 } from '../types/availability';
 
 interface AvailabilityPeriodsState {
-  periods: AvailabilityPeriod[];
+  periods:
+    AvailabilityPeriod[];
+
   isLoading: boolean;
   isCreating: boolean;
+  isImportingSpecialDays:
+    boolean;
+
   error: string | null;
+
   lastCreatedResult:
     CreateAvailabilityPeriodResult | null;
+
+  lastImportResult:
+    ImportSpecialDaysResult | null;
 }
 
 interface UseAvailabilityPeriodsResult {
-  state: AvailabilityPeriodsState;
+  state:
+    AvailabilityPeriodsState;
 
-  loadPeriods: () => Promise<void>;
+  loadPeriods:
+    () => Promise<void>;
 
   createPeriod: (
-    input: CreateAvailabilityPeriodInput,
+    input:
+      CreateAvailabilityPeriodInput,
   ) => Promise<CreateAvailabilityPeriodResult>;
+
+  importSpecialDays: (
+    year: number,
+  ) => Promise<ImportSpecialDaysResult>;
 
   clearError: () => void;
 
-  clearCreatedResult: () => void;
+  clearCreatedResult:
+    () => void;
+
+  clearImportResult:
+    () => void;
 }
 
 const initialState:
@@ -38,8 +59,11 @@ const initialState:
     periods: [],
     isLoading: true,
     isCreating: false,
+    isImportingSpecialDays:
+      false,
     error: null,
     lastCreatedResult: null,
+    lastImportResult: null,
   };
 
 function getErrorMessage(
@@ -91,6 +115,7 @@ export function useAvailabilityPeriods():
             (currentState) => ({
               ...currentState,
               isLoading: false,
+
               error:
                 getErrorMessage(
                   error,
@@ -117,7 +142,8 @@ export function useAvailabilityPeriods():
             ...currentState,
             isCreating: true,
             error: null,
-            lastCreatedResult: null,
+            lastCreatedResult:
+              null,
           }),
         );
 
@@ -132,14 +158,18 @@ export function useAvailabilityPeriods():
             await availabilityService
               .getAvailabilityPeriods();
 
-          setState({
-            periods,
-            isLoading: false,
-            isCreating: false,
-            error: null,
-            lastCreatedResult:
-              result,
-          });
+          setState(
+            (currentState) => ({
+              ...currentState,
+              periods,
+              isLoading: false,
+              isCreating: false,
+              error: null,
+
+              lastCreatedResult:
+                result,
+            }),
+          );
 
           return result;
         } catch (error) {
@@ -150,6 +180,68 @@ export function useAvailabilityPeriods():
             (currentState) => ({
               ...currentState,
               isCreating: false,
+              error:
+                errorMessage,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [],
+    );
+
+  const importSpecialDays =
+    useCallback(
+      async (
+        year: number,
+      ): Promise<ImportSpecialDaysResult> => {
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            isImportingSpecialDays:
+              true,
+
+            error: null,
+            lastImportResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await availabilityService
+              .importCalendarSpecialDays(
+                year,
+              );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              isImportingSpecialDays:
+                false,
+
+              error: null,
+
+              lastImportResult:
+                result,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(error);
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              isImportingSpecialDays:
+                false,
+
               error:
                 errorMessage,
             }),
@@ -176,7 +268,20 @@ export function useAvailabilityPeriods():
       setState(
         (currentState) => ({
           ...currentState,
+
           lastCreatedResult:
+            null,
+        }),
+      );
+    }, []);
+
+  const clearImportResult =
+    useCallback((): void => {
+      setState(
+        (currentState) => ({
+          ...currentState,
+
+          lastImportResult:
             null,
         }),
       );
@@ -186,7 +291,9 @@ export function useAvailabilityPeriods():
     state,
     loadPeriods,
     createPeriod,
+    importSpecialDays,
     clearError,
     clearCreatedResult,
+    clearImportResult,
   };
 }

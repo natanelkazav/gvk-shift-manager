@@ -1,6 +1,7 @@
 import {
   CalendarPlus,
   CheckCircle2,
+  Download,
   RefreshCw,
 } from 'lucide-react';
 import {
@@ -16,6 +17,7 @@ import {
 import { useAvailabilityPeriods } from '../hooks/useAvailabilityPeriods';
 import type {
   AvailabilityPeriodStatus,
+  SpecialDayScheduleType,
 } from '../types/availability';
 import '../styles/availability.css';
 
@@ -45,6 +47,24 @@ const statusLabels:
     archived: 'בארכיון',
   };
 
+const specialDayTypeLabels:
+  Record<
+    SpecialDayScheduleType,
+    string
+  > = {
+    holiday_eve:
+      'ערב חג',
+
+    holiday_full:
+      'חג מלא',
+
+    holiday_end:
+      'מוצאי / סיום חג',
+
+    chol_hamoed:
+      'חול המועד',
+  };
+
 function formatDate(
   value: string | null,
 ): string {
@@ -68,6 +88,30 @@ function formatDate(
     {
       dateStyle: 'short',
       timeStyle: 'short',
+    },
+  ).format(date);
+}
+
+function formatDateOnly(
+  value: string,
+): string {
+  const date =
+    new Date(
+      `${value}T12:00:00`,
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(
+    'he-IL',
+    {
+      dateStyle: 'short',
     },
   ).format(date);
 }
@@ -110,6 +154,13 @@ function AvailabilityPage() {
   );
 
   const [
+    importYear,
+    setImportYear,
+  ] = useState(
+    defaultYear,
+  );
+
+  const [
     title,
     setTitle,
   ] = useState('');
@@ -128,6 +179,7 @@ function AvailabilityPage() {
     state,
     loadPeriods,
     createPeriod,
+    importSpecialDays,
     clearError,
   } = useAvailabilityPeriods();
 
@@ -184,6 +236,15 @@ function AvailabilityPage() {
       setDeadline('');
     };
 
+  const handleImportSpecialDays =
+    async (): Promise<void> => {
+      clearError();
+
+      await importSpecialDays(
+        importYear,
+      );
+    };
+
   return (
     <section className="availability-page">
       <PageHeader
@@ -195,7 +256,9 @@ function AvailabilityPage() {
             variant="secondary"
             disabled={
               state.isLoading ||
-              state.isCreating
+              state.isCreating ||
+              state
+                .isImportingSpecialDays
             }
             onClick={() => {
               void loadPeriods();
@@ -245,6 +308,160 @@ function AvailabilityPage() {
               }{' '}
               משמרות במצב טיוטה.
             </span>
+          </div>
+        </div>
+      ) : null}
+
+      {state.lastImportResult ? (
+        <div className="availability-import-result">
+          <div className="availability-import-summary">
+            <CheckCircle2
+              size={22}
+              aria-hidden="true"
+            />
+
+            <div>
+              <strong>
+                ייבוא החגים לשנת{' '}
+                {
+                  state
+                    .lastImportResult
+                    .year
+                }{' '}
+                הושלם
+              </strong>
+
+              <span>
+                התקבלו{' '}
+                {
+                  state
+                    .lastImportResult
+                    .fetchedEvents
+                }{' '}
+                אירועים, ומתוכם
+                נשמרו{' '}
+                {
+                  state
+                    .lastImportResult
+                    .importedEvents
+                }{' '}
+                ימים מיוחדים.
+              </span>
+            </div>
+          </div>
+
+          <div className="availability-imported-days">
+            {state
+              .lastImportResult
+              .importedDays
+              .map((day) => (
+                <div
+                  key={`${day.date}-${day.scheduleType}-${day.name}`}
+                  className="availability-imported-day"
+                >
+                  <div>
+                    <strong>
+                      {day.name}
+                    </strong>
+
+                    <span>
+                      {formatDateOnly(
+                        day.date,
+                      )}
+                    </span>
+                  </div>
+
+                  <span className="availability-special-day-type">
+                    {
+                      specialDayTypeLabels[
+                        day.scheduleType
+                      ]
+                    }
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
+      ) : null}
+
+      {canManage ? (
+        <div className="availability-import-card">
+          <div className="availability-card-header">
+            <Download
+              size={22}
+              aria-hidden="true"
+            />
+
+            <div>
+              <h2>
+                ייבוא חגים ומועדים
+              </h2>
+
+              <p>
+                ייבוא חגי ישראל
+                מ־Hebcal עבור השנה
+                שנבחרה.
+              </p>
+            </div>
+          </div>
+
+          <div className="availability-import-controls">
+            <label>
+              <span>
+                שנת ייבוא
+              </span>
+
+              <select
+                value={importYear}
+                disabled={
+                  state
+                    .isImportingSpecialDays
+                }
+                onChange={(
+                  event,
+                ) => {
+                  setImportYear(
+                    Number(
+                      event.target
+                        .value,
+                    ),
+                  );
+                }}
+              >
+                {availableYears.map(
+                  (year) => (
+                    <option
+                      key={year}
+                      value={year}
+                    >
+                      {year}
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+
+            <Button
+              type="button"
+              disabled={
+                state
+                  .isImportingSpecialDays ||
+                state.isCreating
+              }
+              onClick={() => {
+                void handleImportSpecialDays();
+              }}
+            >
+              <Download
+                size={18}
+                aria-hidden="true"
+              />
+
+              {state
+                .isImportingSpecialDays
+                ? 'מייבא חגים...'
+                : `ייבוא חגים לשנת ${importYear}`}
+            </Button>
           </div>
         </div>
       ) : null}
@@ -425,7 +642,9 @@ function AvailabilityPage() {
             <Button
               type="submit"
               disabled={
-                state.isCreating
+                state.isCreating ||
+                state
+                  .isImportingSpecialDays
               }
             >
               <CalendarPlus

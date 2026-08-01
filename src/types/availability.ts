@@ -33,3 +33,26 @@ export interface CreateAvailabilityPeriodResult {
   createdSlots: number;
   periodStatus: AvailabilityPeriodStatus;
 }
+export type SpecialDayScheduleType =
+  | 'holiday_eve'
+  | 'holiday_full'
+  | 'holiday_end'
+  | 'chol_hamoed';
+
+export interface ImportedSpecialDay {
+  date: string;
+  name: string;
+  scheduleType:
+    SpecialDayScheduleType;
+  holidayGroup: string | null;
+}
+
+export interface ImportSpecialDaysResult {
+  success: boolean;
+  year: number;
+  fetchedEvents: number;
+  importedEvents: number;
+  skippedEvents: number;
+  importedDays:
+    ImportedSpecialDay[];
+}

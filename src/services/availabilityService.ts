@@ -4,16 +4,19 @@ import type {
   AvailabilityPeriodStatus,
   CreateAvailabilityPeriodInput,
   CreateAvailabilityPeriodResult,
+  ImportSpecialDaysResult,
 } from '../types/availability';
 
 interface AvailabilityPeriodDatabaseRow {
   id: string;
   year: number;
   month: number;
-  status: AvailabilityPeriodStatus;
+  status:
+    AvailabilityPeriodStatus;
   title: string | null;
   instructions: string | null;
-  submission_deadline: string | null;
+  submission_deadline:
+    string | null;
   opened_at: string | null;
   closed_at: string | null;
   created_by: string | null;
@@ -25,11 +28,17 @@ interface AvailabilityPeriodDatabaseRow {
 interface CreateAvailabilityPeriodDatabaseRow {
   period_id: string;
   created_slots: number;
-  period_status: AvailabilityPeriodStatus;
+  period_status:
+    AvailabilityPeriodStatus;
+}
+
+interface FunctionErrorResponse {
+  error?: string;
 }
 
 function mapAvailabilityPeriod(
-  row: AvailabilityPeriodDatabaseRow,
+  row:
+    AvailabilityPeriodDatabaseRow,
 ): AvailabilityPeriod {
   return {
     id: row.id,
@@ -37,43 +46,98 @@ function mapAvailabilityPeriod(
     month: row.month,
     status: row.status,
     title: row.title,
-    instructions: row.instructions,
+    instructions:
+      row.instructions,
+
     submissionDeadline:
       row.submission_deadline,
-    openedAt: row.opened_at,
-    closedAt: row.closed_at,
-    createdBy: row.created_by,
-    updatedBy: row.updated_by,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+
+    openedAt:
+      row.opened_at,
+
+    closedAt:
+      row.closed_at,
+
+    createdBy:
+      row.created_by,
+
+    updatedBy:
+      row.updated_by,
+
+    createdAt:
+      row.created_at,
+
+    updatedAt:
+      row.updated_at,
   };
+}
+
+async function getFunctionErrorMessage(
+  error: unknown,
+): Promise<string> {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'context' in error
+  ) {
+    const context = (
+      error as {
+        context?: Response;
+      }
+    ).context;
+
+    if (
+      context instanceof Response
+    ) {
+      try {
+        const body =
+          (await context.json()) as
+            FunctionErrorResponse;
+
+        if (body.error) {
+          return body.error;
+        }
+      } catch {
+        return 'לא ניתן היה לקרוא את תגובת השרת.';
+      }
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'אירעה שגיאה בלתי צפויה.';
 }
 
 async function getAvailabilityPeriods():
   Promise<AvailabilityPeriod[]> {
-  const { data, error } = await supabase
-    .from('availability_periods')
-    .select(`
-      id,
-      year,
-      month,
-      status,
-      title,
-      instructions,
-      submission_deadline,
-      opened_at,
-      closed_at,
-      created_by,
-      updated_by,
-      created_at,
-      updated_at
-    `)
-    .order('year', {
-      ascending: false,
-    })
-    .order('month', {
-      ascending: false,
-    });
+  const { data, error } =
+    await supabase
+      .from(
+        'availability_periods',
+      )
+      .select(`
+        id,
+        year,
+        month,
+        status,
+        title,
+        instructions,
+        submission_deadline,
+        opened_at,
+        closed_at,
+        created_by,
+        updated_by,
+        created_at,
+        updated_at
+      `)
+      .order('year', {
+        ascending: false,
+      })
+      .order('month', {
+        ascending: false,
+      });
 
   if (error) {
     console.error(
@@ -96,7 +160,8 @@ async function getAvailabilityPeriods():
 }
 
 async function createAvailabilityPeriod(
-  input: CreateAvailabilityPeriodInput,
+  input:
+    CreateAvailabilityPeriodInput,
 ): Promise<CreateAvailabilityPeriodResult> {
   const {
     data,
@@ -118,7 +183,8 @@ async function createAvailabilityPeriod(
         null,
 
       requested_instructions:
-        input.instructions?.trim() ||
+        input.instructions
+          ?.trim() ||
         null,
     },
   );
@@ -172,7 +238,61 @@ async function createAvailabilityPeriod(
   };
 }
 
+async function importCalendarSpecialDays(
+  year: number,
+): Promise<ImportSpecialDaysResult> {
+  if (
+    !Number.isInteger(year) ||
+    year < 2020 ||
+    year > 2200
+  ) {
+    throw new Error(
+      'שנת הייבוא אינה תקינה.',
+    );
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase.functions.invoke<
+    ImportSpecialDaysResult
+  >(
+    'import-calendar-special-days',
+    {
+      body: {
+        year,
+      },
+    },
+  );
+
+  if (error) {
+    console.error(
+      'IMPORT CALENDAR SPECIAL DAYS ERROR:',
+      error,
+    );
+
+    const errorMessage =
+      await getFunctionErrorMessage(
+        error,
+      );
+
+    throw new Error(errorMessage);
+  }
+
+  if (
+    !data ||
+    data.success !== true
+  ) {
+    throw new Error(
+      'ייבוא החגים הסתיים ללא תשובה תקינה מהשרת.',
+    );
+  }
+
+  return data;
+}
+
 export const availabilityService = {
   getAvailabilityPeriods,
   createAvailabilityPeriod,
+  importCalendarSpecialDays,
 };

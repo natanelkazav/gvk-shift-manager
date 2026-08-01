@@ -191,3 +191,128 @@
     flex-direction: column;
   }
 }
+.availability-import-card,
+.availability-import-result {
+  padding: 20px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #eff6ff;
+}
+
+.availability-import-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.availability-import-controls label {
+  display: flex;
+  min-width: 180px;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.availability-import-controls label > span {
+  color: #0f172a;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.availability-import-controls select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+}
+
+.availability-import-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+
+.availability-import-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: #047857;
+}
+
+.availability-import-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.availability-import-summary span {
+  font-size: 0.84rem;
+}
+
+.availability-imported-days {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(220px, 1fr)
+    );
+  gap: 10px;
+}
+
+.availability-imported-day {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.availability-imported-day > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.availability-imported-day strong {
+  color: #0f172a;
+  font-size: 0.84rem;
+}
+
+.availability-imported-day span {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.availability-special-day-type {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8 !important;
+  font-size: 0.72rem !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .availability-import-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .availability-import-controls label {
+    min-width: 0;
+  }
+
+  .availability-import-controls
+    .button {
+    width: 100%;
+  }
+}
