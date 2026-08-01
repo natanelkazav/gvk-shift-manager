@@ -42,6 +42,8 @@ export const DEFAULT_ROLE_PERMISSIONS:
       'shift_swaps.view',
       'shift_swaps.approve',
       'archive.view',
+      'availability.view',
+      'availability.manage',
       'users.view',
     ],
 
@@ -52,6 +54,7 @@ export const DEFAULT_ROLE_PERMISSIONS:
       'notifications.view',
       'notifications.manage',
       'statistics.view',
+      'availability.view',
       'shift_swaps.view',
       'archive.view',
     ],

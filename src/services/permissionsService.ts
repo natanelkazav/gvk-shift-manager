@@ -22,6 +22,8 @@ function isPermissionKey(
       'archive.view',
       'users.view',
       'users.manage',
+      'availability.view',
+      'availability.manage',
       'audit.view',
       'settings.view',
       'settings.manage',

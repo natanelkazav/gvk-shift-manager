@@ -1,0 +1,193 @@
+.availability-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.availability-error,
+.availability-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+}
+
+.availability-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.availability-success {
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.availability-success > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.availability-success span {
+  font-size: 0.84rem;
+}
+
+.availability-create-card,
+.availability-periods-card {
+  padding: 20px;
+  border: 1px solid
+    var(--color-border, #e2e8f0);
+  border-radius: 14px;
+  background:
+    var(--color-surface, #ffffff);
+}
+
+.availability-card-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 18px;
+}
+
+.availability-card-header h2,
+.availability-periods-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.availability-card-header p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.availability-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.availability-form-grid label,
+.availability-instructions-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.availability-form-grid label > span,
+.availability-instructions-field > span {
+  color: #0f172a;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.availability-form-grid input,
+.availability-form-grid select,
+.availability-instructions-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+}
+
+.availability-instructions-field {
+  margin-top: 16px;
+}
+
+.availability-instructions-field textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.availability-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.availability-periods-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.availability-periods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.availability-period-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #f8fafc;
+}
+
+.availability-period-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.availability-period-item span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.availability-status {
+  display: inline-flex;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.availability-status-draft {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.availability-status-open {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.availability-status-closed {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.availability-status-archived {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.availability-empty-state {
+  padding: 36px 18px;
+  color: #64748b;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .availability-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-period-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

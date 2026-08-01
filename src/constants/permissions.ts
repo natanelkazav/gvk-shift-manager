@@ -46,6 +46,26 @@ export const permissionGroups:
       ],
     },
     {
+      id: 'availability',
+      title: 'אילוצי מוקדנים',
+      description:
+        'הגשת זמינות וניהול תקופות אילוצים חודשיות.',
+      permissions: [
+        {
+          key: 'availability.view',
+          label: 'צפייה והגשת אילוצים',
+          description:
+            'מאפשר לצפות במשמרות החודש ולהגיש זמינות אישית.',
+        },
+        {
+          key: 'availability.manage',
+          label: 'ניהול תקופות אילוצים',
+          description:
+            'מאפשר לפתוח, לסגור ולנהל תקופות הגשת אילוצים.',
+        },
+      ],
+    },
+    {
       id: 'driver-schedule',
       title: 'לוח כוננים',
       description:

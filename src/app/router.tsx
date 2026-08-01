@@ -17,6 +17,7 @@ import SettingsPage from '../pages/SettingsPage';
 import ShiftSwapsPage from '../pages/ShiftSwapsPage';
 import StatisticsPage from '../pages/StatisticsPage';
 import UsersPage from '../pages/UsersPage';
+import AvailabilityPage from '../pages/AvailabilityPage';
 import AuditLogPage from '../pages/AuditLogPage';
 
 export const router =
@@ -57,6 +58,21 @@ export const router =
               {
                 path: 'audit',
                 element: <AuditLogPage />,
+              },
+            ],
+          },
+          {
+            element: (
+              <PermissionRoute
+                permission="availability.view"
+              />
+            ),
+            children: [
+              {
+                path: 'availability',
+                element: (
+                  <AvailabilityPage />
+                ),
               },
             ],
           },

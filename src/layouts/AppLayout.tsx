@@ -9,6 +9,7 @@ import {
   Menu,
   Repeat2,
   ScrollText,
+  ClipboardList,
   Settings,
   Users,
   X,
@@ -48,6 +49,12 @@ const navigationItems: NavigationItem[] = [
     path: '/schedule',
     icon: CalendarDays,
     permission: 'schedule.view',
+  },
+  {
+    label: 'אילוצי מוקדנים',
+    path: '/availability',
+    icon: ClipboardList,
+    permission: 'availability.view',
   },
   {
     label: 'לוח כוננים',

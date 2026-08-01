@@ -25,6 +25,8 @@ export type PermissionKey =
   | 'users.view'
   | 'users.manage'
   | 'audit.view'
+  | 'availability.view'
+  | 'availability.manage'
   | 'settings.view'
   | 'settings.manage';
 

@@ -344,13 +344,6 @@ async function deleteUser(
       },
     });
 
-  console.log(
-    'DELETE USER FUNCTION RESPONSE:',
-    {
-      data,
-      error,
-    },
-  );
 
   if (error) {
     const errorMessage =
