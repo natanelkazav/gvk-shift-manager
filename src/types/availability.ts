@@ -66,3 +66,10 @@ export interface OpenAvailabilityPeriodResult {
   openedAt: string;
   shiftSlotsCount: number;
 }
+export interface CloseAvailabilityPeriodResult {
+  periodId: string;
+  periodStatus: 'closed';
+  closedAt: string;
+  totalDispatchers: number;
+  submittedDispatchers: number;
+}

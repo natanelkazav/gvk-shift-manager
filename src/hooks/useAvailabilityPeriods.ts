@@ -10,6 +10,7 @@ import type {
   CreateAvailabilityPeriodResult,
   ImportSpecialDaysResult,
   OpenAvailabilityPeriodResult,
+  CloseAvailabilityPeriodResult,
   RebuildAvailabilityPeriodResult,
 } from '../types/availability';
 
@@ -24,7 +25,11 @@ interface AvailabilityPeriodsState {
     string | null;
 
   error: string | null;
+  closingPeriodId:
+  string | null;
 
+lastClosedResult:
+  CloseAvailabilityPeriodResult | null;
   lastCreatedResult:
     CreateAvailabilityPeriodResult | null;
 
@@ -66,6 +71,12 @@ interface UseAvailabilityPeriodsResult {
   openPeriod: (
   periodId: string,
 ) => Promise<OpenAvailabilityPeriodResult>;
+closePeriod: (
+  periodId: string,
+) => Promise<CloseAvailabilityPeriodResult>;
+
+clearClosedResult:
+  () => void;
 }
 
 const initialState:
@@ -79,6 +90,8 @@ const initialState:
     lastCreatedResult: null,
     lastImportResult: null,
     lastRebuildResult: null,
+    closingPeriodId: null,
+    lastClosedResult: null,
     openingPeriodId: null,
 lastOpenedResult: null,
   };
@@ -343,7 +356,85 @@ export function useAvailabilityPeriods():
         }),
       );
     }, []);
+const closePeriod =
+  useCallback(
+    async (
+      periodId: string,
+    ): Promise<CloseAvailabilityPeriodResult> => {
+      setState(
+        (currentState) => ({
+          ...currentState,
 
+          closingPeriodId:
+            periodId,
+
+          error: null,
+
+          lastClosedResult:
+            null,
+        }),
+      );
+
+      try {
+        const result =
+          await availabilityService
+            .closeAvailabilityPeriod(
+              periodId,
+            );
+
+        const periods =
+          await availabilityService
+            .getAvailabilityPeriods();
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            periods,
+
+            closingPeriodId:
+              null,
+
+            error: null,
+
+            lastClosedResult:
+              result,
+          }),
+        );
+
+        return result;
+      } catch (error) {
+        const errorMessage =
+          getErrorMessage(error);
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            closingPeriodId:
+              null,
+
+            error:
+              errorMessage,
+          }),
+        );
+
+        throw error;
+      }
+    },
+    [],
+  );
+  const clearClosedResult =
+  useCallback((): void => {
+    setState(
+      (currentState) => ({
+        ...currentState,
+
+        lastClosedResult:
+          null,
+      }),
+    );
+  }, []);
   const clearRebuildResult =
     useCallback((): void => {
       setState(
@@ -421,17 +512,19 @@ const openPeriod =
     },
     [],
   );
-  return {
-    state,
-    loadPeriods,
-    createPeriod,
-    importSpecialDays,
-    rebuildPeriodSlots,
-    clearError,
-    clearCreatedResult,
-    clearImportResult,
-    clearRebuildResult,
-    openPeriod,
-  };
+return {
+  state,
+  loadPeriods,
+  createPeriod,
+  importSpecialDays,
+  rebuildPeriodSlots,
+  openPeriod,
+  closePeriod,
+  clearError,
+  clearCreatedResult,
+  clearImportResult,
+  clearRebuildResult,
+  clearClosedResult,
+};
   
 }

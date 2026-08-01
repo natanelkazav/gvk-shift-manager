@@ -183,6 +183,7 @@ const {
     rebuildPeriodSlots,
     openPeriod,
     clearError,
+    closePeriod,
   } = useAvailabilityPeriods();
 const submissionsPanelRef =
   useRef<HTMLDivElement | null>(
@@ -319,6 +320,72 @@ const handleRefreshSubmissionsTracking =
       selectedPeriodId,
     );
   };
+const handleCloseAvailabilityPeriod =
+  async (): Promise<void> => {
+    if (
+      !selectedPeriodId ||
+      !submissionsState.data
+    ) {
+      return;
+    }
+
+    const {
+      summary,
+      period,
+    } = submissionsState.data;
+
+    if (
+      summary.totalDispatchers === 0 ||
+      summary.submittedDispatchers !==
+        summary.totalDispatchers
+    ) {
+      return;
+    }
+
+    const periodTitle =
+      period.title ??
+      `${hebrewMonths[
+        period.month - 1
+      ]} ${period.year}`;
+
+    const confirmed =
+      window.confirm(
+        `האם לסגור את תקופת האילוצים "${periodTitle}"?\n\nלאחר הסגירה המוקדנים לא יוכלו עוד לשנות או להגיש אילוצים.`,
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    clearError();
+
+    try {
+      await closePeriod(
+        selectedPeriodId,
+      );
+
+      await loadPeriodSubmissions(
+        selectedPeriodId,
+      );
+    } catch {
+      /*
+       * הודעת השגיאה מוצגת
+       * מתוך useAvailabilityPeriods.
+       */
+    }
+  };
+  const canCloseSelectedPeriod =
+  Boolean(
+    submissionsState.data &&
+    submissionsState.data.period.status ===
+      'open' &&
+    submissionsState.data.summary
+      .totalDispatchers > 0 &&
+    submissionsState.data.summary
+      .submittedDispatchers ===
+        submissionsState.data.summary
+          .totalDispatchers,
+  );
   return (
     <section className="availability-page">
       <PageHeader
@@ -362,7 +429,34 @@ const handleRefreshSubmissionsTracking =
           {state.error}
         </div>
       ) : null}
+      {state.lastClosedResult ? (
+        <div
+          className="availability-success"
+          role="status"
+        >
+          <CheckCircle2
+            size={22}
+            aria-hidden="true"
+          />
 
+          <div>
+            <strong>
+              תקופת האילוצים נסגרה
+            </strong>
+
+            <span>
+              כל{' '}
+              {
+                state
+                  .lastClosedResult
+                  .submittedDispatchers
+              }{' '}
+              המוקדנים הגישו את
+              האילוצים והתקופה נעולה.
+            </span>
+          </div>
+        </div>
+      ) : null}
       {state.lastCreatedResult ? (
         <div
           className="availability-success"
@@ -1006,23 +1100,34 @@ const handleRefreshSubmissionsTracking =
           ref={submissionsPanelRef}
           className="availability-submissions-anchor"
         >
-          <AvailabilitySubmissionsPanel
-            isLoading={
-              submissionsState.isLoading
-            }
-            error={
-              submissionsState.error
-            }
-            data={
-              submissionsState.data
-            }
-            onRefresh={
-              handleRefreshSubmissionsTracking
-            }
-            onClose={
-              resetSubmissionsTracking
-            }
-          />
+        <AvailabilitySubmissionsPanel
+          isLoading={
+            submissionsState.isLoading
+          }
+          isClosing={
+            state.closingPeriodId ===
+            selectedPeriodId
+          }
+          canClose={
+            canCloseSelectedPeriod
+          }
+          error={
+            submissionsState.error ??
+            state.error
+          }
+          data={
+            submissionsState.data
+          }
+          onRefresh={
+            handleRefreshSubmissionsTracking
+          }
+          onClosePeriod={
+            handleCloseAvailabilityPeriod
+          }
+          onClose={
+            resetSubmissionsTracking
+          }
+        />
         </div>
       ) : null}
     </section>

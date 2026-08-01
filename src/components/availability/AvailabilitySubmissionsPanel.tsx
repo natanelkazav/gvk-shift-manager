@@ -3,6 +3,7 @@ import {
   Clock3,
   RefreshCw,
   UserRoundCheck,
+  LockKeyhole,
   UsersRound,
 } from 'lucide-react';
 import { Button } from '../ui';
@@ -14,7 +15,8 @@ import type {
 interface AvailabilitySubmissionsPanelProps {
   isLoading: boolean;
   error: string | null;
-
+isClosing: boolean;
+canClose: boolean;
   data: {
     period: {
       id: string;
@@ -37,6 +39,8 @@ interface AvailabilitySubmissionsPanelProps {
   } | null;
 
   onRefresh: () => Promise<void>;
+  onClosePeriod:
+  () => Promise<void>;
   onClose: () => void;
 }
 
@@ -77,9 +81,12 @@ function formatDate(
 
 function AvailabilitySubmissionsPanel({
   isLoading,
+  isClosing,
+  canClose,
   error,
   data,
   onRefresh,
+  onClosePeriod,
   onClose,
 }: AvailabilitySubmissionsPanelProps) {
   if (isLoading) {
@@ -172,6 +179,27 @@ function AvailabilitySubmissionsPanel({
         </div>
 
         <div className="availability-submissions-header-actions">
+          {data.period.status === 'open' ? (
+          <Button
+            type="button"
+            disabled={
+              !canClose ||
+              isClosing
+            }
+            onClick={() => {
+              void onClosePeriod();
+            }}
+          >
+            <LockKeyhole
+              size={17}
+              aria-hidden="true"
+            />
+
+            {isClosing
+              ? 'סוגר תקופה...'
+              : 'סגירת תקופת האילוצים'}
+          </Button>
+        ) : null}
           <Button
             type="button"
             variant="secondary"

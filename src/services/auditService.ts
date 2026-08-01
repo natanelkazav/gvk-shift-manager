@@ -37,6 +37,7 @@ const supportedActions = new Set<AuditAction>([
   'user_password_change_required',
   'user_password_change_completed',
   'availability_period_opened',
+  'availability_period_closed',
   'user_deleted',
 ]);
 

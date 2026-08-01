@@ -57,6 +57,8 @@ const actionLabels: Record<
 
   user_deleted:
     'מחיקת משתמש',
+  availability_period_closed:
+  'סגירת תקופת אילוצים',
 };
 
 function formatDate(

@@ -6,6 +6,7 @@ import type {
   CreateAvailabilityPeriodResult,
   ImportSpecialDaysResult,
   OpenAvailabilityPeriodResult,
+  CloseAvailabilityPeriodResult,
   RebuildAvailabilityPeriodResult,
 } from '../types/availability';
 
@@ -46,6 +47,13 @@ interface OpenAvailabilityPeriodDatabaseRow {
   period_status: 'open';
   opened_at: string;
   shift_slots_count: number;
+}
+interface CloseAvailabilityPeriodDatabaseRow {
+  period_id: string;
+  period_status: 'closed';
+  closed_at: string;
+  total_dispatchers: number;
+  submitted_dispatchers: number;
 }
 function mapAvailabilityPeriod(
   row:
@@ -497,10 +505,134 @@ const resultRows =
       result.shift_slots_count,
   };
 }
+async function closeAvailabilityPeriod(
+  periodId: string,
+): Promise<CloseAvailabilityPeriodResult> {
+  const normalizedPeriodId =
+    periodId.trim();
+
+  if (!normalizedPeriodId) {
+    throw new Error(
+      'לא התקבל מזהה תקופת אילוצים תקין.',
+    );
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase.rpc(
+    'close_availability_period',
+    {
+      requested_period_id:
+        normalizedPeriodId,
+    },
+  );
+
+  if (error) {
+    console.error(
+      'CLOSE AVAILABILITY PERIOD ERROR:',
+      {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      },
+    );
+
+    const normalizedMessage =
+      error.message.toLowerCase();
+
+    if (
+      normalizedMessage.includes(
+        'only open',
+      )
+    ) {
+      throw new Error(
+        'ניתן לסגור רק תקופת אילוצים שפתוחה להגשה.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'not all active dispatchers',
+      )
+    ) {
+      throw new Error(
+        'לא ניתן לסגור את התקופה לפני שכל המוקדנים הפעילים הגישו את האילוצים.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'no active dispatchers',
+      )
+    ) {
+      throw new Error(
+        'לא נמצאו מוקדנים פעילים עבור התקופה.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'not found',
+      )
+    ) {
+      throw new Error(
+        'תקופת האילוצים לא נמצאה.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'not allowed',
+      )
+    ) {
+      throw new Error(
+        'אין לך הרשאה לסגור תקופות אילוצים.',
+      );
+    }
+
+    throw new Error(
+      'לא ניתן היה לסגור את תקופת האילוצים.',
+    );
+  }
+
+  const rows =
+    data as
+      | CloseAvailabilityPeriodDatabaseRow[]
+      | null;
+
+  const result =
+    rows?.[0];
+
+  if (!result) {
+    throw new Error(
+      'סגירת תקופת האילוצים הסתיימה ללא תשובה תקינה מהשרת.',
+    );
+  }
+
+  return {
+    periodId:
+      result.period_id,
+
+    periodStatus:
+      result.period_status,
+
+    closedAt:
+      result.closed_at,
+
+    totalDispatchers:
+      result.total_dispatchers,
+
+    submittedDispatchers:
+      result.submitted_dispatchers,
+  };
+}
 export const availabilityService = {
   getAvailabilityPeriods,
   createAvailabilityPeriod,
   importCalendarSpecialDays,
   rebuildAvailabilityPeriodSlots,
   openAvailabilityPeriod,
+  closeAvailabilityPeriod,
 };
