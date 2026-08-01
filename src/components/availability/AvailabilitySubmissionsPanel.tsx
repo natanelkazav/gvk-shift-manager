@@ -1,9 +1,10 @@
 import {
+  BarChart3,
   CircleDashed,
   Clock3,
+  LockKeyhole,
   RefreshCw,
   UserRoundCheck,
-  LockKeyhole,
   UsersRound,
 } from 'lucide-react';
 import { Button } from '../ui';
@@ -14,9 +15,10 @@ import type {
 
 interface AvailabilitySubmissionsPanelProps {
   isLoading: boolean;
+  isClosing: boolean;
+  canClose: boolean;
   error: string | null;
-isClosing: boolean;
-canClose: boolean;
+
   data: {
     period: {
       id: string;
@@ -39,8 +41,8 @@ canClose: boolean;
   } | null;
 
   onRefresh: () => Promise<void>;
-  onClosePeriod:
-  () => Promise<void>;
+  onOpenMatrix: () => Promise<void>;
+  onClosePeriod: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -86,6 +88,7 @@ function AvailabilitySubmissionsPanel({
   error,
   data,
   onRefresh,
+  onOpenMatrix,
   onClosePeriod,
   onClose,
 }: AvailabilitySubmissionsPanelProps) {
@@ -179,27 +182,44 @@ function AvailabilitySubmissionsPanel({
         </div>
 
         <div className="availability-submissions-header-actions">
-          {data.period.status === 'open' ? (
           <Button
             type="button"
-            disabled={
-              !canClose ||
-              isClosing
-            }
+            variant="secondary"
             onClick={() => {
-              void onClosePeriod();
+              void onOpenMatrix();
             }}
           >
-            <LockKeyhole
+            <BarChart3
               size={17}
               aria-hidden="true"
             />
 
-            {isClosing
-              ? 'סוגר תקופה...'
-              : 'סגירת תקופת האילוצים'}
+            הצגת זמינות למשמרות
           </Button>
-        ) : null}
+
+          {data.period.status ===
+          'open' ? (
+            <Button
+              type="button"
+              disabled={
+                !canClose ||
+                isClosing
+              }
+              onClick={() => {
+                void onClosePeriod();
+              }}
+            >
+              <LockKeyhole
+                size={17}
+                aria-hidden="true"
+              />
+
+              {isClosing
+                ? 'סוגר תקופה...'
+                : 'סגירת תקופת האילוצים'}
+            </Button>
+          ) : null}
+
           <Button
             type="button"
             variant="secondary"

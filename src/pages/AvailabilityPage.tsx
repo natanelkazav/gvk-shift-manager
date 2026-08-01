@@ -31,6 +31,11 @@ import {
   useAvailabilityPeriodSubmissions,
 } from '../hooks/useAvailabilityPeriodSubmissions';
 import AvailabilitySubmissionsPanel from '../components/availability/AvailabilitySubmissionsPanel';
+import {
+  useAvailabilityPeriodMatrix,
+} from '../hooks/useAvailabilityPeriodMatrix';
+
+import AvailabilityMatrixPanel from '../components/availability/AvailabilityMatrixPanel';
 
 const hebrewMonths = [
   'ינואר',
@@ -176,6 +181,18 @@ const {
 } =
   useAvailabilityPeriodSubmissions();
   const {
+  state:
+    matrixState,
+  selectedPeriodId:
+    selectedMatrixPeriodId,
+  statistics:
+    matrixStatistics,
+  loadMatrix,
+  reset:
+    resetMatrix,
+} =
+  useAvailabilityPeriodMatrix();
+  const {
     state,
     loadPeriods,
     createPeriod,
@@ -185,6 +202,10 @@ const {
     clearError,
     closePeriod,
   } = useAvailabilityPeriods();
+  const matrixPanelRef =
+  useRef<HTMLDivElement | null>(
+    null,
+  );
 const submissionsPanelRef =
   useRef<HTMLDivElement | null>(
     null,
@@ -386,6 +407,36 @@ const handleCloseAvailabilityPeriod =
         submissionsState.data.summary
           .totalDispatchers,
   );
+  const handleOpenAvailabilityMatrix =
+  async (): Promise<void> => {
+    if (!selectedPeriodId) {
+      return;
+    }
+
+    await loadMatrix(
+      selectedPeriodId,
+    );
+
+    window.setTimeout(() => {
+      matrixPanelRef
+        .current
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 0);
+  };
+
+const handleRefreshAvailabilityMatrix =
+  async (): Promise<void> => {
+    if (!selectedMatrixPeriodId) {
+      return;
+    }
+
+    await loadMatrix(
+      selectedMatrixPeriodId,
+    );
+  };
   return (
     <section className="availability-page">
       <PageHeader
@@ -1121,15 +1172,47 @@ const handleCloseAvailabilityPeriod =
           onRefresh={
             handleRefreshSubmissionsTracking
           }
+          onOpenMatrix={
+            handleOpenAvailabilityMatrix
+          }
           onClosePeriod={
             handleCloseAvailabilityPeriod
           }
-          onClose={
-            resetSubmissionsTracking
-          }
+          onClose={() => {
+            resetSubmissionsTracking();
+            resetMatrix();
+          }}
         />
         </div>
       ) : null}
+      {canManage &&
+        selectedMatrixPeriodId ? (
+          <div
+            ref={matrixPanelRef}
+            className="availability-matrix-anchor"
+          >
+            <AvailabilityMatrixPanel
+              data={
+                matrixState.data
+              }
+              statistics={
+                matrixStatistics
+              }
+              isLoading={
+                matrixState.isLoading
+              }
+              error={
+                matrixState.error
+              }
+              onRefresh={
+                handleRefreshAvailabilityMatrix
+              }
+              onClose={
+                resetMatrix
+              }
+            />
+          </div>
+        ) : null}
     </section>
   );
 }
