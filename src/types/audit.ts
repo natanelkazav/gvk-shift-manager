@@ -8,6 +8,7 @@ export type AuditAction =
   | 'user_password_change_completed'
   | 'user_deleted'
   | 'availability_period_closed'
+  | 'availability_period_deleted'
   | 'availability_period_opened';
 
 export interface AuditLogEntry {

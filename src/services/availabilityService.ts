@@ -7,6 +7,7 @@ import type {
   ImportSpecialDaysResult,
   OpenAvailabilityPeriodResult,
   CloseAvailabilityPeriodResult,
+  DeleteAvailabilityPeriodResult,
   RebuildAvailabilityPeriodResult,
 } from '../types/availability';
 
@@ -27,7 +28,15 @@ interface AvailabilityPeriodDatabaseRow {
   created_at: string;
   updated_at: string;
 }
-
+interface DeleteAvailabilityPeriodDatabaseRow {
+  deleted_period_id: string;
+  deleted_period_title: string | null;
+  deleted_period_year: number;
+  deleted_period_month: number;
+  deleted_shift_slots: number;
+  deleted_availability_rows: number;
+  deleted_submissions: number;
+}
 interface CreateAvailabilityPeriodDatabaseRow {
   period_id: string;
   created_slots: number;
@@ -628,6 +637,125 @@ async function closeAvailabilityPeriod(
       result.submitted_dispatchers,
   };
 }
+async function deleteAvailabilityPeriod(
+  periodId: string,
+): Promise<DeleteAvailabilityPeriodResult> {
+  const normalizedPeriodId =
+    periodId.trim();
+
+  if (!normalizedPeriodId) {
+    throw new Error(
+      'לא התקבל מזהה תקופת אילוצים תקין.',
+    );
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase.rpc(
+    'delete_availability_period',
+    {
+      requested_period_id:
+        normalizedPeriodId,
+    },
+  );
+
+  if (error) {
+    console.error(
+      'DELETE AVAILABILITY PERIOD ERROR:',
+      {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      },
+    );
+
+    const normalizedMessage =
+      error.message.toLowerCase();
+
+    if (
+      normalizedMessage.includes(
+        'not authenticated',
+      )
+    ) {
+      throw new Error(
+        'לא נמצאה התחברות פעילה. יש להתחבר מחדש.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'not active',
+      )
+    ) {
+      throw new Error(
+        'המשתמש אינו פעיל.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'not allowed',
+      )
+    ) {
+      throw new Error(
+        'אין לך הרשאה למחוק תקופות אילוצים.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'not found',
+      )
+    ) {
+      throw new Error(
+        'תקופת האילוצים לא נמצאה או שכבר נמחקה.',
+      );
+    }
+
+    throw new Error(
+      'לא ניתן היה למחוק את תקופת האילוצים.',
+    );
+  }
+
+  const rows =
+    data as
+      | DeleteAvailabilityPeriodDatabaseRow[]
+      | null;
+
+  const result =
+    rows?.[0];
+
+  if (!result) {
+    throw new Error(
+      'מחיקת תקופת האילוצים הסתיימה ללא תשובה תקינה מהשרת.',
+    );
+  }
+
+  return {
+    deletedPeriodId:
+      result.deleted_period_id,
+
+    deletedPeriodTitle:
+      result.deleted_period_title,
+
+    deletedPeriodYear:
+      result.deleted_period_year,
+
+    deletedPeriodMonth:
+      result.deleted_period_month,
+
+    deletedShiftSlots:
+      result.deleted_shift_slots,
+
+    deletedAvailabilityRows:
+      result.deleted_availability_rows,
+
+    deletedSubmissions:
+      result.deleted_submissions,
+  };
+}
 export const availabilityService = {
   getAvailabilityPeriods,
   createAvailabilityPeriod,
@@ -635,4 +763,5 @@ export const availabilityService = {
   rebuildAvailabilityPeriodSlots,
   openAvailabilityPeriod,
   closeAvailabilityPeriod,
+  deleteAvailabilityPeriod,
 };

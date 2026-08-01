@@ -6,11 +6,12 @@ import {
 import { availabilityService } from '../services/availabilityService';
 import type {
   AvailabilityPeriod,
+  CloseAvailabilityPeriodResult,
   CreateAvailabilityPeriodInput,
   CreateAvailabilityPeriodResult,
+  DeleteAvailabilityPeriodResult,
   ImportSpecialDaysResult,
   OpenAvailabilityPeriodResult,
-  CloseAvailabilityPeriodResult,
   RebuildAvailabilityPeriodResult,
 } from '../types/availability';
 
@@ -21,15 +22,13 @@ interface AvailabilityPeriodsState {
   isCreating: boolean;
   isImportingSpecialDays: boolean;
 
-  rebuildingPeriodId:
-    string | null;
+  rebuildingPeriodId: string | null;
+  openingPeriodId: string | null;
+  closingPeriodId: string | null;
+  deletingPeriodId: string | null;
 
   error: string | null;
-  closingPeriodId:
-  string | null;
 
-lastClosedResult:
-  CloseAvailabilityPeriodResult | null;
   lastCreatedResult:
     CreateAvailabilityPeriodResult | null;
 
@@ -37,17 +36,23 @@ lastClosedResult:
     ImportSpecialDaysResult | null;
 
   lastRebuildResult:
-  RebuildAvailabilityPeriodResult | null;
-    openingPeriodId: string | null;
+    RebuildAvailabilityPeriodResult | null;
 
-lastOpenedResult:
-  OpenAvailabilityPeriodResult | null;
+  lastOpenedResult:
+    OpenAvailabilityPeriodResult | null;
+
+  lastClosedResult:
+    CloseAvailabilityPeriodResult | null;
+
+  lastDeletedResult:
+    DeleteAvailabilityPeriodResult | null;
 }
 
 interface UseAvailabilityPeriodsResult {
   state: AvailabilityPeriodsState;
 
-  loadPeriods: () => Promise<void>;
+  loadPeriods:
+    () => Promise<void>;
 
   createPeriod: (
     input: CreateAvailabilityPeriodInput,
@@ -61,39 +66,58 @@ interface UseAvailabilityPeriodsResult {
     periodId: string,
   ) => Promise<RebuildAvailabilityPeriodResult>;
 
-  clearError: () => void;
-
-  clearCreatedResult: () => void;
-
-  clearImportResult: () => void;
-
-  clearRebuildResult: () => void;
   openPeriod: (
-  periodId: string,
-) => Promise<OpenAvailabilityPeriodResult>;
-closePeriod: (
-  periodId: string,
-) => Promise<CloseAvailabilityPeriodResult>;
+    periodId: string,
+  ) => Promise<OpenAvailabilityPeriodResult>;
 
-clearClosedResult:
-  () => void;
+  closePeriod: (
+    periodId: string,
+  ) => Promise<CloseAvailabilityPeriodResult>;
+
+  deletePeriod: (
+    periodId: string,
+  ) => Promise<DeleteAvailabilityPeriodResult>;
+
+  clearError:
+    () => void;
+
+  clearCreatedResult:
+    () => void;
+
+  clearImportResult:
+    () => void;
+
+  clearRebuildResult:
+    () => void;
+
+  clearClosedResult:
+    () => void;
+
+  clearDeletedResult:
+    () => void;
 }
 
 const initialState:
   AvailabilityPeriodsState = {
     periods: [],
+
     isLoading: true,
     isCreating: false,
     isImportingSpecialDays: false,
+
     rebuildingPeriodId: null,
+    openingPeriodId: null,
+    closingPeriodId: null,
+    deletingPeriodId: null,
+
     error: null,
+
     lastCreatedResult: null,
     lastImportResult: null,
     lastRebuildResult: null,
-    closingPeriodId: null,
+    lastOpenedResult: null,
     lastClosedResult: null,
-    openingPeriodId: null,
-lastOpenedResult: null,
+    lastDeletedResult: null,
   };
 
 function getErrorMessage(
@@ -146,7 +170,9 @@ export function useAvailabilityPeriods():
               ...currentState,
               isLoading: false,
               error:
-                getErrorMessage(error),
+                getErrorMessage(
+                  error,
+                ),
             }),
           );
         }
@@ -327,6 +353,192 @@ export function useAvailabilityPeriods():
       [],
     );
 
+  const openPeriod =
+    useCallback(
+      async (
+        periodId: string,
+      ): Promise<OpenAvailabilityPeriodResult> => {
+        setState(
+          (currentState) => ({
+            ...currentState,
+            openingPeriodId:
+              periodId,
+            error: null,
+            lastOpenedResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await availabilityService
+              .openAvailabilityPeriod(
+                periodId,
+              );
+
+          const periods =
+            await availabilityService
+              .getAvailabilityPeriods();
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+              periods,
+              openingPeriodId:
+                null,
+              error: null,
+              lastOpenedResult:
+                result,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(error);
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+              openingPeriodId:
+                null,
+              error: errorMessage,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [],
+    );
+
+  const closePeriod =
+    useCallback(
+      async (
+        periodId: string,
+      ): Promise<CloseAvailabilityPeriodResult> => {
+        setState(
+          (currentState) => ({
+            ...currentState,
+            closingPeriodId:
+              periodId,
+            error: null,
+            lastClosedResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await availabilityService
+              .closeAvailabilityPeriod(
+                periodId,
+              );
+
+          const periods =
+            await availabilityService
+              .getAvailabilityPeriods();
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+              periods,
+              closingPeriodId:
+                null,
+              error: null,
+              lastClosedResult:
+                result,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(error);
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+              closingPeriodId:
+                null,
+              error: errorMessage,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [],
+    );
+
+  const deletePeriod =
+    useCallback(
+      async (
+        periodId: string,
+      ): Promise<DeleteAvailabilityPeriodResult> => {
+        const normalizedPeriodId =
+          periodId.trim();
+
+        if (!normalizedPeriodId) {
+          throw new Error(
+            'לא התקבל מזהה תקופת אילוצים תקין.',
+          );
+        }
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+            deletingPeriodId:
+              normalizedPeriodId,
+            error: null,
+            lastDeletedResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await availabilityService
+              .deleteAvailabilityPeriod(
+                normalizedPeriodId,
+              );
+
+          const periods =
+            await availabilityService
+              .getAvailabilityPeriods();
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+              periods,
+              deletingPeriodId:
+                null,
+              error: null,
+              lastDeletedResult:
+                result,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(error);
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+              deletingPeriodId:
+                null,
+              error: errorMessage,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [],
+    );
+
   const clearError =
     useCallback((): void => {
       setState(
@@ -342,7 +554,8 @@ export function useAvailabilityPeriods():
       setState(
         (currentState) => ({
           ...currentState,
-          lastCreatedResult: null,
+          lastCreatedResult:
+            null,
         }),
       );
     }, []);
@@ -352,179 +565,59 @@ export function useAvailabilityPeriods():
       setState(
         (currentState) => ({
           ...currentState,
-          lastImportResult: null,
-        }),
-      );
-    }, []);
-const closePeriod =
-  useCallback(
-    async (
-      periodId: string,
-    ): Promise<CloseAvailabilityPeriodResult> => {
-      setState(
-        (currentState) => ({
-          ...currentState,
-
-          closingPeriodId:
-            periodId,
-
-          error: null,
-
-          lastClosedResult:
+          lastImportResult:
             null,
         }),
       );
+    }, []);
 
-      try {
-        const result =
-          await availabilityService
-            .closeAvailabilityPeriod(
-              periodId,
-            );
-
-        const periods =
-          await availabilityService
-            .getAvailabilityPeriods();
-
-        setState(
-          (currentState) => ({
-            ...currentState,
-
-            periods,
-
-            closingPeriodId:
-              null,
-
-            error: null,
-
-            lastClosedResult:
-              result,
-          }),
-        );
-
-        return result;
-      } catch (error) {
-        const errorMessage =
-          getErrorMessage(error);
-
-        setState(
-          (currentState) => ({
-            ...currentState,
-
-            closingPeriodId:
-              null,
-
-            error:
-              errorMessage,
-          }),
-        );
-
-        throw error;
-      }
-    },
-    [],
-  );
-  const clearClosedResult =
-  useCallback((): void => {
-    setState(
-      (currentState) => ({
-        ...currentState,
-
-        lastClosedResult:
-          null,
-      }),
-    );
-  }, []);
   const clearRebuildResult =
     useCallback((): void => {
       setState(
         (currentState) => ({
           ...currentState,
-          lastRebuildResult: null,
-        }),
-      );
-    }, []);
-const openPeriod =
-  useCallback(
-    async (
-      periodId: string,
-    ): Promise<OpenAvailabilityPeriodResult> => {
-      setState(
-        (currentState) => ({
-          ...currentState,
-
-          openingPeriodId:
-            periodId,
-
-          error: null,
-
-          lastOpenedResult:
+          lastRebuildResult:
             null,
         }),
       );
+    }, []);
 
-      try {
-        const result =
-          await availabilityService
-            .openAvailabilityPeriod(
-              periodId,
-            );
+  const clearClosedResult =
+    useCallback((): void => {
+      setState(
+        (currentState) => ({
+          ...currentState,
+          lastClosedResult:
+            null,
+        }),
+      );
+    }, []);
 
-        const periods =
-          await availabilityService
-            .getAvailabilityPeriods();
+  const clearDeletedResult =
+    useCallback((): void => {
+      setState(
+        (currentState) => ({
+          ...currentState,
+          lastDeletedResult:
+            null,
+        }),
+      );
+    }, []);
 
-        setState(
-          (currentState) => ({
-            ...currentState,
-
-            periods,
-
-            openingPeriodId:
-              null,
-
-            error: null,
-
-            lastOpenedResult:
-              result,
-          }),
-        );
-
-        return result;
-      } catch (error) {
-        const errorMessage =
-          getErrorMessage(error);
-
-        setState(
-          (currentState) => ({
-            ...currentState,
-
-            openingPeriodId:
-              null,
-
-            error:
-              errorMessage,
-          }),
-        );
-
-        throw error;
-      }
-    },
-    [],
-  );
-return {
-  state,
-  loadPeriods,
-  createPeriod,
-  importSpecialDays,
-  rebuildPeriodSlots,
-  openPeriod,
-  closePeriod,
-  clearError,
-  clearCreatedResult,
-  clearImportResult,
-  clearRebuildResult,
-  clearClosedResult,
-};
-  
+  return {
+    state,
+    loadPeriods,
+    createPeriod,
+    importSpecialDays,
+    rebuildPeriodSlots,
+    openPeriod,
+    closePeriod,
+    deletePeriod,
+    clearError,
+    clearCreatedResult,
+    clearImportResult,
+    clearRebuildResult,
+    clearClosedResult,
+    clearDeletedResult,
+  };
 }

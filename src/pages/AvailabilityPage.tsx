@@ -1,41 +1,59 @@
 import {
   CalendarPlus,
   CheckCircle2,
+  ClipboardCheck,
   Download,
   RefreshCw,
   RotateCcw,
-  ClipboardCheck,
   Send,
+  Trash2,
+  WandSparkles,
 } from 'lucide-react';
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
   type FormEvent,
 } from 'react';
+
 import { useAuth } from '../auth/AuthContext';
+
+import AvailabilityMatrixPanel from '../components/availability/AvailabilityMatrixPanel';
+import AvailabilityPeriodPicker from '../components/availability/AvailabilityPeriodPicker';
+import AvailabilitySubmissionsPanel from '../components/availability/AvailabilitySubmissionsPanel';
+import AvailabilityWorkspaceTabs, {
+  type AvailabilityWorkspaceTab,
+} from '../components/availability/AvailabilityWorkspaceTabs';
+import DispatcherAvailabilityPanel from '../components/availability/DispatcherAvailabilityPanel';
+import AssignmentCandidatesPanel from '../components/schedule/AssignmentCandidatesPanel';
 import {
   Button,
   PageHeader,
 } from '../components/ui';
+
+import {
+  useAssignmentCandidates,
+} from '../hooks/useAssignmentCandidates';
+import {
+  useAutoSchedulingDraft,
+} from '../hooks/useAutoSchedulingDraft';
+import {
+  useAvailabilityPeriodMatrix,
+} from '../hooks/useAvailabilityPeriodMatrix';
 import {
   useAvailabilityPeriods,
 } from '../hooks/useAvailabilityPeriods';
+import {
+  useAvailabilityPeriodSubmissions,
+} from '../hooks/useAvailabilityPeriodSubmissions';
+
 import type {
   AvailabilityPeriodStatus,
   SpecialDayScheduleType,
 } from '../types/availability';
-import '../styles/availability.css';
-import DispatcherAvailabilityPanel from '../components/availability/DispatcherAvailabilityPanel';
-import {
-  useAvailabilityPeriodSubmissions,
-} from '../hooks/useAvailabilityPeriodSubmissions';
-import AvailabilitySubmissionsPanel from '../components/availability/AvailabilitySubmissionsPanel';
-import {
-  useAvailabilityPeriodMatrix,
-} from '../hooks/useAvailabilityPeriodMatrix';
 
-import AvailabilityMatrixPanel from '../components/availability/AvailabilityMatrixPanel';
+import '../styles/availability.css';
 
 const hebrewMonths = [
   'ינואר',
@@ -114,14 +132,31 @@ function formatDateOnly(
 }
 
 function AvailabilityPage() {
-    const {
-      profile,
-      hasPermission,
-    } = useAuth();
+  const {
+    profile,
+    hasPermission,
+  } = useAuth();
 
   const canManage =
     hasPermission(
       'availability.manage',
+    );
+
+  const canPrepareSchedule =
+    hasPermission(
+      'schedule.edit',
+    );
+
+  const isDispatcher =
+    profile?.role ===
+    'dispatcher';
+
+  const [
+    activeWorkspaceTab,
+    setActiveWorkspaceTab,
+  ] =
+    useState<AvailabilityWorkspaceTab>(
+      'my-availability',
     );
 
   const now = new Date();
@@ -171,27 +206,66 @@ function AvailabilityPage() {
     deadline,
     setDeadline,
   ] = useState('');
-const {
-  state:
-    submissionsState,
-  selectedPeriodId,
-  loadPeriodSubmissions,
-  reset:
-    resetSubmissionsTracking,
-} =
-  useAvailabilityPeriodSubmissions();
+
   const {
-  state:
-    matrixState,
-  selectedPeriodId:
-    selectedMatrixPeriodId,
-  statistics:
-    matrixStatistics,
-  loadMatrix,
-  reset:
-    resetMatrix,
-} =
-  useAvailabilityPeriodMatrix();
+    state:
+      submissionsState,
+
+    selectedPeriodId,
+
+    loadPeriodSubmissions,
+
+    reset:
+      resetSubmissionsTracking,
+  } =
+    useAvailabilityPeriodSubmissions();
+
+  const {
+    state:
+      autoSchedulingDraftState,
+
+    generateDraft:
+      generateAutoSchedulingDraft,
+
+    reset:
+      resetAutoSchedulingDraft,
+  } =
+    useAutoSchedulingDraft();
+
+  const {
+    state:
+      assignmentCandidatesState,
+
+    selectedPeriodId:
+      selectedAssignmentPeriodId,
+
+    statistics:
+      assignmentCandidatesStatistics,
+
+    loadCandidates,
+
+    reset:
+      resetAssignmentCandidates,
+  } =
+    useAssignmentCandidates();
+
+  const {
+    state:
+      matrixState,
+
+    selectedPeriodId:
+      selectedMatrixPeriodId,
+
+    statistics:
+      matrixStatistics,
+
+    loadMatrix,
+
+    reset:
+      resetMatrix,
+  } =
+    useAvailabilityPeriodMatrix();
+
   const {
     state,
     loadPeriods,
@@ -199,17 +273,27 @@ const {
     importSpecialDays,
     rebuildPeriodSlots,
     openPeriod,
-    clearError,
     closePeriod,
-  } = useAvailabilityPeriods();
+    deletePeriod,
+    clearError,
+  } =
+    useAvailabilityPeriods();
+
+  const submissionsPanelRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
   const matrixPanelRef =
-  useRef<HTMLDivElement | null>(
-    null,
-  );
-const submissionsPanelRef =
-  useRef<HTMLDivElement | null>(
-    null,
-  );
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
+  const assignmentCandidatesPanelRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
   const availableYears =
     useMemo(
       () => {
@@ -226,6 +310,61 @@ const submissionsPanelRef =
       [],
     );
 
+  useEffect(() => {
+    const isActiveTabVisible =
+      (
+        activeWorkspaceTab ===
+          'my-availability' &&
+        isDispatcher
+      ) ||
+      (
+        activeWorkspaceTab ===
+          'period-management' &&
+        canManage
+      ) ||
+      (
+        activeWorkspaceTab ===
+          'submissions' &&
+        canManage
+      ) ||
+      (
+        activeWorkspaceTab ===
+          'schedule-preparation' &&
+        canPrepareSchedule
+      );
+
+    if (isActiveTabVisible) {
+      return;
+    }
+
+    if (isDispatcher) {
+      setActiveWorkspaceTab(
+        'my-availability',
+      );
+
+      return;
+    }
+
+    if (canManage) {
+      setActiveWorkspaceTab(
+        'period-management',
+      );
+
+      return;
+    }
+
+    if (canPrepareSchedule) {
+      setActiveWorkspaceTab(
+        'schedule-preparation',
+      );
+    }
+  }, [
+    activeWorkspaceTab,
+    isDispatcher,
+    canManage,
+    canPrepareSchedule,
+  ]);
+
   const handleRebuildPeriod =
     async (
       periodId: string,
@@ -233,7 +372,8 @@ const submissionsPanelRef =
     ): Promise<void> => {
       const confirmed =
         window.confirm(
-          `האם לבנות מחדש את כל המשמרות עבור "${periodTitle}"?\n\nהפעולה תמחק את המשמרות הקיימות של החודש ותיצור אותן מחדש לפי החגים והמועדים המעודכנים.`,
+          `האם לבנות מחדש את כל המשמרות עבור "${periodTitle}"?\n\n` +
+          'הפעולה תמחק את המשמרות הקיימות של החודש ותיצור אותן מחדש לפי החגים והמועדים המעודכנים.',
         );
 
       if (!confirmed) {
@@ -254,7 +394,8 @@ const submissionsPanelRef =
     ): Promise<void> => {
       const confirmed =
         window.confirm(
-          `האם לפתוח את "${periodTitle}" להגשת אילוצים?\n\nלאחר הפתיחה המוקדנים יוכלו להזין זמינות, ולא יהיה ניתן לבנות מחדש את משמרות החודש.`,
+          `האם לפתוח את "${periodTitle}" להגשת אילוצים?\n\n` +
+          'לאחר הפתיחה המוקדנים יוכלו להזין זמינות, ולא יהיה ניתן לבנות מחדש את משמרות החודש.',
         );
 
       if (!confirmed) {
@@ -313,130 +454,264 @@ const submissionsPanelRef =
         importYear,
       );
     };
-const handleOpenSubmissionsTracking =
-  async (
-    periodId: string,
-  ): Promise<void> => {
-    await loadPeriodSubmissions(
-      periodId,
-    );
 
-    window.setTimeout(() => {
-      submissionsPanelRef
-        .current
-        ?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-    }, 0);
-  };
-  
-const handleRefreshSubmissionsTracking =
-  async (): Promise<void> => {
-    if (!selectedPeriodId) {
-      return;
-    }
+  const handleOpenSubmissionsTracking =
+    async (
+      periodId: string,
+    ): Promise<void> => {
+      resetMatrix();
+      resetAssignmentCandidates();
+      resetAutoSchedulingDraft();
 
-    await loadPeriodSubmissions(
-      selectedPeriodId,
-    );
-  };
-const handleCloseAvailabilityPeriod =
-  async (): Promise<void> => {
-    if (
-      !selectedPeriodId ||
-      !submissionsState.data
-    ) {
-      return;
-    }
-
-    const {
-      summary,
-      period,
-    } = submissionsState.data;
-
-    if (
-      summary.totalDispatchers === 0 ||
-      summary.submittedDispatchers !==
-        summary.totalDispatchers
-    ) {
-      return;
-    }
-
-    const periodTitle =
-      period.title ??
-      `${hebrewMonths[
-        period.month - 1
-      ]} ${period.year}`;
-
-    const confirmed =
-      window.confirm(
-        `האם לסגור את תקופת האילוצים "${periodTitle}"?\n\nלאחר הסגירה המוקדנים לא יוכלו עוד לשנות או להגיש אילוצים.`,
+      setActiveWorkspaceTab(
+        'submissions',
       );
 
-    if (!confirmed) {
-      return;
-    }
-
-    clearError();
-
-    try {
-      await closePeriod(
-        selectedPeriodId,
+      await loadPeriodSubmissions(
+        periodId,
       );
+
+      window.setTimeout(() => {
+        submissionsPanelRef
+          .current
+          ?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+      }, 0);
+    };
+
+  const handleRefreshSubmissionsTracking =
+    async (): Promise<void> => {
+      if (!selectedPeriodId) {
+        return;
+      }
 
       await loadPeriodSubmissions(
         selectedPeriodId,
       );
-    } catch {
-      /*
-       * הודעת השגיאה מוצגת
-       * מתוך useAvailabilityPeriods.
-       */
-    }
-  };
+    };
+
+  const handleCloseAvailabilityPeriod =
+    async (): Promise<void> => {
+      if (
+        !selectedPeriodId ||
+        !submissionsState.data
+      ) {
+        return;
+      }
+
+      const {
+        summary,
+        period,
+      } = submissionsState.data;
+
+      if (
+        summary.totalDispatchers ===
+          0 ||
+        summary.submittedDispatchers !==
+          summary.totalDispatchers
+      ) {
+        return;
+      }
+
+      const periodTitle =
+        period.title ??
+        `${hebrewMonths[
+          period.month - 1
+        ]} ${period.year}`;
+
+      const confirmed =
+        window.confirm(
+          `האם לסגור את תקופת האילוצים "${periodTitle}"?\n\n` +
+          'לאחר הסגירה המוקדנים לא יוכלו עוד לשנות או להגיש אילוצים.',
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      clearError();
+
+      try {
+        await closePeriod(
+          selectedPeriodId,
+        );
+
+        await loadPeriodSubmissions(
+          selectedPeriodId,
+        );
+      } catch {
+        /*
+         * הודעת השגיאה מוצגת
+         * מתוך useAvailabilityPeriods.
+         */
+      }
+    };
+
   const canCloseSelectedPeriod =
-  Boolean(
-    submissionsState.data &&
-    submissionsState.data.period.status ===
-      'open' &&
-    submissionsState.data.summary
-      .totalDispatchers > 0 &&
-    submissionsState.data.summary
-      .submittedDispatchers ===
+    Boolean(
+      submissionsState.data &&
+      submissionsState.data.period
+        .status === 'open' &&
+      submissionsState.data.summary
+        .totalDispatchers > 0 &&
+      submissionsState.data.summary
+        .submittedDispatchers ===
         submissionsState.data.summary
           .totalDispatchers,
-  );
+    );
+
   const handleOpenAvailabilityMatrix =
-  async (): Promise<void> => {
-    if (!selectedPeriodId) {
-      return;
-    }
+    async (): Promise<void> => {
+      if (!selectedPeriodId) {
+        return;
+      }
 
-    await loadMatrix(
-      selectedPeriodId,
-    );
+      await loadMatrix(
+        selectedPeriodId,
+      );
 
-    window.setTimeout(() => {
-      matrixPanelRef
-        .current
-        ?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-    }, 0);
-  };
+      window.setTimeout(() => {
+        matrixPanelRef
+          .current
+          ?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+      }, 0);
+    };
 
-const handleRefreshAvailabilityMatrix =
-  async (): Promise<void> => {
-    if (!selectedMatrixPeriodId) {
-      return;
-    }
+  const handleRefreshAvailabilityMatrix =
+    async (): Promise<void> => {
+      if (!selectedMatrixPeriodId) {
+        return;
+      }
 
-    await loadMatrix(
-      selectedMatrixPeriodId,
-    );
-  };
+      await loadMatrix(
+        selectedMatrixPeriodId,
+      );
+    };
+
+  const handleOpenAssignmentCandidates =
+    async (
+      periodId: string,
+    ): Promise<void> => {
+      resetAutoSchedulingDraft();
+
+      setActiveWorkspaceTab(
+        'schedule-preparation',
+      );
+
+      await loadCandidates(
+        periodId,
+      );
+
+      window.setTimeout(() => {
+        assignmentCandidatesPanelRef
+          .current
+          ?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+      }, 0);
+    };
+
+  const handleRefreshAssignmentCandidates =
+    async (): Promise<void> => {
+      if (
+        !selectedAssignmentPeriodId
+      ) {
+        return;
+      }
+
+      await loadCandidates(
+        selectedAssignmentPeriodId,
+      );
+    };
+
+  const handleGenerateSchedulingDraft =
+    (): void => {
+      if (
+        !assignmentCandidatesState
+          .data
+      ) {
+        return;
+      }
+
+      generateAutoSchedulingDraft(
+        assignmentCandidatesState
+          .data,
+      );
+    };
+
+  const handleDeleteAvailabilityPeriod =
+    async (
+      periodId: string,
+      periodTitle: string,
+    ): Promise<void> => {
+      const warningConfirmed =
+        window.confirm(
+          `מחיקת "${periodTitle}" תמחק לצמיתות את כל המידע הבא:\n\n` +
+          '• תקופת האילוצים\n' +
+          '• כל המשמרות שנוצרו לחודש\n' +
+          '• כל סימוני הזמינות\n' +
+          '• כל הגשות המוקדנים\n\n' +
+          'לא ניתן לבטל פעולה זו.\n\n' +
+          'האם להמשיך?',
+        );
+
+      if (!warningConfirmed) {
+        return;
+      }
+
+      const finalConfirmation =
+        window.confirm(
+          `אישור סופי למחיקת "${periodTitle}"\n\n` +
+          'הפעולה תתבצע מיד ולא ניתן יהיה לשחזר את הנתונים.\n\n' +
+          'האם אתה בטוח שברצונך למחוק את החודש?',
+        );
+
+      if (!finalConfirmation) {
+        return;
+      }
+
+      clearError();
+
+      try {
+        await deletePeriod(
+          periodId,
+        );
+
+        if (
+          selectedPeriodId ===
+          periodId
+        ) {
+          resetSubmissionsTracking();
+        }
+
+        if (
+          selectedMatrixPeriodId ===
+          periodId
+        ) {
+          resetMatrix();
+        }
+
+        if (
+          selectedAssignmentPeriodId ===
+          periodId
+        ) {
+          resetAssignmentCandidates();
+          resetAutoSchedulingDraft();
+        }
+      } catch {
+        /*
+         * הודעת השגיאה נשמרת
+         * ומוצגת דרך useAvailabilityPeriods.
+         */
+      }
+    };
+
   return (
     <section className="availability-page">
       <PageHeader
@@ -454,6 +729,10 @@ const handleRefreshAvailabilityMatrix =
               state.rebuildingPeriodId !==
                 null ||
               state.openingPeriodId !==
+                null ||
+              state.closingPeriodId !==
+                null ||
+              state.deletingPeriodId !==
                 null
             }
             onClick={() => {
@@ -469,9 +748,25 @@ const handleRefreshAvailabilityMatrix =
           </Button>
         }
       />
-      {profile?.role === 'dispatcher' ? (
-        <DispatcherAvailabilityPanel />
-) : null}
+
+      <AvailabilityWorkspaceTabs
+        activeTab={
+          activeWorkspaceTab
+        }
+        isDispatcher={
+          isDispatcher
+        }
+        canManageAvailability={
+          canManage
+        }
+        canPrepareSchedule={
+          canPrepareSchedule
+        }
+        onChange={
+          setActiveWorkspaceTab
+        }
+      />
+
       {state.error ? (
         <div
           className="availability-error"
@@ -480,6 +775,7 @@ const handleRefreshAvailabilityMatrix =
           {state.error}
         </div>
       ) : null}
+
       {state.lastClosedResult ? (
         <div
           className="availability-success"
@@ -508,6 +804,47 @@ const handleRefreshAvailabilityMatrix =
           </div>
         </div>
       ) : null}
+
+      {state.lastDeletedResult ? (
+        <div
+          className="availability-success"
+          role="status"
+        >
+          <CheckCircle2
+            size={22}
+            aria-hidden="true"
+          />
+
+          <div>
+            <strong>
+              תקופת האילוצים נמחקה
+            </strong>
+
+            <span>
+              נמחקו{' '}
+              {
+                state
+                  .lastDeletedResult
+                  .deletedShiftSlots
+              }{' '}
+              משמרות,{' '}
+              {
+                state
+                  .lastDeletedResult
+                  .deletedAvailabilityRows
+              }{' '}
+              סימוני זמינות ו־
+              {
+                state
+                  .lastDeletedResult
+                  .deletedSubmissions
+              }{' '}
+              הגשות.
+            </span>
+          </div>
+        </div>
+      ) : null}
+
       {state.lastCreatedResult ? (
         <div
           className="availability-success"
@@ -622,8 +959,7 @@ const handleRefreshAvailabilityMatrix =
                     .lastImportResult
                     .fetchedEvents
                 }{' '}
-                אירועים, ומתוכם
-                נשמרו{' '}
+                אירועים, ומתוכם נשמרו{' '}
                 {
                   state
                     .lastImportResult
@@ -668,553 +1004,824 @@ const handleRefreshAvailabilityMatrix =
         </div>
       ) : null}
 
-      {canManage ? (
-        <div className="availability-import-card">
-          <div className="availability-card-header">
-            <Download
-              size={22}
-              aria-hidden="true"
-            />
+      {activeWorkspaceTab ===
+        'my-availability' &&
+      isDispatcher ? (
+        <DispatcherAvailabilityPanel />
+      ) : null}
 
-            <div>
-              <h2>
-                ייבוא חגים ומועדים
-              </h2>
-
-              <p>
-                ייבוא חגי ישראל
-                מ־Hebcal עבור השנה
-                שנבחרה.
-              </p>
-            </div>
-          </div>
-
-          <div className="availability-import-controls">
-            <label>
-              <span>
-                שנת ייבוא
-              </span>
-
-              <select
-                value={importYear}
-                disabled={
-                  state
-                    .isImportingSpecialDays ||
-                  state.isCreating ||
-                  state.rebuildingPeriodId !==
-                    null ||
-                  state.openingPeriodId !==
-                    null
-                }
-                onChange={(
-                  event,
-                ) => {
-                  setImportYear(
-                    Number(
-                      event.target
-                        .value,
-                    ),
-                  );
-                }}
-              >
-                {availableYears.map(
-                  (year) => (
-                    <option
-                      key={year}
-                      value={year}
-                    >
-                      {year}
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
-
-            <Button
-              type="button"
-              disabled={
-                state
-                  .isImportingSpecialDays ||
-                state.isCreating ||
-                state.rebuildingPeriodId !==
-                  null ||
-                state.openingPeriodId !==
-                  null
-              }
-              onClick={() => {
-                void handleImportSpecialDays();
-              }}
-            >
-              <Download
-                size={18}
+      {activeWorkspaceTab ===
+        'period-management' &&
+      canManage ? (
+        <>
+          <div className="availability-periods-card">
+            <div className="availability-card-header">
+              <ClipboardCheck
+                size={22}
                 aria-hidden="true"
               />
 
-              {state
-                .isImportingSpecialDays
-                ? 'מייבא חגים...'
-                : `ייבוא חגים לשנת ${importYear}`}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+              <div>
+                <h2>
+                  תקופות אילוצים
+                </h2>
 
-      {canManage ? (
-        <form
-          className="availability-create-card"
-          onSubmit={
-            handleSubmit
-          }
-        >
-          <div className="availability-card-header">
-            <CalendarPlus
-              size={22}
-              aria-hidden="true"
-            />
-
-            <div>
-              <h2>
-                יצירת חודש אילוצים
-              </h2>
-
-              <p>
-                המערכת תפיק את כל
-                המשמרות האפשריות בחודש.
-              </p>
+                <p>
+                  ניהול חודשי
+                  האילוצים, פתיחה,
+                  מעקב ומחיקה.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="availability-form-grid">
-            <label>
-              <span>חודש</span>
+            {state.isLoading ? (
+              <div className="availability-empty-state">
+                טוען תקופות אילוצים...
+              </div>
+            ) : state.periods.length ===
+              0 ? (
+              <div className="availability-empty-state">
+                עדיין לא נוצרו תקופות
+                אילוצים.
+              </div>
+            ) : (
+              <div className="availability-periods-list">
+                {state.periods.map(
+                  (period) => {
+                    const periodTitle =
+                      period.title ??
+                      `${hebrewMonths[
+                        period.month - 1
+                      ]} ${period.year}`;
 
-              <select
-                value={
-                  selectedMonth
-                }
-                disabled={
-                  state.isCreating ||
-                  state
-                    .isImportingSpecialDays ||
-                  state.rebuildingPeriodId !==
-                    null ||
-                  state.openingPeriodId !==
-                    null
-                }
-                onChange={(
-                  event,
-                ) => {
-                  setSelectedMonth(
-                    Number(
-                      event.target
-                        .value,
-                    ),
-                  );
-                }}
-              >
-                {hebrewMonths.map(
-                  (
-                    monthName,
-                    index,
-                  ) => (
-                    <option
-                      key={monthName}
-                      value={index + 1}
-                    >
-                      {monthName}
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
-
-            <label>
-              <span>שנה</span>
-
-              <select
-                value={
-                  selectedYear
-                }
-                disabled={
-                  state.isCreating ||
-                  state
-                    .isImportingSpecialDays ||
-                  state.rebuildingPeriodId !==
-                    null ||
-                  state.openingPeriodId !==
-                    null
-                }
-                onChange={(
-                  event,
-                ) => {
-                  setSelectedYear(
-                    Number(
-                      event.target
-                        .value,
-                    ),
-                  );
-                }}
-              >
-                {availableYears.map(
-                  (year) => (
-                    <option
-                      key={year}
-                      value={year}
-                    >
-                      {year}
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
-
-            <label>
-              <span>
-                מועד אחרון להגשה
-              </span>
-
-              <input
-                type="datetime-local"
-                value={deadline}
-                disabled={
-                  state.isCreating ||
-                  state
-                    .isImportingSpecialDays ||
-                  state.rebuildingPeriodId !==
-                    null ||
-                  state.openingPeriodId !==
-                    null
-                }
-                onChange={(
-                  event,
-                ) => {
-                  setDeadline(
-                    event.target
-                      .value,
-                  );
-                }}
-              />
-            </label>
-
-            <label>
-              <span>
-                כותרת מותאמת
-              </span>
-
-              <input
-                type="text"
-                value={title}
-                disabled={
-                  state.isCreating ||
-                  state
-                    .isImportingSpecialDays ||
-                  state.rebuildingPeriodId !==
-                    null ||
-                  state.openingPeriodId !==
-                    null
-                }
-                placeholder="אופציונלי"
-                onChange={(
-                  event,
-                ) => {
-                  setTitle(
-                    event.target
-                      .value,
-                  );
-                }}
-              />
-            </label>
-          </div>
-
-          <label className="availability-instructions-field">
-            <span>
-              הנחיות למוקדנים
-            </span>
-
-            <textarea
-              rows={4}
-              value={
-                instructions
-              }
-              disabled={
-                state.isCreating ||
-                state
-                  .isImportingSpecialDays ||
-                state.rebuildingPeriodId !==
-                  null ||
-                state.openingPeriodId !==
-                  null
-              }
-              placeholder="לדוגמה: יש למלא את כל המשמרות עד למועד האחרון."
-              onChange={(
-                event,
-              ) => {
-                setInstructions(
-                  event.target
-                    .value,
-                );
-              }}
-            />
-          </label>
-
-          <div className="availability-create-actions">
-            <Button
-              type="submit"
-              disabled={
-                state.isCreating ||
-                state
-                  .isImportingSpecialDays ||
-                state.rebuildingPeriodId !==
-                  null ||
-                state.openingPeriodId !==
-                  null
-              }
-            >
-              <CalendarPlus
-                size={18}
-                aria-hidden="true"
-              />
-
-              {state.isCreating
-                ? 'יוצר חודש...'
-                : 'יצירת חודש אילוצים'}
-            </Button>
-          </div>
-        </form>
-      ) : null}
-
-      <div className="availability-periods-card">
-        <h2>
-          תקופות אילוצים
-        </h2>
-
-        {state.isLoading ? (
-          <div className="availability-empty-state">
-            טוען תקופות אילוצים...
-          </div>
-        ) : state.periods.length ===
-          0 ? (
-          <div className="availability-empty-state">
-            עדיין לא נוצרו תקופות
-            אילוצים.
-          </div>
-        ) : (
-          <div className="availability-periods-list">
-            {state.periods.map(
-              (period) => {
-                const periodTitle =
-                  period.title ??
-                  `${hebrewMonths[
-                    period.month - 1
-                  ]} ${period.year}`;
-
-                return (
-                  <article
-                    key={period.id}
-                    className="availability-period-item"
-                  >
-                    <div className="availability-period-main">
-                      <strong>
-                        {periodTitle}
-                      </strong>
-
-                      <span>
-                        מועד אחרון:{' '}
-                        {formatDate(
-                          period
-                            .submissionDeadline,
-                        )}
-                      </span>
-
-                      {period.openedAt ? (
-                        <span>
-                          נפתח להגשה:{' '}
-                          {formatDate(
-                            period.openedAt,
-                          )}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="availability-period-actions">
-                      <span
-                        className={`availability-status availability-status-${period.status}`}
+                    return (
+                      <article
+                        key={period.id}
+                        className="availability-period-item"
                       >
-                        {
-                          statusLabels[
-                            period.status
-                          ]
-                        }
-                      </span>
-                      {canManage &&
-                      period.status !== 'draft' ? (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          disabled={
-                            submissionsState.isLoading
-                          }
-                          onClick={() => {
-                            void handleOpenSubmissionsTracking(
-                              period.id,
-                            );
-                          }}
-                        >
-                          <ClipboardCheck
-                            size={17}
-                            aria-hidden="true"
-                          />
+                        <div className="availability-period-main">
+                          <strong>
+                            {periodTitle}
+                          </strong>
 
-                          {submissionsState.isLoading &&
-                          selectedPeriodId === period.id
-                            ? 'טוען מעקב...'
-                            : 'מעקב הגשות'}
-                        </Button>
-                      ) : null}
-                      {canManage &&
-                      period.status ===
-                        'draft' ? (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          disabled={
-                            state.rebuildingPeriodId !==
-                              null ||
-                            state.openingPeriodId !==
-                              null ||
-                            state.isCreating ||
-                            state
-                              .isImportingSpecialDays
-                          }
-                          onClick={() => {
-                            void handleRebuildPeriod(
-                              period.id,
-                              periodTitle,
-                            );
-                          }}
-                        >
-                          <RotateCcw
-                            size={17}
-                            aria-hidden="true"
-                          />
+                          <span>
+                            מועד אחרון:{' '}
+                            {formatDate(
+                              period
+                                .submissionDeadline,
+                            )}
+                          </span>
 
-                          {state.rebuildingPeriodId ===
-                          period.id
-                            ? 'בונה מחדש...'
-                            : 'בנייה מחדש'}
-                        </Button>
-                      ) : null}
+                          {period.openedAt ? (
+                            <span>
+                              נפתח להגשה:{' '}
+                              {formatDate(
+                                period.openedAt,
+                              )}
+                            </span>
+                          ) : null}
+                        </div>
 
-                      {canManage &&
-                      period.status ===
-                        'draft' ? (
-                        <Button
-                          type="button"
-                          disabled={
-                            state.openingPeriodId !==
-                              null ||
-                            state.rebuildingPeriodId !==
-                              null ||
-                            state.isCreating ||
-                            state
-                              .isImportingSpecialDays
-                          }
-                          onClick={() => {
-                            void handleOpenPeriod(
-                              period.id,
-                              periodTitle,
-                            );
-                          }}
-                        >
-                          <Send
-                            size={17}
-                            aria-hidden="true"
-                          />
+                        <div className="availability-period-actions">
+                          <span
+                            className={`availability-status availability-status-${period.status}`}
+                          >
+                            {
+                              statusLabels[
+                                period.status
+                              ]
+                            }
+                          </span>
 
-                          {state.openingPeriodId ===
-                          period.id
-                            ? 'פותח להגשה...'
-                            : 'פתיחה להגשה'}
-                        </Button>
-                      ) : null}
-                    </div>
-                  </article>
-                );
-              },
+                          {period.status !==
+                          'draft' ? (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              disabled={
+                                submissionsState
+                                  .isLoading
+                              }
+                              onClick={() => {
+                                void handleOpenSubmissionsTracking(
+                                  period.id,
+                                );
+                              }}
+                            >
+                              <ClipboardCheck
+                                size={17}
+                                aria-hidden="true"
+                              />
+
+                              {submissionsState
+                                .isLoading &&
+                              selectedPeriodId ===
+                                period.id
+                                ? 'טוען מעקב...'
+                                : 'מעקב הגשות'}
+                            </Button>
+                          ) : null}
+
+                          {canPrepareSchedule &&
+                          period.status ===
+                            'closed' ? (
+                            <Button
+                              type="button"
+                              disabled={
+                                assignmentCandidatesState
+                                  .isLoading
+                              }
+                              onClick={() => {
+                                void handleOpenAssignmentCandidates(
+                                  period.id,
+                                );
+                              }}
+                            >
+                              <WandSparkles
+                                size={17}
+                                aria-hidden="true"
+                              />
+
+                              {assignmentCandidatesState
+                                .isLoading &&
+                              selectedAssignmentPeriodId ===
+                                period.id
+                                ? 'מכין נתונים...'
+                                : 'הכנה לשיבוץ'}
+                            </Button>
+                          ) : null}
+
+                          {period.status ===
+                          'draft' ? (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              disabled={
+                                state.rebuildingPeriodId !==
+                                  null ||
+                                state.openingPeriodId !==
+                                  null ||
+                                state.isCreating ||
+                                state
+                                  .isImportingSpecialDays ||
+                                state.deletingPeriodId !==
+                                  null
+                              }
+                              onClick={() => {
+                                void handleRebuildPeriod(
+                                  period.id,
+                                  periodTitle,
+                                );
+                              }}
+                            >
+                              <RotateCcw
+                                size={17}
+                                aria-hidden="true"
+                              />
+
+                              {state.rebuildingPeriodId ===
+                              period.id
+                                ? 'בונה מחדש...'
+                                : 'בנייה מחדש'}
+                            </Button>
+                          ) : null}
+
+                          {period.status ===
+                          'draft' ? (
+                            <Button
+                              type="button"
+                              disabled={
+                                state.openingPeriodId !==
+                                  null ||
+                                state.rebuildingPeriodId !==
+                                  null ||
+                                state.isCreating ||
+                                state
+                                  .isImportingSpecialDays ||
+                                state.deletingPeriodId !==
+                                  null
+                              }
+                              onClick={() => {
+                                void handleOpenPeriod(
+                                  period.id,
+                                  periodTitle,
+                                );
+                              }}
+                            >
+                              <Send
+                                size={17}
+                                aria-hidden="true"
+                              />
+
+                              {state.openingPeriodId ===
+                              period.id
+                                ? 'פותח להגשה...'
+                                : 'פתיחה להגשה'}
+                            </Button>
+                          ) : null}
+
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            className="availability-delete-period-button"
+                            disabled={
+                              state.deletingPeriodId !==
+                                null ||
+                              state.rebuildingPeriodId !==
+                                null ||
+                              state.openingPeriodId !==
+                                null ||
+                              state.closingPeriodId !==
+                                null ||
+                              state.isCreating ||
+                              state
+                                .isImportingSpecialDays
+                            }
+                            onClick={() => {
+                              void handleDeleteAvailabilityPeriod(
+                                period.id,
+                                periodTitle,
+                              );
+                            }}
+                          >
+                            <Trash2
+                              size={17}
+                              aria-hidden="true"
+                            />
+
+                            {state.deletingPeriodId ===
+                            period.id
+                              ? 'מוחק חודש...'
+                              : 'מחיקת חודש'}
+                          </Button>
+                        </div>
+                      </article>
+                    );
+                  },
+                )}
+              </div>
             )}
           </div>
-        )}
-      </div>
-      {canManage &&
-      selectedPeriodId ? (
-        <div
-          ref={submissionsPanelRef}
-          className="availability-submissions-anchor"
-        >
-        <AvailabilitySubmissionsPanel
-          isLoading={
-            submissionsState.isLoading
-          }
-          isClosing={
-            state.closingPeriodId ===
-            selectedPeriodId
-          }
-          canClose={
-            canCloseSelectedPeriod
-          }
-          error={
-            submissionsState.error ??
-            state.error
-          }
-          data={
-            submissionsState.data
-          }
-          onRefresh={
-            handleRefreshSubmissionsTracking
-          }
-          onOpenMatrix={
-            handleOpenAvailabilityMatrix
-          }
-          onClosePeriod={
-            handleCloseAvailabilityPeriod
-          }
-          onClose={() => {
-            resetSubmissionsTracking();
-            resetMatrix();
-          }}
-        />
-        </div>
-      ) : null}
-      {canManage &&
-        selectedMatrixPeriodId ? (
-          <div
-            ref={matrixPanelRef}
-            className="availability-matrix-anchor"
-          >
-            <AvailabilityMatrixPanel
-              data={
-                matrixState.data
-              }
-              statistics={
-                matrixStatistics
-              }
-              isLoading={
-                matrixState.isLoading
-              }
-              error={
-                matrixState.error
-              }
-              onRefresh={
-                handleRefreshAvailabilityMatrix
-              }
-              onClose={
-                resetMatrix
-              }
-            />
+
+          <div className="availability-management-tools">
+            <details className="availability-management-details">
+              <summary className="availability-management-summary">
+                <span>
+                  <CalendarPlus
+                    size={20}
+                    aria-hidden="true"
+                  />
+                </span>
+
+                <div>
+                  <strong>
+                    יצירת חודש אילוצים
+                  </strong>
+
+                  <small>
+                    הפקת רשימת המשמרות
+                    לחודש חדש
+                  </small>
+                </div>
+              </summary>
+
+              <div className="availability-management-details-content">
+                <form
+                  className="availability-create-card availability-create-card-embedded"
+                  onSubmit={handleSubmit}
+                >
+                  <div className="availability-form-grid">
+                    <label>
+                      <span>
+                        חודש
+                      </span>
+
+                      <select
+                        value={
+                          selectedMonth
+                        }
+                        disabled={
+                          state.isCreating ||
+                          state
+                            .isImportingSpecialDays ||
+                          state.rebuildingPeriodId !==
+                            null ||
+                          state.openingPeriodId !==
+                            null
+                        }
+                        onChange={(
+                          event,
+                        ) => {
+                          setSelectedMonth(
+                            Number(
+                              event
+                                .target
+                                .value,
+                            ),
+                          );
+                        }}
+                      >
+                        {hebrewMonths.map(
+                          (
+                            monthName,
+                            index,
+                          ) => (
+                            <option
+                              key={
+                                monthName
+                              }
+                              value={
+                                index + 1
+                              }
+                            >
+                              {
+                                monthName
+                              }
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>
+                        שנה
+                      </span>
+
+                      <select
+                        value={
+                          selectedYear
+                        }
+                        disabled={
+                          state.isCreating ||
+                          state
+                            .isImportingSpecialDays ||
+                          state.rebuildingPeriodId !==
+                            null ||
+                          state.openingPeriodId !==
+                            null
+                        }
+                        onChange={(
+                          event,
+                        ) => {
+                          setSelectedYear(
+                            Number(
+                              event
+                                .target
+                                .value,
+                            ),
+                          );
+                        }}
+                      >
+                        {availableYears.map(
+                          (year) => (
+                            <option
+                              key={
+                                year
+                              }
+                              value={
+                                year
+                              }
+                            >
+                              {year}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+
+                    <label>
+                      <span>
+                        מועד אחרון להגשה
+                      </span>
+
+                      <input
+                        type="datetime-local"
+                        value={
+                          deadline
+                        }
+                        disabled={
+                          state.isCreating ||
+                          state
+                            .isImportingSpecialDays ||
+                          state.rebuildingPeriodId !==
+                            null ||
+                          state.openingPeriodId !==
+                            null
+                        }
+                        onChange={(
+                          event,
+                        ) => {
+                          setDeadline(
+                            event
+                              .target
+                              .value,
+                          );
+                        }}
+                      />
+                    </label>
+
+                    <label>
+                      <span>
+                        כותרת מותאמת
+                      </span>
+
+                      <input
+                        type="text"
+                        value={
+                          title
+                        }
+                        disabled={
+                          state.isCreating ||
+                          state
+                            .isImportingSpecialDays ||
+                          state.rebuildingPeriodId !==
+                            null ||
+                          state.openingPeriodId !==
+                            null
+                        }
+                        placeholder="אופציונלי"
+                        onChange={(
+                          event,
+                        ) => {
+                          setTitle(
+                            event
+                              .target
+                              .value,
+                          );
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <label className="availability-instructions-field">
+                    <span>
+                      הנחיות למוקדנים
+                    </span>
+
+                    <textarea
+                      rows={4}
+                      value={
+                        instructions
+                      }
+                      disabled={
+                        state.isCreating ||
+                        state
+                          .isImportingSpecialDays ||
+                        state.rebuildingPeriodId !==
+                          null ||
+                        state.openingPeriodId !==
+                          null
+                      }
+                      placeholder="לדוגמה: יש למלא את כל המשמרות עד למועד האחרון."
+                      onChange={(
+                        event,
+                      ) => {
+                        setInstructions(
+                          event
+                            .target
+                            .value,
+                        );
+                      }}
+                    />
+                  </label>
+
+                  <div className="availability-create-actions">
+                    <Button
+                      type="submit"
+                      disabled={
+                        state.isCreating ||
+                        state
+                          .isImportingSpecialDays ||
+                        state.rebuildingPeriodId !==
+                          null ||
+                        state.openingPeriodId !==
+                          null
+                      }
+                    >
+                      <CalendarPlus
+                        size={18}
+                        aria-hidden="true"
+                      />
+
+                      {state.isCreating
+                        ? 'יוצר חודש...'
+                        : 'יצירת חודש אילוצים'}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </details>
+
+            <details className="availability-management-details">
+              <summary className="availability-management-summary">
+                <span>
+                  <Download
+                    size={20}
+                    aria-hidden="true"
+                  />
+                </span>
+
+                <div>
+                  <strong>
+                    ייבוא חגים ומועדים
+                  </strong>
+
+                  <small>
+                    עדכון חגי ישראל
+                    מ־Hebcal
+                  </small>
+                </div>
+              </summary>
+
+              <div className="availability-management-details-content">
+                <div className="availability-import-card availability-import-card-embedded">
+                  <div className="availability-import-controls">
+                    <label>
+                      <span>
+                        שנת ייבוא
+                      </span>
+
+                      <select
+                        value={
+                          importYear
+                        }
+                        disabled={
+                          state
+                            .isImportingSpecialDays ||
+                          state.isCreating ||
+                          state.rebuildingPeriodId !==
+                            null ||
+                          state.openingPeriodId !==
+                            null
+                        }
+                        onChange={(
+                          event,
+                        ) => {
+                          setImportYear(
+                            Number(
+                              event
+                                .target
+                                .value,
+                            ),
+                          );
+                        }}
+                      >
+                        {availableYears.map(
+                          (year) => (
+                            <option
+                              key={
+                                year
+                              }
+                              value={
+                                year
+                              }
+                            >
+                              {year}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </label>
+
+                    <Button
+                      type="button"
+                      disabled={
+                        state
+                          .isImportingSpecialDays ||
+                        state.isCreating ||
+                        state.rebuildingPeriodId !==
+                          null ||
+                        state.openingPeriodId !==
+                          null
+                      }
+                      onClick={() => {
+                        void handleImportSpecialDays();
+                      }}
+                    >
+                      <Download
+                        size={18}
+                        aria-hidden="true"
+                      />
+
+                      {state
+                        .isImportingSpecialDays
+                        ? 'מייבא חגים...'
+                        : `ייבוא חגים לשנת ${importYear}`}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </details>
           </div>
-        ) : null}
+        </>
+      ) : null}
+
+      {activeWorkspaceTab ===
+        'submissions' &&
+      canManage ? (
+        <>
+          <AvailabilityPeriodPicker
+            periods={
+              state.periods
+            }
+            selectedPeriodId={
+              selectedPeriodId
+            }
+            allowedStatuses={[
+              'open',
+              'closed',
+              'archived',
+            ]}
+            label="בחירת חודש למעקב"
+            emptyMessage="אין כרגע תקופות זמינות למעקב."
+            isLoading={
+              submissionsState
+                .isLoading
+            }
+            onSelect={(periodId) => {
+              void handleOpenSubmissionsTracking(
+                periodId,
+              );
+            }}
+          />
+
+          {selectedPeriodId ? (
+            <div
+              ref={
+                submissionsPanelRef
+              }
+              className="availability-submissions-anchor"
+            >
+              <AvailabilitySubmissionsPanel
+                isLoading={
+                  submissionsState
+                    .isLoading
+                }
+                isClosing={
+                  state.closingPeriodId ===
+                  selectedPeriodId
+                }
+                canClose={
+                  canCloseSelectedPeriod
+                }
+                error={
+                  submissionsState.error ??
+                  state.error
+                }
+                data={
+                  submissionsState.data
+                }
+                onRefresh={
+                  handleRefreshSubmissionsTracking
+                }
+                onOpenMatrix={
+                  handleOpenAvailabilityMatrix
+                }
+                onClosePeriod={
+                  handleCloseAvailabilityPeriod
+                }
+                onClose={() => {
+                  resetSubmissionsTracking();
+                  resetMatrix();
+                }}
+              />
+            </div>
+          ) : (
+            <div className="availability-workspace-empty">
+              <strong>
+                בחר חודש למעקב
+              </strong>
+
+              <span>
+                לאחר בחירת חודש יוצגו
+                סטטוס ההגשות וכלי
+                הניהול שלו.
+              </span>
+            </div>
+          )}
+
+          {selectedMatrixPeriodId ? (
+            <div
+              ref={matrixPanelRef}
+              className="availability-matrix-anchor"
+            >
+              <AvailabilityMatrixPanel
+                data={
+                  matrixState.data
+                }
+                statistics={
+                  matrixStatistics
+                }
+                isLoading={
+                  matrixState
+                    .isLoading
+                }
+                error={
+                  matrixState.error
+                }
+                onRefresh={
+                  handleRefreshAvailabilityMatrix
+                }
+                onClose={
+                  resetMatrix
+                }
+              />
+            </div>
+          ) : null}
+        </>
+      ) : null}
+
+      {activeWorkspaceTab ===
+        'schedule-preparation' &&
+      canPrepareSchedule ? (
+        <>
+          <AvailabilityPeriodPicker
+            periods={
+              state.periods
+            }
+            selectedPeriodId={
+              selectedAssignmentPeriodId
+            }
+            allowedStatuses={[
+              'closed',
+            ]}
+            label="בחירת חודש להכנת שיבוץ"
+            emptyMessage="אין כרגע תקופת אילוצים סגורה שניתן להכין ממנה שיבוץ."
+            isLoading={
+              assignmentCandidatesState
+                .isLoading
+            }
+            onSelect={(periodId) => {
+              void handleOpenAssignmentCandidates(
+                periodId,
+              );
+            }}
+          />
+
+          {selectedAssignmentPeriodId ? (
+            <div
+              ref={
+                assignmentCandidatesPanelRef
+              }
+              className="assignment-candidates-anchor"
+            >
+              <AssignmentCandidatesPanel
+                data={
+                  assignmentCandidatesState
+                    .data
+                }
+                statistics={
+                  assignmentCandidatesStatistics
+                }
+                isLoading={
+                  assignmentCandidatesState
+                    .isLoading
+                }
+                isGeneratingDraft={
+                  autoSchedulingDraftState
+                    .isGenerating
+                }
+                error={
+                  assignmentCandidatesState
+                    .error
+                }
+                draftError={
+                  autoSchedulingDraftState
+                    .error
+                }
+                draft={
+                  autoSchedulingDraftState
+                    .draft
+                }
+                onRefresh={
+                  handleRefreshAssignmentCandidates
+                }
+                onGenerateDraft={
+                  handleGenerateSchedulingDraft
+                }
+                onClose={() => {
+                  resetAssignmentCandidates();
+                  resetAutoSchedulingDraft();
+                }}
+              />
+            </div>
+          ) : (
+            <div className="availability-workspace-empty">
+              <strong>
+                בחר חודש להכנת שיבוץ
+              </strong>
+
+              <span>
+                רק תקופות אילוצים
+                סגורות זמינות בשלב זה.
+              </span>
+            </div>
+          )}
+        </>
+      ) : null}
     </section>
   );
 }
 
-export default AvailabilityPage;  
+export default AvailabilityPage;

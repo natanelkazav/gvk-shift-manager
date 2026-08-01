@@ -54,6 +54,8 @@ const actionLabels: Record<
 
   user_password_change_completed:
     'השלמת שינוי סיסמה',
+    availability_period_deleted:
+  'מחיקת תקופת אילוצים',
 
   user_deleted:
     'מחיקת משתמש',
