@@ -80,3 +80,12 @@ export interface SaveShiftAvailabilityResult {
   answeredCount: number;
   totalShiftCount: number;
 }
+export interface SubmitAvailabilityResult {
+  periodId: string;
+  submissionStatus: 'submitted';
+  submittedAt: string;
+  availableCount: number;
+  unavailableCount: number;
+  answeredCount: number;
+  totalShiftCount: number;
+}

@@ -14,6 +14,7 @@ import type {
 interface DispatcherAvailabilityShiftCardProps {
   shift: DispatcherAvailabilityShift;
   isSaving: boolean;
+  isReadOnly: boolean;
 
   onSelectStatus: (
     shiftSlotId: string,
@@ -55,6 +56,7 @@ function formatDate(
 function DispatcherAvailabilityShiftCard({
   shift,
   isSaving,
+  isReadOnly,
   onSelectStatus,
 }: DispatcherAvailabilityShiftCardProps) {
   const isAvailable =
@@ -72,6 +74,7 @@ function DispatcherAvailabilityShiftCard({
     ): Promise<void> => {
       if (
         isSaving ||
+        isReadOnly ||
         shift.availabilityStatus ===
           status
       ) {
@@ -99,6 +102,10 @@ function DispatcherAvailabilityShiftCard({
 
         shift.isPremium
           ? 'dispatcher-availability-shift-card-premium'
+          : '',
+
+        isReadOnly
+          ? 'dispatcher-availability-shift-card-readonly'
           : '',
       ]
         .filter(Boolean)
@@ -178,7 +185,10 @@ function DispatcherAvailabilityShiftCard({
           ]
             .filter(Boolean)
             .join(' ')}
-          disabled={isSaving}
+          disabled={
+            isSaving ||
+            isReadOnly
+          }
           aria-pressed={isAvailable}
           onClick={() => {
             void handleSelectStatus(
@@ -214,7 +224,10 @@ function DispatcherAvailabilityShiftCard({
           ]
             .filter(Boolean)
             .join(' ')}
-          disabled={isSaving}
+          disabled={
+            isSaving ||
+            isReadOnly
+          }
           aria-pressed={isUnavailable}
           onClick={() => {
             void handleSelectStatus(

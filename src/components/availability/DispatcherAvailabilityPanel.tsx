@@ -3,6 +3,8 @@ import {
   CheckCircle2,
   CircleDashed,
   RefreshCw,
+  Send,
+LockKeyhole,
   XCircle,
 } from 'lucide-react';
 import { Button } from '../ui';
@@ -60,6 +62,9 @@ function DispatcherAvailabilityPanel() {
     savingShiftId,
     loadAvailability,
     saveShiftAvailability,
+    isSubmitting,
+    lastSubmitResult,
+    submitAvailability,
   } = useDispatcherAvailability();
 
   const handleSelectStatus =
@@ -162,13 +167,44 @@ function DispatcherAvailabilityPanel() {
     submission,
     shifts,
   } = state.data;
+const isSubmitted =
+  submission.status ===
+  'submitted';
 
+const canSubmit =
+  !isSubmitted &&
+  statistics.total > 0 &&
+  statistics.unanswered === 0 &&
+  savingShiftId === null &&
+  !isSubmitting;
   const periodTitle =
     period.title ??
     `${hebrewMonths[
       period.month - 1
     ]} ${period.year}`;
+const handleSubmitAvailability =
+  async (): Promise<void> => {
+    if (!canSubmit) {
+      return;
+    }
 
+    const confirmed =
+      window.confirm(
+        'האם להגיש את האילוצים?\n\nלאחר ההגשה לא יהיה ניתן לשנות את הבחירות ללא פתיחה מחדש על ידי מנהל.',
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await submitAvailability();
+    } catch {
+      /*
+       * השגיאה מוצגת מתוך ה-Hook.
+       */
+    }
+  };
   return (
     <section className="dispatcher-availability-panel">
       <header className="dispatcher-availability-header">
@@ -363,10 +399,81 @@ function DispatcherAvailabilityPanel() {
               onSelectStatus={
                 handleSelectStatus
               }
+              isReadOnly={
+                isSubmitted ||
+                isSubmitting
+              }
             />
           ),
         )}
       </div>
+      <footer className="dispatcher-availability-submit-section">
+  {lastSubmitResult ||
+  isSubmitted ? (
+    <div
+      className="dispatcher-availability-submitted-message"
+      role="status"
+    >
+      <LockKeyhole
+        size={22}
+        aria-hidden="true"
+      />
+
+      <div>
+        <strong>
+          האילוצים הוגשו בהצלחה
+        </strong>
+
+        <span>
+          ההגשה נעולה ולא ניתן
+          לשנות את הבחירות.
+        </span>
+
+        {submission.submittedAt ? (
+          <small>
+            הוגש בתאריך{' '}
+            {formatDate(
+              submission.submittedAt,
+            )}
+          </small>
+        ) : null}
+      </div>
+    </div>
+  ) : (
+    <>
+      <div className="dispatcher-availability-submit-summary">
+        <strong>
+          {statistics.unanswered === 0
+            ? 'כל המשמרות סומנו'
+            : `נותרו ${statistics.unanswered} משמרות לסימון`}
+        </strong>
+
+        <span>
+          לאחר ההגשה לא ניתן יהיה
+          לשנות את האילוצים ללא
+          פתיחה מחדש על ידי מנהל.
+        </span>
+      </div>
+
+      <Button
+        type="button"
+        disabled={!canSubmit}
+        onClick={() => {
+          void handleSubmitAvailability();
+        }}
+      >
+        <Send
+          size={18}
+          aria-hidden="true"
+        />
+
+        {isSubmitting
+          ? 'מגיש אילוצים...'
+          : 'הגש אילוצים'}
+      </Button>
+    </>
+  )}
+</footer>
     </section>
   );
 }

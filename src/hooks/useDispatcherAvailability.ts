@@ -9,6 +9,7 @@ import type {
   DispatcherAvailabilityShift,
   DispatcherAvailabilityState,
   DispatcherAvailabilityStatus,
+  SubmitAvailabilityResult,
 } from '../types/dispatcherAvailability';
 
 interface DispatcherAvailabilityStatistics {
@@ -30,6 +31,12 @@ interface UseDispatcherAvailabilityResult {
   savingShiftId:
     string | null;
 
+  isSubmitting:
+    boolean;
+
+  lastSubmitResult:
+    SubmitAvailabilityResult | null;
+
   loadAvailability:
     () => Promise<void>;
 
@@ -39,6 +46,9 @@ interface UseDispatcherAvailabilityResult {
       DispatcherAvailabilityStatus,
     note?: string | null,
   ) => Promise<void>;
+
+  submitAvailability:
+    () => Promise<SubmitAvailabilityResult>;
 
   clearError:
     () => void;
@@ -58,7 +68,7 @@ function getErrorMessage(
     return error.message;
   }
 
-  return 'אירעה שגיאה בלתי צפויה בטעינת האילוצים.';
+  return 'אירעה שגיאה בלתי צפויה בניהול האילוצים.';
 }
 
 function calculateStatistics(
@@ -124,6 +134,20 @@ export function useDispatcherAvailability():
   ] =
     useState<string | null>(null);
 
+  const [
+    isSubmitting,
+    setIsSubmitting,
+  ] =
+    useState(false);
+
+  const [
+    lastSubmitResult,
+    setLastSubmitResult,
+  ] =
+    useState<SubmitAvailabilityResult | null>(
+      null,
+    );
+
   const loadAvailability =
     useCallback(
       async (): Promise<void> => {
@@ -173,9 +197,20 @@ export function useDispatcherAvailability():
           DispatcherAvailabilityStatus,
         note: string | null = null,
       ): Promise<void> => {
+        if (
+          state.data?.submission
+            .status === 'submitted'
+        ) {
+          throw new Error(
+            'האילוצים כבר הוגשו ולא ניתן לשנותם.',
+          );
+        }
+
         setSavingShiftId(
           shiftSlotId,
         );
+
+        setLastSubmitResult(null);
 
         setState(
           (currentState) => ({
@@ -257,14 +292,14 @@ export function useDispatcherAvailability():
             },
           );
         } catch (error) {
-          const errorMessage =
-            getErrorMessage(error);
-
           setState(
             (currentState) => ({
               ...currentState,
+
               error:
-                errorMessage,
+                getErrorMessage(
+                  error,
+                ),
             }),
           );
 
@@ -273,7 +308,131 @@ export function useDispatcherAvailability():
           setSavingShiftId(null);
         }
       },
-      [],
+      [state.data],
+    );
+
+  const submitAvailability =
+    useCallback(
+      async (): Promise<SubmitAvailabilityResult> => {
+        if (!state.data) {
+          throw new Error(
+            'לא נמצאה תקופת אילוצים פתוחה.',
+          );
+        }
+
+        if (
+          state.data.submission.status ===
+          'submitted'
+        ) {
+          throw new Error(
+            'האילוצים כבר הוגשו.',
+          );
+        }
+
+        const currentStatistics =
+          calculateStatistics(
+            state.data.shifts,
+          );
+
+        if (
+          currentStatistics.unanswered >
+          0
+        ) {
+          const errorMessage =
+            `נותרו ${currentStatistics.unanswered} משמרות שטרם סומנו.`;
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+              error: errorMessage,
+            }),
+          );
+
+          throw new Error(
+            errorMessage,
+          );
+        }
+
+        setIsSubmitting(true);
+        setLastSubmitResult(null);
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+            error: null,
+          }),
+        );
+
+        try {
+          const result =
+            await dispatcherAvailabilityService
+              .submitMyAvailability();
+
+          setState(
+            (currentState) => {
+              if (
+                !currentState.data
+              ) {
+                return currentState;
+              }
+
+              return {
+                ...currentState,
+
+                data: {
+                  ...currentState.data,
+
+                  submission: {
+                    ...currentState
+                      .data
+                      .submission,
+
+                    status:
+                      result
+                        .submissionStatus,
+
+                    submittedAt:
+                      result
+                        .submittedAt,
+
+                    availableCount:
+                      result
+                        .availableCount,
+
+                    unavailableCount:
+                      result
+                        .unavailableCount,
+                  },
+                },
+
+                error: null,
+              };
+            },
+          );
+
+          setLastSubmitResult(
+            result,
+          );
+
+          return result;
+        } catch (error) {
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              error:
+                getErrorMessage(
+                  error,
+                ),
+            }),
+          );
+
+          throw error;
+        } finally {
+          setIsSubmitting(false);
+        }
+      },
+      [state.data],
     );
 
   const statistics =
@@ -300,8 +459,11 @@ export function useDispatcherAvailability():
     state,
     statistics,
     savingShiftId,
+    isSubmitting,
+    lastSubmitResult,
     loadAvailability,
     saveShiftAvailability,
+    submitAvailability,
     clearError,
   };
 }

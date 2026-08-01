@@ -4,10 +4,12 @@ import {
   Download,
   RefreshCw,
   RotateCcw,
+  ClipboardCheck,
   Send,
 } from 'lucide-react';
 import {
   useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from 'react';
@@ -25,6 +27,11 @@ import type {
 } from '../types/availability';
 import '../styles/availability.css';
 import DispatcherAvailabilityPanel from '../components/availability/DispatcherAvailabilityPanel';
+import {
+  useAvailabilityPeriodSubmissions,
+} from '../hooks/useAvailabilityPeriodSubmissions';
+import AvailabilitySubmissionsPanel from '../components/availability/AvailabilitySubmissionsPanel';
+
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -159,7 +166,15 @@ function AvailabilityPage() {
     deadline,
     setDeadline,
   ] = useState('');
-
+const {
+  state:
+    submissionsState,
+  selectedPeriodId,
+  loadPeriodSubmissions,
+  reset:
+    resetSubmissionsTracking,
+} =
+  useAvailabilityPeriodSubmissions();
   const {
     state,
     loadPeriods,
@@ -169,7 +184,10 @@ function AvailabilityPage() {
     openPeriod,
     clearError,
   } = useAvailabilityPeriods();
-
+const submissionsPanelRef =
+  useRef<HTMLDivElement | null>(
+    null,
+  );
   const availableYears =
     useMemo(
       () => {
@@ -273,7 +291,34 @@ function AvailabilityPage() {
         importYear,
       );
     };
+const handleOpenSubmissionsTracking =
+  async (
+    periodId: string,
+  ): Promise<void> => {
+    await loadPeriodSubmissions(
+      periodId,
+    );
 
+    window.setTimeout(() => {
+      submissionsPanelRef
+        .current
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 0);
+  };
+  
+const handleRefreshSubmissionsTracking =
+  async (): Promise<void> => {
+    if (!selectedPeriodId) {
+      return;
+    }
+
+    await loadPeriodSubmissions(
+      selectedPeriodId,
+    );
+  };
   return (
     <section className="availability-page">
       <PageHeader
@@ -856,7 +901,31 @@ function AvailabilityPage() {
                           ]
                         }
                       </span>
+                      {canManage &&
+                      period.status !== 'draft' ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          disabled={
+                            submissionsState.isLoading
+                          }
+                          onClick={() => {
+                            void handleOpenSubmissionsTracking(
+                              period.id,
+                            );
+                          }}
+                        >
+                          <ClipboardCheck
+                            size={17}
+                            aria-hidden="true"
+                          />
 
+                          {submissionsState.isLoading &&
+                          selectedPeriodId === period.id
+                            ? 'טוען מעקב...'
+                            : 'מעקב הגשות'}
+                        </Button>
+                      ) : null}
                       {canManage &&
                       period.status ===
                         'draft' ? (
@@ -931,6 +1000,31 @@ function AvailabilityPage() {
           </div>
         )}
       </div>
+      {canManage &&
+      selectedPeriodId ? (
+        <div
+          ref={submissionsPanelRef}
+          className="availability-submissions-anchor"
+        >
+          <AvailabilitySubmissionsPanel
+            isLoading={
+              submissionsState.isLoading
+            }
+            error={
+              submissionsState.error
+            }
+            data={
+              submissionsState.data
+            }
+            onRefresh={
+              handleRefreshSubmissionsTracking
+            }
+            onClose={
+              resetSubmissionsTracking
+            }
+          />
+        </div>
+      ) : null}
     </section>
   );
 }

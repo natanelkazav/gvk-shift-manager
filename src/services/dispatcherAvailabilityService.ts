@@ -6,6 +6,7 @@ import type {
   MyOpenAvailability,
   SaveShiftAvailabilityInput,
   SaveShiftAvailabilityResult,
+  SubmitAvailabilityResult,
 } from '../types/dispatcherAvailability';
 
 interface MyOpenAvailabilityDatabaseRow {
@@ -51,6 +52,15 @@ interface SaveShiftAvailabilityDatabaseRow {
     DispatcherAvailabilityStatus;
   availability_note: string | null;
   availability_updated_at: string;
+  available_count: number;
+  unavailable_count: number;
+  answered_count: number;
+  total_shift_count: number;
+}
+interface SubmitAvailabilityDatabaseRow {
+  period_id: string;
+  submission_status: 'submitted';
+  submitted_at: string;
   available_count: number;
   unavailable_count: number;
   answered_count: number;
@@ -340,7 +350,126 @@ async function saveShiftAvailability(
       result.total_shift_count,
   };
 }
+async function submitMyAvailability():
+  Promise<SubmitAvailabilityResult> {
+  const {
+    data,
+    error,
+  } = await supabase.rpc(
+    'submit_my_availability',
+  );
+
+  if (error) {
+    console.error(
+      'SUBMIT MY AVAILABILITY ERROR:',
+      {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      },
+    );
+
+    const normalizedMessage =
+      error.message.toLowerCase();
+
+    if (
+      normalizedMessage.includes(
+        'all shift slots must be answered',
+      )
+    ) {
+      throw new Error(
+        'יש לסמן זמין או לא זמין עבור כל המשמרות לפני ההגשה.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'deadline has passed',
+      )
+    ) {
+      throw new Error(
+        'מועד הגשת האילוצים כבר עבר.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'already submitted',
+      )
+    ) {
+      throw new Error(
+        'האילוצים כבר הוגשו.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'open availability period was not found',
+      ) ||
+      normalizedMessage.includes(
+        'period is not open',
+      )
+    ) {
+      throw new Error(
+        'אין כרגע תקופת אילוצים פתוחה להגשה.',
+      );
+    }
+
+    if (
+      normalizedMessage.includes(
+        'submission record was not found',
+      )
+    ) {
+      throw new Error(
+        'לא נמצאה רשומת הגשה עבור המשתמש.',
+      );
+    }
+
+    throw new Error(
+      'לא ניתן היה להגיש את האילוצים.',
+    );
+  }
+
+  const rows =
+    data as
+      | SubmitAvailabilityDatabaseRow[]
+      | null;
+
+  const result =
+    rows?.[0];
+
+  if (!result) {
+    throw new Error(
+      'הגשת האילוצים הסתיימה ללא תשובה תקינה מהשרת.',
+    );
+  }
+
+  return {
+    periodId:
+      result.period_id,
+
+    submissionStatus:
+      result.submission_status,
+
+    submittedAt:
+      result.submitted_at,
+
+    availableCount:
+      result.available_count,
+
+    unavailableCount:
+      result.unavailable_count,
+
+    answeredCount:
+      result.answered_count,
+
+    totalShiftCount:
+      result.total_shift_count,
+  };
+}
 export const dispatcherAvailabilityService = {
   getMyOpenAvailability,
   saveShiftAvailability,
+  submitMyAvailability,
 };
