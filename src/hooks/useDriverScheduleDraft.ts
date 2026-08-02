@@ -10,6 +10,8 @@ import {
 import type {
   CreateDriverScheduleDraftResponse,
   DriverScheduleData,
+  UpdateDriverScheduleDayRequest,
+  UpdateDriverScheduleDayResponse,
 } from '../types/driverSchedule';
 
 interface DriverScheduleDraftState {
@@ -20,11 +22,17 @@ interface DriverScheduleDraftState {
 
   isCreating: boolean;
 
+  updatingDayId:
+    string | null;
+
   error:
     string | null;
 
   lastCreatedResult:
     CreateDriverScheduleDraftResponse | null;
+
+  lastUpdatedDayResult:
+    UpdateDriverScheduleDayResponse | null;
 }
 
 interface UseDriverScheduleDraftResult {
@@ -47,7 +55,15 @@ interface UseDriverScheduleDraftResult {
     availabilityPeriodId: string,
   ) => Promise<CreateDriverScheduleDraftResponse>;
 
+  updateScheduleDay: (
+    request:
+      UpdateDriverScheduleDayRequest,
+  ) => Promise<UpdateDriverScheduleDayResponse>;
+
   clearError:
+    () => void;
+
+  clearLastUpdatedDayResult:
     () => void;
 
   reset:
@@ -62,9 +78,15 @@ const initialState:
 
     isCreating: false,
 
+    updatingDayId:
+      null,
+
     error: null,
 
     lastCreatedResult:
+      null,
+
+    lastUpdatedDayResult:
       null,
   };
 
@@ -121,6 +143,14 @@ function normalizeDriverScheduleDraftError(
 
     if (
       normalizedMessage.includes(
+        'driver schedule day id is required',
+      )
+    ) {
+      return 'מזהה יום השיבוץ חסר.';
+    }
+
+    if (
+      normalizedMessage.includes(
         'driver availability period not found',
       )
     ) {
@@ -129,10 +159,50 @@ function normalizeDriverScheduleDraftError(
 
     if (
       normalizedMessage.includes(
+        'driver schedule day not found',
+      )
+    ) {
+      return 'יום השיבוץ לא נמצא.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'driver schedule period not found',
+      )
+    ) {
+      return 'תקופת לוח הכוננים לא נמצאה.';
+    }
+
+    if (
+      normalizedMessage.includes(
         'driver availability period must be closed before scheduling',
       )
     ) {
       return 'יש לסגור את חודש האילוצים לפני יצירת השיבוץ.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'only draft driver schedules can be edited',
+      )
+    ) {
+      return 'ניתן לערוך רק לוח כוננים שנמצא במצב טיוטה.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'selected on-call driver was not found or is inactive',
+      )
+    ) {
+      return 'הכונן שנבחר לא נמצא או שאינו פעיל.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'driver cannot be assigned on consecutive days',
+      )
+    ) {
+      return 'לא ניתן לשבץ את אותו כונן ביומיים רצופים.';
     }
 
     if (
@@ -184,6 +254,14 @@ function normalizeDriverScheduleDraftError(
       )
     ) {
       return 'לא התקבלה תשובה תקינה בעת יצירת טיוטת לוח הכוננים.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'לא התקבלה תשובה בעת עדכון יום בלוח הכוננים',
+      )
+    ) {
+      return 'לא התקבלה תשובה תקינה בעת עדכון יום בלוח הכוננים.';
     }
 
     return error.message;
@@ -465,6 +543,9 @@ export function useDriverScheduleDraft():
 
             lastCreatedResult:
               null,
+
+            lastUpdatedDayResult:
+              null,
           }),
         );
 
@@ -498,6 +579,9 @@ export function useDriverScheduleDraft():
 
               lastCreatedResult:
                 result,
+
+              lastUpdatedDayResult:
+                null,
             }),
           );
 
@@ -529,6 +613,140 @@ export function useDriverScheduleDraft():
       [],
     );
 
+  const updateScheduleDay =
+    useCallback(
+      async (
+        request:
+          UpdateDriverScheduleDayRequest,
+      ): Promise<UpdateDriverScheduleDayResponse> => {
+        const normalizedScheduleDayId =
+          request.scheduleDayId.trim();
+
+        if (
+          !normalizedScheduleDayId
+        ) {
+          const missingDayError =
+            new Error(
+              'Driver schedule day id is required.',
+            );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              error:
+                normalizeDriverScheduleDraftError(
+                  missingDayError,
+                ),
+            }),
+          );
+
+          throw missingDayError;
+        }
+
+        const schedulePeriodId =
+          state.data?.period?.id ??
+          null;
+
+        if (!schedulePeriodId) {
+          const missingPeriodError =
+            new Error(
+              'Driver schedule period id is required.',
+            );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              error:
+                normalizeDriverScheduleDraftError(
+                  missingPeriodError,
+                ),
+            }),
+          );
+
+          throw missingPeriodError;
+        }
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            updatingDayId:
+              normalizedScheduleDayId,
+
+            error:
+              null,
+
+            lastUpdatedDayResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await driverScheduleService
+              .updateScheduleDay({
+                ...request,
+
+                scheduleDayId:
+                  normalizedScheduleDayId,
+              });
+
+          const refreshedData =
+            await driverScheduleService
+              .getScheduleById(
+                schedulePeriodId,
+              );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              data:
+                refreshedData,
+
+              updatingDayId:
+                null,
+
+              error:
+                null,
+
+              lastUpdatedDayResult:
+                result,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          const normalizedError =
+            normalizeDriverScheduleDraftError(
+              error,
+            );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              updatingDayId:
+                null,
+
+              error:
+                normalizedError,
+
+              lastUpdatedDayResult:
+                null,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [
+        state.data?.period?.id,
+      ],
+    );
+
   const clearError =
     useCallback(
       (): void => {
@@ -537,6 +755,21 @@ export function useDriverScheduleDraft():
             ...currentState,
 
             error:
+              null,
+          }),
+        );
+      },
+      [],
+    );
+
+  const clearLastUpdatedDayResult =
+    useCallback(
+      (): void => {
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            lastUpdatedDayResult:
               null,
           }),
         );
@@ -565,7 +798,11 @@ export function useDriverScheduleDraft():
 
     createDraft,
 
+    updateScheduleDay,
+
     clearError,
+
+    clearLastUpdatedDayResult,
 
     reset,
   };

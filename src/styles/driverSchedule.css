@@ -1309,3 +1309,186 @@
     align-items: flex-start;
   }
 }
+.driver-schedule-day-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.driver-schedule-day-editor-warning {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.driver-schedule-day-editor-unassigned {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.driver-schedule-day-editor-locked {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.driver-schedule-day-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.driver-schedule-day-editor-date {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.driver-schedule-day-editor-date strong {
+  color: #0f172a;
+  font-size: 0.78rem;
+}
+
+.driver-schedule-day-editor-date span {
+  color: #64748b;
+  font-size: 0.66rem;
+}
+
+.driver-schedule-day-lock-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #475569;
+  font: inherit;
+  font-size: 0.64rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.driver-schedule-day-lock-button-active {
+  border-color: #93c5fd;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.driver-schedule-day-lock-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.driver-schedule-day-editor-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(170px, 0.8fr)
+    minmax(220px, 1.4fr);
+  gap: 10px;
+}
+
+.driver-schedule-day-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.driver-schedule-day-editor-field > span {
+  color: #475569;
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.driver-schedule-day-editor-field select,
+.driver-schedule-day-editor-field textarea {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #1e293b;
+  font: inherit;
+  font-size: 0.68rem;
+}
+
+.driver-schedule-day-editor-field textarea {
+  min-height: 58px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.driver-schedule-day-editor-field select:focus,
+.driver-schedule-day-editor-field textarea:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #60a5fa;
+}
+
+.driver-schedule-day-editor-current {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #64748b;
+  font-size: 0.64rem;
+}
+
+.driver-schedule-day-editor-current strong {
+  margin-inline-end: 8px;
+  color: #1e293b;
+}
+
+.driver-schedule-day-editor-warning-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid #fde68a;
+  border-radius: 9px;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.driver-schedule-day-editor-warning-box > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.driver-schedule-day-editor-warning-box strong {
+  font-size: 0.68rem;
+}
+
+.driver-schedule-day-editor-warning-box span {
+  font-size: 0.64rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.driver-schedule-day-editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+@media (max-width: 700px) {
+  .driver-schedule-day-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .driver-schedule-day-editor-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .driver-schedule-day-editor-actions .button {
+    width: 100%;
+  }
+}

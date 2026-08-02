@@ -14,7 +14,8 @@ import {
   useState,
   type FormEvent,
 } from 'react';
-
+import DriverScheduleDayEditor
+  from '../components/driverSchedule/DriverScheduleDayEditor';
 import {
   useAuth,
 } from '../auth/AuthContext';
@@ -155,6 +156,8 @@ const {
 
   createDraft:
     createDriverScheduleDraft,
+
+  updateScheduleDay,
 
   clearError:
     clearScheduleDraftError,
@@ -1497,92 +1500,54 @@ const isBusy =
         </article>
       </div>
 
-      <div className="driver-schedule-draft-list">
-        {scheduleDraftState
-          .data
-          .days
-          .map(
-            (scheduleDay) => (
-              <article
-                key={
-                  scheduleDay.id
-                }
-                className={[
-                  'driver-schedule-draft-item',
-
-                  scheduleDay
-                    .assignedUserId
-                    ? ''
-                    : 'driver-schedule-draft-item-unassigned',
-
-                  scheduleDay
-                    .spacingWarning
-                    ? 'driver-schedule-draft-item-warning'
-                    : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <div className="driver-schedule-draft-date">
-                  <strong>
-                    {
-                      scheduleDay
-                        .weekdayName
-                    }
-                  </strong>
-
-                  <span>
-                    {formatDate(
-                      scheduleDay
-                        .dutyDate,
-                    )}
-                  </span>
-                </div>
-
-                <div className="driver-schedule-draft-assignment">
-                  <span>
-                    כונן משובץ
-                  </span>
-
-                  <strong>
-                    {scheduleDay
-                      .assignedUserName ??
-                      'לא שובץ כונן'}
-                  </strong>
-                </div>
-
-                <div className="driver-schedule-draft-source">
-                  {scheduleDay
-                    .assignmentSource ===
-                  'automatic'
-                    ? 'שיבוץ אוטומטי'
-                    : scheduleDay
-                          .assignmentSource ===
-                        'manual'
-                      ? 'שיבוץ ידני'
-                      : scheduleDay
-                            .assignmentSource ===
-                          'swap'
-                        ? 'החלפה'
-                        : scheduleDay
-                              .assignmentSource ===
-                            'import'
-                          ? 'ייבוא'
-                          : 'ללא מקור'}
-                </div>
-
-                {scheduleDay.notes ? (
-                  <p className="driver-schedule-draft-note">
-                    {
-                      scheduleDay
-                        .notes
-                    }
-                  </p>
-                ) : null}
-              </article>
-            ),
-          )}
-      </div>
+<div className="driver-schedule-draft-list">
+  {scheduleDraftState
+    .data
+    .days
+    .map(
+      (scheduleDay) => (
+<DriverScheduleDayEditor
+  key={`${scheduleDay.id}-${scheduleDay.updatedAt}`}
+          day={
+            scheduleDay
+          }
+          drivers={
+            scheduleDraftState
+              .data
+              ?.drivers ??
+            []
+          }
+          isEditable={
+            canEditSchedule &&
+            scheduleDraftState
+              .data
+              ?.period
+              ?.status ===
+              'draft'
+          }
+          isSaving={
+            scheduleDraftState
+              .updatingDayId ===
+              scheduleDay.id
+          }
+          onSave={async (
+            request,
+          ) => {
+            try {
+              await updateScheduleDay(
+                request,
+              );
+            } catch {
+              /*
+               * הודעת השגיאה נשמרת
+               * בתוך ה-Hook.
+               */
+            }
+          }}
+        />
+      ),
+    )}
+</div>
     </section>
   ) : (
     <section className="driver-schedule-placeholder-card">

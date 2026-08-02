@@ -183,3 +183,41 @@ export interface GetDriverScheduleRequest {
   month?:
     number | null;
 }
+export interface UpdateDriverScheduleDayRequest {
+  scheduleDayId: string;
+
+  assignedUserId:
+    string | null;
+
+  isLocked: boolean;
+
+  note:
+    string | null;
+}
+
+export interface UpdateDriverScheduleDayResponse {
+  scheduleDayId: string;
+
+  periodId: string;
+
+  dutyDate: string;
+
+  assignedUserId:
+    string | null;
+
+  assignedUserName:
+    string | null;
+
+  assignmentSource:
+    DriverAssignmentSource | null;
+
+  isLocked: boolean;
+
+  notes:
+    string | null;
+
+  hasWarnings: boolean;
+
+  warnings:
+    string[];
+}
