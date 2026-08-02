@@ -64,7 +64,11 @@ export const router =
           {
             element: (
               <PermissionRoute
-                permission="availability.view"
+                anyPermissions={[
+                  'availability.view',
+                  'availability.manage',
+                  'schedule.edit',
+                ]}
               />
             ),
             children: [

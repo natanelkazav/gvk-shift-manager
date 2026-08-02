@@ -3,37 +3,86 @@ import {
   Outlet,
   useLocation,
 } from 'react-router-dom';
-import { useAuth } from './AuthContext';
+
+import {
+  useAuth,
+} from './AuthContext';
+
 import type {
   PermissionKey,
 } from '../types/auth';
 
 interface PermissionRouteProps {
-  permission: PermissionKey;
+  permission?:
+    PermissionKey;
+
+  anyPermissions?:
+    PermissionKey[];
 }
 
 function PermissionRoute({
   permission,
+  anyPermissions,
 }: PermissionRouteProps) {
-  const location = useLocation();
+  const location =
+    useLocation();
 
   const {
     hasPermission,
     isLoading,
-  } = useAuth();
+  } =
+    useAuth();
 
   if (isLoading) {
     return null;
   }
 
-  if (!hasPermission(permission)) {
+  const normalizedAnyPermissions =
+    anyPermissions ?? [];
+
+  const hasSinglePermission =
+    permission
+      ? hasPermission(
+          permission,
+        )
+      : false;
+
+  const hasAnyPermission =
+    normalizedAnyPermissions
+      .some(
+        (
+          currentPermission,
+        ) =>
+          hasPermission(
+            currentPermission,
+          ),
+      );
+
+  const hasAccess =
+    hasSinglePermission ||
+    hasAnyPermission;
+
+  const hasPermissionRequirement =
+    Boolean(
+      permission ||
+      normalizedAnyPermissions
+        .length > 0,
+    );
+
+  if (
+    !hasPermissionRequirement ||
+    !hasAccess
+  ) {
     return (
       <Navigate
         to="/"
         replace
         state={{
-          accessDenied: true,
-          attemptedPath: location.pathname,
+          accessDenied:
+            true,
+
+          attemptedPath:
+            location.pathname,
         }}
       />
     );

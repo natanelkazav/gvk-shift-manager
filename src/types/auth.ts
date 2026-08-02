@@ -12,21 +12,32 @@ export type UserRole =
 
 export type PermissionKey =
   | 'dashboard.view'
+
   | 'schedule.view'
+  | 'schedule.view_team'
   | 'schedule.edit'
-  | 'driver_schedule.view'
-  | 'driver_schedule.edit'
-  | 'notifications.view'
-  | 'notifications.manage'
-  | 'statistics.view'
-  | 'shift_swaps.view'
-  | 'shift_swaps.approve'
-  | 'archive.view'
-  | 'users.view'
-  | 'users.manage'
-  | 'audit.view'
+
   | 'availability.view'
   | 'availability.manage'
+
+  | 'driver_schedule.view'
+  | 'driver_schedule.edit'
+
+  | 'notifications.view'
+  | 'notifications.manage'
+
+  | 'statistics.view'
+
+  | 'shift_swaps.view'
+  | 'shift_swaps.approve'
+
+  | 'archive.view'
+
+  | 'audit.view'
+
+  | 'users.view'
+  | 'users.manage'
+
   | 'settings.view'
   | 'settings.manage';
 

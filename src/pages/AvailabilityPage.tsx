@@ -136,24 +136,24 @@ function formatDateOnly(
 }
 
 function AvailabilityPage() {
-  const {
-    profile,
-    hasPermission,
-  } = useAuth();
+const {
+  hasPermission,
+} = useAuth();
 
-  const canManage =
-    hasPermission(
-      'availability.manage',
-    );
+const canSubmitAvailability =
+  hasPermission(
+    'availability.view',
+  );
 
-  const canPrepareSchedule =
-    hasPermission(
-      'schedule.edit',
-    );
+const canManageAvailability =
+  hasPermission(
+    'availability.manage',
+  );
 
-  const isDispatcher =
-    profile?.role ===
-    'dispatcher';
+const canPrepareSchedule =
+  hasPermission(
+    'schedule.edit',
+  );
 
   const [
     activeWorkspaceTab,
@@ -382,60 +382,60 @@ const {
       [],
     );
 
-  useEffect(() => {
-    const isActiveTabVisible =
-      (
-        activeWorkspaceTab ===
-          'my-availability' &&
-        isDispatcher
-      ) ||
-      (
-        activeWorkspaceTab ===
-          'period-management' &&
-        canManage
-      ) ||
-      (
-        activeWorkspaceTab ===
-          'submissions' &&
-        canManage
-      ) ||
-      (
-        activeWorkspaceTab ===
-          'schedule-preparation' &&
-        canPrepareSchedule
-      );
+useEffect(() => {
+  const isActiveTabVisible =
+    (
+      activeWorkspaceTab ===
+        'my-availability' &&
+      canSubmitAvailability
+    ) ||
+    (
+      activeWorkspaceTab ===
+        'period-management' &&
+      canManageAvailability
+    ) ||
+    (
+      activeWorkspaceTab ===
+        'submissions' &&
+      canManageAvailability
+    ) ||
+    (
+      activeWorkspaceTab ===
+        'schedule-preparation' &&
+      canPrepareSchedule
+    );
 
-    if (isActiveTabVisible) {
-      return;
-    }
+  if (isActiveTabVisible) {
+    return;
+  }
 
-    if (isDispatcher) {
-      setActiveWorkspaceTab(
-        'my-availability',
-      );
+  if (canSubmitAvailability) {
+    setActiveWorkspaceTab(
+      'my-availability',
+    );
 
-      return;
-    }
+    return;
+  }
 
-    if (canManage) {
-      setActiveWorkspaceTab(
-        'period-management',
-      );
+  if (canManageAvailability) {
+    setActiveWorkspaceTab(
+      'period-management',
+    );
 
-      return;
-    }
+    return;
+  }
 
-    if (canPrepareSchedule) {
-      setActiveWorkspaceTab(
-        'schedule-preparation',
-      );
-    }
-  }, [
-    activeWorkspaceTab,
-    isDispatcher,
-    canManage,
-    canPrepareSchedule,
-  ]);
+  if (canPrepareSchedule) {
+    setActiveWorkspaceTab(
+      'schedule-preparation',
+    );
+  }
+}, [
+  activeWorkspaceTab,
+  canSubmitAvailability,
+  canManageAvailability,
+  canPrepareSchedule,
+]);
 
   const handleRebuildPeriod =
     async (
@@ -913,11 +913,11 @@ const {
         activeTab={
           activeWorkspaceTab
         }
-        isDispatcher={
-          isDispatcher
+        canSubmitAvailability={
+          canSubmitAvailability
         }
         canManageAvailability={
-          canManage
+          canManageAvailability
         }
         canPrepareSchedule={
           canPrepareSchedule
@@ -1166,13 +1166,13 @@ const {
 
       {activeWorkspaceTab ===
         'my-availability' &&
-      isDispatcher ? (
+      canSubmitAvailability ? (
         <DispatcherAvailabilityPanel />
       ) : null}
 
       {activeWorkspaceTab ===
         'period-management' &&
-      canManage ? (
+      canManageAvailability ? (
         <>
           <div className="availability-periods-card">
             <div className="availability-card-header">
@@ -1779,7 +1779,7 @@ const {
 
       {activeWorkspaceTab ===
         'submissions' &&
-      canManage ? (
+      canManageAvailability ? (
         <>
           <AvailabilityPeriodPicker
             periods={

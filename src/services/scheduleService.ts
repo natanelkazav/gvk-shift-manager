@@ -4,10 +4,15 @@ import type {
   SchedulingAssignment,
 } from '../types/autoScheduling';
 
+import type {
+  CurrentScheduleData,
+} from '../types/schedule';
+
 export interface SaveScheduleDraftRequest {
   availabilityPeriodId: string;
 
-  assignments: SchedulingAssignment[];
+  assignments:
+    SchedulingAssignment[];
 
   confirmWarnings: boolean;
 }
@@ -36,9 +41,30 @@ export interface SaveScheduleDraftResponse {
   approvedAt: string;
 }
 
+export interface PublishSchedulePeriodResponse {
+  schedulePeriodId: string;
+
+  year: number;
+
+  month: number;
+
+  status: 'published';
+
+  publishedAt: string;
+
+  publishedBy:
+    string | null;
+
+  publishedShifts:
+    number | null;
+
+  alreadyPublished: boolean;
+}
+
 class ScheduleService {
   async saveScheduleDraft(
-    request: SaveScheduleDraftRequest,
+    request:
+      SaveScheduleDraftRequest,
   ): Promise<SaveScheduleDraftResponse> {
     const {
       data,
@@ -61,7 +87,76 @@ class ScheduleService {
       throw error;
     }
 
-    return data as SaveScheduleDraftResponse;
+    if (!data) {
+      throw new Error(
+        'Save schedule response is empty.',
+      );
+    }
+
+    return data as
+      SaveScheduleDraftResponse;
+  }
+
+  async getCurrentSchedule():
+    Promise<CurrentScheduleData> {
+    const {
+      data,
+      error,
+    } = await supabase.rpc(
+      'get_current_schedule',
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error(
+        'Current schedule response is empty.',
+      );
+    }
+
+    return data as
+      CurrentScheduleData;
+  }
+
+  async publishSchedulePeriod(
+    schedulePeriodId: string,
+  ): Promise<PublishSchedulePeriodResponse> {
+    const normalizedSchedulePeriodId =
+      schedulePeriodId.trim();
+
+    if (
+      !normalizedSchedulePeriodId
+    ) {
+      throw new Error(
+        'Schedule period id is required.',
+      );
+    }
+
+    const {
+      data,
+      error,
+    } = await supabase.rpc(
+      'publish_schedule_period',
+      {
+        requested_schedule_period_id:
+          normalizedSchedulePeriodId,
+      },
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
+      throw new Error(
+        'Publish schedule response is empty.',
+      );
+    }
+
+    return data as
+      PublishSchedulePeriodResponse;
   }
 }
 

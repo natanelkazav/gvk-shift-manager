@@ -247,13 +247,16 @@ function UsersPage() {
           createdUser.id,
           permissions,
         );
-      } catch (error) {
-        throw new Error(
-          error instanceof Error
-            ? `המשתמש נוצר בהצלחה, אך שמירת ההרשאות נכשלה: ${error.message}`
-            : 'המשתמש נוצר בהצלחה, אך שמירת ההרשאות נכשלה.',
-        );
-      }
+        } catch (error) {
+          throw new Error(
+            error instanceof Error
+              ? `המשתמש נוצר בהצלחה, אך שמירת ההרשאות נכשלה: ${error.message}`
+              : 'המשתמש נוצר בהצלחה, אך שמירת ההרשאות נכשלה.',
+            {
+              cause: error,
+            },
+          );
+        }
 
       setIsCreateModalOpen(false);
       resetUserPermissionsState();

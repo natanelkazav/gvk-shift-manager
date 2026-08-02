@@ -211,8 +211,6 @@ Deno.serve(
       );
     }
 
-    let createdAuthUserId:
-      string | null = null;
 
     try {
       const supabaseUrl =
@@ -478,8 +476,8 @@ const {
         );
       }
 
-      createdAuthUserId =
-        createUserData.user.id;
+const createdAuthUserId =
+  createUserData.user.id;
 
       const now =
         new Date()
@@ -564,8 +562,6 @@ const {
             createdAuthUserId,
           );
 
-        createdAuthUserId =
-          null;
 
         throw new Error(
           'חשבון ההתחברות נוצר, אך יצירת פרופיל המשתמש נכשלה.',

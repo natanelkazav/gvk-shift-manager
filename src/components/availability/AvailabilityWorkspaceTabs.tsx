@@ -15,7 +15,7 @@ interface AvailabilityWorkspaceTabsProps {
   activeTab:
     AvailabilityWorkspaceTab;
 
-  isDispatcher: boolean;
+  canSubmitAvailability: boolean;
   canManageAvailability: boolean;
   canPrepareSchedule: boolean;
 
@@ -39,7 +39,7 @@ interface AvailabilityTabDefinition {
 
 function AvailabilityWorkspaceTabs({
   activeTab,
-  isDispatcher,
+  canSubmitAvailability,
   canManageAvailability,
   canPrepareSchedule,
   onChange,
@@ -60,7 +60,7 @@ function AvailabilityWorkspaceTabs({
           CalendarDays,
 
         isVisible:
-          isDispatcher,
+          canSubmitAvailability,
       },
 
       {
