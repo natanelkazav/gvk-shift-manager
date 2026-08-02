@@ -6,6 +6,7 @@ import {
   FileCog,
   Play,
   RefreshCw,
+  Save,
   Sparkles,
   UserCheck,
   Users,
@@ -22,7 +23,12 @@ import type {
   SchedulingDraft,
 } from '../../types/autoScheduling';
 
+import type {
+  EditableSchedulingValidationResult,
+} from '../../services/editableSchedulingValidator';
+
 import { Button } from '../ui';
+import EditableSchedulingAssignments from './EditableSchedulingAssignments';
 
 interface AssignmentCandidatesStatistics {
   totalShifts: number;
@@ -40,6 +46,8 @@ interface AssignmentCandidatesPanelProps {
 
   isLoading: boolean;
   isGeneratingDraft: boolean;
+  isSavingSchedule: boolean;
+  hasSavedSchedule: boolean;
 
   error: string | null;
   draftError: string | null;
@@ -47,11 +55,41 @@ interface AssignmentCandidatesPanelProps {
   draft:
     SchedulingDraft | null;
 
+  editableAssignments:
+    SchedulingDraft['assignments'];
+
+  editableDispatcherSummaries:
+    SchedulingDraft['dispatcherSummaries'];
+
+  validation:
+    EditableSchedulingValidationResult;
+
+  isDraftDirty: boolean;
+
   onRefresh:
     () => Promise<void>;
 
   onGenerateDraft:
     () => void;
+
+  onAssignDispatcher: (
+    shiftId: string,
+    userId: string,
+  ) => void;
+
+  onRemoveAssignment: (
+    shiftId: string,
+  ) => void;
+
+  onResetShiftAssignment: (
+    shiftId: string,
+  ) => void;
+
+  onResetAllChanges:
+    () => void;
+
+  onSaveSchedule:
+    () => Promise<void>;
 
   onClose:
     () => void;
@@ -532,11 +570,22 @@ function AssignmentCandidatesPanel({
   statistics,
   isLoading,
   isGeneratingDraft,
+  isSavingSchedule,
+  hasSavedSchedule,
   error,
   draftError,
   draft,
+  editableAssignments,
+  editableDispatcherSummaries,
+  validation,
+  isDraftDirty,
   onRefresh,
   onGenerateDraft,
+  onAssignDispatcher,
+  onRemoveAssignment,
+  onResetShiftAssignment,
+  onResetAllChanges,
+  onSaveSchedule,
   onClose,
 }: AssignmentCandidatesPanelProps) {
   if (isLoading) {
@@ -633,6 +682,10 @@ function AssignmentCandidatesPanel({
         shift.assignmentState ===
         'multiple_available',
     );
+
+  const unassignedCount =
+    data.shifts.length -
+    editableAssignments.length;
 
   return (
     <section className="assignment-candidates-panel">
@@ -833,14 +886,13 @@ function AssignmentCandidatesPanel({
               <div>
                 <strong>
                   {
-                    draft
-                      .assignments
+                    editableAssignments
                       .length
                   }
                 </strong>
 
                 <span>
-                  שובצו אוטומטית
+                  משמרות משובצות
                 </span>
               </div>
             </article>
@@ -854,9 +906,7 @@ function AssignmentCandidatesPanel({
               <div>
                 <strong>
                   {
-                    draft
-                      .unassignedShiftIds
-                      .length
+                    unassignedCount
                   }
                 </strong>
 
@@ -875,9 +925,8 @@ function AssignmentCandidatesPanel({
               <div>
                 <strong>
                   {
-                    draft
-                      .issues
-                      .length
+                    validation.errorCount +
+                    validation.warningCount
                   }
                 </strong>
 
@@ -887,6 +936,98 @@ function AssignmentCandidatesPanel({
               </div>
             </article>
           </div>
+
+          <div
+            className={[
+              'assignment-draft-validation-summary',
+              validation.isValid
+                ? 'assignment-draft-validation-summary-valid'
+                : 'assignment-draft-validation-summary-invalid',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            {validation.isValid ? (
+              <CheckCircle2
+                size={21}
+                aria-hidden="true"
+              />
+            ) : (
+              <AlertTriangle
+                size={21}
+                aria-hidden="true"
+              />
+            )}
+
+            <div>
+              <strong>
+                {validation.isValid
+                  ? 'הטיוטה תקינה'
+                  : 'הטיוטה דורשת טיפול'}
+              </strong>
+
+              <span>
+                {validation.errorCount}{' '}
+                שגיאות חוסמות ו־
+                {validation.warningCount}{' '}
+                אזהרות.
+              </span>
+            </div>
+
+            <div className="assignment-draft-validation-metrics">
+              <span>
+                ללא שיבוץ:{' '}
+                <strong>{validation.unassignedShiftCount}</strong>
+              </span>
+
+              <span>
+                חפיפות:{' '}
+                <strong>{validation.overlapCount}</strong>
+              </span>
+
+              <span>
+                רצופות:{' '}
+                <strong>{validation.consecutiveShiftCount}</strong>
+              </span>
+
+              <span>
+                ללא זמינות:{' '}
+                <strong>{validation.unavailableAssignmentCount}</strong>
+              </span>
+            </div>
+          </div>
+
+          {isDraftDirty ? (
+            <div className="assignment-draft-edit-notice">
+              <div>
+                <strong>
+                  קיימים שינויים ידניים
+                  בטיוטה
+                </strong>
+
+                <span>
+                  טבלת האיזון חושבה
+                  מחדש לפי השיבוצים
+                  המעודכנים.
+                </span>
+              </div>
+
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={
+                  onResetAllChanges
+                }
+              >
+                <RefreshCw
+                  size={16}
+                  aria-hidden="true"
+                />
+
+                ביטול כל השינויים
+              </Button>
+            </div>
+          ) : null}
 
           <div className="assignment-draft-balance-section">
             <div className="assignment-draft-balance-header">
@@ -1014,7 +1155,7 @@ function AssignmentCandidatesPanel({
                 </thead>
 
                 <tbody>
-                  {draft.dispatcherSummaries.map(
+                  {editableDispatcherSummaries.map(
                     (dispatcher) => (
                       <tr
                         key={
@@ -1043,12 +1184,12 @@ function AssignmentCandidatesPanel({
 
                         <td
                           className={getBalanceCellClassName(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'weekdayEveningShifts',
                             dispatcher.weekdayEveningShifts,
                           )}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'weekdayEveningShifts',
                             dispatcher.weekdayEveningShifts,
                           )}
@@ -1061,12 +1202,12 @@ function AssignmentCandidatesPanel({
 
                         <td
                           className={getBalanceCellClassName(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'weekdayNightShifts',
                             dispatcher.weekdayNightShifts,
                           )}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'weekdayNightShifts',
                             dispatcher.weekdayNightShifts,
                           )}
@@ -1079,12 +1220,12 @@ function AssignmentCandidatesPanel({
 
                         <td
                           className={getBalanceCellClassName(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'fridayMorningShifts',
                             dispatcher.fridayMorningShifts,
                           )}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'fridayMorningShifts',
                             dispatcher.fridayMorningShifts,
                           )}
@@ -1097,12 +1238,12 @@ function AssignmentCandidatesPanel({
 
                         <td
                           className={getBalanceCellClassName(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'fridayAfternoonShifts',
                             dispatcher.fridayAfternoonShifts,
                           )}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'fridayAfternoonShifts',
                             dispatcher.fridayAfternoonShifts,
                           )}
@@ -1115,12 +1256,12 @@ function AssignmentCandidatesPanel({
 
                         <td
                           className={getBalanceCellClassName(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'fridayNightShifts',
                             dispatcher.fridayNightShifts,
                           )}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'fridayNightShifts',
                             dispatcher.fridayNightShifts,
                           )}
@@ -1133,12 +1274,12 @@ function AssignmentCandidatesPanel({
 
                         <td
                           className={getBalanceCellClassName(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'saturdayMorningShifts',
                             dispatcher.saturdayMorningShifts,
                           )}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'saturdayMorningShifts',
                             dispatcher.saturdayMorningShifts,
                           )}
@@ -1151,12 +1292,12 @@ function AssignmentCandidatesPanel({
 
                         <td
                           className={getBalanceCellClassName(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'saturdayAfternoonShifts',
                             dispatcher.saturdayAfternoonShifts,
                           )}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'saturdayAfternoonShifts',
                             dispatcher.saturdayAfternoonShifts,
                           )}
@@ -1169,12 +1310,12 @@ function AssignmentCandidatesPanel({
 
                         <td
                           className={getBalanceCellClassName(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'saturdayNightShifts',
                             dispatcher.saturdayNightShifts,
                           )}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'saturdayNightShifts',
                             dispatcher.saturdayNightShifts,
                           )}
@@ -1189,7 +1330,7 @@ function AssignmentCandidatesPanel({
                           className={[
                             'assignment-draft-balance-premium-cell',
                             getBalanceCellClassName(
-                              draft.dispatcherSummaries,
+                              editableDispatcherSummaries,
                               'premiumShifts',
                               dispatcher.premiumShifts,
                             ),
@@ -1197,7 +1338,7 @@ function AssignmentCandidatesPanel({
                             .filter(Boolean)
                             .join(' ')}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'premiumShifts',
                             dispatcher.premiumShifts,
                           )}
@@ -1212,7 +1353,7 @@ function AssignmentCandidatesPanel({
                           className={[
                             'assignment-draft-balance-holiday-cell',
                             getBalanceCellClassName(
-                              draft.dispatcherSummaries,
+                              editableDispatcherSummaries,
                               'holidayShifts',
                               dispatcher.holidayShifts,
                             ),
@@ -1220,7 +1361,7 @@ function AssignmentCandidatesPanel({
                             .filter(Boolean)
                             .join(' ')}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'holidayShifts',
                             dispatcher.holidayShifts,
                           )}
@@ -1235,7 +1376,7 @@ function AssignmentCandidatesPanel({
                           className={[
                             'assignment-draft-balance-total-cell',
                             getBalanceCellClassName(
-                              draft.dispatcherSummaries,
+                              editableDispatcherSummaries,
                               'totalShifts',
                               dispatcher.totalShifts,
                             ),
@@ -1243,7 +1384,7 @@ function AssignmentCandidatesPanel({
                             .filter(Boolean)
                             .join(' ')}
                           title={getBalanceCellTitle(
-                            draft.dispatcherSummaries,
+                            editableDispatcherSummaries,
                             'totalShifts',
                             dispatcher.totalShifts,
                           )}
@@ -1370,159 +1511,90 @@ function AssignmentCandidatesPanel({
             </details>
           ) : null}
 
-          {draft.assignments.length >
-          0 ? (
-            <details className="assignment-draft-details">
-              <summary>
-                הצגת כל השיבוצים
-                שנוצרו{' '}
-                (
-                {
-                  draft
-                    .assignments
-                    .length
-                }
-                )
-              </summary>
+          <EditableSchedulingAssignments
+            data={
+              data
+            }
+            originalDraft={
+              draft
+            }
+            assignments={
+              editableAssignments
+            }
+            dispatchers={
+              editableDispatcherSummaries
+            }
+            validation={
+              validation
+            }
+            onAssignDispatcher={
+              onAssignDispatcher
+            }
+            onRemoveAssignment={
+              onRemoveAssignment
+            }
+            onResetShiftAssignment={
+              onResetShiftAssignment
+            }
+          />
 
-              <div className="assignment-draft-section">
-                <div className="assignment-draft-assignments">
-                  {draft.assignments.map(
-                    (
-                      assignment,
-                    ) => {
-                      const shift =
-                        data.shifts.find(
-                          (
-                            candidateShift,
-                          ) =>
-                            candidateShift
-                              .id ===
-                            assignment
-                              .shiftId,
-                        );
+          <div
+            className={[
+              'assignment-draft-save-section',
+              validation.isValid
+                ? 'assignment-draft-save-section-valid'
+                : 'assignment-draft-save-section-invalid',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <div>
+              <strong>
+                {validation.isValid
+                  ? 'השיבוץ מוכן לשמירה'
+                  : 'לא ניתן עדיין לשמור את השיבוץ'}
+              </strong>
 
-                      const userIndex =
-                        shift
-                          ?.availableUserIds
-                          .indexOf(
-                            assignment
-                              .userId,
-                          ) ?? -1;
+              <span>
+                {validation.isValid
+                  ? validation.warningCount > 0
+                    ? `קיימות ${validation.warningCount} אזהרות שידרשו אישור לפני השמירה.`
+                    : 'כל המשמרות משובצות ולא נמצאו שגיאות חוסמות.'
+                  : `יש לפתור ${validation.errorCount} שגיאות חוסמות לפני השמירה.`}
+              </span>
+            </div>
 
-                      const displayName =
-                        userIndex >= 0
-                          ? shift
-                              ?.availableDisplayNames[
-                                userIndex
-                              ]
-                          : assignment
-                              .userId;
+            <Button
+              type="button"
+              disabled={
+                !validation.isValid ||
+                isSavingSchedule ||
+                editableAssignments.length !==
+                  data.shifts.length
+              }
+              onClick={() => {
+                void onSaveSchedule();
+              }}
+            >
+              {hasSavedSchedule ? (
+                <CheckCircle2
+                  size={18}
+                  aria-hidden="true"
+                />
+              ) : (
+                <Save
+                  size={18}
+                  aria-hidden="true"
+                />
+              )}
 
-                      return (
-                        <article
-                          key={
-                            assignment
-                              .shiftId
-                          }
-                          className="assignment-draft-assignment-row"
-                        >
-                          <div>
-                            <strong>
-                              {shift
-                                ? `${formatDate(
-                                    shift.date,
-                                  )} · ${formatTime(
-                                    shift.startTime,
-                                  )}–${formatTime(
-                                    shift.endTime,
-                                  )}`
-                                : assignment
-                                    .shiftId}
-                            </strong>
-
-                            {shift ? (
-                              <span>
-                                יום{' '}
-                                {
-                                  shift
-                                    .weekdayName
-                                }
-                              </span>
-                            ) : null}
-                          </div>
-
-                          <div>
-                            <span>
-                              מוקדן משובץ
-                            </span>
-
-                            <strong>
-                              {
-                                displayName
-                              }
-                            </strong>
-                          </div>
-
-                          <div className="assignment-draft-source">
-                            <span>
-                              מקור
-                            </span>
-
-                            <strong>
-                              {assignment
-                                .source ===
-                              'automatic_single_candidate'
-                                ? 'זמין יחיד'
-                                : assignment
-                                      .source ===
-                                    'manual'
-                                  ? 'ידני'
-                                  : 'מנוע ניקוד'}
-                            </strong>
-
-                            {assignment
-                              .score !==
-                            null ? (
-                              <span>
-                                ניקוד:{' '}
-                                {
-                                  assignment
-                                    .score
-                                }
-                              </span>
-                            ) : null}
-
-                            {assignment
-                              .reasons
-                              .length >
-                            0 ? (
-                              <ul className="assignment-draft-reasons">
-                                {assignment.reasons.map(
-                                  (
-                                    reason,
-                                    reasonIndex,
-                                  ) => (
-                                    <li
-                                      key={`${assignment.shiftId}-${reasonIndex}`}
-                                    >
-                                      {
-                                        reason
-                                      }
-                                    </li>
-                                  ),
-                                )}
-                              </ul>
-                            ) : null}
-                          </div>
-                        </article>
-                      );
-                    },
-                  )}
-                </div>
-              </div>
-            </details>
-          ) : null}
+              {isSavingSchedule
+                ? 'שומר שיבוץ...'
+                : hasSavedSchedule
+                  ? 'השיבוץ נשמר'
+                  : 'אישור ושמירת השיבוץ'}
+            </Button>
+          </div>
         </section>
       ) : null}
 

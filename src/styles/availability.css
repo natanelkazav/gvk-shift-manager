@@ -2596,3 +2596,329 @@
 .assignment-draft-balance-legend-balanced {
   background: #f8fafc;
 }
+.assignment-draft-edit-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid #fde68a;
+  border-radius: 11px;
+  background: #fffbeb;
+}
+
+.assignment-draft-edit-notice > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.assignment-draft-edit-notice strong {
+  color: #92400e;
+  font-size: 0.82rem;
+}
+
+.assignment-draft-edit-notice span {
+  color: #a16207;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 700px) {
+  .assignment-draft-edit-notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+.editable-scheduling-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px;
+}
+
+.editable-scheduling-row {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.1fr)
+    minmax(220px, 1.2fr)
+    minmax(130px, 0.7fr)
+    minmax(250px, auto);
+  align-items: center;
+  gap: 14px;
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #ffffff;
+}
+
+.editable-scheduling-row-unassigned {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.editable-scheduling-row-modified {
+  border-color: #fde68a;
+  box-shadow:
+    inset 4px 0 0 #f59e0b;
+}
+
+.editable-scheduling-shift,
+.editable-scheduling-status {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.editable-scheduling-shift strong {
+  color: #0f172a;
+  font-size: 0.8rem;
+}
+
+.editable-scheduling-shift > span,
+.editable-scheduling-status > span {
+  color: #64748b;
+  font-size: 0.69rem;
+}
+
+.editable-scheduling-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.editable-scheduling-badges span {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.63rem;
+}
+
+.editable-scheduling-select-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.editable-scheduling-select-field > span {
+  color: #64748b;
+  font-size: 0.69rem;
+}
+
+.editable-scheduling-select-field select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.76rem;
+}
+
+.editable-scheduling-warning {
+  color: #b91c1c;
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+
+.editable-scheduling-modified-label {
+  color: #b45309;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.editable-scheduling-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.editable-scheduling-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+@media (max-width: 1050px) {
+  .editable-scheduling-row {
+    grid-template-columns:
+      minmax(160px, 1fr)
+      minmax(210px, 1fr);
+  }
+
+  .editable-scheduling-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 650px) {
+  .editable-scheduling-row {
+    grid-template-columns: 1fr;
+  }
+
+  .editable-scheduling-actions {
+    flex-direction: column;
+  }
+
+  .editable-scheduling-actions .button {
+    width: 100%;
+  }
+}
+.assignment-draft-validation-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px solid;
+  border-radius: 11px;
+}
+
+.assignment-draft-validation-summary-valid {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.assignment-draft-validation-summary-invalid {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.assignment-draft-validation-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.assignment-draft-validation-summary strong {
+  font-size: 0.82rem;
+}
+
+.assignment-draft-validation-summary span {
+  font-size: 0.7rem;
+}
+
+.assignment-draft-validation-metrics {
+  display: flex !important;
+  flex-flow: row wrap !important;
+  gap: 7px 14px !important;
+  margin-inline-start: auto;
+}
+
+.assignment-draft-validation-metrics span {
+  white-space: nowrap;
+}
+
+.editable-scheduling-row-error {
+  border-color: #fca5a5;
+  background: #fff7f7;
+}
+
+.editable-scheduling-row-warning {
+  border-color: #fde68a;
+  background: #fffdf5;
+}
+
+.editable-scheduling-validation {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editable-scheduling-validation-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.editable-scheduling-validation-item-error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.editable-scheduling-validation-item-warning {
+  background: #fffbeb;
+  color: #a16207;
+}
+
+.editable-scheduling-validation-valid {
+  flex-direction: row;
+  align-items: center;
+  color: #15803d;
+  font-size: 0.68rem;
+}
+
+@media (max-width: 700px) {
+  .assignment-draft-validation-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .assignment-draft-validation-metrics {
+    margin-inline-start: 0;
+  }
+}
+.assignment-draft-save-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  border: 1px solid;
+  border-radius: 13px;
+}
+
+.assignment-draft-save-section > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.assignment-draft-save-section strong {
+  font-size: 0.9rem;
+}
+
+.assignment-draft-save-section span {
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+
+.assignment-draft-save-section-valid {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.assignment-draft-save-section-invalid {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+@media (max-width: 700px) {
+  .assignment-draft-save-section {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .assignment-draft-save-section .button {
+    width: 100%;
+  }
+}

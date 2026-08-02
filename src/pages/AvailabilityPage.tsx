@@ -16,9 +16,13 @@ import {
   useState,
   type FormEvent,
 } from 'react';
-
+import {
+  useEditableSchedulingDraft,
+} from '../hooks/useEditableSchedulingDraft';
 import { useAuth } from '../auth/AuthContext';
-
+import {
+  useSchedule,
+} from '../hooks/useSchedule';
 import AvailabilityMatrixPanel from '../components/availability/AvailabilityMatrixPanel';
 import AvailabilityPeriodPicker from '../components/availability/AvailabilityPeriodPicker';
 import AvailabilitySubmissionsPanel from '../components/availability/AvailabilitySubmissionsPanel';
@@ -248,7 +252,75 @@ function AvailabilityPage() {
       resetAssignmentCandidates,
   } =
     useAssignmentCandidates();
+    
+const {
+  state:
+    editableSchedulingDraftState,
 
+  assignments:
+    editableSchedulingAssignments,
+
+  dispatcherSummaries:
+    editableDispatcherSummaries,
+
+  validation:
+    editableSchedulingValidation,
+
+  loadDraft:
+    loadEditableSchedulingDraft,
+
+  assignDispatcher:
+    assignEditableDispatcher,
+
+  removeAssignment:
+    removeEditableAssignment,
+
+  resetShiftAssignment:
+    resetEditableShiftAssignment,
+
+  resetAllChanges:
+    resetAllEditableChanges,
+
+  clear:
+    clearEditableSchedulingDraft,
+} =
+  useEditableSchedulingDraft(
+    assignmentCandidatesState.data,
+  );
+  const {
+  state:
+    scheduleState,
+
+  saveDraft:
+    saveScheduleDraft,
+
+  clearError:
+    clearScheduleError,
+
+  reset:
+    resetScheduleState,
+} =
+  useSchedule();
+  useEffect(() => {
+  if (
+    !autoSchedulingDraftState
+      .draft
+  ) {
+    clearEditableSchedulingDraft();
+
+    return;
+  }
+
+  loadEditableSchedulingDraft(
+    autoSchedulingDraftState
+      .draft,
+  );
+}, [
+  autoSchedulingDraftState
+    .draft,
+  loadEditableSchedulingDraft,
+  clearEditableSchedulingDraft,
+]);
   const {
     state:
       matrixState,
@@ -462,6 +534,8 @@ function AvailabilityPage() {
       resetMatrix();
       resetAssignmentCandidates();
       resetAutoSchedulingDraft();
+      clearEditableSchedulingDraft();
+      resetScheduleState();
 
       setActiveWorkspaceTab(
         'submissions',
@@ -597,25 +671,27 @@ function AvailabilityPage() {
     async (
       periodId: string,
     ): Promise<void> => {
-      resetAutoSchedulingDraft();
+    resetAutoSchedulingDraft();
+    clearEditableSchedulingDraft();
+    resetScheduleState();
 
-      setActiveWorkspaceTab(
-        'schedule-preparation',
-      );
+    setActiveWorkspaceTab(
+      'schedule-preparation',
+    );
 
-      await loadCandidates(
-        periodId,
-      );
+    await loadCandidates(
+      periodId,
+    );
 
-      window.setTimeout(() => {
-        assignmentCandidatesPanelRef
-          .current
-          ?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-          });
-      }, 0);
-    };
+    window.setTimeout(() => {
+      assignmentCandidatesPanelRef
+        .current
+        ?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+    }, 0);
+  };
 
   const handleRefreshAssignmentCandidates =
     async (): Promise<void> => {
@@ -644,7 +720,89 @@ function AvailabilityPage() {
           .data,
       );
     };
+  const handleSaveSchedulingDraft =
+    async (): Promise<void> => {
+    if (
+      !selectedAssignmentPeriodId
+    ) {
+      return;
+    }
 
+    if (
+      editableSchedulingValidation
+        .errorCount > 0
+    ) {
+      window.alert(
+        'לא ניתן לשמור את השיבוץ כל עוד קיימות שגיאות חוסמות.',
+      );
+
+      return;
+    }
+
+    if (
+      editableSchedulingAssignments
+        .length !==
+      assignmentCandidatesState
+        .data?.shifts.length
+    ) {
+      window.alert(
+        'לא ניתן לשמור שיבוץ חלקי. יש לשבץ את כל המשמרות.',
+      );
+
+      return;
+    }
+
+    let confirmWarnings =
+      false;
+
+    if (
+      editableSchedulingValidation
+        .warningCount > 0
+    ) {
+      const warningsConfirmed =
+        window.confirm(
+          `בטיוטה קיימות ${editableSchedulingValidation.warningCount} אזהרות.\n\n` +
+          `מתוכן ${editableSchedulingValidation.unavailableAssignmentCount} שיבוצים למוקדנים שלא סימנו זמינות.\n\n` +
+          'האם להמשיך ולשמור את השיבוץ?',
+        );
+
+      if (!warningsConfirmed) {
+        return;
+      }
+
+      confirmWarnings =
+        true;
+    } else {
+      const confirmed =
+        window.confirm(
+          `האם לשמור את השיבוץ?\n\n` +
+          `יישמרו ${editableSchedulingAssignments.length} משמרות במסד הנתונים.`,
+        );
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    clearScheduleError();
+
+    try {
+      await saveScheduleDraft({
+        availabilityPeriodId:
+          selectedAssignmentPeriodId,
+
+        assignments:
+          editableSchedulingAssignments,
+
+        confirmWarnings,
+      });
+    } catch {
+      /*
+       * הודעת השגיאה נשמרת בתוך
+       * useSchedule ומוצגת במסך.
+       */
+    }
+  };
   const handleDeleteAvailabilityPeriod =
     async (
       periodId: string,
@@ -703,6 +861,8 @@ function AvailabilityPage() {
         ) {
           resetAssignmentCandidates();
           resetAutoSchedulingDraft();
+          clearEditableSchedulingDraft();
+          resetScheduleState();
         }
       } catch {
         /*
@@ -1759,6 +1919,55 @@ function AvailabilityPage() {
             }}
           />
 
+          {scheduleState.error ? (
+            <div
+              className="availability-error"
+              role="alert"
+            >
+              {scheduleState.error}
+            </div>
+          ) : null}
+
+          {scheduleState.lastSavedDraft ? (
+            <div
+              className="availability-success"
+              role="status"
+            >
+              <CheckCircle2
+                size={22}
+                aria-hidden="true"
+              />
+
+              <div>
+                <strong>
+                  השיבוץ נשמר בהצלחה
+                </strong>
+
+                <span>
+                  נשמרו{' '}
+                  {
+                    scheduleState
+                      .lastSavedDraft
+                      .savedShifts
+                  }{' '}
+                  משמרות: {' '}
+                  {
+                    scheduleState
+                      .lastSavedDraft
+                      .automaticAssignments
+                  }{' '}
+                  אוטומטיות ו־
+                  {
+                    scheduleState
+                      .lastSavedDraft
+                      .manualAssignments
+                  }{' '}
+                  ידניות.
+                </span>
+              </div>
+            </div>
+          ) : null}
+
           {selectedAssignmentPeriodId ? (
             <div
               ref={
@@ -1766,45 +1975,82 @@ function AvailabilityPage() {
               }
               className="assignment-candidates-anchor"
             >
-              <AssignmentCandidatesPanel
-                data={
-                  assignmentCandidatesState
-                    .data
-                }
-                statistics={
-                  assignmentCandidatesStatistics
-                }
-                isLoading={
-                  assignmentCandidatesState
-                    .isLoading
-                }
-                isGeneratingDraft={
-                  autoSchedulingDraftState
-                    .isGenerating
-                }
-                error={
-                  assignmentCandidatesState
-                    .error
-                }
-                draftError={
-                  autoSchedulingDraftState
-                    .error
-                }
-                draft={
-                  autoSchedulingDraftState
-                    .draft
-                }
-                onRefresh={
-                  handleRefreshAssignmentCandidates
-                }
-                onGenerateDraft={
-                  handleGenerateSchedulingDraft
-                }
-                onClose={() => {
-                  resetAssignmentCandidates();
-                  resetAutoSchedulingDraft();
-                }}
-              />
+          <AssignmentCandidatesPanel
+            data={
+              assignmentCandidatesState
+                .data
+            }
+            statistics={
+              assignmentCandidatesStatistics
+            }
+            isLoading={
+              assignmentCandidatesState
+                .isLoading
+            }
+            isGeneratingDraft={
+              autoSchedulingDraftState
+                .isGenerating
+            }
+            isSavingSchedule={
+              scheduleState.isSaving
+            }
+            hasSavedSchedule={
+              scheduleState.lastSavedDraft !==
+              null
+            }
+            error={
+              assignmentCandidatesState
+                .error
+            }
+            draftError={
+              autoSchedulingDraftState
+                .error
+            }
+            draft={
+              autoSchedulingDraftState
+                .draft
+            }
+            editableAssignments={
+              editableSchedulingAssignments
+            }
+            editableDispatcherSummaries={
+              editableDispatcherSummaries
+            }
+            validation={
+              editableSchedulingValidation
+            }
+            isDraftDirty={
+              editableSchedulingDraftState
+                .isDirty
+            }
+            onAssignDispatcher={
+              assignEditableDispatcher
+            }
+            onRemoveAssignment={
+              removeEditableAssignment
+            }
+            onResetShiftAssignment={
+              resetEditableShiftAssignment
+            }
+            onResetAllChanges={
+              resetAllEditableChanges
+            }
+            onSaveSchedule={
+              handleSaveSchedulingDraft
+            }
+            onRefresh={
+              handleRefreshAssignmentCandidates
+            }
+            onGenerateDraft={
+              handleGenerateSchedulingDraft
+            }
+            onClose={() => {
+              resetAssignmentCandidates();
+              resetAutoSchedulingDraft();
+              clearEditableSchedulingDraft();
+              resetScheduleState();
+            }}
+          />
             </div>
           ) : (
             <div className="availability-workspace-empty">
