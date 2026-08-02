@@ -3,25 +3,82 @@ import {
 } from '../lib/supabase';
 
 import type {
+  CloseDriverAvailabilityPeriodResponse,
   CreateDriverAvailabilityPeriodRequest,
   CreateDriverAvailabilityPeriodResponse,
+  DriverAvailabilityManagementData,
   DriverAvailabilityPeriodListItem,
   DriverAvailabilityPersonalData,
   OpenDriverAvailabilityPeriodResponse,
   SaveDriverAvailabilityRequest,
-  SubmitDriverAvailabilityResponse,
-  CloseDriverAvailabilityPeriodResponse,
-  DriverAvailabilityManagementData,
   SaveDriverAvailabilityResponse,
+  SubmitDriverAvailabilityResponse,
 } from '../types/driverAvailability';
 
 function normalizeDriverAvailabilityError(
   error: unknown,
 ): Error {
+  console.error(
+    'Driver availability Supabase error:',
+    error,
+  );
+
   if (
     error instanceof Error
   ) {
     return error;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null
+  ) {
+    const supabaseError =
+      error as {
+        message?: unknown;
+        details?: unknown;
+        hint?: unknown;
+        code?: unknown;
+      };
+
+    const errorParts = [
+      typeof supabaseError.message ===
+        'string' &&
+      supabaseError.message.trim()
+        ? supabaseError.message
+        : null,
+
+      typeof supabaseError.details ===
+        'string' &&
+      supabaseError.details.trim()
+        ? supabaseError.details
+        : null,
+
+      typeof supabaseError.hint ===
+        'string' &&
+      supabaseError.hint.trim()
+        ? `Hint: ${supabaseError.hint}`
+        : null,
+
+      typeof supabaseError.code ===
+        'string' &&
+      supabaseError.code.trim()
+        ? `Code: ${supabaseError.code}`
+        : null,
+    ].filter(
+      (
+        errorPart,
+      ): errorPart is string =>
+        Boolean(errorPart),
+    );
+
+    if (
+      errorParts.length > 0
+    ) {
+      return new Error(
+        errorParts.join(' | '),
+      );
+    }
   }
 
   return new Error(
@@ -83,127 +140,7 @@ class DriverAvailabilityService {
     return data as
       CreateDriverAvailabilityPeriodResponse;
   }
-  async closePeriod(
-  periodId: string,
-  force = false,
-): Promise<CloseDriverAvailabilityPeriodResponse> {
-  const normalizedPeriodId =
-    periodId.trim();
 
-  if (!normalizedPeriodId) {
-    throw new Error(
-      'Driver availability period id is required.',
-    );
-  }
-
-  const {
-    data,
-    error,
-  } =
-    await supabase.rpc(
-      'close_driver_availability_period',
-      {
-        requested_period_id:
-          normalizedPeriodId,
-
-        requested_force:
-          force,
-      },
-    );
-
-  if (error) {
-    throw normalizeDriverAvailabilityError(
-      error,
-    );
-  }
-
-  if (!data) {
-    throw new Error(
-      'לא התקבלה תשובה בעת סגירת חודש אילוצי הכוננים.',
-    );
-  }
-
-  return data as
-    CloseDriverAvailabilityPeriodResponse;
-}
-  async getManagementData(
-  periodId: string,
-): Promise<DriverAvailabilityManagementData> {
-  const normalizedPeriodId =
-    periodId.trim();
-
-  if (!normalizedPeriodId) {
-    throw new Error(
-      'Driver availability period id is required.',
-    );
-  }
-
-  const {
-    data,
-    error,
-  } =
-    await supabase.rpc(
-      'get_driver_availability_management',
-      {
-        requested_period_id:
-          normalizedPeriodId,
-      },
-    );
-
-  if (error) {
-    throw normalizeDriverAvailabilityError(
-      error,
-    );
-  }
-
-  if (!data) {
-    throw new Error(
-      'לא התקבלה תשובה בעת טעינת נתוני ניהול אילוצי הכוננים.',
-    );
-  }
-
-  return data as
-    DriverAvailabilityManagementData;
-}
-async submitMyAvailability(
-  periodId: string,
-): Promise<SubmitDriverAvailabilityResponse> {
-  const normalizedPeriodId =
-    periodId.trim();
-
-  if (!normalizedPeriodId) {
-    throw new Error(
-      'Driver availability period id is required.',
-    );
-  }
-
-  const {
-    data,
-    error,
-  } =
-    await supabase.rpc(
-      'submit_my_driver_availability',
-      {
-        requested_period_id:
-          normalizedPeriodId,
-      },
-    );
-
-  if (error) {
-    throw normalizeDriverAvailabilityError(
-      error,
-    );
-  }
-
-  if (!data) {
-    throw new Error(
-      'לא התקבלה תשובה בעת הגשת אילוצי הכוננים.',
-    );
-  }
-
-  return data as
-    SubmitDriverAvailabilityResponse;
-}
   async getPeriods():
     Promise<DriverAvailabilityPeriodListItem[]> {
     const {
@@ -224,7 +161,9 @@ async submitMyAvailability(
       return [];
     }
 
-    if (!Array.isArray(data)) {
+    if (
+      !Array.isArray(data)
+    ) {
       throw new Error(
         'התקבלה תשובה לא תקינה בעת טעינת חודשי אילוצי הכוננים.',
       );
@@ -240,7 +179,9 @@ async submitMyAvailability(
     const normalizedPeriodId =
       periodId.trim();
 
-    if (!normalizedPeriodId) {
+    if (
+      !normalizedPeriodId
+    ) {
       throw new Error(
         'Driver availability period id is required.',
       );
@@ -274,12 +215,101 @@ async submitMyAvailability(
       OpenDriverAvailabilityPeriodResponse;
   }
 
+  async closePeriod(
+    periodId: string,
+    force = false,
+  ): Promise<CloseDriverAvailabilityPeriodResponse> {
+    const normalizedPeriodId =
+      periodId.trim();
+
+    if (
+      !normalizedPeriodId
+    ) {
+      throw new Error(
+        'Driver availability period id is required.',
+      );
+    }
+
+    const {
+      data,
+      error,
+    } =
+      await supabase.rpc(
+        'close_driver_availability_period',
+        {
+          requested_period_id:
+            normalizedPeriodId,
+
+          requested_force:
+            force,
+        },
+      );
+
+    if (error) {
+      throw normalizeDriverAvailabilityError(
+        error,
+      );
+    }
+
+    if (!data) {
+      throw new Error(
+        'לא התקבלה תשובה בעת סגירת חודש אילוצי הכוננים.',
+      );
+    }
+
+    return data as
+      CloseDriverAvailabilityPeriodResponse;
+  }
+
+  async getManagementData(
+    periodId: string,
+  ): Promise<DriverAvailabilityManagementData> {
+    const normalizedPeriodId =
+      periodId.trim();
+
+    if (
+      !normalizedPeriodId
+    ) {
+      throw new Error(
+        'Driver availability period id is required.',
+      );
+    }
+
+    const {
+      data,
+      error,
+    } =
+      await supabase.rpc(
+        'get_driver_availability_management',
+        {
+          requested_period_id:
+            normalizedPeriodId,
+        },
+      );
+
+    if (error) {
+      throw normalizeDriverAvailabilityError(
+        error,
+      );
+    }
+
+    if (!data) {
+      throw new Error(
+        'לא התקבלה תשובה בעת טעינת נתוני ניהול אילוצי הכוננים.',
+      );
+    }
+
+    return data as
+      DriverAvailabilityManagementData;
+  }
+
   async getMyAvailability(
     periodId:
       string | null = null,
   ): Promise<DriverAvailabilityPersonalData | null> {
     const normalizedPeriodId =
-      periodId?.trim() ||
+      periodId
+        ?.trim() ||
       null;
 
     const {
@@ -308,7 +338,9 @@ async submitMyAvailability(
       data as
         DriverAvailabilityPersonalData;
 
-    if (!response.period) {
+    if (
+      !response.period
+    ) {
       return null;
     }
 
@@ -322,7 +354,9 @@ async submitMyAvailability(
     const normalizedPeriodId =
       request.periodId.trim();
 
-    if (!normalizedPeriodId) {
+    if (
+      !normalizedPeriodId
+    ) {
       throw new Error(
         'Driver availability period id is required.',
       );
@@ -384,6 +418,48 @@ async submitMyAvailability(
 
     return data as
       SaveDriverAvailabilityResponse;
+  }
+
+  async submitMyAvailability(
+    periodId: string,
+  ): Promise<SubmitDriverAvailabilityResponse> {
+    const normalizedPeriodId =
+      periodId.trim();
+
+    if (
+      !normalizedPeriodId
+    ) {
+      throw new Error(
+        'Driver availability period id is required.',
+      );
+    }
+
+    const {
+      data,
+      error,
+    } =
+      await supabase.rpc(
+        'submit_my_driver_availability',
+        {
+          requested_period_id:
+            normalizedPeriodId,
+        },
+      );
+
+    if (error) {
+      throw normalizeDriverAvailabilityError(
+        error,
+      );
+    }
+
+    if (!data) {
+      throw new Error(
+        'לא התקבלה תשובה בעת הגשת אילוצי הכוננים.',
+      );
+    }
+
+    return data as
+      SubmitDriverAvailabilityResponse;
   }
 }
 

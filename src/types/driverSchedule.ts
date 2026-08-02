@@ -221,3 +221,22 @@ export interface UpdateDriverScheduleDayResponse {
   warnings:
     string[];
 }
+export interface PublishDriverScheduleResponse {
+  schedulePeriodId: string;
+
+  year: number;
+
+  month: number;
+
+  status: 'published';
+
+  totalDays: number;
+
+  assignedDays: number;
+
+  unassignedDays: number;
+
+  publishedAt: string;
+
+  alreadyPublished: boolean;
+}

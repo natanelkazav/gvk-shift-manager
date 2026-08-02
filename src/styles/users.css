@@ -748,3 +748,281 @@
     width: 100%;
   }
 }
+.users-role-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.users-role-group {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px
+    rgba(15, 23, 42, 0.04);
+}
+
+.users-role-group-header {
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto
+    auto;
+  width: 100%;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 18px;
+  border: 0;
+  background: #ffffff;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease;
+}
+
+.users-role-group-header:hover {
+  background: #f8fafc;
+}
+
+.users-role-group-header:focus-visible {
+  outline: 3px solid #bfdbfe;
+  outline-offset: -3px;
+}
+
+.users-role-group-collapsed
+.users-role-group-header {
+  background: #f8fafc;
+}
+
+.users-role-group-icon {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.users-role-group-heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.users-role-group-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.users-role-group-title-row strong {
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.users-role-group-heading small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.users-role-group-count {
+  display: inline-flex;
+  min-width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 7px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.users-role-group-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.users-role-group-active-count,
+.users-role-group-inactive-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.61rem;
+  font-weight: 800;
+}
+
+.users-role-group-active-count {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.users-role-group-inactive-count {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.users-role-group-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
+.users-role-group-content {
+  border-top: 1px solid #e2e8f0;
+}
+
+.users-group-table-wrapper {
+  overflow-x: auto;
+}
+
+.users-group-table {
+  min-width: 860px;
+  border: 0;
+  border-radius: 0;
+}
+
+.users-group-table thead th {
+  background: #f8fafc;
+}
+
+.users-group-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.users-row-current {
+  background: #eff6ff;
+}
+
+.users-row-inactive {
+  opacity: 0.72;
+}
+
+.users-user-details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.users-user-name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.users-current-user-badge {
+  display: inline-flex;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.56rem;
+  font-weight: 800;
+}
+
+.users-schedule-name,
+.users-last-login {
+  color: #475569;
+  font-size: 0.67rem;
+}
+
+.users-role-badge-admin {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.users-role-badge-manager {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.users-role-badge-dispatcher {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.users-role-badge-on_call {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.users-role-badge-viewer {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.users-icon-actions {
+  flex-wrap: nowrap;
+}
+
+.users-icon-actions .button {
+  min-width: 38px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+}
+
+.users-action-loading-icon {
+  animation:
+    users-action-spin
+    1s
+    linear
+    infinite;
+}
+
+.users-role-groups-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px;
+  color: #64748b;
+  font-size: 0.65rem;
+}
+
+.users-role-groups-footer strong {
+  color: #334155;
+}
+
+@keyframes users-action-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .users-role-group-header {
+    grid-template-columns:
+      auto
+      minmax(0, 1fr)
+      auto;
+  }
+
+  .users-role-group-summary {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
+  }
+
+  .users-role-group-heading small {
+    white-space: normal;
+  }
+}

@@ -1,22 +1,49 @@
 import {
   CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  Crown,
+  Eye,
+  Headphones,
   Pencil,
+  Power,
   RefreshCw,
+  ShieldCheck,
   Trash2,
+  UserRoundCog,
   Users,
+  Wrench,
 } from 'lucide-react';
-import { Button } from '../ui';
+
+import {
+  useMemo,
+  useState,
+} from 'react';
+
+import {
+  Button,
+} from '../ui';
+
 import type {
   UserProfile,
   UserRole,
 } from '../../types/auth';
 
 interface UsersTableProps {
-  users: UserProfile[];
-  isLoading: boolean;
-  currentUserId: string | null;
-  updatingUserId: string | null;
-  deletingUserId: string | null;
+  users:
+    UserProfile[];
+
+  isLoading:
+    boolean;
+
+  currentUserId:
+    string | null;
+
+  updatingUserId:
+    string | null;
+
+  deletingUserId:
+    string | null;
 
   onEditUser: (
     profile: UserProfile,
@@ -31,26 +58,137 @@ interface UsersTableProps {
   ) => Promise<void>;
 }
 
-const roleLabels: Record<
-  UserRole,
-  string
-> = {
-  admin: 'מנהל מערכת',
-  manager: 'מנהלת',
-  dispatcher: 'מוקדן',
-  on_call: 'כונן',
-  viewer: 'צפייה בלבד',
-};
+interface UserRoleDefinition {
+  role:
+    UserRole;
+
+  label:
+    string;
+
+  description:
+    string;
+
+  icon:
+    typeof Crown;
+}
+
+interface UserRoleGroup {
+  definition:
+    UserRoleDefinition;
+
+  users:
+    UserProfile[];
+
+  activeCount:
+    number;
+
+  inactiveCount:
+    number;
+}
+
+const roleDefinitions:
+  readonly UserRoleDefinition[] = [
+    {
+      role:
+        'admin',
+
+      label:
+        'מנהלי מערכת',
+
+      description:
+        'גישה מלאה לניהול המערכת וההרשאות',
+
+      icon:
+        Crown,
+    },
+
+    {
+      role:
+        'manager',
+
+      label:
+        'מנהלים',
+
+      description:
+        'ניהול צוות, נתונים ותהליכים מרכזיים',
+
+      icon:
+        UserRoundCog,
+    },
+
+    {
+      role:
+        'dispatcher',
+
+      label:
+        'מוקדנים',
+
+      description:
+        'עבודה שוטפת, אילוצים ושיבוץ משמרות',
+
+      icon:
+        Headphones,
+    },
+
+    {
+      role:
+        'on_call',
+
+      label:
+        'כוננים',
+
+      description:
+        'אילוצי זמינות, לוח כוננים והחלפות',
+
+      icon:
+        Wrench,
+    },
+
+    {
+      role:
+        'viewer',
+
+      label:
+        'צפייה בלבד',
+
+      description:
+        'גישה לצפייה ללא הרשאות ניהול',
+
+      icon:
+        Eye,
+    },
+  ];
+
+const roleLabels:
+  Record<UserRole, string> = {
+    admin:
+      'מנהל מערכת',
+
+    manager:
+      'מנהלת',
+
+    dispatcher:
+      'מוקדן',
+
+    on_call:
+      'כונן',
+
+    viewer:
+      'צפייה בלבד',
+  };
 
 function formatDate(
-  dateValue: string | null,
+  dateValue:
+    string | null,
 ): string {
   if (!dateValue) {
     return 'טרם התחבר';
   }
 
   const date =
-    new Date(dateValue);
+    new Date(
+      dateValue,
+    );
 
   if (
     Number.isNaN(
@@ -63,10 +201,56 @@ function formatDate(
   return new Intl.DateTimeFormat(
     'he-IL',
     {
-      dateStyle: 'short',
-      timeStyle: 'short',
+      dateStyle:
+        'short',
+
+      timeStyle:
+        'short',
     },
-  ).format(date);
+  ).format(
+    date,
+  );
+}
+
+function getInitials(
+  profile:
+    UserProfile,
+): string {
+  const normalizedName =
+    profile.displayName
+      .trim();
+
+  if (!normalizedName) {
+    return '?';
+  }
+
+  const nameParts =
+    normalizedName
+      .split(/\s+/)
+      .filter(Boolean);
+
+  if (
+    nameParts.length === 1
+  ) {
+    return (
+      nameParts[0]
+        ?.charAt(0)
+        .toUpperCase() ||
+      '?'
+    );
+  }
+
+  return [
+    nameParts[0]
+      ?.charAt(0),
+
+    nameParts[
+      nameParts.length - 1
+    ]?.charAt(0),
+  ]
+    .filter(Boolean)
+    .join('')
+    .toUpperCase();
 }
 
 function UsersTable({
@@ -79,6 +263,97 @@ function UsersTable({
   onDeleteUser,
   onToggleActiveStatus,
 }: UsersTableProps) {
+const [
+  collapsedRoles,
+  setCollapsedRoles,
+] =
+  useState<
+    Record<
+      UserRole,
+      boolean
+    >
+  >({
+    admin: true,
+    manager: true,
+    dispatcher: true,
+    on_call: true,
+    viewer: true,
+  });
+
+  const roleGroups =
+    useMemo<
+      UserRoleGroup[]
+    >(
+      () =>
+        roleDefinitions
+          .map(
+            (
+              definition,
+            ) => {
+              const roleUsers =
+                users.filter(
+                  (
+                    profile,
+                  ) =>
+                    profile.role ===
+                    definition.role,
+                );
+
+              return {
+                definition,
+
+                users:
+                  roleUsers,
+
+                activeCount:
+                  roleUsers.filter(
+                    (
+                      profile,
+                    ) =>
+                      profile.isActive,
+                  ).length,
+
+                inactiveCount:
+                  roleUsers.filter(
+                    (
+                      profile,
+                    ) =>
+                      !profile.isActive,
+                  ).length,
+              };
+            },
+          )
+          .filter(
+            (
+              group,
+            ) =>
+              group.users.length >
+              0,
+          ),
+      [
+        users,
+      ],
+    );
+
+  const toggleRole =
+    (
+      role:
+        UserRole,
+    ): void => {
+      setCollapsedRoles(
+        (
+          currentState,
+        ) => ({
+          ...currentState,
+
+          [role]:
+            !currentState[
+              role
+            ],
+        }),
+      );
+    };
+
   if (isLoading) {
     return (
       <div className="users-table-container">
@@ -98,7 +373,9 @@ function UsersTable({
     );
   }
 
-  if (users.length === 0) {
+  if (
+    users.length === 0
+  ) {
     return (
       <div className="users-table-container">
         <div className="users-empty-state">
@@ -117,191 +394,431 @@ function UsersTable({
   }
 
   return (
-    <div className="users-table-container">
-      <table className="users-table">
-        <thead>
-          <tr>
-            <th>משתמש</th>
-            <th>שם שיבוץ</th>
-            <th>תפקיד</th>
-            <th>סטטוס</th>
-            <th>התחברות אחרונה</th>
-            <th>פעולות</th>
-          </tr>
-        </thead>
+    <div className="users-role-groups">
+      {roleGroups.map(
+        (
+          group,
+        ) => {
+          const {
+            definition,
+          } =
+            group;
 
-        <tbody>
-          {users.map(
-            (profile) => {
-              const isCurrentUser =
-                profile.id ===
-                currentUserId;
+          const Icon =
+            definition.icon;
 
-              const isUpdating =
-                updatingUserId ===
-                profile.id;
+          const isCollapsed =
+            Boolean(
+              collapsedRoles[
+                definition.role
+              ],
+            );
 
-              const isDeleting =
-                deletingUserId ===
-                profile.id;
+          const contentId =
+            `users-role-${definition.role}`;
 
-              const isBusy =
-                isUpdating ||
-                isDeleting;
+          return (
+            <section
+              key={
+                definition.role
+              }
+              className={[
+                'users-role-group',
 
-              return (
-                <tr key={profile.id}>
-                  <td>
-                    <div className="users-user-cell">
-                      <div className="users-avatar">
-                        {profile
-                          .displayName
-                          .trim()
-                          .charAt(0)
-                          .toUpperCase() ||
-                          '?'}
-                      </div>
+                isCollapsed
+                  ? 'users-role-group-collapsed'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <button
+                type="button"
+                className="users-role-group-header"
+                aria-expanded={
+                  !isCollapsed
+                }
+                aria-controls={
+                  contentId
+                }
+                onClick={() => {
+                  toggleRole(
+                    definition.role,
+                  );
+                }}
+              >
+                <span className="users-role-group-icon">
+                  <Icon
+                    size={22}
+                    aria-hidden="true"
+                  />
+                </span>
 
-                      <div>
-                        <strong>
-                          {
-                            profile
-                              .displayName
-                          }
-                        </strong>
-
-                        <span>
-                          {
-                            profile.email
-                          }
-                        </span>
-
-                        {isCurrentUser ? (
-                          <small>
-                            המשתמש
-                            הנוכחי
-                          </small>
-                        ) : null}
-                      </div>
-                    </div>
-                  </td>
-
-                  <td>
-                    {profile
-                      .scheduleName ??
-                      'לא הוגדר'}
-                  </td>
-
-                  <td>
-                    <span className="users-role-badge">
+                <span className="users-role-group-heading">
+                  <span className="users-role-group-title-row">
+                    <strong>
                       {
-                        roleLabels[
-                          profile.role
-                        ]
+                        definition.label
+                      }
+                    </strong>
+
+                    <span className="users-role-group-count">
+                      {
+                        group
+                          .users
+                          .length
                       }
                     </span>
-                  </td>
+                  </span>
 
-                  <td>
-                    <span
-                      className={
-                        profile.isActive
-                          ? 'users-status users-status-active'
-                          : 'users-status users-status-inactive'
-                      }
-                    >
-                      <CheckCircle2
-                        size={15}
-                        aria-hidden="true"
-                      />
+                  <small>
+                    {
+                      definition
+                        .description
+                    }
+                  </small>
+                </span>
 
-                      {profile.isActive
-                        ? 'פעיל'
-                        : 'מושבת'}
+                <span className="users-role-group-summary">
+                  <span className="users-role-group-active-count">
+                    {
+                      group
+                        .activeCount
+                    }{' '}
+                    פעילים
+                  </span>
+
+                  {group
+                    .inactiveCount >
+                  0 ? (
+                    <span className="users-role-group-inactive-count">
+                      {
+                        group
+                          .inactiveCount
+                      }{' '}
+                      מושבתים
                     </span>
-                  </td>
+                  ) : null}
+                </span>
 
-                  <td>
-                    {formatDate(
-                      profile
-                        .lastLoginAt,
-                    )}
-                  </td>
+                <span className="users-role-group-toggle">
+                  {isCollapsed ? (
+                    <ChevronLeft
+                      size={20}
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <ChevronDown
+                      size={20}
+                      aria-hidden="true"
+                    />
+                  )}
+                </span>
+              </button>
 
-                  <td>
-                    <div className="users-actions">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        disabled={isBusy}
-                        onClick={() => {
-                          onEditUser(
+              {!isCollapsed ? (
+                <div
+                  id={
+                    contentId
+                  }
+                  className="users-role-group-content"
+                >
+                  <div className="users-group-table-wrapper">
+                    <table className="users-table users-group-table">
+                      <thead>
+                        <tr>
+                          <th>
+                            משתמש
+                          </th>
+
+                          <th>
+                            שם שיבוץ
+                          </th>
+
+                          <th>
+                            תפקיד
+                          </th>
+
+                          <th>
+                            סטטוס
+                          </th>
+
+                          <th>
+                            התחברות אחרונה
+                          </th>
+
+                          <th>
+                            פעולות
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {group.users.map(
+                          (
                             profile,
-                          );
-                        }}
-                      >
-                        <Pencil
-                          size={16}
-                          aria-hidden="true"
-                        />
+                          ) => {
+                            const isCurrentUser =
+                              profile.id ===
+                              currentUserId;
 
-                        עריכה
-                      </Button>
+                            const isUpdating =
+                              updatingUserId ===
+                              profile.id;
 
-                      <Button
-                        type="button"
-                        variant={
-                          profile.isActive
-                            ? 'danger'
-                            : 'secondary'
-                        }
-                        disabled={
-                          isCurrentUser ||
-                          isBusy
-                        }
-                        onClick={() => {
-                          void onToggleActiveStatus(
-                            profile,
-                          );
-                        }}
-                      >
-                        {isUpdating
-                          ? 'מעדכן...'
-                          : profile.isActive
-                            ? 'השבת'
-                            : 'הפעל'}
-                      </Button>
+                            const isDeleting =
+                              deletingUserId ===
+                              profile.id;
 
-                      <Button
-                        type="button"
-                        variant="danger"
-                        disabled={
-                          isCurrentUser ||
-                          isBusy
-                        }
-                        onClick={() => {
-                          onDeleteUser(
-                            profile,
-                          );
-                        }}
-                      >
-                        <Trash2
-                          size={16}
-                          aria-hidden="true"
-                        />
+                            const isBusy =
+                              isUpdating ||
+                              isDeleting;
 
-                        {isDeleting
-                          ? 'מוחק...'
-                          : 'מחיקה'}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            },
-          )}
-        </tbody>
-      </table>
+                            return (
+                              <tr
+                                key={
+                                  profile.id
+                                }
+                                className={[
+                                  isCurrentUser
+                                    ? 'users-row-current'
+                                    : '',
+
+                                  !profile
+                                    .isActive
+                                    ? 'users-row-inactive'
+                                    : '',
+                                ]
+                                  .filter(Boolean)
+                                  .join(' ')}
+                              >
+                                <td>
+                                  <div className="users-user-cell">
+                                    <div className="users-avatar">
+                                      {getInitials(
+                                        profile,
+                                      )}
+                                    </div>
+
+                                    <div className="users-user-details">
+                                      <div className="users-user-name-row">
+                                        <strong>
+                                          {
+                                            profile
+                                              .displayName
+                                          }
+                                        </strong>
+
+                                        {isCurrentUser ? (
+                                          <span className="users-current-user-badge">
+                                            אתה
+                                          </span>
+                                        ) : null}
+                                      </div>
+
+                                      <span>
+                                        {
+                                          profile
+                                            .email
+                                        }
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                <td>
+                                  <span className="users-schedule-name">
+                                    {profile
+                                      .scheduleName ??
+                                      'לא הוגדר'}
+                                  </span>
+                                </td>
+
+                                <td>
+                                  <span
+                                    className={[
+                                      'users-role-badge',
+
+                                      `users-role-badge-${profile.role}`,
+                                    ].join(' ')}
+                                  >
+                                    {
+                                      roleLabels[
+                                        profile.role
+                                      ]
+                                    }
+                                  </span>
+                                </td>
+
+                                <td>
+                                  <span
+                                    className={
+                                      profile.isActive
+                                        ? 'users-status users-status-active'
+                                        : 'users-status users-status-inactive'
+                                    }
+                                  >
+                                    {profile.isActive ? (
+                                      <CheckCircle2
+                                        size={15}
+                                        aria-hidden="true"
+                                      />
+                                    ) : (
+                                      <Power
+                                        size={15}
+                                        aria-hidden="true"
+                                      />
+                                    )}
+
+                                    {profile.isActive
+                                      ? 'פעיל'
+                                      : 'מושבת'}
+                                  </span>
+                                </td>
+
+                                <td>
+                                  <span className="users-last-login">
+                                    {formatDate(
+                                      profile
+                                        .lastLoginAt,
+                                    )}
+                                  </span>
+                                </td>
+
+                                <td>
+                                  <div className="users-actions users-icon-actions">
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      disabled={
+                                        isBusy
+                                      }
+                                      title={`עריכת ${profile.displayName}`}
+                                      aria-label={`עריכת ${profile.displayName}`}
+                                      onClick={() => {
+                                        onEditUser(
+                                          profile,
+                                        );
+                                      }}
+                                    >
+                                      <Pencil
+                                        size={16}
+                                        aria-hidden="true"
+                                      />
+                                    </Button>
+
+                                    <Button
+                                      type="button"
+                                      variant={
+                                        profile.isActive
+                                          ? 'danger'
+                                          : 'secondary'
+                                      }
+                                      disabled={
+                                        isCurrentUser ||
+                                        isBusy
+                                      }
+                                      title={
+                                        isCurrentUser
+                                          ? 'לא ניתן להשבית את המשתמש הנוכחי'
+                                          : profile.isActive
+                                            ? `השבתת ${profile.displayName}`
+                                            : `הפעלת ${profile.displayName}`
+                                      }
+                                      aria-label={
+                                        profile.isActive
+                                          ? `השבתת ${profile.displayName}`
+                                          : `הפעלת ${profile.displayName}`
+                                      }
+                                      onClick={() => {
+                                        void onToggleActiveStatus(
+                                          profile,
+                                        );
+                                      }}
+                                    >
+                                      {isUpdating ? (
+                                        <RefreshCw
+                                          size={16}
+                                          className="users-action-loading-icon"
+                                          aria-hidden="true"
+                                        />
+                                      ) : profile.isActive ? (
+                                        <Power
+                                          size={16}
+                                          aria-hidden="true"
+                                        />
+                                      ) : (
+                                        <CheckCircle2
+                                          size={16}
+                                          aria-hidden="true"
+                                        />
+                                      )}
+                                    </Button>
+
+                                    <Button
+                                      type="button"
+                                      variant="danger"
+                                      disabled={
+                                        isCurrentUser ||
+                                        isBusy
+                                      }
+                                      title={
+                                        isCurrentUser
+                                          ? 'לא ניתן למחוק את המשתמש הנוכחי'
+                                          : `מחיקת ${profile.displayName}`
+                                      }
+                                      aria-label={`מחיקת ${profile.displayName}`}
+                                      onClick={() => {
+                                        onDeleteUser(
+                                          profile,
+                                        );
+                                      }}
+                                    >
+                                      {isDeleting ? (
+                                        <RefreshCw
+                                          size={16}
+                                          className="users-action-loading-icon"
+                                          aria-hidden="true"
+                                        />
+                                      ) : (
+                                        <Trash2
+                                          size={16}
+                                          aria-hidden="true"
+                                        />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          },
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          );
+        },
+      )}
+
+      <div className="users-role-groups-footer">
+        <ShieldCheck
+          size={18}
+          aria-hidden="true"
+        />
+
+        <span>
+          מוצגים{' '}
+          <strong>
+            {
+              users.length
+            }
+          </strong>{' '}
+          משתמשים לפי תפקיד.
+        </span>
+      </div>
     </div>
   );
 }

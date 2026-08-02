@@ -6,21 +6,37 @@ import type {
 export const ALL_PERMISSION_KEYS:
   readonly PermissionKey[] = [
     'dashboard.view',
+
     'schedule.view',
     'schedule.edit',
+
+    'availability.view',
+    'availability.manage',
+
+    'driver_availability.view',
+    'driver_availability.manage',
+
     'driver_schedule.view',
+    'driver_schedule.view_team',
     'driver_schedule.edit',
+
     'notifications.view',
     'notifications.manage',
+
     'statistics.view',
+
     'shift_swaps.view',
     'shift_swaps.approve',
+
     'archive.view',
+
     'users.view',
     'users.manage',
+
     'settings.view',
-    'audit.view',
     'settings.manage',
+
+    'audit.view',
   ];
 
 export const DEFAULT_ROLE_PERMISSIONS:
@@ -30,39 +46,64 @@ export const DEFAULT_ROLE_PERMISSIONS:
       readonly PermissionKey[]
     >
   > = {
-    admin: ALL_PERMISSION_KEYS,
+    admin:
+      ALL_PERMISSION_KEYS,
 
     manager: [
       'dashboard.view',
+
+      'driver_availability.view',
+      'driver_availability.manage',
+
       'driver_schedule.view',
+      'driver_schedule.view_team',
       'driver_schedule.edit',
+
       'notifications.view',
       'notifications.manage',
+
       'statistics.view',
+
       'shift_swaps.view',
       'shift_swaps.approve',
+
       'archive.view',
+
       'availability.view',
       'availability.manage',
+
       'users.view',
     ],
 
     dispatcher: [
       'dashboard.view',
+
       'schedule.view',
       'schedule.edit',
+
+      'availability.view',
+
       'notifications.view',
       'notifications.manage',
+
       'statistics.view',
-      'availability.view',
+
       'shift_swaps.view',
+
       'archive.view',
     ],
 
     on_call: [
       'dashboard.view',
+
+      'driver_availability.view',
+
       'driver_schedule.view',
+      'driver_schedule.view_team',
+      'driver_schedule.edit',
+
       'notifications.view',
+
       'shift_swaps.view',
     ],
 
@@ -72,12 +113,26 @@ export const DEFAULT_ROLE_PERMISSIONS:
   };
 
 export const ROLE_LABELS:
-  Readonly<Record<UserRole, string>> = {
-    admin: 'מנהל מערכת',
-    manager: 'מנהלת',
-    dispatcher: 'מוקדן',
-    on_call: 'כונן',
-    viewer: 'צפייה בלבד',
+  Readonly<
+    Record<
+      UserRole,
+      string
+    >
+  > = {
+    admin:
+      'מנהל מערכת',
+
+    manager:
+      'מנהלת',
+
+    dispatcher:
+      'מוקדן',
+
+    on_call:
+      'כונן',
+
+    viewer:
+      'צפייה בלבד',
   };
 
 export function getDefaultPermissionsForRole(
@@ -93,6 +148,7 @@ export function getDefaultPermissionsForRole(
 export function arePermissionListsEqual(
   firstPermissions:
     readonly PermissionKey[],
+
   secondPermissions:
     readonly PermissionKey[],
 ): boolean {
@@ -104,7 +160,9 @@ export function arePermissionListsEqual(
   }
 
   const secondPermissionSet =
-    new Set(secondPermissions);
+    new Set(
+      secondPermissions,
+    );
 
   return firstPermissions.every(
     (permission) =>

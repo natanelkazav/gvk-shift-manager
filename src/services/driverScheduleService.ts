@@ -7,20 +7,72 @@ import type {
   DriverScheduleData,
   GetDriverScheduleRequest,
   UpdateDriverScheduleDayRequest,
+  PublishDriverScheduleResponse,
   UpdateDriverScheduleDayResponse,
 } from '../types/driverSchedule';
 
 function normalizeDriverScheduleError(
   error: unknown,
 ): Error {
+  console.error(
+    'Driver availability Supabase error:',
+    error,
+  );
+
   if (
     error instanceof Error
   ) {
     return error;
   }
 
+  if (
+    typeof error === 'object' &&
+    error !== null
+  ) {
+    const supabaseError =
+      error as {
+        message?: unknown;
+        details?: unknown;
+        hint?: unknown;
+        code?: unknown;
+      };
+
+    const parts = [
+      typeof supabaseError.message ===
+      'string'
+        ? supabaseError.message
+        : null,
+
+      typeof supabaseError.details ===
+      'string'
+        ? supabaseError.details
+        : null,
+
+      typeof supabaseError.hint ===
+      'string'
+        ? `Hint: ${supabaseError.hint}`
+        : null,
+
+      typeof supabaseError.code ===
+      'string'
+        ? `Code: ${supabaseError.code}`
+        : null,
+    ].filter(
+      (
+        part,
+      ): part is string =>
+        Boolean(part),
+    );
+
+    if (parts.length > 0) {
+      return new Error(
+        parts.join(' | '),
+      );
+    }
+  }
+
   return new Error(
-    'אירעה שגיאה לא צפויה במערכת שיבוץ הכוננים.',
+    'אירעה שגיאה לא צפויה במערכת אילוצי הכוננים.',
   );
 }
 
@@ -66,7 +118,45 @@ class DriverScheduleService {
     return data as
       CreateDriverScheduleDraftResponse;
   }
+  async publishSchedule(
+    schedulePeriodId: string,
+  ): Promise<PublishDriverScheduleResponse> {
+    const normalizedSchedulePeriodId =
+      schedulePeriodId.trim();
 
+    if (!normalizedSchedulePeriodId) {
+      throw new Error(
+        'Driver schedule period id is required.',
+      );
+    }
+
+    const {
+      data,
+      error,
+    } =
+      await supabase.rpc(
+        'publish_driver_schedule',
+        {
+          requested_schedule_period_id:
+            normalizedSchedulePeriodId,
+        },
+      );
+
+    if (error) {
+      throw normalizeDriverScheduleError(
+        error,
+      );
+    }
+
+    if (!data) {
+      throw new Error(
+        'לא התקבלה תשובה בעת פרסום לוח הכוננים.',
+      );
+    }
+
+    return data as
+      PublishDriverScheduleResponse;
+  }
   async getSchedule(
     request:
       GetDriverScheduleRequest = {},

@@ -12,6 +12,7 @@ import type {
   DriverScheduleData,
   UpdateDriverScheduleDayRequest,
   UpdateDriverScheduleDayResponse,
+  PublishDriverScheduleResponse,
 } from '../types/driverSchedule';
 
 interface DriverScheduleDraftState {
@@ -33,6 +34,10 @@ interface DriverScheduleDraftState {
 
   lastUpdatedDayResult:
     UpdateDriverScheduleDayResponse | null;
+    isPublishing: boolean;
+
+  lastPublishedResult:
+  PublishDriverScheduleResponse | null;
 }
 
 interface UseDriverScheduleDraftResult {
@@ -68,6 +73,8 @@ interface UseDriverScheduleDraftResult {
 
   reset:
     () => void;
+  publishSchedule:
+  () => Promise<PublishDriverScheduleResponse>;
 }
 
 const initialState:
@@ -88,6 +95,9 @@ const initialState:
 
     lastUpdatedDayResult:
       null,
+    isPublishing: false,
+
+lastPublishedResult: null,
   };
 
 function normalizeDriverScheduleDraftError(
@@ -263,6 +273,45 @@ function normalizeDriverScheduleDraftError(
     ) {
       return 'לא התקבלה תשובה תקינה בעת עדכון יום בלוח הכוננים.';
     }
+    if (
+      normalizedMessage.includes(
+        'only draft driver schedules can be published',
+      )
+    ) {
+      return 'ניתן לפרסם רק לוח כוננים שנמצא במצב טיוטה.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'driver schedule has no days',
+      )
+    ) {
+      return 'לא קיימים ימים בלוח הכוננים.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'all driver schedule days must be assigned before publishing',
+      )
+    ) {
+      return 'יש לשבץ כונן בכל ימי החודש לפני הפרסום.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'driver schedule contains consecutive-day assignments',
+      )
+    ) {
+      return 'לא ניתן לפרסם לוח שמכיל אותו כונן ביומיים רצופים.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'לא התקבלה תשובה בעת פרסום לוח הכוננים',
+      )
+    ) {
+      return 'לא התקבלה תשובה תקינה בעת פרסום לוח הכוננים.';
+    }
 
     return error.message;
   }
@@ -341,7 +390,136 @@ export function useDriverScheduleDraft():
       },
       [],
     );
+const publishSchedule =
+  useCallback(
+    async (): Promise<PublishDriverScheduleResponse> => {
+      const schedulePeriodId =
+        state.data
+          ?.period
+          ?.id ??
+        null;
 
+      if (!schedulePeriodId) {
+        const missingPeriodError =
+          new Error(
+            'Driver schedule period id is required.',
+          );
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            error:
+              normalizeDriverScheduleDraftError(
+                missingPeriodError,
+              ),
+          }),
+        );
+
+        throw missingPeriodError;
+      }
+
+    if (
+      (
+        state.data
+          ?.statistics
+          ?.unassignedDays ??
+        0
+      ) > 0
+    )
+ {
+        const unassignedDaysError =
+          new Error(
+            'All driver schedule days must be assigned before publishing.',
+          );
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            error:
+              'יש לשבץ כונן בכל ימי החודש לפני הפרסום.',
+          }),
+        );
+
+        throw unassignedDaysError;
+      }
+
+      setState(
+        (currentState) => ({
+          ...currentState,
+
+          isPublishing:
+            true,
+
+          error:
+            null,
+
+          lastPublishedResult:
+            null,
+        }),
+      );
+
+      try {
+        const result =
+          await driverScheduleService
+            .publishSchedule(
+              schedulePeriodId,
+            );
+
+        const refreshedData =
+          await driverScheduleService
+            .getScheduleById(
+              schedulePeriodId,
+            );
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            data:
+              refreshedData,
+
+            isPublishing:
+              false,
+
+            error:
+              null,
+
+            lastPublishedResult:
+              result,
+          }),
+        );
+
+        return result;
+      } catch (error) {
+        const normalizedError =
+          normalizeDriverScheduleDraftError(
+            error,
+          );
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            isPublishing:
+              false,
+
+            error:
+              normalizedError,
+
+            lastPublishedResult:
+              null,
+          }),
+        );
+
+        throw error;
+      }
+    },
+    [
+      state.data,
+    ],
+  );
   const loadScheduleById =
     useCallback(
       async (
@@ -803,7 +981,7 @@ export function useDriverScheduleDraft():
     clearError,
 
     clearLastUpdatedDayResult,
-
+    publishSchedule,
     reset,
   };
 }

@@ -1,6 +1,8 @@
 import {
   CalendarDays,
   CalendarPlus,
+  CalendarRange,
+  List,
   CheckCircle2,
   ClipboardList,
   RefreshCw,
@@ -8,6 +10,9 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
+
+import DriverScheduleCalendar
+  from '../components/driverSchedule/DriverScheduleCalendar';
 import {
   useEffect,
   useMemo,
@@ -73,6 +78,21 @@ const periodStatusLabels: Record<
   archived: 'בארכיון',
 };
 
+type DriverScheduleWorkspaceTab =
+  | 'schedule'
+  | 'periods'
+  | 'submissions'
+  | 'create-period'
+  | 'my-availability';
+
+interface DriverScheduleWorkspaceTabDefinition {
+  id: DriverScheduleWorkspaceTab;
+  label: string;
+  description: string;
+  icon: typeof CalendarDays;
+  isVisible: boolean;
+}
+
 function getDefaultPeriod(): {
   month: number;
   year: number;
@@ -125,6 +145,9 @@ function formatDate(
 
 function DriverSchedulePage() {
   const {
+    user:
+      authenticatedUser,
+
     hasPermission,
   } =
     useAuth();
@@ -148,21 +171,25 @@ function DriverSchedulePage() {
     hasPermission(
       'driver_schedule.view_team',
     );
-const {
-  state:
-    scheduleDraftState,
+  const {
+    state:
+      scheduleDraftState,
 
-  loadLatestSchedule,
+    loadLatestSchedule,
 
-  createDraft:
-    createDriverScheduleDraft,
+    loadScheduleByMonth,
 
-  updateScheduleDay,
+    createDraft:
+      createDriverScheduleDraft,
 
-  clearError:
-    clearScheduleDraftError,
-} =
-  useDriverScheduleDraft();
+    updateScheduleDay,
+
+    publishSchedule,
+
+    clearError:
+      clearScheduleDraftError,
+  } =
+    useDriverScheduleDraft();
   const canEditSchedule =
     hasPermission(
       'driver_schedule.edit',
@@ -245,6 +272,39 @@ const [
   useState<string | null>(
     null,
   );
+
+
+const [
+  activeWorkspaceTab,
+  setActiveWorkspaceTab,
+] =
+  useState<DriverScheduleWorkspaceTab>(
+    canSubmitAvailability &&
+    !canManageAvailability
+      ? 'my-availability'
+      : 'schedule',
+  );
+  const now =
+  new Date();
+
+const [
+  viewedScheduleMonth,
+  setViewedScheduleMonth,
+] =
+  useState({
+    year:
+      now.getFullYear(),
+
+    month:
+      now.getMonth() + 1,
+  });
+  const [
+  scheduleViewMode,
+  setScheduleViewMode,
+] =
+  useState<DriverScheduleViewMode>(
+    'calendar',
+  );
   const availableYears =
     useMemo(
       () => {
@@ -262,27 +322,36 @@ const [
     );
 
 useEffect(() => {
-  void loadPeriods();
+  if (canManageAvailability) {
+    void loadPeriods();
+  }
 
   if (canSubmitAvailability) {
     void loadMyAvailability();
   }
 
-  if (
-    canViewPersonalSchedule ||
-    canViewTeamSchedule ||
-    canEditSchedule
-  ) {
-    void loadLatestSchedule();
-  }
+if (
+  canViewPersonalSchedule ||
+  canViewTeamSchedule ||
+  canEditSchedule
+) {
+  const currentDate =
+    new Date();
+
+  void loadScheduleByMonth(
+    currentDate.getFullYear(),
+    currentDate.getMonth() + 1,
+  );
+}
 }, [
-  loadPeriods,
-  loadMyAvailability,
-  loadLatestSchedule,
+  canManageAvailability,
   canSubmitAvailability,
   canViewPersonalSchedule,
   canViewTeamSchedule,
   canEditSchedule,
+  loadPeriods,
+  loadMyAvailability,
+  loadScheduleByMonth,
 ]);
 
   const handleCreatePeriod =
@@ -534,6 +603,68 @@ const handleClosePeriod =
     canViewPersonalSchedule ||
     canViewTeamSchedule ||
     canEditSchedule;
+type DriverScheduleViewMode =
+  | 'calendar'
+  | 'list';
+const workspaceTabs =
+  useMemo<DriverScheduleWorkspaceTabDefinition[]>(
+    () => [
+      {
+        id: 'schedule',
+        label: 'לוח כוננים',
+        description: 'צפייה, עריכה ופרסום של לוח הכוננים',
+        icon: ClipboardList,
+        isVisible: hasAnyScheduleAccess,
+      },
+      {
+        id: 'periods',
+        label: 'ניהול חודשים',
+        description: 'פתיחה, סגירה וניהול של תקופות אילוצים',
+        icon: CalendarDays,
+        isVisible: canManageAvailability,
+      },
+      {
+        id: 'submissions',
+        label: 'מעקב הגשות',
+        description: 'סטטוס כוננים ומטריצת זמינות',
+        icon: CheckCircle2,
+        isVisible: canManageAvailability,
+      },
+      {
+        id: 'create-period',
+        label: 'יצירת חודש',
+        description: 'יצירת תקופת אילוצים חדשה',
+        icon: CalendarPlus,
+        isVisible: canManageAvailability,
+      },
+      {
+        id: 'my-availability',
+        label: 'האילוצים שלי',
+        description: 'סימון ושמירת הזמינות האישית',
+        icon: CalendarDays,
+        isVisible: canSubmitAvailability,
+      },
+    ],
+    [
+      hasAnyScheduleAccess,
+      canManageAvailability,
+      canSubmitAvailability,
+    ],
+  );
+
+const visibleWorkspaceTabs =
+  workspaceTabs.filter(
+    (tab) => tab.isVisible,
+  );
+
+const effectiveWorkspaceTab =
+  visibleWorkspaceTabs.some(
+    (tab) =>
+      tab.id === activeWorkspaceTab,
+  )
+    ? activeWorkspaceTab
+    : visibleWorkspaceTabs[0]?.id ??
+      'schedule';
 
 const isBusy =
   state.isLoading ||
@@ -543,6 +674,7 @@ const isBusy =
   state.closingPeriodId !==
     null ||
   scheduleDraftState.isLoading ||
+  scheduleDraftState.isPublishing ||
   scheduleDraftState.isCreating;
 
   return (
@@ -558,15 +690,24 @@ const isBusy =
               isBusy
             }
             onClick={() => {
-              void loadPeriods();
+              if (canManageAvailability) {
+                void loadPeriods();
+              }
+
+              if (canSubmitAvailability) {
+                void loadMyAvailability();
+              }
+
+              if (hasAnyScheduleAccess) {
+                void loadLatestSchedule();
+              }
             }}
           >
             <RefreshCw
               size={17}
               aria-hidden="true"
             />
-
-            {state.isLoading
+            {isBusy
               ? 'טוען...'
               : 'רענון'}
           </Button>
@@ -616,7 +757,6 @@ const isBusy =
               צפייה בלוח צוות
             </span>
           ) : null}
-
           {canEditSchedule ? (
             <span>
               עריכת לוח
@@ -624,6 +764,64 @@ const isBusy =
           ) : null}
         </div>
       </section>
+
+      {visibleWorkspaceTabs.length > 1 ? (
+        <nav
+          className="driver-schedule-workspace-tabs"
+          aria-label="אזורי מערכת הכוננים"
+        >
+          {visibleWorkspaceTabs.map(
+            (tab) => {
+              const Icon = tab.icon;
+              const isActive =
+                effectiveWorkspaceTab ===
+                tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={[
+                    'driver-schedule-workspace-tab',
+                    isActive
+                      ? 'driver-schedule-workspace-tab-active'
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  aria-current={
+                    isActive
+                      ? 'page'
+                      : undefined
+                  }
+                  onClick={() => {
+                    setActiveWorkspaceTab(
+                      tab.id,
+                    );
+                  }}
+                >
+                  <span className="driver-schedule-workspace-tab-icon">
+                    <Icon
+                      size={20}
+                      aria-hidden="true"
+                    />
+                  </span>
+
+                  <span className="driver-schedule-workspace-tab-content">
+                    <strong>
+                      {tab.label}
+                    </strong>
+
+                    <small>
+                      {tab.description}
+                    </small>
+                  </span>
+                </button>
+              );
+            },
+          )}
+        </nav>
+      ) : null}
 
       {state.error ? (
         <div
@@ -645,7 +843,10 @@ const isBusy =
             variant="secondary"
             onClick={() => {
               reset();
-              void loadPeriods();
+
+              if (canManageAvailability) {
+                void loadPeriods();
+              }
             }}
           >
             ניסיון נוסף
@@ -777,6 +978,33 @@ const isBusy =
     </div>
   </div>
 ) : null}
+      {scheduleDraftState.lastPublishedResult ? (
+        <div
+          className="driver-schedule-success"
+          role="status"
+        >
+          <CheckCircle2
+            size={23}
+            aria-hidden="true"
+          />
+
+          <div>
+            <strong>
+              לוח הכוננים פורסם בהצלחה
+            </strong>
+
+            <span>
+              פורסמו{' '}
+              {
+                scheduleDraftState
+                  .lastPublishedResult
+                  .assignedDays
+              }{' '}
+              ימי כוננות.
+            </span>
+          </div>
+        </div>
+      ) : null}
       {state.lastOpenedResult ? (
         <div
           className="driver-schedule-success"
@@ -844,7 +1072,9 @@ const isBusy =
           </div>
         </div>
       ) : null}
-      {canManageAvailability ? (
+      {canManageAvailability &&
+      effectiveWorkspaceTab ===
+        'periods' ? (
         <>
           <section className="driver-availability-periods-card">
             <header className="driver-schedule-section-header">
@@ -996,6 +1226,10 @@ const isBusy =
                                     period.id,
                                   );
 
+                                  setActiveWorkspaceTab(
+                                    'submissions',
+                                  );
+
                                   void loadManagementData(
                                     period.id,
                                   );
@@ -1084,8 +1318,13 @@ const isBusy =
               </div>
             )}
           </section>
-          {canManageAvailability &&
-          selectedManagementPeriodId ? (
+        </>
+      ) : null}
+
+      {canManageAvailability &&
+      effectiveWorkspaceTab ===
+        'submissions' ? (
+        selectedManagementPeriodId ? (
             <DriverAvailabilityManagementPanel
               data={
                 managementState.data
@@ -1102,7 +1341,29 @@ const isBusy =
                 );
               }}
             />
-          ) : null}
+        ) : (
+          <section className="driver-schedule-placeholder-card">
+            <CheckCircle2
+              size={31}
+              aria-hidden="true"
+            />
+
+            <div>
+              <strong>
+                בחר חודש למעקב
+              </strong>
+
+              <span>
+                עבור לניהול חודשים ולחץ על ניהול בחודש הרצוי.
+              </span>
+            </div>
+          </section>
+        )
+      ) : null}
+
+      {canManageAvailability &&
+      effectiveWorkspaceTab ===
+        'create-period' ? (
           <section className="driver-availability-management-card">
             <header className="driver-schedule-section-header">
               <span className="driver-schedule-section-icon">
@@ -1315,10 +1576,11 @@ const isBusy =
               </div>
             </form>
           </section>
-        </>
       ) : null}
 
-        {canSubmitAvailability ? (
+      {canSubmitAvailability &&
+      effectiveWorkspaceTab ===
+        'my-availability' ? (
       <MyDriverAvailabilityPanel
         data={
           myAvailabilityState.data
@@ -1372,205 +1634,370 @@ const isBusy =
           void loadMyAvailability();
         }}
       />
-    ) : null}
+      ) : null}
 
-
-{hasAnyScheduleAccess ? (
-  scheduleDraftState.isLoading ? (
-    <section className="driver-schedule-placeholder-card">
-      <RefreshCw
-        size={31}
-        className="my-driver-availability-loading-icon"
-        aria-hidden="true"
-      />
-
+{hasAnyScheduleAccess &&
+effectiveWorkspaceTab ===
+  'schedule' ? (
+  <section className="driver-schedule-view">
+    <div className="driver-schedule-view-toolbar">
       <div>
         <strong>
-          טוען את לוח הכוננים
+          תצוגת לוח הכוננים
         </strong>
 
         <span>
-          נא להמתין בזמן טעינת
-          השיבוץ האחרון.
+          מעבר בין לוח חודשי
+          לרשימת הניהול.
         </span>
       </div>
-    </section>
-  ) : scheduleDraftState.data?.period ? (
-    <section className="driver-schedule-draft-preview">
-      <header className="driver-schedule-section-header">
-        <span className="driver-schedule-section-icon">
-          <ClipboardList
-            size={22}
+
+      <div className="driver-schedule-view-switcher">
+        <button
+          type="button"
+          className={[
+            'driver-schedule-view-button',
+
+            scheduleViewMode ===
+            'calendar'
+              ? 'driver-schedule-view-button-active'
+              : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          aria-pressed={
+            scheduleViewMode ===
+            'calendar'
+          }
+          onClick={() => {
+            setScheduleViewMode(
+              'calendar',
+            );
+          }}
+        >
+          <CalendarRange
+            size={17}
             aria-hidden="true"
           />
-        </span>
+
+          תצוגת חודש
+        </button>
+
+        {canEditSchedule ? (
+          <button
+            type="button"
+            className={[
+              'driver-schedule-view-button',
+
+              scheduleViewMode ===
+              'list'
+                ? 'driver-schedule-view-button-active'
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            aria-pressed={
+              scheduleViewMode ===
+              'list'
+            }
+            onClick={() => {
+              setScheduleViewMode(
+                'list',
+              );
+            }}
+          >
+            <List
+              size={17}
+              aria-hidden="true"
+            />
+
+            רשימת עריכה
+          </button>
+        ) : null}
+      </div>
+    </div>
+
+    {scheduleViewMode ===
+    'calendar' ? (
+        <DriverScheduleCalendar
+          data={
+            scheduleDraftState.data
+          }
+          viewedYear={
+            viewedScheduleMonth.year
+          }
+          viewedMonth={
+            viewedScheduleMonth.month
+          }
+          currentUserId={
+            authenticatedUser?.id ??
+            null
+          }
+          canViewTeamSchedule={
+            canViewTeamSchedule
+          }
+          canEditSchedule={
+            canEditSchedule
+          }
+          showManagementDetails={
+            canManageAvailability
+          }
+          isLoading={
+            scheduleDraftState.isLoading
+          }
+          onLoadMonth={async (
+            year,
+            month,
+          ) => {
+            setViewedScheduleMonth({
+              year,
+              month,
+            });
+
+            await loadScheduleByMonth(
+              year,
+              month,
+            );
+          }}
+        />
+    ) : scheduleDraftState.isLoading ? (
+      <section className="driver-schedule-placeholder-card">
+        <RefreshCw
+          size={31}
+          className="my-driver-availability-loading-icon"
+          aria-hidden="true"
+        />
 
         <div>
-          <h2>
-            {scheduleDraftState
-              .data
-              .period
-              .title ??
-              `לוח כוננים ${
-                hebrewMonths[
+          <strong>
+            טוען את לוח הכוננים
+          </strong>
+
+          <span>
+            נא להמתין בזמן טעינת
+            השיבוץ.
+          </span>
+        </div>
+      </section>
+    ) : scheduleDraftState.data?.period &&
+      canEditSchedule ? (
+      <section className="driver-schedule-draft-preview">
+        <header className="driver-schedule-section-header">
+          <span className="driver-schedule-section-icon">
+            <ClipboardList
+              size={22}
+              aria-hidden="true"
+            />
+          </span>
+
+          <div>
+            <h2>
+              {scheduleDraftState
+                .data
+                .period
+                .title ??
+                `לוח כוננים ${
+                  hebrewMonths[
+                    scheduleDraftState
+                      .data
+                      .period
+                      .month - 1
+                  ]
+                } ${
                   scheduleDraftState
                     .data
                     .period
-                    .month - 1
-                ]
-              } ${
+                    .year
+                }`}
+            </h2>
+
+            <p>
+              {scheduleDraftState
+                .data
+                .period
+                .status ===
+              'published'
+                ? 'לוח הכוננים שפורסם.'
+                : 'טיוטת לוח הכוננים לפני פרסום.'}
+            </p>
+          </div>
+
+          {scheduleDraftState
+            .data
+            .period
+            .status ===
+          'draft' ? (
+            <Button
+              type="button"
+              disabled={
+                scheduleDraftState.isPublishing ||
+                scheduleDraftState.updatingDayId !==
+                  null ||
                 scheduleDraftState
                   .data
-                  .period
-                  .year
-              }`}
-          </h2>
+                  .statistics
+                  .unassignedDays > 0
+              }
+              onClick={() => {
+                const confirmed =
+                  window.confirm(
+                    'האם לפרסם את לוח הכוננים?\n\n' +
+                    'לאחר הפרסום הלוח יינעל לעריכה.',
+                  );
 
-          <p>
-            {scheduleDraftState
-              .data
-              .period
-              .status ===
-            'published'
-              ? 'לוח הכוננים שפורסם.'
-              : 'טיוטת לוח הכוננים לפני פרסום.'}
-          </p>
+                if (!confirmed) {
+                  return;
+                }
+
+                void publishSchedule();
+              }}
+            >
+              <Send
+                size={17}
+                aria-hidden="true"
+              />
+
+              {scheduleDraftState.isPublishing
+                ? 'מפרסם לוח...'
+                : 'פרסום לוח הכוננים'}
+            </Button>
+          ) : null}
+        </header>
+
+        <div className="driver-schedule-draft-statistics">
+          <article>
+            <strong>
+              {
+                scheduleDraftState
+                  .data
+                  .statistics
+                  .totalDays
+              }
+            </strong>
+
+            <span>
+              ימים בחודש
+            </span>
+          </article>
+
+          <article>
+            <strong>
+              {
+                scheduleDraftState
+                  .data
+                  .statistics
+                  .assignedDays
+              }
+            </strong>
+
+            <span>
+              ימים משובצים
+            </span>
+          </article>
+
+          <article>
+            <strong>
+              {
+                scheduleDraftState
+                  .data
+                  .statistics
+                  .unassignedDays
+              }
+            </strong>
+
+            <span>
+              ללא כונן
+            </span>
+          </article>
+
+          <article>
+            <strong>
+              {
+                scheduleDraftState
+                  .data
+                  .statistics
+                  .warningCount
+              }
+            </strong>
+
+            <span>
+              אזהרות
+            </span>
+          </article>
         </div>
-      </header>
 
-      <div className="driver-schedule-draft-statistics">
-        <article>
-          <strong>
-            {
-              scheduleDraftState
-                .data
-                .statistics
-                .totalDays
-            }
-          </strong>
-
-          <span>
-            ימים בחודש
-          </span>
-        </article>
-
-        <article>
-          <strong>
-            {
-              scheduleDraftState
-                .data
-                .statistics
-                .assignedDays
-            }
-          </strong>
-
-          <span>
-            ימים משובצים
-          </span>
-        </article>
-
-        <article>
-          <strong>
-            {
-              scheduleDraftState
-                .data
-                .statistics
-                .unassignedDays
-            }
-          </strong>
-
-          <span>
-            ללא כונן
-          </span>
-        </article>
-
-        <article>
-          <strong>
-            {
-              scheduleDraftState
-                .data
-                .statistics
-                .warningCount
-            }
-          </strong>
-
-          <span>
-            אזהרות
-          </span>
-        </article>
-      </div>
-
-<div className="driver-schedule-draft-list">
-  {scheduleDraftState
-    .data
-    .days
-    .map(
-      (scheduleDay) => (
-<DriverScheduleDayEditor
-  key={`${scheduleDay.id}-${scheduleDay.updatedAt}`}
-          day={
-            scheduleDay
-          }
-          drivers={
-            scheduleDraftState
-              .data
-              ?.drivers ??
-            []
-          }
-          isEditable={
-            canEditSchedule &&
-            scheduleDraftState
-              .data
-              ?.period
-              ?.status ===
-              'draft'
-          }
-          isSaving={
-            scheduleDraftState
-              .updatingDayId ===
-              scheduleDay.id
-          }
-          onSave={async (
-            request,
-          ) => {
-            try {
-              await updateScheduleDay(
-                request,
-              );
-            } catch {
-              /*
-               * הודעת השגיאה נשמרת
-               * בתוך ה-Hook.
-               */
-            }
-          }}
+        <div className="driver-schedule-draft-list">
+          {scheduleDraftState
+            .data
+            .days
+            .map(
+              (
+                scheduleDay,
+              ) => (
+                <DriverScheduleDayEditor
+                  key={`${scheduleDay.id}-${scheduleDay.updatedAt}`}
+                  day={
+                    scheduleDay
+                  }
+                  drivers={
+                    scheduleDraftState
+                      .data
+                      ?.drivers ??
+                    []
+                  }
+                  isEditable={
+                    canEditSchedule &&
+                    scheduleDraftState
+                      .data
+                      ?.period
+                      ?.status ===
+                      'draft'
+                  }
+                  isSaving={
+                    scheduleDraftState
+                      .updatingDayId ===
+                    scheduleDay.id
+                  }
+                  onSave={async (
+                    request,
+                  ) => {
+                    try {
+                      await updateScheduleDay(
+                        request,
+                      );
+                    } catch {
+                      /*
+                       * השגיאה נשמרת
+                       * בתוך ה-Hook.
+                       */
+                    }
+                  }}
+                />
+              ),
+            )}
+        </div>
+      </section>
+    ) : (
+      <section className="driver-schedule-placeholder-card">
+        <ClipboardList
+          size={31}
+          aria-hidden="true"
         />
-      ),
+
+        <div>
+          <strong>
+            אין לוח לעריכה בחודש הזה
+          </strong>
+
+          <span>
+            אפשר להמשיך לעבור בין
+            חודשים בתצוגת החודש.
+          </span>
+        </div>
+      </section>
     )}
-</div>
-    </section>
-  ) : (
-    <section className="driver-schedule-placeholder-card">
-      <ClipboardList
-        size={31}
-        aria-hidden="true"
-      />
-
-      <div>
-        <strong>
-          עדיין אין לוח כוננים
-        </strong>
-
-        <span>
-          לאחר סגירת חודש האילוצים,
-          ניתן ליצור טיוטת שיבוץ
-          אוטומטית.
-        </span>
-      </div>
-    </section>
-  )
+  </section>
 ) : null}
-
       {!canManageAvailability &&
       !canSubmitAvailability &&
       !hasAnyScheduleAccess ? (
