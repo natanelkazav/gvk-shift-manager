@@ -20,8 +20,12 @@ export type PermissionKey =
   | 'availability.view'
   | 'availability.manage'
 
-  | 'driver_schedule.view'
-  | 'driver_schedule.edit'
+| 'driver_availability.view'
+| 'driver_availability.manage'
+
+| 'driver_schedule.view'
+| 'driver_schedule.view_team'
+| 'driver_schedule.edit'
 
   | 'notifications.view'
   | 'notifications.manage'

@@ -18,7 +18,11 @@ function isPermissionKey(
       'availability.view',
       'availability.manage',
 
+      'driver_availability.view',
+      'driver_availability.manage',
+
       'driver_schedule.view',
+      'driver_schedule.view_team',
       'driver_schedule.edit',
 
       'notifications.view',

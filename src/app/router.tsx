@@ -97,16 +97,23 @@ export const router =
               ],
             },
 
-            {
+{
               element: (
                 <PermissionRoute
-                  permission="driver_schedule.view"
+                  anyPermissions={[
+                    'driver_availability.view',
+                    'driver_availability.manage',
+                    'driver_schedule.view',
+                    'driver_schedule.view_team',
+                    'driver_schedule.edit',
+                  ]}
                 />
               ),
+
               children: [
                 {
-                  path:
-                    'driver-schedule',
+                  path: 'driver-schedule',
+
                   element: (
                     <DriverSchedulePage />
                   ),

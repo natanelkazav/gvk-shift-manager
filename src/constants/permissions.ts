@@ -79,15 +79,56 @@ export const permissionGroups:
     },
     {
       id: 'driver-schedule',
-      title: 'לוח כוננים',
+
+      title: 'כוננים',
+
       description:
-        'גישה ללוח הכוננים ולשיבוץ הכוננים.',
+        'הגשת אילוצים, צפייה וניהול של לוח הכוננים.',
+
       permissions: [
         {
-          key: 'driver_schedule.view',
-          label: 'צפייה בלוח כוננים',
+          key: 'driver_availability.view',
+
+          label: 'הגשת אילוצי כוננים',
+
           description:
-            'מאפשר להיכנס למסך לוח הכוננים.',
+            'מאפשר לכונן לצפות בחודש פתוח ולסמן זמינות יומית.',
+        },
+
+        {
+          key: 'driver_availability.manage',
+
+          label: 'ניהול אילוצי כוננים',
+
+          description:
+            'מאפשר ליצור, לפתוח, לסגור ולנהל תקופות אילוצים של כוננים.',
+        },
+
+        {
+          key: 'driver_schedule.view',
+
+          label: 'צפייה בלוח כוננים',
+
+          description:
+            'מאפשר להיכנס למסך לוח הכוננים ולצפות בשיבוץ האישי.',
+        },
+
+        {
+          key: 'driver_schedule.view_team',
+
+          label: 'צפייה בלוח הכוננים המלא',
+
+          description:
+            'מאפשר לצפות בשיבוץ של כל הכוננים ובנתוני הצוות.',
+        },
+
+        {
+          key: 'driver_schedule.edit',
+
+          label: 'עריכת לוח כוננים',
+
+          description:
+            'מאפשר ליצור, לערוך ולפרסם את לוח הכוננים.',
         },
       ],
     },
