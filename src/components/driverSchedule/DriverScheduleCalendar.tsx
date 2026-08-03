@@ -220,29 +220,22 @@ function DriverScheduleCalendar({
     period?.month ??
     viewedMonth;
 
-  const scheduleDays =
-    data?.days ??
-    [];
 
   const scheduleDrivers =
     data?.drivers ??
     [];
 
-  const scheduleDaysByDate =
-    useMemo(
-      () =>
-        new Map(
-          scheduleDays.map(
-            (day) => [
-              day.dutyDate,
-              day,
-            ],
-          ),
-        ),
-      [
-        scheduleDays,
-      ],
+const scheduleDaysByDate =
+  useMemo(() => {
+    return new Map(
+      (data?.days ?? []).map(
+        (day) => [
+          day.dutyDate,
+          day,
+        ],
+      ),
     );
+  }, [data?.days]);
 
   const loadMonth =
     async (

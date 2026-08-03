@@ -5,6 +5,7 @@ import type {
   ImportedDispatcherShift,
   ImportedDriverDuty,
   ScheduleImportPreview,
+  ScheduleImportPeriodType,
 } from '../types/scheduleImport';
 
 type RawCellValue =
@@ -28,7 +29,11 @@ interface ParsedScheduleSheet {
   headerRowIndex: number;
   rows: RawWorksheetRow[];
 }
-
+type ParsedSchedulePreview =
+  Omit<
+    ScheduleImportPreview,
+    'periodType'
+  >;
 const MAX_FILE_SIZE_BYTES =
   15 * 1024 * 1024;
 
@@ -503,7 +508,7 @@ function createDispatcherShiftKey(
 function parseScheduleRows(
   parsedSheet:
     ParsedScheduleSheet,
-): ScheduleImportPreview {
+): ParsedSchedulePreview {
   const dispatcherShifts:
     ImportedDispatcherShift[] =
     [];
@@ -832,7 +837,38 @@ function parseScheduleRows(
     warnings,
   };
 }
+function getImportPeriodType(
+  year: number,
+  month: number,
+): ScheduleImportPeriodType {
+  const currentDate =
+    new Date();
 
+  const currentPeriodValue =
+    currentDate.getFullYear() *
+      12 +
+    currentDate.getMonth();
+
+  const importedPeriodValue =
+    year * 12 +
+    (month - 1);
+
+  if (
+    importedPeriodValue <
+    currentPeriodValue
+  ) {
+    return 'historical';
+  }
+
+  if (
+    importedPeriodValue ===
+    currentPeriodValue
+  ) {
+    return 'current';
+  }
+
+  return 'future';
+}
 async function analyzeScheduleWorkbook(
   file: File,
 ): Promise<ScheduleImportPreview> {
@@ -844,9 +880,12 @@ async function analyzeScheduleWorkbook(
   try {
     fileBuffer =
       await file.arrayBuffer();
-  } catch {
+  } catch (error) {
     throw new Error(
       'לא ניתן היה לקרוא את קובץ האקסל.',
+      {
+        cause: error,
+      },
     );
   }
 
@@ -871,6 +910,9 @@ async function analyzeScheduleWorkbook(
 
     throw new Error(
       'קובץ האקסל אינו תקין או שאינו נתמך.',
+      {
+        cause: error,
+      },
     );
   }
 
@@ -888,9 +930,20 @@ async function analyzeScheduleWorkbook(
       workbook,
     );
 
-  return parseScheduleRows(
-    parsedSheet,
-  );
+  const parsedPreview =
+    parseScheduleRows(
+      parsedSheet,
+    );
+
+  return {
+    ...parsedPreview,
+
+    periodType:
+      getImportPeriodType(
+        parsedPreview.year,
+        parsedPreview.month,
+      ),
+  };
 }
 
 export const scheduleImportService = {
