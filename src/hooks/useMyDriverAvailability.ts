@@ -74,6 +74,9 @@ interface UseMyDriverAvailabilityResult {
       DriverAvailabilityStatus,
   ) => void;
 
+  markAllAvailable:
+    () => void;
+
   setDayNote: (
     dayId: string,
     note: string,
@@ -482,6 +485,59 @@ export function useMyDriverAvailability():
       },
       [],
     );
+  const markAllAvailable =
+    useCallback(
+      (): void => {
+        setState(
+          (
+            currentState,
+          ) => {
+            const updatedEntries =
+              Object.fromEntries(
+                Object.entries(
+                  currentState
+                    .draftEntries,
+                ).map(
+                  (
+                    [
+                      dayId,
+                      entry,
+                    ],
+                  ) => [
+                    dayId,
+                    {
+                      ...entry,
+                      availabilityStatus:
+                        'available' as const,
+                    },
+                  ],
+                ),
+              );
+
+            return {
+              ...currentState,
+
+              draftEntries:
+                updatedEntries,
+
+              isDirty:
+                true,
+
+              error:
+                null,
+
+              lastSaveResult:
+                null,
+
+              lastSubmitResult:
+                null,
+            };
+          },
+        );
+      },
+      [],
+    );
+
 const submitMyAvailability =
   useCallback(
     async (): Promise<SubmitDriverAvailabilityResponse> => {
@@ -883,6 +939,8 @@ const submitMyAvailability =
     loadMyAvailability,
 
     setDayStatus,
+
+    markAllAvailable,
 
     setDayNote,
 

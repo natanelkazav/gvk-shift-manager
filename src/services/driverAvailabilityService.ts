@@ -15,6 +15,25 @@ import type {
   SubmitDriverAvailabilityResponse,
 } from '../types/driverAvailability';
 
+export interface ReopenDriverAvailabilityPeriodResponse {
+  periodId: string;
+  year: number;
+  month: number;
+  status: 'open';
+  openedAt: string | null;
+  reopenedSubmissions: number;
+}
+
+export interface DeleteDriverAvailabilityPeriodResponse {
+  deletedPeriodId: string;
+  year: number;
+  month: number;
+  title: string | null;
+  deletedDays: number;
+  deletedEntries: number;
+  deletedSubmissions: number;
+}
+
 function normalizeDriverAvailabilityError(
   error: unknown,
 ): Error {
@@ -259,6 +278,90 @@ class DriverAvailabilityService {
 
     return data as
       CloseDriverAvailabilityPeriodResponse;
+  }
+
+  async reopenPeriod(
+    periodId: string,
+  ): Promise<ReopenDriverAvailabilityPeriodResponse> {
+    const normalizedPeriodId =
+      periodId.trim();
+
+    if (
+      !normalizedPeriodId
+    ) {
+      throw new Error(
+        'Driver availability period id is required.',
+      );
+    }
+
+    const {
+      data,
+      error,
+    } =
+      await supabase.rpc(
+        'reopen_driver_availability_period',
+        {
+          requested_period_id:
+            normalizedPeriodId,
+        },
+      );
+
+    if (error) {
+      throw normalizeDriverAvailabilityError(
+        error,
+      );
+    }
+
+    if (!data) {
+      throw new Error(
+        'לא התקבלה תשובה בעת פתיחה מחדש של חודש אילוצי הכוננים.',
+      );
+    }
+
+    return data as
+      ReopenDriverAvailabilityPeriodResponse;
+  }
+
+  async deletePeriod(
+    periodId: string,
+  ): Promise<DeleteDriverAvailabilityPeriodResponse> {
+    const normalizedPeriodId =
+      periodId.trim();
+
+    if (
+      !normalizedPeriodId
+    ) {
+      throw new Error(
+        'Driver availability period id is required.',
+      );
+    }
+
+    const {
+      data,
+      error,
+    } =
+      await supabase.rpc(
+        'delete_driver_availability_period',
+        {
+          requested_period_id:
+            normalizedPeriodId,
+        },
+      );
+
+    if (error) {
+      throw normalizeDriverAvailabilityError(
+        error,
+      );
+    }
+
+    if (!data) {
+      throw new Error(
+        'לא התקבלה תשובה בעת מחיקת חודש אילוצי הכוננים.',
+      );
+    }
+
+    return data as
+      DeleteDriverAvailabilityPeriodResponse;
   }
 
   async getManagementData(

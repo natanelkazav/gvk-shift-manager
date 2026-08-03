@@ -9,6 +9,8 @@ import {
   Send,
   FileSpreadsheet,
   ShieldCheck,
+  Trash2,
+  UnlockKeyhole,
 } from 'lucide-react';
 import ScheduleImportPanel
   from '../components/scheduleImport/ScheduleImportPanel';
@@ -245,6 +247,8 @@ function DriverSchedulePage() {
     createPeriod,
     openPeriod,
     closePeriod,
+    reopenPeriod,
+    deletePeriod,
     clearError,
     reset,
   } =
@@ -257,6 +261,7 @@ const {
   setDayStatus,
   setDayNote,
   saveMyAvailability,
+    markAllAvailable,
   submitMyAvailability,
 } =
   useMyDriverAvailability();
@@ -532,6 +537,102 @@ const handleClosePeriod =
     }
   };
 
+  const handleReopenPeriod =
+    async (
+      periodId: string,
+      periodTitle: string,
+    ): Promise<void> => {
+      if (
+        !canManageAvailability ||
+        state.reopeningPeriodId
+      ) {
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          `האם לפתוח מחדש את "${periodTitle}" להגשת אילוצים?\n\n` +
+          'הכוננים יוכלו שוב לערוך, לשמור ולהגיש את הזמינות שלהם.',
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      clearError();
+
+      try {
+        await reopenPeriod(
+          periodId,
+        );
+
+        setSelectedManagementPeriodId(
+          periodId,
+        );
+
+        await loadManagementData(
+          periodId,
+        );
+      } catch {
+        /*
+         * השגיאה נשמרת בתוך ה-Hook.
+         */
+      }
+    };
+
+  const handleDeletePeriod =
+    async (
+      periodId: string,
+      periodTitle: string,
+    ): Promise<void> => {
+      if (
+        !canManageAvailability ||
+        state.deletingPeriodId
+      ) {
+        return;
+      }
+
+      const firstConfirmation =
+        window.confirm(
+          `האם למחוק את "${periodTitle}"?\n\n` +
+          'הפעולה תמחק את כל ימי הכוננות, סימוני הזמינות וההגשות של החודש.',
+        );
+
+      if (!firstConfirmation) {
+        return;
+      }
+
+      const finalConfirmation =
+        window.confirm(
+          'אישור אחרון: לא ניתן לבטל את המחיקה.\n\nהאם להמשיך?',
+        );
+
+      if (!finalConfirmation) {
+        return;
+      }
+
+      clearError();
+
+      try {
+        await deletePeriod(
+          periodId,
+        );
+
+        if (
+          selectedManagementPeriodId ===
+          periodId
+        ) {
+          setSelectedManagementPeriodId(
+            null,
+          );
+        }
+      } catch {
+        /*
+         * השגיאה נשמרת בתוך ה-Hook.
+         */
+      }
+    };
+
   const handleCreateScheduleDraft =
   async (
     availabilityPeriodId: string,
@@ -682,6 +783,10 @@ const isBusy =
   state.openingPeriodId !==
     null ||
   state.closingPeriodId !==
+    null ||
+  state.reopeningPeriodId !==
+    null ||
+  state.deletingPeriodId !==
     null ||
   scheduleDraftState.isLoading ||
   scheduleDraftState.isPublishing ||
@@ -1082,6 +1187,62 @@ const isBusy =
           </div>
         </div>
       ) : null}
+      {state.lastReopenedResult ? (
+        <div
+          className="driver-schedule-success"
+          role="status"
+        >
+          <UnlockKeyhole
+            size={23}
+            aria-hidden="true"
+          />
+
+          <div>
+            <strong>
+              חודש האילוצים נפתח מחדש
+            </strong>
+
+            <span>
+              הכוננים יכולים כעת לערוך ולהגיש מחדש את האילוצים שלהם.
+            </span>
+          </div>
+        </div>
+      ) : null}
+
+      {state.lastDeletedResult ? (
+        <div
+          className="driver-schedule-success"
+          role="status"
+        >
+          <Trash2
+            size={23}
+            aria-hidden="true"
+          />
+
+          <div>
+            <strong>
+              חודש האילוצים נמחק
+            </strong>
+
+            <span>
+              נמחקו{' '}
+              {
+                state
+                  .lastDeletedResult
+                  .deletedDays
+              }{' '}
+              ימי כוננות ו־
+              {
+                state
+                  .lastDeletedResult
+                  .deletedSubmissions
+              }{' '}
+              הגשות.
+            </span>
+          </div>
+        </div>
+      ) : null}
+
       {canManageAvailability &&
       effectiveWorkspaceTab ===
         'periods' ? (
@@ -1279,6 +1440,60 @@ const isBusy =
                                     </Button>
                                   </>
                                 ) : null}
+
+                          {period.status ===
+                          'closed' ? (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              disabled={
+                                isBusy
+                              }
+                              onClick={() => {
+                                void handleReopenPeriod(
+                                  period.id,
+                                  periodTitle,
+                                );
+                              }}
+                            >
+                              <UnlockKeyhole
+                                size={17}
+                                aria-hidden="true"
+                              />
+
+                              {state.reopeningPeriodId ===
+                              period.id
+                                ? 'פותח מחדש...'
+                                : 'פתיחה מחדש'}
+                            </Button>
+                          ) : null}
+
+                          {period.status !==
+                          'archived' ? (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              disabled={
+                                isBusy
+                              }
+                              onClick={() => {
+                                void handleDeletePeriod(
+                                  period.id,
+                                  periodTitle,
+                                );
+                              }}
+                            >
+                              <Trash2
+                                size={17}
+                                aria-hidden="true"
+                              />
+
+                              {state.deletingPeriodId ===
+                              period.id
+                                ? 'מוחק חודש...'
+                                : 'מחיקת חודש'}
+                            </Button>
+                          ) : null}
 
                           {period.status ===
                           'closed' ? (
@@ -1632,6 +1847,9 @@ const isBusy =
         }
         onSetDayNote={
           setDayNote
+        }
+                onMarkAllAvailable={
+          markAllAvailable
         }
         onSave={() => {
           void saveMyAvailability();

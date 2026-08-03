@@ -2922,3 +2922,65 @@
     width: 100%;
   }
 }
+.availability-quick-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.availability-mark-all-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid #15803d;
+  border-radius: 10px;
+  background: #16a34a;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.availability-mark-all-button:hover:not(:disabled) {
+  border-color: #166534;
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.availability-mark-all-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.availability-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 620px) {
+  .availability-quick-actions,
+  .availability-footer-actions {
+    width: 100%;
+  }
+
+  .availability-quick-actions > *,
+  .availability-footer-actions > * {
+    flex: 1 1 100%;
+  }
+
+  .availability-mark-all-button {
+    width: 100%;
+  }
+}

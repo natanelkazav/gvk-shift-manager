@@ -4,28 +4,35 @@ import {
   Bell,
   CalendarDays,
   Car,
+  ClipboardList,
   LayoutDashboard,
   LogOut,
   Menu,
   Repeat2,
   ScrollText,
-  ClipboardList,
   Settings,
   Users,
   X,
 } from 'lucide-react';
+
 import {
   useMemo,
   useState,
 } from 'react';
+
 import {
   NavLink,
   Outlet,
 } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+
+import {
+  useAuth,
+} from '../auth/AuthContext';
+
 import type {
   PermissionKey,
 } from '../types/auth';
+
 import '../styles/layout.css';
 
 interface NavigationItem {
@@ -33,7 +40,8 @@ interface NavigationItem {
   path: string;
   end?: boolean;
   icon: typeof LayoutDashboard;
-  permission: PermissionKey;
+  permission?: PermissionKey;
+  anyPermissions?: PermissionKey[];
 }
 
 const navigationItems: NavigationItem[] = [
@@ -54,14 +62,23 @@ const navigationItems: NavigationItem[] = [
     label: 'אילוצי מוקדנים',
     path: '/availability',
     icon: ClipboardList,
-    permission: 'availability.view',
+    anyPermissions: [
+      'availability.view',
+      'availability.manage',
+      'schedule.edit',
+    ],
   },
   {
     label: 'לוח כוננים',
     path: '/driver-schedule',
     icon: Car,
-    permission:
+    anyPermissions: [
+      'driver_availability.view',
+      'driver_availability.manage',
       'driver_schedule.view',
+      'driver_schedule.view_team',
+      'driver_schedule.edit',
+    ],
   },
   {
     label: 'ניהול משתמשים',
@@ -70,31 +87,28 @@ const navigationItems: NavigationItem[] = [
     permission: 'users.view',
   },
   {
-  label: 'יומן מערכת',
-  path: '/audit',
-  icon: ScrollText,
-  permission: 'audit.view',
-},
+    label: 'יומן מערכת',
+    path: '/audit',
+    icon: ScrollText,
+    permission: 'audit.view',
+  },
   {
     label: 'התראות',
     path: '/notifications',
     icon: Bell,
-    permission:
-      'notifications.view',
+    permission: 'notifications.view',
   },
   {
     label: 'סטטיסטיקות',
     path: '/statistics',
     icon: BarChart3,
-    permission:
-      'statistics.view',
+    permission: 'statistics.view',
   },
   {
     label: 'החלפות משמרת',
     path: '/shift-swaps',
     icon: Repeat2,
-    permission:
-      'shift_swaps.view',
+    permission: 'shift_swaps.view',
   },
   {
     label: 'ארכיון',
@@ -121,29 +135,24 @@ function getNavigationLabel(
     | undefined,
 ): string {
   if (
-    role ===
-    'dispatcher'
+    role === 'dispatcher'
   ) {
     if (
-      item.path ===
-      '/schedule'
+      item.path === '/schedule'
     ) {
       return 'השיבוצים שלי';
     }
 
     if (
-      item.path ===
-      '/availability'
+      item.path === '/availability'
     ) {
       return 'האילוצים שלי';
     }
   }
 
   if (
-    role ===
-    'on_call' &&
-    item.path ===
-      '/driver-schedule'
+    role === 'on_call' &&
+    item.path === '/driver-schedule'
   ) {
     return 'לוח הכוננים שלי';
   }
@@ -165,7 +174,9 @@ function getInitial(
   const normalizedName =
     displayName.trim();
 
-  if (!normalizedName) {
+  if (
+    !normalizedName
+  ) {
     return '?';
   }
 
@@ -176,6 +187,7 @@ function AppLayout() {
   const {
     profile,
     hasPermission,
+    hasAnyPermission,
     signOut,
   } = useAuth();
 
@@ -190,14 +202,35 @@ function AppLayout() {
   ] = useState(false);
 
   const visibleNavigationItems =
-    useMemo(() => {
-      return navigationItems.filter(
-        (item) =>
-          hasPermission(
-            item.permission,
-          ),
-      );
-    }, [hasPermission]);
+    useMemo(
+      () =>
+        navigationItems.filter(
+          (item) => {
+            if (
+              item.permission
+            ) {
+              return hasPermission(
+                item.permission,
+              );
+            }
+
+            if (
+              item.anyPermissions &&
+              item.anyPermissions.length > 0
+            ) {
+              return hasAnyPermission(
+                item.anyPermissions,
+              );
+            }
+
+            return true;
+          },
+        ),
+      [
+        hasAnyPermission,
+        hasPermission,
+      ],
+    );
 
   const closeSidebar = (): void => {
     setIsSidebarOpen(false);

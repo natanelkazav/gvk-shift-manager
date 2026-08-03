@@ -69,6 +69,9 @@ interface MyDriverAvailabilityPanelProps {
     note: string,
   ) => void;
 
+  onMarkAllAvailable:
+    () => void;
+
   onSave:
     () => void;
 
@@ -202,6 +205,7 @@ function MyDriverAvailabilityPanel({
   lastSubmitResult,
   onSetDayStatus,
   onSetDayNote,
+  onMarkAllAvailable,
   onSave,
   onSubmit,
   onRefresh,
@@ -484,23 +488,54 @@ const isEditable =
           </div>
         </div>
 
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={
-            isSaving
-          }
-          onClick={
-            onRefresh
-          }
-        >
-          <RefreshCw
-            size={17}
-            aria-hidden="true"
-          />
+        <div className="availability-quick-actions">
+          {!isSubmitted ? (
+            <button
+              type="button"
+              className="availability-mark-all-button"
+              disabled={
+                !isEditable
+              }
+              onClick={() => {
+                const confirmed =
+                  window.confirm(
+                    'לסמן את כל ימי הכוננות כזמינים?\n\nהפעולה תשנה רק את הטיוטה במסך ולא תשמור או תגיש אותה.',
+                  );
 
-          רענון
-        </Button>
+                if (
+                  confirmed
+                ) {
+                  onMarkAllAvailable();
+                }
+              }}
+            >
+              <CheckCircle2
+                size={18}
+                aria-hidden="true"
+              />
+
+              סמן הכול כזמין
+            </button>
+          ) : null}
+
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={
+              isSaving
+            }
+            onClick={
+              onRefresh
+            }
+          >
+            <RefreshCw
+              size={17}
+              aria-hidden="true"
+            />
+
+            רענון
+          </Button>
+        </div>
       </header>
 
       <div className="my-driver-availability-period-info">

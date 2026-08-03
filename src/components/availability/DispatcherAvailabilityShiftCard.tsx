@@ -6,34 +6,51 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
+
 import type {
   DispatcherAvailabilityShift,
   DispatcherAvailabilityStatus,
 } from '../../types/dispatcherAvailability';
 
 interface DispatcherAvailabilityShiftCardProps {
-  shift: DispatcherAvailabilityShift;
-  isSaving: boolean;
-  isReadOnly: boolean;
+  shift:
+    DispatcherAvailabilityShift;
+
+  isSaving:
+    boolean;
+
+  isReadOnly:
+    boolean;
 
   onSelectStatus: (
-    shiftSlotId: string,
-    status: DispatcherAvailabilityStatus,
-  ) => Promise<void>;
+    shiftSlotId:
+      string,
+
+    status:
+      DispatcherAvailabilityStatus,
+  ) =>
+    void |
+    Promise<void>;
 }
 
 function formatShiftTime(
-  timeValue: string,
+  timeValue:
+    string,
 ): string {
-  return timeValue.slice(0, 5);
+  return timeValue.slice(
+    0,
+    5,
+  );
 }
 
 function formatDate(
-  dateValue: string,
+  dateValue:
+    string,
 ): string {
-  const date = new Date(
-    `${dateValue}T12:00:00`,
-  );
+  const date =
+    new Date(
+      `${dateValue}T12:00:00`,
+    );
 
   if (
     Number.isNaN(
@@ -46,11 +63,18 @@ function formatDate(
   return new Intl.DateTimeFormat(
     'he-IL',
     {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+      day:
+        '2-digit',
+
+      month:
+        '2-digit',
+
+      year:
+        'numeric',
     },
-  ).format(date);
+  ).format(
+    date,
+  );
 }
 
 function DispatcherAvailabilityShiftCard({
@@ -108,8 +132,12 @@ function DispatcherAvailabilityShiftCard({
           ? 'dispatcher-availability-shift-card-readonly'
           : '',
       ]
-        .filter(Boolean)
-        .join(' ')}
+        .filter(
+          Boolean,
+        )
+        .join(
+          ' ',
+        )}
     >
       <div className="dispatcher-availability-shift-main">
         <div className="dispatcher-availability-shift-date">
@@ -120,13 +148,18 @@ function DispatcherAvailabilityShiftCard({
           </strong>
 
           <span>
-            יום {shift.weekdayName}
+            יום{' '}
+            {
+              shift.weekdayName
+            }
           </span>
         </div>
 
         <div className="dispatcher-availability-shift-time">
           <Clock3
-            size={18}
+            size={
+              18
+            }
             aria-hidden="true"
           />
 
@@ -143,7 +176,9 @@ function DispatcherAvailabilityShiftCard({
           {shift.endsNextDay ? (
             <span title="המשמרת מסתיימת ביום הבא">
               <Moon
-                size={15}
+                size={
+                  15
+                }
                 aria-hidden="true"
               />
 
@@ -155,14 +190,18 @@ function DispatcherAvailabilityShiftCard({
         <div className="dispatcher-availability-shift-labels">
           {shift.holidayName ? (
             <span className="dispatcher-availability-holiday-badge">
-              {shift.holidayName}
+              {
+                shift.holidayName
+              }
             </span>
           ) : null}
 
           {shift.isPremium ? (
             <span className="dispatcher-availability-premium-badge">
               <Sparkles
-                size={14}
+                size={
+                  14
+                }
                 aria-hidden="true"
               />
 
@@ -177,19 +216,26 @@ function DispatcherAvailabilityShiftCard({
           type="button"
           className={[
             'dispatcher-availability-status-button',
+
             'dispatcher-availability-status-button-available',
 
             isAvailable
               ? 'dispatcher-availability-status-button-selected'
               : '',
           ]
-            .filter(Boolean)
-            .join(' ')}
+            .filter(
+              Boolean,
+            )
+            .join(
+              ' ',
+            )}
           disabled={
             isSaving ||
             isReadOnly
           }
-          aria-pressed={isAvailable}
+          aria-pressed={
+            isAvailable
+          }
           onClick={() => {
             void handleSelectStatus(
               'available',
@@ -198,13 +244,17 @@ function DispatcherAvailabilityShiftCard({
         >
           {isSaving ? (
             <LoaderCircle
-              size={18}
+              size={
+                18
+              }
               className="dispatcher-availability-loading-icon"
               aria-hidden="true"
             />
           ) : (
             <Check
-              size={18}
+              size={
+                18
+              }
               aria-hidden="true"
             />
           )}
@@ -216,19 +266,26 @@ function DispatcherAvailabilityShiftCard({
           type="button"
           className={[
             'dispatcher-availability-status-button',
+
             'dispatcher-availability-status-button-unavailable',
 
             isUnavailable
               ? 'dispatcher-availability-status-button-selected'
               : '',
           ]
-            .filter(Boolean)
-            .join(' ')}
+            .filter(
+              Boolean,
+            )
+            .join(
+              ' ',
+            )}
           disabled={
             isSaving ||
             isReadOnly
           }
-          aria-pressed={isUnavailable}
+          aria-pressed={
+            isUnavailable
+          }
           onClick={() => {
             void handleSelectStatus(
               'unavailable',
@@ -237,13 +294,17 @@ function DispatcherAvailabilityShiftCard({
         >
           {isSaving ? (
             <LoaderCircle
-              size={18}
+              size={
+                18
+              }
               className="dispatcher-availability-loading-icon"
               aria-hidden="true"
             />
           ) : (
             <X
-              size={18}
+              size={
+                18
+              }
               aria-hidden="true"
             />
           )}

@@ -2,17 +2,27 @@ import {
   CalendarCheck2,
   CheckCircle2,
   CircleDashed,
+  LockKeyhole,
   RefreshCw,
+  Save,
   Send,
-LockKeyhole,
   XCircle,
 } from 'lucide-react';
-import { Button } from '../ui';
-import { useDispatcherAvailability } from '../../hooks/useDispatcherAvailability';
+
+import {
+  Button,
+} from '../ui';
+
+import {
+  useDispatcherAvailability,
+} from '../../hooks/useDispatcherAvailability';
+
 import type {
   DispatcherAvailabilityStatus,
 } from '../../types/dispatcherAvailability';
-import DispatcherAvailabilityShiftCard from './DispatcherAvailabilityShiftCard';
+
+import DispatcherAvailabilityShiftCard
+  from './DispatcherAvailabilityShiftCard';
 
 const hebrewMonths = [
   'ינואר',
@@ -30,13 +40,19 @@ const hebrewMonths = [
 ];
 
 function formatDate(
-  value: string | null,
+  value:
+    string | null,
 ): string {
-  if (!value) {
+  if (
+    !value
+  ) {
     return 'לא הוגדר';
   }
 
-  const date = new Date(value);
+  const date =
+    new Date(
+      value,
+    );
 
   if (
     Number.isNaN(
@@ -49,44 +65,48 @@ function formatDate(
   return new Intl.DateTimeFormat(
     'he-IL',
     {
-      dateStyle: 'short',
-      timeStyle: 'short',
+      dateStyle:
+        'short',
+      timeStyle:
+        'short',
     },
-  ).format(date);
+  ).format(
+    date,
+  );
 }
 
 function DispatcherAvailabilityPanel() {
   const {
     state,
     statistics,
-    savingShiftId,
-    loadAvailability,
-    saveShiftAvailability,
+    isDirty,
+    isSavingDraft,
     isSubmitting,
     lastSubmitResult,
+    loadAvailability,
+    setShiftAvailability,
+    markAllAvailable,
+    saveAvailabilityDraft,
     submitAvailability,
-  } = useDispatcherAvailability();
+  } =
+    useDispatcherAvailability();
 
   const handleSelectStatus =
-    async (
-      shiftSlotId: string,
+    (
+      shiftSlotId:
+        string,
       status:
         DispatcherAvailabilityStatus,
-    ): Promise<void> => {
-      try {
-        await saveShiftAvailability(
-          shiftSlotId,
-          status,
-        );
-      } catch {
-        /*
-         * השגיאה נשמרת ומוצגת
-         * מתוך ה-Hook.
-         */
-      }
+    ): void => {
+      setShiftAvailability(
+        shiftSlotId,
+        status,
+      );
     };
 
-  if (state.isLoading) {
+  if (
+    state.isLoading
+  ) {
     return (
       <section className="dispatcher-availability-panel">
         <div className="dispatcher-availability-loading-state">
@@ -104,7 +124,10 @@ function DispatcherAvailabilityPanel() {
     );
   }
 
-  if (state.error && !state.data) {
+  if (
+    state.error &&
+    !state.data
+  ) {
     return (
       <section className="dispatcher-availability-panel">
         <div
@@ -112,8 +135,7 @@ function DispatcherAvailabilityPanel() {
           role="alert"
         >
           <strong>
-            לא ניתן היה לטעון את
-            האילוצים
+            לא ניתן היה לטעון את האילוצים
           </strong>
 
           <span>
@@ -139,7 +161,9 @@ function DispatcherAvailabilityPanel() {
     );
   }
 
-  if (!state.data) {
+  if (
+    !state.data
+  ) {
     return (
       <section className="dispatcher-availability-panel">
         <div className="dispatcher-availability-empty-state">
@@ -149,8 +173,7 @@ function DispatcherAvailabilityPanel() {
           />
 
           <strong>
-            אין כרגע תקופת אילוצים
-            פתוחה
+            אין כרגע תקופת אילוצים פתוחה
           </strong>
 
           <span>
@@ -166,45 +189,69 @@ function DispatcherAvailabilityPanel() {
     period,
     submission,
     shifts,
-  } = state.data;
-const isSubmitted =
-  submission.status ===
-  'submitted';
+  } =
+    state.data;
 
-const canSubmit =
-  !isSubmitted &&
-  statistics.total > 0 &&
-  statistics.unanswered === 0 &&
-  savingShiftId === null &&
-  !isSubmitting;
+  const isSubmitted =
+    submission.status ===
+    'submitted';
+
+  const canSubmit =
+    !isSubmitted &&
+    !isDirty &&
+    statistics.total >
+      0 &&
+    statistics.unanswered ===
+      0 &&
+    !isSavingDraft &&
+    !isSubmitting;
+
   const periodTitle =
     period.title ??
     `${hebrewMonths[
       period.month - 1
     ]} ${period.year}`;
-const handleSubmitAvailability =
-  async (): Promise<void> => {
-    if (!canSubmit) {
-      return;
-    }
 
-    const confirmed =
-      window.confirm(
-        'האם להגיש את האילוצים?\n\nלאחר ההגשה לא יהיה ניתן לשנות את הבחירות ללא פתיחה מחדש על ידי מנהל.',
-      );
+  const handleSubmitAvailability =
+    async (): Promise<void> => {
+      if (
+        !canSubmit
+      ) {
+        return;
+      }
 
-    if (!confirmed) {
-      return;
-    }
+      const confirmed =
+        window.confirm(
+          'האם להגיש את האילוצים?\n\nלאחר ההגשה לא יהיה ניתן לשנות את הבחירות ללא פתיחה מחדש על ידי מנהל.',
+        );
 
-    try {
-      await submitAvailability();
-    } catch {
-      /*
-       * השגיאה מוצגת מתוך ה-Hook.
-       */
-    }
-  };
+      if (
+        !confirmed
+      ) {
+        return;
+      }
+
+      try {
+        await submitAvailability();
+      } catch {
+        // השגיאה מוצגת מתוך ה-Hook.
+      }
+    };
+
+  const handleMarkAllAvailable =
+    (): void => {
+      const confirmed =
+        window.confirm(
+          'לסמן את כל המשמרות כזמינות?\n\nהפעולה תשנה רק את הטיוטה במסך ולא תשמור או תגיש אותה.',
+        );
+
+      if (
+        confirmed
+      ) {
+        markAllAvailable();
+      }
+    };
+
   return (
     <section className="dispatcher-availability-panel">
       <header className="dispatcher-availability-header">
@@ -223,24 +270,47 @@ const handleSubmitAvailability =
           </p>
         </div>
 
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={
-            state.isLoading ||
-            savingShiftId !== null
-          }
-          onClick={() => {
-            void loadAvailability();
-          }}
-        >
-          <RefreshCw
-            size={17}
-            aria-hidden="true"
-          />
+        <div className="availability-quick-actions">
+          {!isSubmitted ? (
+            <button
+              type="button"
+              className="availability-mark-all-button"
+              disabled={
+                isSavingDraft ||
+                isSubmitting
+              }
+              onClick={
+                handleMarkAllAvailable
+              }
+            >
+              <CheckCircle2
+                size={18}
+                aria-hidden="true"
+              />
 
-          רענון
-        </Button>
+              סמן הכול כזמין
+            </button>
+          ) : null}
+
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={
+              state.isLoading ||
+              isSavingDraft
+            }
+            onClick={() => {
+              void loadAvailability();
+            }}
+          >
+            <RefreshCw
+              size={17}
+              aria-hidden="true"
+            />
+
+            רענון
+          </Button>
+        </div>
       </header>
 
       {period.instructions ? (
@@ -367,11 +437,7 @@ const handleSubmitAvailability =
           </span>
 
           <strong>
-            {
-              statistics
-                .completionPercentage
-            }
-            %
+            {statistics.completionPercentage}%
           </strong>
         </div>
 
@@ -388,92 +454,128 @@ const handleSubmitAvailability =
 
       <div className="dispatcher-availability-shifts-list">
         {shifts.map(
-          (shift) => (
+          (
+            shift,
+          ) => (
             <DispatcherAvailabilityShiftCard
-              key={shift.id}
-              shift={shift}
-              isSaving={
-                savingShiftId ===
+              key={
                 shift.id
+              }
+              shift={
+                shift
+              }
+              isSaving={
+                false
               }
               onSelectStatus={
                 handleSelectStatus
               }
               isReadOnly={
                 isSubmitted ||
+                isSavingDraft ||
                 isSubmitting
               }
             />
           ),
         )}
       </div>
+
       <footer className="dispatcher-availability-submit-section">
-  {lastSubmitResult ||
-  isSubmitted ? (
-    <div
-      className="dispatcher-availability-submitted-message"
-      role="status"
-    >
-      <LockKeyhole
-        size={22}
-        aria-hidden="true"
-      />
+        {lastSubmitResult ||
+        isSubmitted ? (
+          <div
+            className="dispatcher-availability-submitted-message"
+            role="status"
+          >
+            <LockKeyhole
+              size={22}
+              aria-hidden="true"
+            />
 
-      <div>
-        <strong>
-          האילוצים הוגשו בהצלחה
-        </strong>
+            <div>
+              <strong>
+                האילוצים הוגשו בהצלחה
+              </strong>
 
-        <span>
-          ההגשה נעולה ולא ניתן
-          לשנות את הבחירות.
-        </span>
+              <span>
+                ההגשה נעולה ולא ניתן
+                לשנות את הבחירות.
+              </span>
 
-        {submission.submittedAt ? (
-          <small>
-            הוגש בתאריך{' '}
-            {formatDate(
-              submission.submittedAt,
-            )}
-          </small>
-        ) : null}
-      </div>
-    </div>
-  ) : (
-    <>
-      <div className="dispatcher-availability-submit-summary">
-        <strong>
-          {statistics.unanswered === 0
-            ? 'כל המשמרות סומנו'
-            : `נותרו ${statistics.unanswered} משמרות לסימון`}
-        </strong>
+              {submission.submittedAt ? (
+                <small>
+                  הוגש בתאריך{' '}
+                  {formatDate(
+                    submission.submittedAt,
+                  )}
+                </small>
+              ) : null}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="dispatcher-availability-submit-summary">
+              <strong>
+                {isDirty
+                  ? 'קיימים שינויים שטרם נשמרו'
+                  : statistics.unanswered ===
+                      0
+                    ? 'כל המשמרות סומנו'
+                    : `נותרו ${statistics.unanswered} משמרות לסימון`}
+              </strong>
 
-        <span>
-          לאחר ההגשה לא ניתן יהיה
-          לשנות את האילוצים ללא
-          פתיחה מחדש על ידי מנהל.
-        </span>
-      </div>
+              <span>
+                סימון הכול כזמין משנה
+                רק את הטיוטה. יש לשמור
+                לפני ההגשה.
+              </span>
+            </div>
 
-      <Button
-        type="button"
-        disabled={!canSubmit}
-        onClick={() => {
-          void handleSubmitAvailability();
-        }}
-      >
-        <Send
-          size={18}
-          aria-hidden="true"
-        />
+            <div className="availability-footer-actions">
+              <Button
+                type="button"
+                disabled={
+                  !isDirty ||
+                  isSavingDraft ||
+                  isSubmitting
+                }
+                onClick={() => {
+                  void saveAvailabilityDraft();
+                }}
+              >
+                <Save
+                  size={18}
+                  aria-hidden="true"
+                />
 
-        {isSubmitting
-          ? 'מגיש אילוצים...'
-          : 'הגש אילוצים'}
-      </Button>
-    </>
-  )}
-</footer>
+                {isSavingDraft
+                  ? 'שומר טיוטה...'
+                  : 'שמירת אילוצים'}
+              </Button>
+
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={
+                  !canSubmit
+                }
+                onClick={() => {
+                  void handleSubmitAvailability();
+                }}
+              >
+                <Send
+                  size={18}
+                  aria-hidden="true"
+                />
+
+                {isSubmitting
+                  ? 'מגיש אילוצים...'
+                  : 'הגש אילוצים'}
+              </Button>
+            </div>
+          </>
+        )}
+      </footer>
     </section>
   );
 }

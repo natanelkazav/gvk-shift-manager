@@ -5,6 +5,8 @@ import {
 
 import {
   driverAvailabilityService,
+  type DeleteDriverAvailabilityPeriodResponse,
+  type ReopenDriverAvailabilityPeriodResponse,
 } from '../services/driverAvailabilityService';
 
 import type {
@@ -26,7 +28,19 @@ interface DriverAvailabilityPeriodsState {
   openingPeriodId:
     string | null;
   closingPeriodId:
-  string | null;
+    string | null;
+
+  reopeningPeriodId:
+    string | null;
+
+  deletingPeriodId:
+    string | null;
+
+  lastReopenedResult:
+    ReopenDriverAvailabilityPeriodResponse | null;
+
+  lastDeletedResult:
+    DeleteDriverAvailabilityPeriodResponse | null;
 
 lastClosedResult:
   CloseDriverAvailabilityPeriodResponse | null;
@@ -59,6 +73,15 @@ interface UseDriverAvailabilityPeriodsResult {
 
   clearError:
     () => void;
+
+  reopenPeriod: (
+    periodId: string,
+  ) => Promise<ReopenDriverAvailabilityPeriodResponse>;
+
+  deletePeriod: (
+    periodId: string,
+  ) => Promise<DeleteDriverAvailabilityPeriodResponse>;
+
   closePeriod: (
   periodId: string,
   force?: boolean,
@@ -80,6 +103,18 @@ const initialState:
       null,
 
     closingPeriodId:
+      null,
+
+    reopeningPeriodId:
+      null,
+
+    deletingPeriodId:
+      null,
+
+    lastReopenedResult:
+      null,
+
+    lastDeletedResult:
       null,
 
     error: null,
@@ -231,6 +266,38 @@ function normalizeDriverAvailabilityError(
       ) {
         return 'לא התקבלה תשובה תקינה בעת סגירת חודש אילוצי הכוננים.';
       }
+
+    if (
+      normalizedMessage.includes(
+        'only closed driver availability periods can be reopened',
+      )
+    ) {
+      return 'ניתן לפתוח מחדש רק חודש אילוצים סגור.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'driver availability period already has a schedule',
+      )
+    ) {
+      return 'לא ניתן לבצע את הפעולה משום שכבר נוצר לוח כוננים מהחודש הזה.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'לא התקבלה תשובה בעת פתיחה מחדש של חודש אילוצי הכוננים',
+      )
+    ) {
+      return 'לא התקבלה תשובה תקינה בעת פתיחה מחדש של חודש האילוצים.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'לא התקבלה תשובה בעת מחיקת חודש אילוצי הכוננים',
+      )
+    ) {
+      return 'לא התקבלה תשובה תקינה בעת מחיקת חודש האילוצים.';
+    }
 
     return error.message;
   }
@@ -578,6 +645,170 @@ const closePeriod =
       [],
     );
 
+  const reopenPeriod =
+    useCallback(
+      async (
+        periodId: string,
+      ): Promise<ReopenDriverAvailabilityPeriodResponse> => {
+        const normalizedPeriodId =
+          periodId.trim();
+
+        if (!normalizedPeriodId) {
+          throw new Error(
+            'Driver availability period id is required.',
+          );
+        }
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            reopeningPeriodId:
+              normalizedPeriodId,
+
+            error:
+              null,
+
+            lastReopenedResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await driverAvailabilityService
+              .reopenPeriod(
+                normalizedPeriodId,
+              );
+
+          const periods =
+            await driverAvailabilityService
+              .getPeriods();
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              periods,
+
+              reopeningPeriodId:
+                null,
+
+              error:
+                null,
+
+              lastReopenedResult:
+                result,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          const normalizedError =
+            normalizeDriverAvailabilityError(
+              error,
+            );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              reopeningPeriodId:
+                null,
+
+              error:
+                normalizedError,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [],
+    );
+
+  const deletePeriod =
+    useCallback(
+      async (
+        periodId: string,
+      ): Promise<DeleteDriverAvailabilityPeriodResponse> => {
+        const normalizedPeriodId =
+          periodId.trim();
+
+        if (!normalizedPeriodId) {
+          throw new Error(
+            'Driver availability period id is required.',
+          );
+        }
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            deletingPeriodId:
+              normalizedPeriodId,
+
+            error:
+              null,
+
+            lastDeletedResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await driverAvailabilityService
+              .deletePeriod(
+                normalizedPeriodId,
+              );
+
+          const periods =
+            await driverAvailabilityService
+              .getPeriods();
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              periods,
+
+              deletingPeriodId:
+                null,
+
+              error:
+                null,
+
+              lastDeletedResult:
+                result,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          const normalizedError =
+            normalizeDriverAvailabilityError(
+              error,
+            );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              deletingPeriodId:
+                null,
+
+              error:
+                normalizedError,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [],
+    );
+
   const clearError =
     useCallback(
       (): void => {
@@ -612,6 +843,8 @@ const closePeriod =
 
     openPeriod,
     closePeriod,
+    reopenPeriod,
+    deletePeriod,
 
     clearError,
 
