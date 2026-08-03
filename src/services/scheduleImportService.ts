@@ -29,11 +29,20 @@ interface ParsedScheduleSheet {
   headerRowIndex: number;
   rows: RawWorksheetRow[];
 }
-type ParsedSchedulePreview =
-  Omit<
-    ScheduleImportPreview,
-    'periodType'
-  >;
+
+interface ExpectedImportPeriod {
+  year: number;
+  month: number;
+  source:
+    | 'file_name'
+    | 'dominant_dates';
+}
+
+interface ParsedImportDate {
+  dateKey: string | null;
+  wasCorrected: boolean;
+}
+
 const MAX_FILE_SIZE_BYTES =
   15 * 1024 * 1024;
 
@@ -51,6 +60,22 @@ const COLUMN_INDEX = {
   driverName: 6,
   note: 7,
 } as const;
+
+const HEBREW_MONTH_NUMBERS:
+  Readonly<Record<string, number>> = {
+    ינואר: 1,
+    פברואר: 2,
+    מרץ: 3,
+    אפריל: 4,
+    מאי: 5,
+    יוני: 6,
+    יולי: 7,
+    אוגוסט: 8,
+    ספטמבר: 9,
+    אוקטובר: 10,
+    נובמבר: 11,
+    דצמבר: 12,
+  };
 
 function normalizeText(
   value: RawCellValue,
@@ -212,6 +237,314 @@ function parseExcelDate(
   }
 
   return null;
+}
+
+
+function parseYearFromFileName(
+  value: string,
+): number | null {
+  const numericYear =
+    Number(value);
+
+  if (
+    !Number.isInteger(
+      numericYear,
+    )
+  ) {
+    return null;
+  }
+
+  if (
+    numericYear >= 2000 &&
+    numericYear <= 2100
+  ) {
+    return numericYear;
+  }
+
+  if (
+    numericYear >= 0 &&
+    numericYear <= 99
+  ) {
+    return 2000 +
+      numericYear;
+  }
+
+  return null;
+}
+
+function detectPeriodFromFileName(
+  fileName: string,
+): ExpectedImportPeriod | null {
+  const normalizedFileName =
+    normalizeText(
+      fileName,
+    )
+      .replace(
+        /[_-]+/g,
+        ' ',
+      );
+
+  for (
+    const [
+      monthName,
+      monthNumber,
+    ] of Object.entries(
+      HEBREW_MONTH_NUMBERS,
+    )
+  ) {
+    const monthPattern =
+      new RegExp(
+        `${monthName}\\s+(\\d{2}|\\d{4})(?:\\D|$)`,
+        'i',
+      );
+
+    const match =
+      normalizedFileName.match(
+        monthPattern,
+      );
+
+    if (!match) {
+      continue;
+    }
+
+    const year =
+      parseYearFromFileName(
+        match[1],
+      );
+
+    if (!year) {
+      continue;
+    }
+
+    return {
+      year,
+      month:
+        monthNumber,
+      source:
+        'file_name',
+    };
+  }
+
+  const numericMatch =
+    normalizedFileName.match(
+      /(?:^|\D)(0?[1-9]|1[0-2])[\s./-]+(\d{2}|\d{4})(?:\D|$)/,
+    );
+
+  if (!numericMatch) {
+    return null;
+  }
+
+  const year =
+    parseYearFromFileName(
+      numericMatch[2],
+    );
+
+  if (!year) {
+    return null;
+  }
+
+  return {
+    year,
+    month:
+      Number(
+        numericMatch[1],
+      ),
+    source:
+      'file_name',
+  };
+}
+
+function detectDominantPeriod(
+  parsedSheet:
+    ParsedScheduleSheet,
+): ExpectedImportPeriod | null {
+  const periodCounts =
+    new Map<string, number>();
+
+  const dataRows =
+    parsedSheet.rows.slice(
+      parsedSheet.headerRowIndex +
+        1,
+    );
+
+  dataRows.forEach(
+    (row) => {
+      const parsedDate =
+        parseExcelDate(
+          row[
+            COLUMN_INDEX.date
+          ],
+        );
+
+      if (!parsedDate) {
+        return;
+      }
+
+      const {
+        year,
+        month,
+      } =
+        getYearAndMonth(
+          parsedDate,
+        );
+
+      const periodKey =
+        `${year}-${padNumber(month)}`;
+
+      periodCounts.set(
+        periodKey,
+        (
+          periodCounts.get(
+            periodKey,
+          ) ?? 0
+        ) + 1,
+      );
+    },
+  );
+
+  const dominantEntry =
+    Array.from(
+      periodCounts.entries(),
+    ).sort(
+      (
+        firstEntry,
+        secondEntry,
+      ) =>
+        secondEntry[1] -
+        firstEntry[1],
+    )[0];
+
+  if (!dominantEntry) {
+    return null;
+  }
+
+  const [
+    yearText,
+    monthText,
+  ] =
+    dominantEntry[0].split(
+      '-',
+    );
+
+  return {
+    year:
+      Number(yearText),
+    month:
+      Number(monthText),
+    source:
+      'dominant_dates',
+  };
+}
+
+function detectExpectedImportPeriod(
+  parsedSheet:
+    ParsedScheduleSheet,
+  fileName: string,
+): ExpectedImportPeriod | null {
+  return (
+    detectPeriodFromFileName(
+      fileName,
+    ) ??
+    detectDominantPeriod(
+      parsedSheet,
+    )
+  );
+}
+
+function parseImportDate(
+  value: RawCellValue,
+  expectedPeriod:
+    ExpectedImportPeriod | null,
+): ParsedImportDate {
+  const parsedDate =
+    parseExcelDate(
+      value,
+    );
+
+  if (
+    !parsedDate ||
+    !expectedPeriod
+  ) {
+    return {
+      dateKey:
+        parsedDate,
+      wasCorrected:
+        false,
+    };
+  }
+
+  const [
+    yearText,
+    monthText,
+    dayText,
+  ] =
+    parsedDate.split(
+      '-',
+    );
+
+  const year =
+    Number(yearText);
+
+  const month =
+    Number(monthText);
+
+  const day =
+    Number(dayText);
+
+  const isExcelDateCell =
+    value instanceof Date ||
+    (
+      typeof value ===
+        'number' &&
+      Number.isFinite(
+        value,
+      )
+    );
+
+  const looksLikeSwappedIsraeliDate =
+    isExcelDateCell &&
+    year ===
+      expectedPeriod.year &&
+    month !==
+      expectedPeriod.month &&
+    day ===
+      expectedPeriod.month &&
+    month >= 1 &&
+    month <= 12;
+
+  if (
+    !looksLikeSwappedIsraeliDate
+  ) {
+    return {
+      dateKey:
+        parsedDate,
+      wasCorrected:
+        false,
+    };
+  }
+
+  const correctedDate =
+    formatDateKey(
+      expectedPeriod.year,
+      expectedPeriod.month,
+      month,
+    );
+
+  if (!correctedDate) {
+    return {
+      dateKey:
+        parsedDate,
+      wasCorrected:
+        false,
+    };
+  }
+
+  return {
+    dateKey:
+      correctedDate,
+    wasCorrected:
+      true,
+  };
 }
 
 function normalizeTime(
@@ -508,7 +841,12 @@ function createDispatcherShiftKey(
 function parseScheduleRows(
   parsedSheet:
     ParsedScheduleSheet,
-): ParsedSchedulePreview {
+  expectedPeriod:
+    ExpectedImportPeriod | null,
+): Omit<
+  ScheduleImportPreview,
+  'periodType'
+> {
   const dispatcherShifts:
     ImportedDispatcherShift[] =
     [];
@@ -529,6 +867,8 @@ function parseScheduleRows(
     new Set<string>();
 
   let skippedRows = 0;
+
+  let correctedDateCount = 0;
 
   let currentDate:
     string | null =
@@ -557,12 +897,23 @@ function parseScheduleRows(
         relativeRowIndex +
         2;
 
-      const parsedDate =
-        parseExcelDate(
+      const parsedImportDate =
+        parseImportDate(
           row[
             COLUMN_INDEX.date
           ],
+          expectedPeriod,
         );
+
+      const parsedDate =
+        parsedImportDate.dateKey;
+
+      if (
+        parsedImportDate
+          .wasCorrected
+      ) {
+        correctedDateCount += 1;
+      }
 
       if (parsedDate) {
         currentDate =
@@ -762,6 +1113,15 @@ function parseScheduleRows(
     );
   }
 
+  if (
+    correctedDateCount > 0 &&
+    expectedPeriod
+  ) {
+    warnings.push(
+      `תוקנו אוטומטית ${correctedDateCount} תאריכים ש-Excel פירש בפורמט אמריקאי. החודש זוהה כ-${padNumber(expectedPeriod.month)}/${expectedPeriod.year}.`,
+    );
+  }
+
   const sortedPeriods =
     Array.from(
       detectedPeriods,
@@ -930,9 +1290,16 @@ async function analyzeScheduleWorkbook(
       workbook,
     );
 
+  const expectedPeriod =
+    detectExpectedImportPeriod(
+      parsedSheet,
+      file.name,
+    );
+
   const parsedPreview =
     parseScheduleRows(
       parsedSheet,
+      expectedPeriod,
     );
 
   return {

@@ -1086,6 +1086,31 @@ const handlePreviewImport =
         } =
           buildResolvedImportData();
 
+        console.info(
+          'Starting schedule import execution',
+          {
+            fileName:
+              selectedFile.name,
+
+            year:
+              preview.year,
+
+            month:
+              preview.month,
+
+            periodType:
+              preview.periodType,
+
+            importStrategy,
+
+            dispatcherShiftCount:
+              dispatcherShifts.length,
+
+            driverDutyCount:
+              driverDuties.length,
+          },
+        );
+
         const result =
           await scheduleImportExecutionService
             .executeImport({
@@ -1113,6 +1138,11 @@ const handlePreviewImport =
               warnings:
                 preview.warnings,
             });
+
+        console.info(
+          'Schedule import completed',
+          result,
+        );
 
         setExecutionResult(
           result,
@@ -2794,6 +2824,29 @@ const handlePreviewImport =
                   נכונים לפני האישור.
                 </span>
               </div>
+
+              {executionError ? (
+                <div
+                  className="schedule-import-error"
+                  role="alert"
+                  aria-live="assertive"
+                >
+                  <AlertTriangle
+                    size={19}
+                    aria-hidden="true"
+                  />
+
+                  <div>
+                    <strong>
+                      ביצוע הייבוא נכשל
+                    </strong>
+
+                    <span>
+                      {executionError}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <footer>

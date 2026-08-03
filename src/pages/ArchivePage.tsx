@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 
 import {
-  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -112,28 +111,36 @@ function ArchivePage() {
       null,
     );
 
-  const loadArchive =
-    useCallback(
-      async (): Promise<void> => {
-        setIsLoading(
-          true,
-        );
+  useEffect(
+    () => {
+      let isCancelled =
+        false;
 
-        setError(
-          null,
-        );
-
+      async function loadInitialArchive():
+        Promise<void> {
         try {
           const response =
             await archiveService
               .getPeriods();
 
+          if (isCancelled) {
+            return;
+          }
+
           setPeriods(
             response.periods,
+          );
+
+          setError(
+            null,
           );
         } catch (
           loadError
         ) {
+          if (isCancelled) {
+            return;
+          }
+
           setError(
             loadError instanceof
               Error
@@ -141,22 +148,63 @@ function ArchivePage() {
               : 'לא ניתן היה לטעון את הארכיון.',
           );
         } finally {
-          setIsLoading(
-            false,
-          );
+          if (
+            !isCancelled
+          ) {
+            setIsLoading(
+              false,
+            );
+          }
         }
-      },
-      [],
-    );
+      }
 
-  useEffect(
-    () => {
-      void loadArchive();
+      void loadInitialArchive();
+
+      return () => {
+        isCancelled =
+          true;
+      };
     },
-    [
-      loadArchive,
-    ],
+    [],
   );
+
+  const handleRefresh =
+    async (): Promise<void> => {
+      if (isLoading) {
+        return;
+      }
+
+      setIsLoading(
+        true,
+      );
+
+      setError(
+        null,
+      );
+
+      try {
+        const response =
+          await archiveService
+            .getPeriods();
+
+        setPeriods(
+          response.periods,
+        );
+      } catch (
+        loadError
+      ) {
+        setError(
+          loadError instanceof
+            Error
+            ? loadError.message
+            : 'לא ניתן היה לטעון את הארכיון.',
+        );
+      } finally {
+        setIsLoading(
+          false,
+        );
+      }
+    };
 
   const years =
     useMemo(
@@ -213,7 +261,7 @@ function ArchivePage() {
             isLoading
           }
           onClick={() => {
-            void loadArchive();
+            void handleRefresh();
           }}
         >
           <RefreshCw
