@@ -612,3 +612,234 @@
   font-size: 0.72rem;
   line-height: 1.5;
 }
+.schedule-display-mode {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.schedule-calendar-view {
+  min-width: 0;
+}
+
+.schedule-calendar-assignments {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.schedule-calendar-assignment {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 8px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 9px;
+  background: var(--color-white);
+  text-align: right;
+}
+
+.schedule-calendar-assignment strong {
+  color: var(--color-gray-900);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.schedule-calendar-assignment span,
+.schedule-calendar-assignment small {
+  overflow: hidden;
+  color: var(--color-gray-600);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-calendar-assignment em {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 3px;
+  color: #92400e;
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.schedule-calendar-assignment-current {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.schedule-calendar-assignment-premium {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.schedule-calendar-day-with-shift {
+  background: #f8fafc;
+}
+
+.schedule-calendar-day-current {
+  box-shadow:
+    inset 0 0 0 2px #22c55e;
+}
+
+.schedule-calendar-day-next {
+  box-shadow:
+    inset 0 0 0 2px
+    var(--color-primary-500);
+}
+
+.schedule-calendar-day-current.schedule-calendar-day-next {
+  box-shadow:
+    inset 0 0 0 2px #22c55e,
+    inset 0 0 0 5px
+    rgb(59 130 246 / 18%);
+}
+
+.schedule-calendar-day-premium {
+  background: #fffdf5;
+}
+
+@media (max-width: 760px) {
+  .schedule-display-mode {
+    display: grid;
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+
+  .schedule-display-mode > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .schedule-calendar-assignment {
+    padding: 5px;
+  }
+
+  .schedule-calendar-assignment span,
+  .schedule-calendar-assignment small {
+    display: none;
+  }
+
+  .schedule-calendar-assignment strong {
+    font-size: 0.66rem;
+  }
+}
+.schedule-day-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  border: 0;
+  background: rgb(15 23 42 / 48%);
+  backdrop-filter: blur(2px);
+}
+
+.schedule-day-drawer {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 81;
+  display: flex;
+  width: min(440px, 92vw);
+  flex-direction: column;
+  background: var(--color-white);
+  box-shadow: -18px 0 50px rgb(15 23 42 / 18%);
+  animation:
+    schedule-drawer-enter
+    180ms
+    ease-out;
+}
+
+.schedule-day-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.schedule-day-drawer-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.schedule-day-drawer-header span {
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+}
+
+.schedule-day-drawer-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.schedule-day-drawer-close {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 10px;
+  background: var(--color-white);
+  color: var(--color-gray-700);
+}
+
+.schedule-day-drawer-close:hover {
+  background: var(--color-gray-100);
+}
+
+.schedule-day-drawer-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+@keyframes schedule-drawer-enter {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .schedule-day-drawer {
+    inset-block-start: auto;
+    width: 100%;
+    max-height: 82vh;
+    border-radius: 18px 18px 0 0;
+    animation:
+      schedule-drawer-enter-mobile
+      180ms
+      ease-out;
+  }
+
+  @keyframes schedule-drawer-enter-mobile {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}

@@ -2,29 +2,39 @@ import {
   useEffect,
   useState,
 } from 'react';
+
 import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
-import {
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  PageHeader,
-  StatCard,
-} from '../components/ui';
+
+import DashboardLayout
+  from '../components/dashboard/DashboardLayout';
+
+import DispatcherDashboard
+  from '../components/dashboard/DispatcherDashboard';
+
+import DriverDashboard
+  from '../components/dashboard/DriverDashboard';
+
+import ManagerDashboard
+  from '../components/dashboard/ManagerDashboard';
+
+import '../styles/dashboard.css';
 
 interface DashboardLocationState {
   accessDenied?: boolean;
-  attemptedPath?: string;
+
+  attemptedPath?:
+    string;
 }
 
 function DashboardPage() {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location =
+    useLocation();
+
+  const navigate =
+    useNavigate();
 
   const locationState =
     location.state as
@@ -34,52 +44,50 @@ function DashboardPage() {
   const [
     accessDeniedMessage,
     setAccessDeniedMessage,
-  ] = useState<string | null>(
-    locationState?.accessDenied
-      ? 'אין לך הרשאה לגשת למסך זה.'
-      : null,
+  ] =
+    useState<string | null>(
+      locationState
+        ?.accessDenied
+        ? 'אין לך הרשאה לגשת למסך זה.'
+        : null,
+    );
+
+  useEffect(
+    () => {
+      if (
+        !locationState
+          ?.accessDenied
+      ) {
+        return;
+      }
+
+      navigate(
+        location.pathname,
+        {
+          replace: true,
+          state: null,
+        },
+      );
+    },
+    [
+      location.pathname,
+      locationState
+        ?.accessDenied,
+      navigate,
+    ],
   );
-
-  useEffect(() => {
-    if (!locationState?.accessDenied) {
-      return;
-    }
-
-    navigate(location.pathname, {
-      replace: true,
-      state: null,
-    });
-  }, [
-    location.pathname,
-    locationState?.accessDenied,
-    navigate,
-  ]);
 
   return (
     <>
-      <PageHeader
-        title="לוח בקרה"
-        description="תמונת מצב כללית של מערכת המשמרות."
-        actions={
-          <>
-            <Button variant="secondary">
-              צפייה בשיבוץ
-            </Button>
-
-            <Button>
-              יצירת שיבוץ
-            </Button>
-          </>
-        }
-      />
-
       {accessDeniedMessage ? (
         <div
-          className="users-error"
+          className="dashboard-error"
           role="alert"
         >
           <span>
-            {accessDeniedMessage}
+            {
+              accessDeniedMessage
+            }
           </span>
 
           <button
@@ -96,45 +104,58 @@ function DashboardPage() {
         </div>
       ) : null}
 
-      <div className="stats-grid">
-        <StatCard
-          label="משמרות החודש"
-          value={0}
-        />
+      <DashboardLayout>
+        {(
+          dashboard,
+        ) => {
+          if (
+            dashboard.manager
+          ) {
+            return (
+              <ManagerDashboard
+                data={
+                  dashboard.manager
+                }
+              />
+            );
+          }
 
-        <StatCard
-          label="מוקדנים פעילים"
-          value={0}
-        />
+          if (
+            dashboard.dispatcher
+          ) {
+            return (
+              <DispatcherDashboard
+                data={
+                  dashboard.dispatcher
+                }
+              />
+            );
+          }
 
-        <StatCard
-          label="בקשות החלפה"
-          value={0}
-        />
+          if (
+            dashboard.driver
+          ) {
+            return (
+              <DriverDashboard
+                data={
+                  dashboard.driver
+                }
+              />
+            );
+          }
 
-        <StatCard
-          label="התראות פעילות"
-          value={0}
-        />
-      </div>
-
-      <Card className="dashboard-activity-card">
-        <CardHeader>
-          <CardTitle>
-            פעילות אחרונה
-          </CardTitle>
-        </CardHeader>
-
-        <CardBody>
-          <p>
-            עדיין אין פעילות להצגה.
-          </p>
-
-          <Badge>
-            המערכת בהקמה
-          </Badge>
-        </CardBody>
-      </Card>
+          return (
+            <section className="dashboard-card">
+              <div className="dashboard-card-body">
+                <p className="dashboard-empty-text">
+                  אין מידע להצגה עבור
+                  המשתמש הנוכחי.
+                </p>
+              </div>
+            </section>
+          );
+        }}
+      </DashboardLayout>
     </>
   );
 }

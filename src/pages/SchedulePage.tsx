@@ -1,6 +1,7 @@
 import {
   CalendarDays,
   CheckCircle2,
+  LayoutList,
   Clock3,
   Crown,
   RefreshCw,
@@ -8,6 +9,7 @@ import {
   Sparkles,
   UserRound,
   Users,
+  X,
 } from 'lucide-react';
 
 import {
@@ -21,6 +23,13 @@ import {
   PageHeader,
 } from '../components/ui';
 
+import MonthCalendar
+  from '../components/calendar/MonthCalendar';
+
+import {
+  useAuth,
+} from '../auth/AuthContext';
+
 import {
   useSchedule,
 } from '../hooks/useSchedule';
@@ -32,6 +41,10 @@ import type {
 } from '../types/schedule';
 
 import '../styles/schedule.css';
+
+type ScheduleDisplayMode =
+  | 'calendar'
+  | 'list';
 
 const hebrewMonths = [
   'ינואר',
@@ -326,6 +339,67 @@ function groupShiftsByDate(
             secondGroup.date,
           ),
     );
+}
+
+function createShiftsByDateMap(
+  shifts:
+    ScheduleShift[],
+): Map<
+  string,
+  ScheduleShift[]
+> {
+  const shiftsByDate =
+    new Map<
+      string,
+      ScheduleShift[]
+    >();
+
+  for (
+    const shift
+    of shifts
+  ) {
+    const existingShifts =
+      shiftsByDate.get(
+        shift.shiftDate,
+      ) ?? [];
+
+    existingShifts.push(
+      shift,
+    );
+
+    shiftsByDate.set(
+      shift.shiftDate,
+      existingShifts,
+    );
+  }
+
+  for (
+    const [
+      date,
+      dateShifts,
+    ]
+    of shiftsByDate
+  ) {
+    shiftsByDate.set(
+      date,
+      [
+        ...dateShifts,
+      ].sort(
+        (
+          firstShift,
+          secondShift,
+        ) =>
+          new Date(
+            firstShift.startsAt,
+          ).getTime() -
+          new Date(
+            secondShift.startsAt,
+          ).getTime(),
+      ),
+    );
+  }
+
+  return shiftsByDate;
 }
 
 function MonthlyProgressCard({
@@ -669,6 +743,11 @@ function ScheduleShiftCard({
 
 function SchedulePage() {
   const {
+    profile,
+  } =
+    useAuth();
+
+  const {
     state,
     loadCurrentSchedule,
     publishSchedulePeriod,
@@ -685,8 +764,24 @@ function SchedulePage() {
     );
 
   const [
+    displayMode,
+    setDisplayMode,
+  ] =
+    useState<ScheduleDisplayMode>(
+      'calendar',
+    );
+
+  const [
     selectedUserId,
     setSelectedUserId,
+  ] =
+    useState<
+      string | null
+    >(null);
+
+  const [
+    selectedCalendarDate,
+    setSelectedCalendarDate,
   ] =
     useState<
       string | null
@@ -729,6 +824,15 @@ function SchedulePage() {
 
   const currentSchedule =
     state.currentSchedule;
+
+  const isDispatcher =
+    profile?.role ===
+    'dispatcher';
+
+  const pageTitle =
+    isDispatcher
+      ? 'השיבוצים שלי'
+      : 'שיבוץ מוקדנים';
 
   const selectedDispatcherStatistics =
     useMemo(
@@ -832,6 +936,38 @@ function SchedulePage() {
       ],
     );
 
+  const shiftsByDate =
+    useMemo(
+      () =>
+        createShiftsByDateMap(
+          displayedShifts,
+        ),
+      [
+        displayedShifts,
+      ],
+    );
+
+  const selectedCalendarDateShifts =
+    useMemo(
+      () => {
+        if (
+          !selectedCalendarDate
+        ) {
+          return [];
+        }
+
+        return (
+          shiftsByDate.get(
+            selectedCalendarDate,
+          ) ?? []
+        );
+      },
+      [
+        selectedCalendarDate,
+        shiftsByDate,
+      ],
+    );
+
   const nextShift =
     useMemo(
       () =>
@@ -842,6 +978,46 @@ function SchedulePage() {
         displayedShifts,
       ],
     );
+
+  useEffect(
+    () => {
+      if (
+        !selectedCalendarDate
+      ) {
+        return;
+      }
+
+      const handleKeyDown =
+        (
+          event:
+            KeyboardEvent,
+        ): void => {
+          if (
+            event.key ===
+            'Escape'
+          ) {
+            setSelectedCalendarDate(
+              null,
+            );
+          }
+        };
+
+      window.addEventListener(
+        'keydown',
+        handleKeyDown,
+      );
+
+      return () => {
+        window.removeEventListener(
+          'keydown',
+          handleKeyDown,
+        );
+      };
+    },
+    [
+      selectedCalendarDate,
+    ],
+  );
 
   const handlePublishSchedule =
     async (): Promise<void> => {
@@ -902,7 +1078,7 @@ function SchedulePage() {
     return (
       <section className="schedule-page">
         <PageHeader
-          title="שיבוץ מוקדנים"
+          title={pageTitle}
           description="טוען את שיבוץ החודש הנוכחי."
         />
 
@@ -928,7 +1104,7 @@ function SchedulePage() {
     return (
       <section className="schedule-page">
         <PageHeader
-          title="שיבוץ מוקדנים"
+          title={pageTitle}
           description="צפייה בשיבוץ החודש הנוכחי."
         />
 
@@ -970,7 +1146,7 @@ function SchedulePage() {
     return (
       <section className="schedule-page">
         <PageHeader
-          title="שיבוץ מוקדנים"
+          title={pageTitle}
           description="צפייה בשיבוץ החודש הנוכחי."
           actions={
             <Button
@@ -1039,7 +1215,7 @@ function SchedulePage() {
     return (
       <section className="schedule-page">
         <PageHeader
-          title="שיבוץ מוקדנים"
+          title={pageTitle}
           description={
             periodTitle
           }
@@ -1094,7 +1270,7 @@ const canPublishSchedule =
   return (
     <section className="schedule-page">
       <PageHeader
-        title="שיבוץ מוקדנים"
+        title={pageTitle}
         description={
           periodTitle
         }
@@ -1210,6 +1386,56 @@ const canPublishSchedule =
             ]
           }
         </span>
+      </div>
+
+      <div
+        className="schedule-display-mode"
+        role="group"
+        aria-label="בחירת תצוגת שיבוץ"
+      >
+        <Button
+          type="button"
+          variant={
+            displayMode ===
+            'calendar'
+              ? 'primary'
+              : 'secondary'
+          }
+          onClick={() => {
+            setDisplayMode(
+              'calendar',
+            );
+          }}
+        >
+          <CalendarDays
+            size={17}
+            aria-hidden="true"
+          />
+
+          לוח שנה
+        </Button>
+
+        <Button
+          type="button"
+          variant={
+            displayMode ===
+            'list'
+              ? 'primary'
+              : 'secondary'
+          }
+          onClick={() => {
+            setDisplayMode(
+              'list',
+            );
+          }}
+        >
+          <LayoutList
+            size={17}
+            aria-hidden="true"
+          />
+
+          רשימה
+        </Button>
       </div>
 
       {currentSchedule
@@ -1476,7 +1702,10 @@ const canPublishSchedule =
         <div className="schedule-month-section-header">
           <div>
             <h2>
-              משמרות החודש
+              {displayMode ===
+              'calendar'
+                ? 'לוח המשמרות'
+                : 'משמרות החודש'}
             </h2>
 
             <p>
@@ -1490,8 +1719,184 @@ const canPublishSchedule =
           </div>
         </div>
 
-        {groupedShifts.length ===
-        0 ? (
+        {displayMode ===
+        'calendar' ? (
+          <div className="schedule-calendar-view">
+            <MonthCalendar
+              year={
+                currentSchedule
+                  .period
+                  .year
+              }
+              month={
+                currentSchedule
+                  .period
+                  .month
+              }
+              getDayClassName={(
+                context,
+              ) => {
+                const dayShifts =
+                  shiftsByDate.get(
+                    context.date,
+                  ) ?? [];
+
+                if (
+                  dayShifts.length ===
+                  0
+                ) {
+                  return null;
+                }
+
+                const classNames:
+                  string[] = [
+                    'schedule-calendar-day-with-shift',
+                  ];
+
+                if (
+                  dayShifts.some(
+                    (shift) =>
+                      shift.progressState ===
+                      'current',
+                  )
+                ) {
+                  classNames.push(
+                    'schedule-calendar-day-current',
+                  );
+                }
+
+                if (
+                  nextShift &&
+                  nextShift.shiftDate ===
+                    context.date
+                ) {
+                  classNames.push(
+                    'schedule-calendar-day-next',
+                  );
+                }
+
+                if (
+                  dayShifts.some(
+                    (shift) =>
+                      shift.isPremium,
+                  )
+                ) {
+                  classNames.push(
+                    'schedule-calendar-day-premium',
+                  );
+                }
+
+                return classNames.join(
+                  ' ',
+                );
+              }}
+              renderDayContent={(
+                context,
+              ) => {
+                const dayShifts =
+                  shiftsByDate.get(
+                    context.date,
+                  ) ?? [];
+
+                if (
+                  dayShifts.length ===
+                  0
+                ) {
+                  return null;
+                }
+
+                return (
+                  <div className="schedule-calendar-assignments">
+                    {dayShifts.map(
+                      (shift) => (
+                        <div
+                          key={
+                            shift.id
+                          }
+                          className={[
+                            'schedule-calendar-assignment',
+
+                            `schedule-calendar-assignment-${shift.progressState}`,
+
+                            shift.isPremium
+                              ? 'schedule-calendar-assignment-premium'
+                              : '',
+                          ]
+                            .filter(
+                              Boolean,
+                            )
+                            .join(
+                              ' ',
+                            )}
+                        >
+                          <strong dir="ltr">
+                            {
+                              getShiftTimeLabel(
+                                shift,
+                              )
+                            }
+                          </strong>
+
+                          <span>
+                            {
+                              getShiftTypeLabel(
+                                shift,
+                              )
+                            }
+                          </span>
+
+                          {viewMode ===
+                          'team' ? (
+                            <small>
+                              {shift
+                                .assignedUser
+                                ?.scheduleName ??
+                                shift
+                                  .assignedUser
+                                  ?.displayName ??
+                                'ללא שיבוץ'}
+                            </small>
+                          ) : null}
+
+                          {shift.isPremium ? (
+                            <em>
+                              <Sparkles
+                                size={12}
+                                aria-hidden="true"
+                              />
+
+                              200%
+                            </em>
+                          ) : null}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                );
+              }}
+              onDayClick={(
+                context,
+              ) => {
+                const dayShifts =
+                  shiftsByDate.get(
+                    context.date,
+                  ) ?? [];
+
+                if (
+                  dayShifts.length ===
+                  0
+                ) {
+                  return;
+                }
+
+                setSelectedCalendarDate(
+                  context.date,
+                );
+              }}
+            />
+          </div>
+        ) : groupedShifts.length ===
+          0 ? (
           <div className="schedule-empty-state schedule-empty-state-compact">
             <CalendarDays
               size={29}
@@ -1559,6 +1964,91 @@ const canPublishSchedule =
           </div>
         )}
       </section>
+
+      {selectedCalendarDate ? (
+        <>
+          <button
+            type="button"
+            className="schedule-day-drawer-backdrop"
+            aria-label="סגירת פרטי היום"
+            onClick={() => {
+              setSelectedCalendarDate(
+                null,
+              );
+            }}
+          />
+
+          <aside
+            className="schedule-day-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="schedule-day-drawer-title"
+          >
+            <header className="schedule-day-drawer-header">
+              <div>
+                <span>
+                  פרטי משמרות
+                </span>
+
+                <h2 id="schedule-day-drawer-title">
+                  {formatDate(
+                    selectedCalendarDate,
+                  )}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className="schedule-day-drawer-close"
+                aria-label="סגירת פרטי היום"
+                onClick={() => {
+                  setSelectedCalendarDate(
+                    null,
+                  );
+                }}
+              >
+                <X
+                  size={22}
+                  aria-hidden="true"
+                />
+              </button>
+            </header>
+
+            <div className="schedule-day-drawer-content">
+              {selectedCalendarDateShifts.length >
+              0 ? (
+                selectedCalendarDateShifts.map(
+                  (shift) => (
+                    <ScheduleShiftCard
+                      key={
+                        shift.id
+                      }
+                      shift={
+                        shift
+                      }
+                      showAssignedUser={
+                        viewMode ===
+                        'team'
+                      }
+                    />
+                  ),
+                )
+              ) : (
+                <div className="schedule-empty-state schedule-empty-state-compact">
+                  <CalendarDays
+                    size={29}
+                    aria-hidden="true"
+                  />
+
+                  <strong>
+                    אין משמרות ביום זה
+                  </strong>
+                </div>
+              )}
+            </div>
+          </aside>
+        </>
+      ) : null}
 
       {selectedDispatcherStatistics ? (
         <div className="schedule-hours-summary">

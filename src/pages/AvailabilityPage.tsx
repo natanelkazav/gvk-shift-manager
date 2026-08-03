@@ -137,6 +137,7 @@ function formatDateOnly(
 
 function AvailabilityPage() {
 const {
+  profile,
   hasPermission,
 } = useAuth();
 
@@ -154,6 +155,20 @@ const canPrepareSchedule =
   hasPermission(
     'schedule.edit',
   );
+
+const isDispatcher =
+  profile?.role ===
+  'dispatcher';
+
+const pageTitle =
+  isDispatcher
+    ? 'האילוצים שלי'
+    : 'אילוצי מוקדנים';
+
+const pageDescription =
+  isDispatcher
+    ? 'סימון והגשת האילוצים האישיים שלי.'
+    : 'פתיחת חודשים להגשת אילוצים וניהול תקופות הזמינות.';
 
   const [
     activeWorkspaceTab,
@@ -875,8 +890,12 @@ useEffect(() => {
   return (
     <section className="availability-page">
       <PageHeader
-        title="אילוצי מוקדנים"
-        description="פתיחת חודשים להגשת אילוצים וניהול תקופות הזמינות."
+        title={
+          pageTitle
+        }
+        description={
+          pageDescription
+        }
         actions={
           <Button
             type="button"

@@ -110,6 +110,47 @@ const navigationItems: NavigationItem[] = [
   },
 ];
 
+function getNavigationLabel(
+  item: NavigationItem,
+  role:
+    | 'admin'
+    | 'manager'
+    | 'dispatcher'
+    | 'on_call'
+    | 'viewer'
+    | undefined,
+): string {
+  if (
+    role ===
+    'dispatcher'
+  ) {
+    if (
+      item.path ===
+      '/schedule'
+    ) {
+      return 'השיבוצים שלי';
+    }
+
+    if (
+      item.path ===
+      '/availability'
+    ) {
+      return 'האילוצים שלי';
+    }
+  }
+
+  if (
+    role ===
+    'on_call' &&
+    item.path ===
+      '/driver-schedule'
+  ) {
+    return 'לוח הכוננים שלי';
+  }
+
+  return item.label;
+}
+
 const roleLabels = {
   admin: 'מנהל מערכת',
   manager: 'מנהל מוקד',
@@ -264,7 +305,10 @@ function AppLayout() {
                   />
 
                   <span>
-                    {item.label}
+                    {getNavigationLabel(
+                      item,
+                      profile?.role,
+                    )}
                   </span>
                 </NavLink>
               );
