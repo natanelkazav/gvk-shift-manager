@@ -11,6 +11,7 @@ import {
   Repeat2,
   ScrollText,
   Settings,
+  SunMedium,
   Users,
   X,
 } from 'lucide-react';
@@ -31,145 +32,286 @@ import {
 
 import type {
   PermissionKey,
+  UserRole,
 } from '../types/auth';
 
 import '../styles/layout.css';
 
 interface NavigationItem {
   label: string;
+
   path: string;
+
   end?: boolean;
+
   icon: typeof LayoutDashboard;
-  permission?: PermissionKey;
-  anyPermissions?: PermissionKey[];
+
+  requiredPermissions:
+    readonly PermissionKey[];
 }
 
-const navigationItems: NavigationItem[] = [
-  {
-    label: 'לוח בקרה',
-    path: '/',
-    end: true,
-    icon: LayoutDashboard,
-    permission: 'dashboard.view',
-  },
-  {
-    label: 'שיבוץ מוקדנים',
-    path: '/schedule',
-    icon: CalendarDays,
-    permission: 'schedule.view',
-  },
-  {
-    label: 'אילוצי מוקדנים',
-    path: '/availability',
-    icon: ClipboardList,
-    anyPermissions: [
-      'availability.view',
-      'availability.manage',
-      'schedule.edit',
-    ],
-  },
-  {
-    label: 'לוח כוננים',
-    path: '/driver-schedule',
-    icon: Car,
-    anyPermissions: [
-      'driver_availability.view',
-      'driver_availability.manage',
-      'driver_schedule.view',
-      'driver_schedule.view_team',
-      'driver_schedule.edit',
-    ],
-  },
-  {
-    label: 'ניהול משתמשים',
-    path: '/users',
-    icon: Users,
-    permission: 'users.view',
-  },
-  {
-    label: 'יומן מערכת',
-    path: '/audit',
-    icon: ScrollText,
-    permission: 'audit.view',
-  },
-  {
-    label: 'התראות',
-    path: '/notifications',
-    icon: Bell,
-    permission: 'notifications.view',
-  },
-  {
-    label: 'סטטיסטיקות',
-    path: '/statistics',
-    icon: BarChart3,
-    permission: 'statistics.view',
-  },
-  {
-    label: 'החלפות משמרת',
-    path: '/shift-swaps',
-    icon: Repeat2,
-    permission: 'shift_swaps.view',
-  },
-  {
-    label: 'ארכיון',
-    path: '/archive',
-    icon: Archive,
-    permission: 'archive.view',
-  },
-  {
-    label: 'הגדרות',
-    path: '/settings',
-    icon: Settings,
-    permission: 'settings.view',
-  },
-];
+const navigationItems:
+  NavigationItem[] = [
+    {
+      label:
+        'לוח בקרה',
+
+      path:
+        '/',
+
+      end:
+        true,
+
+      icon:
+        LayoutDashboard,
+
+      requiredPermissions: [
+        'dashboard.view'],
+    },
+
+    {
+      label:
+        'שיבוץ מוקדנים',
+
+      path:
+        '/schedule',
+
+      icon:
+        CalendarDays,
+
+      requiredPermissions: [
+        'schedule.view'],
+    },
+
+{
+  label: 'אילוצי מוקדנים',
+  path: '/availability',
+  icon: ClipboardList,
+
+  requiredPermissions: [
+    'availability.view',
+    'availability.manage',
+  ],
+},
+
+    {
+      label:
+        'לוח כוננים',
+
+      path:
+        '/driver-schedule',
+
+      icon:
+        Car,
+
+requiredPermissions: [
+  'driver_schedule.view',
+  'driver_schedule.view_team',
+  'driver_schedule.edit',
+],
+    },
+
+{
+  label: 'כונני בוקר',
+  path: '/morning-driver-availability',
+  icon: SunMedium,
+
+  requiredPermissions: [
+    'morning_driver_availability.view',
+    'morning_driver_availability.manage',
+  ],
+},
+    {
+      label: 'לוח כונני בוקר',
+      path: '/morning-driver-schedule',
+      icon: CalendarDays,
+
+      requiredPermissions: [
+        'morning_driver_schedule.view',
+        'morning_driver_schedule.view_team',
+        'morning_driver_schedule.edit',
+      ],
+    },
+    {
+      label:
+        'ניהול משתמשים',
+
+      path:
+        '/users',
+
+      icon:
+        Users,
+
+requiredPermissions: [
+  'users.view',
+  'users.manage',
+],
+    },
+
+    {
+      label:
+        'יומן מערכת',
+
+      path:
+        '/audit',
+
+      icon:
+        ScrollText,
+
+      requiredPermissions: [
+        'audit.view'],
+    },
+
+    {
+      label:
+        'התראות',
+
+      path:
+        '/notifications',
+
+      icon:
+        Bell,
+
+      requiredPermissions: [
+        'notifications.view',
+        'notifications.manage',
+      ],
+    },
+
+    {
+      label:
+        'סטטיסטיקות',
+
+      path:
+        '/statistics',
+
+      icon:
+        BarChart3,
+
+      requiredPermissions: [
+        'statistics.view'],
+    },
+
+    {
+      label:
+        'החלפות משמרת',
+
+      path:
+        '/shift-swaps',
+
+      icon:
+        Repeat2,
+
+requiredPermissions: [
+  'shift_swaps.view',
+  'shift_swaps.approve',
+],
+    },
+
+    {
+      label:
+        'ארכיון',
+
+      path:
+        '/archive',
+
+      icon:
+        Archive,
+
+      requiredPermissions: [
+        'archive.view'],
+    },
+
+    {
+      label:
+        'הגדרות',
+
+      path:
+        '/settings',
+
+      icon:
+        Settings,
+
+      requiredPermissions: [
+        'settings.view',
+        'settings.manage',
+      ],
+    },
+  ];
 
 function getNavigationLabel(
-  item: NavigationItem,
+  item:
+    NavigationItem,
+
   role:
-    | 'admin'
-    | 'manager'
-    | 'dispatcher'
-    | 'on_call'
-    | 'viewer'
-    | undefined,
+    UserRole |
+    undefined,
 ): string {
   if (
-    role === 'dispatcher'
+    role ===
+    'dispatcher'
   ) {
     if (
-      item.path === '/schedule'
+      item.path ===
+      '/schedule'
     ) {
       return 'השיבוצים שלי';
     }
 
     if (
-      item.path === '/availability'
+      item.path ===
+      '/availability'
     ) {
       return 'האילוצים שלי';
     }
   }
 
   if (
-    role === 'on_call' &&
-    item.path === '/driver-schedule'
+    role ===
+      'on_call' &&
+    item.path ===
+      '/driver-schedule'
   ) {
     return 'לוח הכוננים שלי';
   }
 
+    if (
+      role === 'morning_driver' &&
+      item.path === '/morning-driver-schedule'
+    ) {
+      return 'השיבוצים שלי';
+    }
+
   return item.label;
 }
 
-const roleLabels = {
-  admin: 'מנהל מערכת',
-  manager: 'מנהל מוקד',
-  dispatcher: 'מוקדן',
-  on_call: 'כונן',
-  viewer: 'צפייה בלבד',
-} as const;
+const roleLabels:
+  Record<
+    UserRole,
+    string
+  > = {
+    admin:
+      'מנהל מערכת',
+
+    manager:
+      'מנהל מוקד',
+
+    dispatcher:
+      'מוקדן',
+
+    on_call:
+      'כונן',
+
+    morning_driver:
+      'כונן בוקר',
+
+    viewer:
+      'צפייה בלבד',
+  };
 
 function getInitial(
-  displayName: string,
+  displayName:
+    string,
 ): string {
   const normalizedName =
     displayName.trim();
@@ -180,77 +322,82 @@ function getInitial(
     return '?';
   }
 
-  return normalizedName.charAt(0);
+  return normalizedName
+    .charAt(
+      0,
+    );
 }
 
 function AppLayout() {
   const {
     profile,
     hasPermission,
-    hasAnyPermission,
     signOut,
-  } = useAuth();
+  } =
+    useAuth();
 
   const [
     isSidebarOpen,
     setIsSidebarOpen,
-  ] = useState(false);
+  ] =
+    useState(
+      false,
+    );
 
   const [
     isSigningOut,
     setIsSigningOut,
-  ] = useState(false);
+  ] =
+    useState(
+      false,
+    );
 
   const visibleNavigationItems =
     useMemo(
       () =>
         navigationItems.filter(
-          (item) => {
-            if (
-              item.permission
-            ) {
-              return hasPermission(
-                item.permission,
-              );
-            }
-
-            if (
-              item.anyPermissions &&
-              item.anyPermissions.length > 0
-            ) {
-              return hasAnyPermission(
-                item.anyPermissions,
-              );
-            }
-
-            return true;
-          },
+          (item) =>
+            item.requiredPermissions.some(
+              (permission) =>
+                hasPermission(
+                  permission,
+                ),
+            ),
         ),
       [
-        hasAnyPermission,
         hasPermission,
       ],
     );
 
-  const closeSidebar = (): void => {
-    setIsSidebarOpen(false);
-  };
+  const closeSidebar =
+    (): void => {
+      setIsSidebarOpen(
+        false,
+      );
+    };
 
-  const toggleSidebar = (): void => {
-    setIsSidebarOpen(
-      (currentValue) =>
-        !currentValue,
-    );
-  };
+  const toggleSidebar =
+    (): void => {
+      setIsSidebarOpen(
+        (
+          currentValue,
+        ) =>
+          !currentValue,
+      );
+    };
 
   const handleSignOut =
     async (): Promise<void> => {
-      setIsSigningOut(true);
+      setIsSigningOut(
+        true,
+      );
 
       try {
         await signOut();
       } finally {
-        setIsSigningOut(false);
+        setIsSigningOut(
+          false,
+        );
       }
     };
 
@@ -258,9 +405,12 @@ function AppLayout() {
     profile?.displayName ??
     'משתמש';
 
-  const roleLabel = profile
-    ? roleLabels[profile.role]
-    : '';
+  const roleLabel =
+    profile
+      ? roleLabels[
+          profile.role
+        ]
+      : '';
 
   return (
     <div className="app-layout">
@@ -269,19 +419,26 @@ function AppLayout() {
           type="button"
           className="sidebar-backdrop"
           aria-label="סגירת תפריט הניווט"
-          onClick={closeSidebar}
+          onClick={
+            closeSidebar
+          }
         />
       ) : null}
 
       <aside
         className={[
           'app-sidebar',
+
           isSidebarOpen
             ? 'app-sidebar-open'
             : '',
         ]
-          .filter(Boolean)
-          .join(' ')}
+          .filter(
+            Boolean,
+          )
+          .join(
+            ' ',
+          )}
       >
         <div className="app-sidebar-header">
           <div className="app-logo">
@@ -290,8 +447,7 @@ function AppLayout() {
             </strong>
 
             <span>
-              מערכת ניהול ושיבוץ
-              משמרות
+              מערכת ניהול ושיבוץ משמרות
             </span>
           </div>
 
@@ -299,7 +455,9 @@ function AppLayout() {
             type="button"
             className="sidebar-close-button"
             aria-label="סגירת התפריט"
-            onClick={closeSidebar}
+            onClick={
+              closeSidebar
+            }
           >
             <X
               size={22}
@@ -312,48 +470,64 @@ function AppLayout() {
           className="app-navigation"
           aria-label="ניווט ראשי"
         >
-          {visibleNavigationItems.map(
-            (item) => {
-              const Icon = item.icon;
+          {visibleNavigationItems
+            .map(
+              (
+                item,
+              ) => {
+                const Icon =
+                  item.icon;
 
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  end={item.end}
-                  className={({
-                    isActive,
-                  }) =>
-                    isActive
-                      ? 'navigation-link navigation-link-active'
-                      : 'navigation-link'
-                  }
-                  onClick={closeSidebar}
-                >
-                  <Icon
-                    className="navigation-link-icon"
-                    size={20}
-                    strokeWidth={2}
-                    aria-hidden="true"
-                  />
+                return (
+                  <NavLink
+                    key={
+                      item.path
+                    }
+                    to={
+                      item.path
+                    }
+                    end={
+                      item.end
+                    }
+                    className={({
+                      isActive,
+                    }) =>
+                      isActive
+                        ? 'navigation-link navigation-link-active'
+                        : 'navigation-link'
+                    }
+                    onClick={
+                      closeSidebar
+                    }
+                  >
+                    <Icon
+                      className="navigation-link-icon"
+                      size={20}
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    />
 
-                  <span>
-                    {getNavigationLabel(
-                      item,
-                      profile?.role,
-                    )}
-                  </span>
-                </NavLink>
-              );
-            },
-          )}
+                    <span>
+                      {
+                        getNavigationLabel(
+                          item,
+                          profile?.role,
+                        )
+                      }
+                    </span>
+                  </NavLink>
+                );
+              },
+            )}
         </nav>
 
         <div className="sidebar-footer">
           <button
             type="button"
             className="sidebar-sign-out-button"
-            disabled={isSigningOut}
+            disabled={
+              isSigningOut
+            }
             onClick={() => {
               void handleSignOut();
             }}
@@ -382,7 +556,9 @@ function AppLayout() {
               aria-expanded={
                 isSidebarOpen
               }
-              onClick={toggleSidebar}
+              onClick={
+                toggleSidebar
+              }
             >
               <Menu
                 size={24}
@@ -400,18 +576,24 @@ function AppLayout() {
               className="app-user-avatar"
               aria-hidden="true"
             >
-              {getInitial(
-                displayName,
-              )}
+              {
+                getInitial(
+                  displayName,
+                )
+              }
             </div>
 
             <div className="app-user-details">
               <span className="app-user-name">
-                {displayName}
+                {
+                  displayName
+                }
               </span>
 
               <span className="app-user-role">
-                {roleLabel}
+                {
+                  roleLabel
+                }
               </span>
             </div>
           </div>

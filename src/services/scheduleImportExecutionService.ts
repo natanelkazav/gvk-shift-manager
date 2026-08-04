@@ -173,6 +173,25 @@ function validateResolvedData(
       'אחת מכוננויות הטכנאים אינה מכילה את כל הנתונים הדרושים.',
     );
   }
+
+  if (
+    request.morningDriverShifts.some(
+      (shift) =>
+        !shift.date.trim() ||
+        !shift.startTime.trim() ||
+        !shift.endTime.trim() ||
+        !shift.userId.trim() ||
+        !Number.isInteger(
+          shift.assignmentSlot,
+        ) ||
+        shift.assignmentSlot < 1 ||
+        shift.assignmentSlot > 2,
+    )
+  ) {
+    throw new Error(
+      'אחד משיבוצי כונני הבוקר אינו מכיל את כל הנתונים הדרושים.',
+    );
+  }
 }
 
 function validatePreviewRequest(
@@ -284,6 +303,9 @@ class ScheduleImportExecutionService {
 
           requested_driver_duties:
             request.driverDuties,
+
+          requested_morning_driver_shifts:
+            request.morningDriverShifts,
         },
       );
 
@@ -348,6 +370,9 @@ class ScheduleImportExecutionService {
           requested_driver_duties:
             request.driverDuties,
 
+          requested_morning_driver_shifts:
+            request.morningDriverShifts,
+
           requested_warnings:
             request.warnings,
         },
@@ -376,7 +401,9 @@ class ScheduleImportExecutionService {
     if (
       !response.importRunId ||
       !response.schedulePeriodId ||
-      !response.driverSchedulePeriodId
+      !response.driverSchedulePeriodId ||
+      !response.morningDriverAvailabilityPeriodId ||
+      !response.morningDriverSchedulePeriodId
     ) {
       throw new Error(
         'תוצאת הייבוא אינה מכילה את מזהי הרשומות שנוצרו.',

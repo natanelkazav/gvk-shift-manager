@@ -16,6 +16,30 @@ export interface ImportedDriverDuty {
   note: string | null;
 }
 
+export type ImportedMorningDriverShiftType =
+  | 'weekday_morning'
+  | 'weekday_evening'
+  | 'friday_morning';
+
+export interface ImportedMorningDriverShift {
+  date: string;
+
+  startTime: string;
+
+  endTime: string;
+
+  morningDriverName: string;
+
+  assignmentSlot: number;
+
+  shiftType:
+    ImportedMorningDriverShiftType;
+
+  minimumWorkers: number;
+
+  recommendedWorkers: number;
+}
+
 export type ScheduleImportPeriodType =
   | 'historical'
   | 'current'
@@ -35,6 +59,9 @@ export interface ScheduleImportPreview {
   driverDuties:
     ImportedDriverDuty[];
 
+  morningDriverShifts:
+    ImportedMorningDriverShift[];
+
   skippedRows: number;
 
   warnings: string[];
@@ -42,7 +69,8 @@ export interface ScheduleImportPreview {
 
 export type ScheduleImportUserType =
   | 'dispatcher'
-  | 'on_call';
+  | 'on_call'
+  | 'morning_driver';
 
 export interface ScheduleImportUser {
   id: string;
@@ -78,6 +106,9 @@ export interface ScheduleImportUsersData {
     ScheduleImportUser[];
 
   onCallDrivers:
+    ScheduleImportUser[];
+
+  morningDrivers:
     ScheduleImportUser[];
 
   aliases:
@@ -152,6 +183,25 @@ export interface ScheduleImportResolvedDriverDuty {
   note: string | null;
 }
 
+export interface ScheduleImportResolvedMorningDriverShift {
+  date: string;
+
+  startTime: string;
+
+  endTime: string;
+
+  userId: string;
+
+  assignmentSlot: number;
+
+  shiftType:
+    ImportedMorningDriverShiftType;
+
+  minimumWorkers: number;
+
+  recommendedWorkers: number;
+}
+
 export interface ScheduleImportPreviewPeriodState {
   exists: boolean;
 
@@ -190,6 +240,9 @@ export interface PreviewScheduleExcelImportRequest {
 
   driverDuties:
     ScheduleImportResolvedDriverDuty[];
+
+  morningDriverShifts:
+    ScheduleImportResolvedMorningDriverShift[];
 }
 
 export interface PreviewScheduleExcelImportResponse {
@@ -219,6 +272,15 @@ export interface PreviewScheduleExcelImportResponse {
     ScheduleImportPreviewCounts;
 
   driverDuties:
+    ScheduleImportPreviewCounts;
+
+  morningDriverAvailabilityPeriod:
+    ScheduleImportPreviewPeriodState;
+
+  morningDriverSchedulePeriod:
+    ScheduleImportPreviewPeriodState;
+
+  morningDriverShifts:
     ScheduleImportPreviewCounts;
 }
 export interface ExecuteScheduleExcelImportRequest
@@ -266,10 +328,19 @@ export interface ExecuteScheduleExcelImportResponse {
 
   driverSchedulePeriodId: string;
 
+  morningDriverAvailabilityPeriodId:
+    string;
+
+  morningDriverSchedulePeriodId:
+    string;
+
   dispatcherShifts:
     ScheduleImportExecutionCounts;
 
   driverDuties:
+    ScheduleImportExecutionCounts;
+
+  morningDriverShifts:
     ScheduleImportExecutionCounts;
 
   warningCount: number;

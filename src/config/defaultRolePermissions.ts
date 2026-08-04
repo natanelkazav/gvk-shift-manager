@@ -8,6 +8,7 @@ export const ALL_PERMISSION_KEYS:
     'dashboard.view',
 
     'schedule.view',
+    'schedule.view_team',
     'schedule.edit',
 
     'availability.view',
@@ -19,6 +20,13 @@ export const ALL_PERMISSION_KEYS:
     'driver_schedule.view',
     'driver_schedule.view_team',
     'driver_schedule.edit',
+
+    'morning_driver_availability.view',
+    'morning_driver_availability.manage',
+
+    'morning_driver_schedule.view',
+    'morning_driver_schedule.view_team',
+    'morning_driver_schedule.edit',
 
     'notifications.view',
     'notifications.manage',
@@ -59,6 +67,12 @@ export const DEFAULT_ROLE_PERMISSIONS:
       'driver_schedule.view_team',
       'driver_schedule.edit',
 
+      'morning_driver_availability.manage',
+
+      'morning_driver_schedule.view',
+      'morning_driver_schedule.view_team',
+      'morning_driver_schedule.edit',
+
       'notifications.view',
       'notifications.manage',
 
@@ -69,7 +83,6 @@ export const DEFAULT_ROLE_PERMISSIONS:
 
       'archive.view',
 
-      'availability.view',
       'availability.manage',
 
       'users.view',
@@ -104,7 +117,18 @@ export const DEFAULT_ROLE_PERMISSIONS:
 
       'notifications.view',
 
-      'shift_swaps.view',
+    ],
+
+    morning_driver: [
+      'dashboard.view',
+
+      'morning_driver_availability.view',
+
+      'morning_driver_schedule.view',
+      'morning_driver_schedule.view_team',
+
+      'notifications.view',
+
     ],
 
     viewer: [
@@ -130,6 +154,9 @@ export const ROLE_LABELS:
 
     on_call:
       'כונן',
+
+    morning_driver:
+      'כונן בוקר',
 
     viewer:
       'צפייה בלבד',

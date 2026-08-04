@@ -508,3 +508,246 @@
   .create-user-permissions-count {
   background: rgba(255, 255, 255, 0.22);
 }
+/* Permissions editor upgrade */
+.edit-user-modal-with-tabs {
+  width: min(860px, 100%);
+}
+
+.user-permissions-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 13px;
+  border: 1px solid
+    var(--color-border, #d7dee8);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #64748b;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.user-permissions-search:focus-within {
+  border-color:
+    var(--color-primary, #2563eb);
+  box-shadow:
+    0 0 0 3px
+    rgb(37 99 235 / 12%);
+}
+
+.user-permissions-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color:
+    var(--color-text, #0f172a);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.user-permissions-search button {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.user-permissions-search button:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.user-permissions-empty-search {
+  display: flex;
+  min-height: 190px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: center;
+}
+
+.user-permissions-empty-search strong {
+  color: #334155;
+}
+
+.user-permissions-empty-search span {
+  font-size: 0.8rem;
+}
+
+.user-permissions-group {
+  --permission-accent: #64748b;
+  --permission-soft: #f1f5f9;
+}
+
+.user-permissions-group-blue {
+  --permission-accent: #2563eb;
+  --permission-soft: #eff6ff;
+}
+
+.user-permissions-group-green {
+  --permission-accent: #059669;
+  --permission-soft: #ecfdf5;
+}
+
+.user-permissions-group-amber {
+  --permission-accent: #d97706;
+  --permission-soft: #fffbeb;
+}
+
+.user-permissions-group-orange {
+  --permission-accent: #ea580c;
+  --permission-soft: #fff7ed;
+}
+
+.user-permissions-group-purple {
+  --permission-accent: #7c3aed;
+  --permission-soft: #f5f3ff;
+}
+
+.user-permissions-group-rose {
+  --permission-accent: #e11d48;
+  --permission-soft: #fff1f2;
+}
+
+.user-permissions-group-slate {
+  --permission-accent: #475569;
+  --permission-soft: #f8fafc;
+}
+
+.user-permissions-group-header {
+  align-items: flex-start;
+  background:
+    linear-gradient(
+      90deg,
+      var(--permission-soft),
+      #ffffff 72%
+    );
+}
+
+.user-permissions-group-heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.user-permissions-group-accent {
+  width: 5px;
+  min-height: 44px;
+  flex: 0 0 5px;
+  border-radius: 999px;
+  background: var(--permission-accent);
+}
+
+.user-permissions-group-heading h3 {
+  color: #0f172a;
+}
+
+.user-permissions-group-summary {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.user-permissions-group-summary > span {
+  display: inline-flex;
+  justify-content: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--permission-soft);
+  color: var(--permission-accent);
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.user-permissions-group-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-permissions-group-actions button {
+  border: 0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 1px #dbe3ee;
+}
+
+.user-permissions-group-actions button:hover:not(:disabled) {
+  color: var(--permission-accent);
+  box-shadow:
+    inset 0 0 0 1px
+    var(--permission-accent);
+}
+
+.user-permissions-group-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.user-permission-item-selected {
+  background: var(--permission-soft);
+}
+
+.user-permission-item-selected:hover {
+  background: var(--permission-soft);
+}
+
+.user-permission-item-selected
+  .user-permission-switch {
+  background: var(--permission-accent);
+}
+
+.user-permission-content code {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .user-permissions-group-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .user-permissions-group-summary {
+    align-items: stretch;
+  }
+
+  .user-permissions-group-summary > span {
+    align-self: flex-start;
+  }
+
+  .user-permissions-group-actions {
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .user-permissions-group-actions button {
+    width: 100%;
+  }
+}

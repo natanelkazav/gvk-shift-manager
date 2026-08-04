@@ -1,85 +1,174 @@
 import {
   createBrowserRouter,
 } from 'react-router-dom';
-import PermissionRoute from '../auth/PermissionRoute';
-import ProtectedRoute from '../auth/ProtectedRoute';
-import PublicOnlyRoute from '../auth/PublicOnlyRoute';
-import AppLayout from '../layouts/AppLayout';
-import ArchivePage from '../pages/ArchivePage';
-import ChangePasswordPage from '../pages/ChangePasswordPage';
-import DashboardPage from '../pages/DashboardPage';
-import DriverSchedulePage from '../pages/DriverSchedulePage';
-import LoginPage from '../pages/LoginPage';
-import NotFoundPage from '../pages/NotFoundPage';
-import NotificationsPage from '../pages/NotificationsPage';
-import SchedulePage from '../pages/SchedulePage';
-import SettingsPage from '../pages/SettingsPage';
-import ShiftSwapsPage from '../pages/ShiftSwapsPage';
-import StatisticsPage from '../pages/StatisticsPage';
-import UsersPage from '../pages/UsersPage';
-import AvailabilityPage from '../pages/AvailabilityPage';
-import AuditLogPage from '../pages/AuditLogPage';
+
+import PermissionRoute
+  from '../auth/PermissionRoute';
+
+import ProtectedRoute
+  from '../auth/ProtectedRoute';
+
+import PublicOnlyRoute
+  from '../auth/PublicOnlyRoute';
+  import MorningDriverSchedulePage
+  from '../pages/MorningDriverSchedulePage';
+
+import AppLayout
+  from '../layouts/AppLayout';
+
+import ArchivePage
+  from '../pages/ArchivePage';
+
+import AuditLogPage
+  from '../pages/AuditLogPage';
+
+import AvailabilityPage
+  from '../pages/AvailabilityPage';
+
+import ChangePasswordPage
+  from '../pages/ChangePasswordPage';
+
+import DashboardPage
+  from '../pages/DashboardPage';
+
+import DriverSchedulePage
+  from '../pages/DriverSchedulePage';
+
+import LoginPage
+  from '../pages/LoginPage';
+
+import MorningDriverAvailabilityPage
+  from '../pages/MorningDriverAvailabilityPage';
+
+import NotFoundPage
+  from '../pages/NotFoundPage';
+
+import NotificationsPage
+  from '../pages/NotificationsPage';
+
+import SchedulePage
+  from '../pages/SchedulePage';
+
+import SettingsPage
+  from '../pages/SettingsPage';
+
+import ShiftSwapsPage
+  from '../pages/ShiftSwapsPage';
+
+import StatisticsPage
+  from '../pages/StatisticsPage';
+
+import UsersPage
+  from '../pages/UsersPage';
 
 export const router =
   createBrowserRouter([
     {
-      element: <PublicOnlyRoute />,
+      element:
+        <PublicOnlyRoute />,
+
       children: [
         {
-          path: '/login',
-          element: <LoginPage />,
+          path:
+            '/login',
+
+          element:
+            <LoginPage />,
         },
       ],
     },
+
     {
-      element: <ProtectedRoute />,
+      element:
+        <ProtectedRoute />,
+
       children: [
         {
-          path: '/change-password',
+          path:
+            '/change-password',
+
           element: (
             <ChangePasswordPage />
           ),
         },
+
         {
-          path: '/',
-          element: <AppLayout />,
+          path:
+            '/',
+
+          element:
+            <AppLayout />,
+
           children: [
             {
-              index: true,
-              element: <DashboardPage />,
+              index:
+                true,
+
+              element:
+                <DashboardPage />,
+            },
+
+            {
+              element: (
+                <PermissionRoute
+                  permission="audit.view"
+                />
+              ),
+
+              children: [
+                {
+                  path:
+                    'audit',
+
+                  element:
+                    <AuditLogPage />,
+                },
+              ],
             },
             {
-            element: (
-              <PermissionRoute
-                permission="audit.view"
-              />
-            ),
-            children: [
-              {
-                path: 'audit',
-                element: <AuditLogPage />,
-              },
-            ],
-          },
-          {
-            element: (
-              <PermissionRoute
-                anyPermissions={[
-                  'availability.view',
-                  'availability.manage',
-                  'schedule.edit',
-                ]}
-              />
-            ),
-            children: [
-              {
-                path: 'availability',
-                element: (
-                  <AvailabilityPage />
-                ),
-              },
-            ],
-          },
+              element: (
+                <PermissionRoute
+                  anyPermissions={[
+                    'morning_driver_schedule.view',
+                    'morning_driver_schedule.view_team',
+                    'morning_driver_schedule.edit',
+                  ]}
+                />
+              ),
+
+              children: [
+                {
+                  path:
+                    'morning-driver-schedule',
+
+                  element: (
+                    <MorningDriverSchedulePage />
+                  ),
+                },
+              ],
+            },
+            {
+              element: (
+                <PermissionRoute
+                  anyPermissions={[
+                    'availability.view',
+                    'availability.manage',
+                    'schedule.edit',
+                  ]}
+                />
+              ),
+
+              children: [
+                {
+                  path:
+                    'availability',
+
+                  element: (
+                    <AvailabilityPage />
+                  ),
+                },
+              ],
+            },
 
             {
               element: (
@@ -87,9 +176,12 @@ export const router =
                   permission="schedule.view"
                 />
               ),
+
               children: [
                 {
-                  path: 'schedule',
+                  path:
+                    'schedule',
+
                   element: (
                     <SchedulePage />
                   ),
@@ -97,7 +189,7 @@ export const router =
               ],
             },
 
-{
+            {
               element: (
                 <PermissionRoute
                   anyPermissions={[
@@ -112,7 +204,8 @@ export const router =
 
               children: [
                 {
-                  path: 'driver-schedule',
+                  path:
+                    'driver-schedule',
 
                   element: (
                     <DriverSchedulePage />
@@ -124,13 +217,21 @@ export const router =
             {
               element: (
                 <PermissionRoute
-                  permission="users.view"
+                  anyPermissions={[
+                    'morning_driver_availability.view',
+                    'morning_driver_availability.manage',
+                  ]}
                 />
               ),
+
               children: [
                 {
-                  path: 'users',
-                  element: <UsersPage />,
+                  path:
+                    'morning-driver-availability',
+
+                  element: (
+                    <MorningDriverAvailabilityPage />
+                  ),
                 },
               ],
             },
@@ -138,12 +239,39 @@ export const router =
             {
               element: (
                 <PermissionRoute
-                  permission="settings.view"
+                  anyPermissions={[
+                    'users.view',
+                    'users.manage',
+                  ]}
                 />
               ),
+
               children: [
                 {
-                  path: 'settings',
+                  path:
+                    'users',
+
+                  element:
+                    <UsersPage />,
+                },
+              ],
+            },
+
+            {
+              element: (
+                <PermissionRoute
+                  anyPermissions={[
+                    'settings.view',
+                    'settings.manage',
+                  ]}
+                />
+              ),
+
+              children: [
+                {
+                  path:
+                    'settings',
+
                   element: (
                     <SettingsPage />
                   ),
@@ -154,13 +282,18 @@ export const router =
             {
               element: (
                 <PermissionRoute
-                  permission="notifications.view"
+                  anyPermissions={[
+                    'notifications.view',
+                    'notifications.manage',
+                  ]}
                 />
               ),
+
               children: [
                 {
                   path:
                     'notifications',
+
                   element: (
                     <NotificationsPage />
                   ),
@@ -174,9 +307,12 @@ export const router =
                   permission="statistics.view"
                 />
               ),
+
               children: [
                 {
-                  path: 'statistics',
+                  path:
+                    'statistics',
+
                   element: (
                     <StatisticsPage />
                   ),
@@ -186,13 +322,19 @@ export const router =
 
             {
               element: (
-                <PermissionRoute
-                  permission="shift_swaps.view"
-                />
+                  <PermissionRoute
+                    anyPermissions={[
+                      'shift_swaps.view',
+                      'shift_swaps.approve',
+                    ]}
+                  />
               ),
+
               children: [
                 {
-                  path: 'shift-swaps',
+                  path:
+                    'shift-swaps',
+
                   element: (
                     <ShiftSwapsPage />
                   ),
@@ -206,9 +348,12 @@ export const router =
                   permission="archive.view"
                 />
               ),
+
               children: [
                 {
-                  path: 'archive',
+                  path:
+                    'archive',
+
                   element: (
                     <ArchivePage />
                   ),
@@ -217,8 +362,11 @@ export const router =
             },
 
             {
-              path: '*',
-              element: <NotFoundPage />,
+              path:
+                '*',
+
+              element:
+                <NotFoundPage />,
             },
           ],
         },

@@ -13,6 +13,7 @@ interface CreateUserRequest {
     | 'manager'
     | 'dispatcher'
     | 'on_call'
+    | 'morning_driver'
     | 'viewer';
   isActive?: boolean;
   mustChangePassword?: boolean;
@@ -28,6 +29,7 @@ interface ProfileDatabaseRow {
     | 'manager'
     | 'dispatcher'
     | 'on_call'
+    | 'morning_driver'
     | 'viewer';
   is_active: boolean;
   must_change_password: boolean;
@@ -43,6 +45,7 @@ const allowedRoles = new Set<
   'manager',
   'dispatcher',
   'on_call',
+  'morning_driver',
   'viewer',
 ]);
 

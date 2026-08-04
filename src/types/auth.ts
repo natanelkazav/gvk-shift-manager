@@ -8,6 +8,7 @@ export type UserRole =
   | 'manager'
   | 'dispatcher'
   | 'on_call'
+  | 'morning_driver'
   | 'viewer';
 
 export type PermissionKey =
@@ -26,6 +27,13 @@ export type PermissionKey =
 | 'driver_schedule.view'
 | 'driver_schedule.view_team'
 | 'driver_schedule.edit'
+
+  | 'morning_driver_availability.view'
+  | 'morning_driver_availability.manage'
+
+  | 'morning_driver_schedule.view'
+  | 'morning_driver_schedule.view_team'
+  | 'morning_driver_schedule.edit'
 
   | 'notifications.view'
   | 'notifications.manage'
@@ -64,6 +72,7 @@ export interface AuthState {
   profile: UserProfile | null;
   permissions: PermissionKey[];
   isLoading: boolean;
+  permissionsLoaded: boolean;
   error: string | null;
 }
 

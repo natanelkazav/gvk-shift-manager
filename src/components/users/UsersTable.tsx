@@ -158,6 +158,20 @@ const roleDefinitions:
 
     {
       role:
+        'morning_driver',
+
+      label:
+        'כונני בוקר',
+
+      description:
+        'אילוצים ושיבוץ למשמרות כונני הבוקר',
+
+      icon:
+        Wrench,
+    },
+
+    {
+      role:
         'viewer',
 
       label:
@@ -184,6 +198,9 @@ const roleLabels:
 
     on_call:
       'כונן',
+
+    morning_driver:
+      'כונן בוקר',
 
     viewer:
       'צפייה בלבד',
@@ -292,6 +309,7 @@ const [
     manager: true,
     dispatcher: true,
     on_call: true,
+    morning_driver: true,
     viewer: true,
   });
 

@@ -1,48 +1,22 @@
 import { supabase } from '../lib/supabase';
+import {
+  ALL_PERMISSION_KEYS,
+} from '../config/defaultRolePermissions';
 import type {
   PermissionKey,
 } from '../types/auth';
+
+const permissionKeySet =
+  new Set<string>(
+    ALL_PERMISSION_KEYS,
+  );
 
 function isPermissionKey(
   value: unknown,
 ): value is PermissionKey {
   return (
     typeof value === 'string' &&
-    [
-      'dashboard.view',
-
-      'schedule.view',
-      'schedule.view_team',
-      'schedule.edit',
-
-      'availability.view',
-      'availability.manage',
-
-      'driver_availability.view',
-      'driver_availability.manage',
-
-      'driver_schedule.view',
-      'driver_schedule.view_team',
-      'driver_schedule.edit',
-
-      'notifications.view',
-      'notifications.manage',
-
-      'statistics.view',
-
-      'shift_swaps.view',
-      'shift_swaps.approve',
-
-      'archive.view',
-
-      'audit.view',
-
-      'users.view',
-      'users.manage',
-
-      'settings.view',
-      'settings.manage',
-    ].includes(value)
+    permissionKeySet.has(value)
   );
 }
 
@@ -76,13 +50,23 @@ async function getMyPermissions():
 async function getUserPermissions(
   userId: string,
 ): Promise<PermissionKey[]> {
+  const normalizedUserId =
+    userId.trim();
+
+  if (!normalizedUserId) {
+    throw new Error(
+      'לא התקבל מזהה משתמש לטעינת ההרשאות.',
+    );
+  }
+
   const {
     data,
     error,
   } = await supabase.rpc(
     'get_user_permissions',
     {
-      target_user_id: userId,
+      target_user_id:
+        normalizedUserId,
     },
   );
 
@@ -108,15 +92,34 @@ async function setUserPermissions(
   userId: string,
   permissions: PermissionKey[],
 ): Promise<PermissionKey[]> {
+  const normalizedUserId =
+    userId.trim();
+
+  if (!normalizedUserId) {
+    throw new Error(
+      'לא התקבל מזהה משתמש לשמירת ההרשאות.',
+    );
+  }
+
+  const normalizedPermissions =
+    Array.from(
+      new Set(
+        permissions.filter(
+          isPermissionKey,
+        ),
+      ),
+    );
+
   const {
     data,
     error,
   } = await supabase.rpc(
     'set_user_permissions',
     {
-      target_user_id: userId,
+      target_user_id:
+        normalizedUserId,
       requested_permissions:
-        permissions,
+        normalizedPermissions,
     },
   );
 

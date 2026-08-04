@@ -170,14 +170,31 @@ const pageDescription =
     ? 'סימון והגשת האילוצים האישיים שלי.'
     : 'פתיחת חודשים להגשת אילוצים וניהול תקופות הזמינות.';
 
-  const [
-    activeWorkspaceTab,
-    setActiveWorkspaceTab,
-  ] =
-    useState<AvailabilityWorkspaceTab>(
-      'my-availability',
-    );
+const getInitialWorkspaceTab =
+  (): AvailabilityWorkspaceTab => {
 
+    if (
+      canSubmitAvailability
+    ) {
+      return 'my-availability';
+    }
+
+    if (
+      canManageAvailability
+    ) {
+      return 'period-management';
+    }
+
+    return 'schedule-preparation';
+  };
+
+const [
+  activeWorkspaceTab,
+  setActiveWorkspaceTab,
+] =
+  useState<AvailabilityWorkspaceTab>(
+    getInitialWorkspaceTab(),
+  );
   const now = new Date();
 
   const defaultNextMonth =

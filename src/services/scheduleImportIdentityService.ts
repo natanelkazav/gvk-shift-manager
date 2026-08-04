@@ -360,6 +360,13 @@ class ScheduleImportIdentityService {
           ? response.onCallDrivers
           : [],
 
+      morningDrivers:
+        Array.isArray(
+          response.morningDrivers,
+        )
+          ? response.morningDrivers
+          : [],
+
       aliases:
         Array.isArray(
           response.aliases,
@@ -496,6 +503,43 @@ class ScheduleImportIdentityService {
           sourceName,
           'on_call',
           data.onCallDrivers,
+          data.aliases,
+        ),
+    );
+  }
+
+
+  resolveMorningDriverNames(
+    sourceNames:
+      readonly string[],
+
+    data:
+      ScheduleImportUsersData,
+  ): ScheduleImportResolvedName[] {
+    const uniqueNames =
+      Array.from(
+        new Set(
+          sourceNames
+            .map(
+              (
+                sourceName,
+              ) =>
+                sourceName.trim(),
+            )
+            .filter(
+              Boolean,
+            ),
+        ),
+      );
+
+    return uniqueNames.map(
+      (
+        sourceName,
+      ) =>
+        resolveImportName(
+          sourceName,
+          'morning_driver',
+          data.morningDrivers,
           data.aliases,
         ),
     );

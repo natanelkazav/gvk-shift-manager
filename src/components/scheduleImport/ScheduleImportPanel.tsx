@@ -242,7 +242,13 @@ function ScheduleImportPanel({
     useState<
       ScheduleImportResolvedName[]
     >([]);
-
+  const [
+  resolvedMorningDriverNames,
+  setResolvedMorningDriverNames,
+] =
+  useState<
+    ScheduleImportResolvedName[]
+  >([]);
   const [
     selectedMappings,
     setSelectedMappings,
@@ -354,6 +360,11 @@ function ScheduleImportPanel({
         setShowAllDriverDuties,
       ] =
         useState(false);
+        const [
+  showAllMorningDriverShifts,
+  setShowAllMorningDriverShifts,
+] =
+  useState(false);
     const resetImport =
       (): void => {
         setSelectedFile(
@@ -371,9 +382,18 @@ function ScheduleImportPanel({
         setResolvedDispatcherNames(
           [],
         );
+
+        setResolvedDriverNames(
+          [],
+        );
+
+        setResolvedMorningDriverNames(
+          [],
+        );
+
         setImportSimulation(
-            null,
-          );
+          null,
+        );
 
           setIsSimulatingImport(
             false,
@@ -407,9 +427,9 @@ function ScheduleImportPanel({
             false,
           );
 
-        setResolvedDriverNames(
-          [],
-        );
+          setShowAllMorningDriverShifts(
+            false,
+          );
 
         setSelectedMappings(
           {},
@@ -462,7 +482,17 @@ function ScheduleImportPanel({
             (duty) =>
               duty.driverName,
           );
-
+      const morningDriverNames =
+        importPreview.morningDriverShifts.map(
+          shift =>
+            shift.morningDriverName,
+        );
+        const resolvedMorningDrivers =
+  scheduleImportIdentityService
+    .resolveMorningDriverNames(
+      morningDriverNames,
+      usersData,
+    );
       const resolvedDispatchers =
         scheduleImportIdentityService
           .resolveDispatcherNames(
@@ -480,10 +510,11 @@ function ScheduleImportPanel({
       const initialMappings:
         SelectedMappings = {};
 
-      [
-        ...resolvedDispatchers,
-        ...resolvedDrivers,
-      ].forEach(
+        [
+          ...resolvedDispatchers,
+          ...resolvedDrivers,
+          ...resolvedMorningDrivers,
+        ].forEach(
         (resolvedName) => {
           if (
             resolvedName
@@ -499,7 +530,9 @@ function ScheduleImportPanel({
           }
         },
       );
-
+setResolvedMorningDriverNames(
+  resolvedMorningDrivers,
+);
       setResolvedDispatcherNames(
         resolvedDispatchers,
       );
@@ -586,6 +619,10 @@ function ScheduleImportPanel({
         [],
       );
 
+      setResolvedMorningDriverNames(
+        [],
+      );
+
       setSelectedMappings(
         {},
       );
@@ -622,6 +659,10 @@ function ScheduleImportPanel({
       );
 
       setShowAllDriverDuties(
+        false,
+      );
+
+      setShowAllMorningDriverShifts(
         false,
       );
 
@@ -860,6 +901,33 @@ const buildResolvedImportData =
       },
     );
 
+    const morningDriverUserIds =
+      new Map<string, string>();
+
+    resolvedMorningDriverNames.forEach(
+      (resolvedName) => {
+        const mappingKey =
+          createResolvedNameKey(
+            resolvedName,
+          );
+
+        const userId =
+          selectedMappings[
+            mappingKey
+          ] ??
+          resolvedName
+            .matchedUserId;
+
+        if (userId) {
+          morningDriverUserIds.set(
+            resolvedName
+              .normalizedSourceName,
+            userId,
+          );
+        }
+      },
+    );
+
     const dispatcherShifts =
       preview.dispatcherShifts.map(
         (shift) => {
@@ -919,6 +987,49 @@ const buildResolvedImportData =
         },
       );
 
+    const morningDriverShifts =
+      preview.morningDriverShifts.map(
+        (shift) => {
+          const userId =
+            morningDriverUserIds.get(
+              normalizeImportedName(
+                shift.morningDriverName,
+              ),
+            );
+
+          if (!userId) {
+            throw new Error(
+              `לא נמצאה התאמת משתמש עבור כונן הבוקר "${shift.morningDriverName}".`,
+            );
+          }
+
+          return {
+            date:
+              shift.date,
+
+            startTime:
+              shift.startTime,
+
+            endTime:
+              shift.endTime,
+
+            userId,
+
+            assignmentSlot:
+              shift.assignmentSlot,
+
+            shiftType:
+              shift.shiftType,
+
+            minimumWorkers:
+              shift.minimumWorkers,
+
+            recommendedWorkers:
+              shift.recommendedWorkers,
+          };
+        },
+      );
+
     const importStrategy:
       ScheduleImportStrategy =
       preview.periodType ===
@@ -929,6 +1040,7 @@ const buildResolvedImportData =
     return {
       dispatcherShifts,
       driverDuties,
+      morningDriverShifts,
       importStrategy,
     };
   };
@@ -949,6 +1061,7 @@ const handlePreviewImport =
       [
         ...resolvedDispatcherNames,
         ...resolvedDriverNames,
+        ...resolvedMorningDriverNames,
       ].filter(
         (resolvedName) =>
           !(
@@ -997,6 +1110,7 @@ const handlePreviewImport =
       const {
         dispatcherShifts,
         driverDuties,
+        morningDriverShifts,
         importStrategy,
       } =
         buildResolvedImportData();
@@ -1018,6 +1132,8 @@ const handlePreviewImport =
             dispatcherShifts,
 
             driverDuties,
+
+            morningDriverShifts,
           });
 
       setImportSimulation(
@@ -1082,6 +1198,7 @@ const handlePreviewImport =
         const {
           dispatcherShifts,
           driverDuties,
+          morningDriverShifts,
           importStrategy,
         } =
           buildResolvedImportData();
@@ -1108,6 +1225,9 @@ const handlePreviewImport =
 
             driverDutyCount:
               driverDuties.length,
+
+            morningDriverShiftCount:
+              morningDriverShifts.length,
           },
         );
 
@@ -1134,6 +1254,8 @@ const handlePreviewImport =
               dispatcherShifts,
 
               driverDuties,
+
+              morningDriverShifts,
 
               warnings:
                 preview.warnings,
@@ -1242,7 +1364,10 @@ const handlePreviewImport =
                       {userType ===
                       'dispatcher'
                         ? 'מוקדן מהאקסל'
-                        : 'כונן מהאקסל'}
+                        : userType ===
+                            'morning_driver'
+                          ? 'כונן בוקר מהאקסל'
+                          : 'כונן מהאקסל'}
                     </span>
                   </div>
 
@@ -1383,10 +1508,12 @@ const handlePreviewImport =
       () => [
         ...resolvedDispatcherNames,
         ...resolvedDriverNames,
+        ...resolvedMorningDriverNames,
       ],
       [
         resolvedDispatcherNames,
         resolvedDriverNames,
+        resolvedMorningDriverNames,
       ],
     );
 
@@ -1464,6 +1591,16 @@ const handlePreviewImport =
           ? showAllDriverDuties
             ? preview.driverDuties
             : preview.driverDuties.slice(
+                0,
+                PREVIEW_ROW_LIMIT,
+              )
+          : [];
+
+      const visibleMorningDriverShifts =
+        preview
+          ? showAllMorningDriverShifts
+            ? preview.morningDriverShifts
+            : preview.morningDriverShifts.slice(
                 0,
                 PREVIEW_ROW_LIMIT,
               )
@@ -1718,6 +1855,23 @@ const handlePreviewImport =
 
                 <span>
                   כוננויות נוצרו או עודכנו
+                </span>
+              </article>
+
+              <article>
+                <strong>
+                  {
+                    executionResult
+                      .morningDriverShifts
+                      .created +
+                    executionResult
+                      .morningDriverShifts
+                      .updated
+                  }
+                </strong>
+
+                <span>
+                  שיבוצי כונני בוקר נוצרו או עודכנו
                 </span>
               </article>
 
@@ -2014,6 +2168,27 @@ const handlePreviewImport =
             </article>
 
             <article>
+              <Users
+                size={21}
+                aria-hidden="true"
+              />
+
+              <div>
+                <strong>
+                  {
+                    preview
+                      .morningDriverShifts
+                      .length
+                  }
+                </strong>
+
+                <span>
+                  שיבוצי כונני בוקר
+                </span>
+              </div>
+            </article>
+
+            <article>
               <AlertTriangle
                 size={21}
                 aria-hidden="true"
@@ -2097,6 +2272,20 @@ const handlePreviewImport =
                   ?.onCallDrivers ??
                   [],
                 'on_call',
+              )}
+            </div>
+
+            <div className="schedule-import-identity-group">
+              <h4>
+                כונני בוקר
+              </h4>
+
+              {renderResolvedNames(
+                resolvedMorningDriverNames,
+                importUsersData
+                  ?.morningDrivers ??
+                  [],
+                'morning_driver',
               )}
             </div>
           </section>
@@ -2335,6 +2524,124 @@ const handlePreviewImport =
               </div>
             ) : null}
           </section>
+
+          <section className="schedule-import-preview-section">
+            <header>
+              <div>
+                <h3>
+                  שיבוצי כונני בוקר
+                </h3>
+
+                <span>
+                  עמודות A, E ו־F
+                </span>
+              </div>
+
+              <strong>
+                {
+                  preview
+                    .morningDriverShifts
+                    .length
+                }
+              </strong>
+            </header>
+
+            <div className="schedule-import-table-wrapper">
+              <table className="schedule-import-table">
+                <thead>
+                  <tr>
+                    <th>
+                      תאריך
+                    </th>
+
+                    <th>
+                      שעות משמרת
+                    </th>
+
+                    <th>
+                      כונן בוקר
+                    </th>
+
+                    <th>
+                      מיקום
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {visibleMorningDriverShifts.map(
+                    (
+                      shift,
+                      index,
+                    ) => (
+                      <tr
+                        key={[
+                          shift.date,
+                          shift.startTime,
+                          shift.morningDriverName,
+                          shift.assignmentSlot,
+                          index,
+                        ].join('-')}
+                      >
+                        <td dir="ltr">
+                          {formatImportDate(
+                            shift.date,
+                          )}
+                        </td>
+
+                        <td>
+                          {formatShiftTime(
+                            shift.startTime,
+                            shift.endTime,
+                          )}
+                        </td>
+
+                        <td>
+                          {
+                            shift.morningDriverName
+                          }
+                        </td>
+
+                        <td>
+                          {
+                            shift.assignmentSlot ===
+                            1
+                              ? 'כונן מינימום'
+                              : 'כונן מומלץ נוסף'
+                          }
+                        </td>
+                      </tr>
+                    ),
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {preview
+              .morningDriverShifts
+              .length >
+            PREVIEW_ROW_LIMIT ? (
+              <div className="schedule-import-table-toggle">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setShowAllMorningDriverShifts(
+                      (
+                        currentValue,
+                      ) =>
+                        !currentValue,
+                    );
+                  }}
+                >
+                  {showAllMorningDriverShifts
+                    ? 'הצג פחות'
+                    : `הצג את כל ${preview.morningDriverShifts.length} שיבוצי כונני הבוקר`}
+                </Button>
+              </div>
+            ) : null}
+          </section>
+
           {simulationError ? (
   <div
     className="schedule-import-error"
@@ -2539,6 +2846,84 @@ const handlePreviewImport =
           </div>
         </dl>
       </article>
+
+      <article>
+        <strong>
+          כונני בוקר
+        </strong>
+
+        <dl>
+          <div>
+            <dt>
+              זוהו
+            </dt>
+
+            <dd>
+              {
+                importSimulation
+                  .morningDriverShifts
+                  .detected
+              }
+            </dd>
+          </div>
+
+          <div>
+            <dt>
+              ייווצרו
+            </dt>
+
+            <dd>
+              {
+                importSimulation
+                  .morningDriverShifts
+                  .toCreate
+              }
+            </dd>
+          </div>
+
+          <div>
+            <dt>
+              יעודכנו
+            </dt>
+
+            <dd>
+              {
+                importSimulation
+                  .morningDriverShifts
+                  .toUpdate
+              }
+            </dd>
+          </div>
+
+          <div>
+            <dt>
+              יידלגו
+            </dt>
+
+            <dd>
+              {
+                importSimulation
+                  .morningDriverShifts
+                  .toSkip
+              }
+            </dd>
+          </div>
+
+          <div>
+            <dt>
+              יימחקו
+            </dt>
+
+            <dd>
+              {
+                importSimulation
+                  .morningDriverShifts
+                  .toDelete
+              }
+            </dd>
+          </div>
+        </dl>
+      </article>
     </div>
 
     {importSimulation.blockers.length >
@@ -2633,6 +3018,7 @@ const handlePreviewImport =
               }
               onClick={
                 resetImport
+                
               }
             >
               בחירת קובץ אחר
@@ -2796,6 +3182,23 @@ const handlePreviewImport =
 
                 <div>
                   <dt>
+                    שיבוצי כונני בוקר שייווצרו או יעודכנו
+                  </dt>
+
+                  <dd>
+                    {
+                      importSimulation
+                        .morningDriverShifts
+                        .toCreate +
+                      importSimulation
+                        .morningDriverShifts
+                        .toUpdate
+                    }
+                  </dd>
+                </div>
+
+                <div>
+                  <dt>
                     רשומות שיימחקו
                   </dt>
 
@@ -2806,6 +3209,9 @@ const handlePreviewImport =
                         .toDelete +
                       importSimulation
                         .driverDuties
+                        .toDelete +
+                      importSimulation
+                        .morningDriverShifts
                         .toDelete
                     }
                   </dd>

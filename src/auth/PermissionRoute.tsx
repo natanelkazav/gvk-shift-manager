@@ -27,16 +27,19 @@ function PermissionRoute({
   const location =
     useLocation();
 
-  const {
-    hasPermission,
-    isLoading,
-  } =
-    useAuth();
+    const {
+      hasPermission,
+      isLoading,
+      permissionsLoaded,
+    } =
+      useAuth();
 
-  if (isLoading) {
-    return null;
-  }
-
+    if (
+      isLoading ||
+      !permissionsLoaded
+    ) {
+      return null;
+    }
   const normalizedAnyPermissions =
     anyPermissions ?? [];
 

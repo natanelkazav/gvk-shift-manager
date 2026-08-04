@@ -9,7 +9,6 @@ import {
   type FormEvent,
 } from 'react';
 import {
-  useLocation,
   useNavigate,
 } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
@@ -19,13 +18,10 @@ import {
 } from '../components/ui';
 import '../styles/auth.css';
 
-interface LoginLocationState {
-  from?: string;
-}
+
 
 function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const {
     signIn,
@@ -96,17 +92,13 @@ function LoginPage() {
         password,
       });
 
-      const locationState =
-        location.state as
-          | LoginLocationState
-          | null;
-
-      navigate(
-        locationState?.from ?? '/',
-        {
-          replace: true,
-        },
-      );
+    navigate(
+      '/',
+      {
+        replace: true,
+        state: null,
+      },
+    );
     } catch (signInError) {
       if (signInError instanceof Error) {
         setFormError(

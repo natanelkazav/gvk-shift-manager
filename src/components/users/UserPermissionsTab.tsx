@@ -2,13 +2,20 @@ import {
   CheckCheck,
   KeyRound,
   RotateCcw,
+  Search,
+  X,
 } from 'lucide-react';
+import {
+  useMemo,
+  useState,
+} from 'react';
 import type {
   PermissionKey,
 } from '../../types/auth';
 import {
   allPermissionKeys,
   permissionGroups,
+  type PermissionGroup,
 } from '../../constants/permissions';
 import { Button } from '../ui';
 
@@ -21,13 +28,90 @@ interface UserPermissionsTabProps {
   ) => void;
 }
 
+function normalizeSearchValue(
+  value: string,
+): string {
+  return value
+    .trim()
+    .toLocaleLowerCase('he');
+}
+
 function UserPermissionsTab({
   selectedPermissions,
   isDisabled = false,
   onChange,
 }: UserPermissionsTabProps) {
+  const [
+    searchTerm,
+    setSearchTerm,
+  ] = useState('');
+
   const selectedPermissionSet =
-    new Set(selectedPermissions);
+    useMemo(
+      () =>
+        new Set(
+          selectedPermissions,
+        ),
+      [selectedPermissions],
+    );
+
+  const normalizedSearchTerm =
+    normalizeSearchValue(
+      searchTerm,
+    );
+
+  const filteredGroups =
+    useMemo<PermissionGroup[]>(
+      () => {
+        if (!normalizedSearchTerm) {
+          return permissionGroups;
+        }
+
+        return permissionGroups
+          .map((group) => {
+            const groupMatches =
+              normalizeSearchValue(
+                `${group.title} ${group.description}`,
+              ).includes(
+                normalizedSearchTerm,
+              );
+
+            if (groupMatches) {
+              return group;
+            }
+
+            const matchingPermissions =
+              group.permissions.filter(
+                (permission) =>
+                  normalizeSearchValue(
+                    `${permission.label} ${permission.description}`,
+                  ).includes(
+                    normalizedSearchTerm,
+                  ),
+              );
+
+            if (
+              matchingPermissions.length ===
+              0
+            ) {
+              return null;
+            }
+
+            return {
+              ...group,
+              permissions:
+                matchingPermissions,
+            };
+          })
+          .filter(
+            (
+              group,
+            ): group is PermissionGroup =>
+              Boolean(group),
+          );
+      },
+      [normalizedSearchTerm],
+    );
 
   const handlePermissionChange = (
     permission: PermissionKey,
@@ -37,20 +121,27 @@ function UserPermissionsTab({
       return;
     }
 
-    if (isSelected) {
-      onChange([
-        ...selectedPermissions,
-        permission,
-      ]);
+    const nextPermissionSet =
+      new Set(
+        selectedPermissions,
+      );
 
-      return;
+    if (isSelected) {
+      nextPermissionSet.add(
+        permission,
+      );
+    } else {
+      nextPermissionSet.delete(
+        permission,
+      );
     }
 
     onChange(
-      selectedPermissions.filter(
+      allPermissionKeys.filter(
         (currentPermission) =>
-          currentPermission !==
-          permission,
+          nextPermissionSet.has(
+            currentPermission,
+          ),
       ),
     );
   };
@@ -61,7 +152,9 @@ function UserPermissionsTab({
         return;
       }
 
-      onChange([...allPermissionKeys]);
+      onChange([
+        ...allPermissionKeys,
+      ]);
     };
 
   const handleClearAll =
@@ -72,6 +165,61 @@ function UserPermissionsTab({
 
       onChange([]);
     };
+
+  const handleSelectGroup = (
+    group: PermissionGroup,
+  ): void => {
+    if (isDisabled) {
+      return;
+    }
+
+    const nextPermissionSet =
+      new Set(
+        selectedPermissions,
+      );
+
+    group.permissions.forEach(
+      (permission) => {
+        nextPermissionSet.add(
+          permission.key,
+        );
+      },
+    );
+
+    onChange(
+      allPermissionKeys.filter(
+        (permission) =>
+          nextPermissionSet.has(
+            permission,
+          ),
+      ),
+    );
+  };
+
+  const handleClearGroup = (
+    group: PermissionGroup,
+  ): void => {
+    if (isDisabled) {
+      return;
+    }
+
+    const groupPermissionSet =
+      new Set(
+        group.permissions.map(
+          (permission) =>
+            permission.key,
+        ),
+      );
+
+    onChange(
+      selectedPermissions.filter(
+        (permission) =>
+          !groupPermissionSet.has(
+            permission,
+          ),
+      ),
+    );
+  };
 
   const selectedCount =
     selectedPermissions.length;
@@ -104,7 +252,10 @@ function UserPermissionsTab({
           <Button
             type="button"
             variant="secondary"
-            disabled={isDisabled}
+            disabled={
+              isDisabled ||
+              selectedCount === 0
+            }
             onClick={handleClearAll}
           >
             <RotateCcw
@@ -118,7 +269,11 @@ function UserPermissionsTab({
           <Button
             type="button"
             variant="secondary"
-            disabled={isDisabled}
+            disabled={
+              isDisabled ||
+              selectedCount ===
+                allPermissionKeys.length
+            }
             onClick={handleSelectAll}
           >
             <CheckCheck
@@ -131,117 +286,198 @@ function UserPermissionsTab({
         </div>
       </div>
 
-      <div className="user-permissions-groups">
-        {permissionGroups.map(
-          (group) => (
-            <section
-              key={group.id}
-              className="user-permissions-group"
-            >
-              <header className="user-permissions-group-header">
-                <div>
-                  <h3>
-                    {group.title}
-                  </h3>
+      <label className="user-permissions-search">
+        <Search
+          size={18}
+          aria-hidden="true"
+        />
 
-                  <p>
-                    {group.description}
-                  </p>
-                </div>
+        <input
+          type="search"
+          value={searchTerm}
+          placeholder="חיפוש לפי שם הרשאה, הסבר או תחום..."
+          disabled={isDisabled}
+          onChange={(event) => {
+            setSearchTerm(
+              event.target.value,
+            );
+          }}
+        />
 
-                <span>
-                  {
-                    group.permissions.filter(
-                      (permission) =>
-                        selectedPermissionSet.has(
-                          permission.key,
-                        ),
-                    ).length
-                  }
-                  /
-                  {
-                    group.permissions
-                      .length
-                  }
-                </span>
-              </header>
+        {searchTerm ? (
+          <button
+            type="button"
+            aria-label="ניקוי החיפוש"
+            disabled={isDisabled}
+            onClick={() => {
+              setSearchTerm('');
+            }}
+          >
+            <X
+              size={17}
+              aria-hidden="true"
+            />
+          </button>
+        ) : null}
+      </label>
 
-              <div className="user-permissions-list">
-                {group.permissions.map(
-                  (permission) => {
-                    const isSelected =
-                      selectedPermissionSet.has(
-                        permission.key,
-                      );
+      {filteredGroups.length === 0 ? (
+        <div className="user-permissions-empty-search">
+          <Search
+            size={28}
+            aria-hidden="true"
+          />
 
-                    return (
-                      <label
-                        key={
-                          permission.key
-                        }
-                        className={[
-                          'user-permission-item',
-                          isSelected
-                            ? 'user-permission-item-selected'
-                            : '',
-                          isDisabled
-                            ? 'user-permission-item-disabled'
-                            : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={
-                            isSelected
-                          }
+          <strong>
+            לא נמצאו הרשאות מתאימות
+          </strong>
+
+          <span>
+            נסה לחפש לפי שם מסך, פעולה או סוג משתמש.
+          </span>
+        </div>
+      ) : (
+        <div className="user-permissions-groups">
+          {filteredGroups.map(
+            (group) => {
+              const selectedGroupCount =
+                group.permissions.filter(
+                  (permission) =>
+                    selectedPermissionSet.has(
+                      permission.key,
+                    ),
+                ).length;
+
+              const isEntireGroupSelected =
+                selectedGroupCount ===
+                group.permissions.length;
+
+              return (
+                <section
+                  key={group.id}
+                  className={[
+                    'user-permissions-group',
+                    `user-permissions-group-${group.tone}`,
+                  ].join(' ')}
+                >
+                  <header className="user-permissions-group-header">
+                    <div className="user-permissions-group-heading">
+                      <span
+                        className="user-permissions-group-accent"
+                        aria-hidden="true"
+                      />
+
+                      <div>
+                        <h3>
+                          {group.title}
+                        </h3>
+
+                        <p>
+                          {group.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="user-permissions-group-summary">
+                      <span>
+                        {selectedGroupCount} מתוך{' '}
+                        {group.permissions.length}{' '}
+                        הרשאות
+                      </span>
+
+                      <div className="user-permissions-group-actions">
+                        <button
+                          type="button"
                           disabled={
-                            isDisabled
+                            isDisabled ||
+                            isEntireGroupSelected
                           }
-                          onChange={(
-                            event,
-                          ) => {
-                            handlePermissionChange(
-                              permission.key,
-                              event.target
-                                .checked,
+                          onClick={() => {
+                            handleSelectGroup(
+                              group,
                             );
                           }}
-                        />
+                        >
+                          בחר קבוצה
+                        </button>
 
-                        <span className="user-permission-switch">
-                          <span />
-                        </span>
+                        <button
+                          type="button"
+                          disabled={
+                            isDisabled ||
+                            selectedGroupCount === 0
+                          }
+                          onClick={() => {
+                            handleClearGroup(
+                              group,
+                            );
+                          }}
+                        >
+                          נקה קבוצה
+                        </button>
+                      </div>
+                    </div>
+                  </header>
 
-                        <span className="user-permission-content">
-                          <strong>
-                            {
-                              permission.label
-                            }
-                          </strong>
+                  <div className="user-permissions-list">
+                    {group.permissions.map(
+                      (permission) => {
+                        const isSelected =
+                          selectedPermissionSet.has(
+                            permission.key,
+                          );
 
-                          <small>
-                            {
-                              permission.description
-                            }
-                          </small>
+                        return (
+                          <label
+                            key={permission.key}
+                            className={[
+                              'user-permission-item',
+                              isSelected
+                                ? 'user-permission-item-selected'
+                                : '',
+                              isDisabled
+                                ? 'user-permission-item-disabled'
+                                : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              disabled={isDisabled}
+                              onChange={(event) => {
+                                handlePermissionChange(
+                                  permission.key,
+                                  event.target.checked,
+                                );
+                              }}
+                            />
 
-                          <code>
-                            {
-                              permission.key
-                            }
-                          </code>
-                        </span>
-                      </label>
-                    );
-                  },
-                )}
-              </div>
-            </section>
-          ),
-        )}
-      </div>
+                            <span className="user-permission-switch">
+                              <span />
+                            </span>
+
+                            <span className="user-permission-content">
+                              <strong>
+                                {permission.label}
+                              </strong>
+
+                              <small>
+                                {permission.description}
+                              </small>
+                            </span>
+                          </label>
+                        );
+                      },
+                    )}
+                  </div>
+                </section>
+              );
+            },
+          )}
+        </div>
+      )}
     </div>
   );
 }

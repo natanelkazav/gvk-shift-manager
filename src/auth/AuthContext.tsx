@@ -40,6 +40,7 @@ interface AuthContextValue
   hasAnyPermission: (
     permissions: PermissionKey[],
   ) => boolean;
+  
 
   hasAllPermissions: (
     permissions: PermissionKey[],
@@ -53,6 +54,7 @@ const initialAuthState: AuthState = {
   user: null,
   profile: null,
   permissions: [],
+  permissionsLoaded: false,
   isLoading: true,
   error: null,
 };
@@ -115,6 +117,7 @@ export function AuthProvider({
           profile: null,
           permissions: [],
           isLoading: false,
+          permissionsLoaded: false,
           error:
             INACTIVE_USER_MESSAGE,
         });
@@ -162,6 +165,7 @@ export function AuthProvider({
             profile: null,
             permissions: [],
             isLoading: false,
+            permissionsLoaded: false,
             error:
               currentState.error,
           }),
@@ -197,6 +201,7 @@ export function AuthProvider({
           profile,
           permissions,
           isLoading: false,
+          permissionsLoaded: true,
           error: null,
         });
       } catch (error) {
@@ -217,6 +222,7 @@ export function AuthProvider({
           profile: null,
           permissions: [],
           isLoading: false,
+          permissionsLoaded: true,
           error: errorMessage,
         });
       }
@@ -253,6 +259,7 @@ export function AuthProvider({
             profile: null,
             permissions: [],
             isLoading: false,
+            permissionsLoaded: true,
             error:
               getErrorMessage(error),
           });
@@ -303,6 +310,7 @@ export function AuthProvider({
                     profile: null,
                     permissions: [],
                     isLoading: false,
+                    permissionsLoaded: false,
                     error:
                       currentState.error,
                   }),
@@ -382,6 +390,7 @@ export function AuthProvider({
           profile,
           permissions,
           isLoading: false,
+          permissionsLoaded: true,
           error: null,
         });
       } catch (error) {
@@ -402,6 +411,7 @@ export function AuthProvider({
           profile: null,
           permissions: [],
           isLoading: false,
+          permissionsLoaded: true,
           error: errorMessage,
         });
 
@@ -433,6 +443,7 @@ export function AuthProvider({
           profile: null,
           permissions: [],
           isLoading: false,
+          permissionsLoaded: false,
           error: null,
         });
       } catch (error) {
@@ -528,6 +539,7 @@ export function AuthProvider({
             (currentState) => ({
               ...currentState,
               permissions,
+              permissionsLoaded: true,
               error: null,
             }),
           );

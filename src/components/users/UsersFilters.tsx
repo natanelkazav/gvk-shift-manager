@@ -82,6 +82,10 @@ function UsersFilters({
             כונן
           </option>
 
+          <option value="morning_driver">
+            כונן בוקר
+          </option>
+
           <option value="viewer">
             צפייה בלבד
           </option>

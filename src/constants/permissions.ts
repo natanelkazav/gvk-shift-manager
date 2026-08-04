@@ -2,6 +2,15 @@ import type {
   PermissionKey,
 } from '../types/auth';
 
+export type PermissionGroupTone =
+  | 'blue'
+  | 'green'
+  | 'amber'
+  | 'orange'
+  | 'purple'
+  | 'rose'
+  | 'slate';
+
 export interface PermissionDefinition {
   key: PermissionKey;
   label: string;
@@ -12,6 +21,7 @@ export interface PermissionGroup {
   id: string;
   title: string;
   description: string;
+  tone: PermissionGroupTone;
   permissions: PermissionDefinition[];
 }
 
@@ -19,136 +29,160 @@ export const permissionGroups:
   PermissionGroup[] = [
     {
       id: 'general',
-      title: 'כללי',
+      title: 'לוח בקרה',
       description:
-        'גישה לאזורים הכלליים של המערכת.',
+        'גישה למסך הראשי ולמידע המסכם של המערכת.',
+      tone: 'blue',
       permissions: [
         {
           key: 'dashboard.view',
           label: 'צפייה בלוח הבקרה',
           description:
-            'מאפשר להיכנס למסך הראשי ולצפות במידע הכללי.',
+            'מאפשרת לפתוח את מסך הבית ולצפות בנתונים, בקיצורי הדרך ובמידע הכללי המוצג בו.',
         },
       ],
     },
     {
-      id: 'schedule',
-      title: 'שיבוץ מוקדנים',
+      id: 'dispatcher-availability',
+      title: 'מוקדנים — אילוצים',
       description:
-        'גישה לצפייה, יצירה ועריכה של שיבוץ המוקדנים.',
-      permissions: [
-        {
-          key: 'schedule.view',
-          label: 'צפייה בשיבוץ מוקדנים',
-          description:
-            'מאפשר להיכנס למסך השיבוץ ולצפות בשיבוץ האישי.',
-        },
-        {
-          key: 'schedule.view_team',
-          label: 'צפייה בשיבוץ הצוות',
-          description:
-            'מאפשר לצפות בשיבוץ המלא ובנתונים של כל המוקדנים.',
-        },
-        {
-          key: 'schedule.edit',
-          label: 'עריכת שיבוץ מוקדנים',
-          description:
-            'מאפשר ליצור טיוטה, לערוך ולפרסם את השיבוץ.',
-        },
-      ],
-    },
-    {
-      id: 'availability',
-      title: 'אילוצי מוקדנים',
-      description:
-        'הגשת זמינות וניהול תקופות אילוצים חודשיות.',
+        'הגשת זמינות אישית וניהול חודשי האילוצים של המוקדנים.',
+      tone: 'green',
       permissions: [
         {
           key: 'availability.view',
-          label: 'צפייה והגשת אילוצים',
+          label: 'צפייה והגשת אילוצים אישיים',
           description:
-            'מאפשר לצפות במשמרות החודש ולהגיש זמינות אישית.',
+            'מאפשרת למוקדן לצפות במשמרות של חודש פתוח, לסמן זמין או לא זמין ולהגיש את האילוצים שלו.',
         },
         {
           key: 'availability.manage',
-          label: 'ניהול תקופות אילוצים',
+          label: 'ניהול חודשי אילוצי מוקדנים',
           description:
-            'מאפשר לפתוח, לסגור ולנהל תקופות הגשת אילוצים.',
+            'מאפשרת ליצור חודש אילוצים, לפתוח או לסגור אותו להגשה ולעקוב אחר מצב ההגשות של המוקדנים.',
+        },
+      ],
+    },
+    {
+      id: 'dispatcher-schedule',
+      title: 'מוקדנים — לוח שיבוץ',
+      description:
+        'צפייה בלוח האישי, צפייה בלוח הצוות וניהול שיבוץ המוקדנים.',
+      tone: 'green',
+      permissions: [
+        {
+          key: 'schedule.view',
+          label: 'צפייה בלוח השיבוץ האישי',
+          description:
+            'מאפשרת למשתמש לפתוח את מסך השיבוץ ולצפות במשמרות ששויכו אליו.',
+        },
+        {
+          key: 'schedule.view_team',
+          label: 'צפייה בלוח כל המוקדנים',
+          description:
+            'מאפשרת לצפות בלוח המלא ובשיבוצים של כלל המוקדנים, ולא רק בשיבוץ האישי.',
+        },
+        {
+          key: 'schedule.edit',
+          label: 'יצירה ועריכה של לוח המוקדנים',
+          description:
+            'מאפשרת ליצור טיוטת שיבוץ, לשנות הקצאות, לבצע פעולות ניהול ולפרסם את הלוח.',
+        },
+      ],
+    },
+    {
+      id: 'driver-availability',
+      title: 'כוננים — אילוצים',
+      description:
+        'הגשת זמינות יומית וניהול חודשי האילוצים של הכוננים.',
+      tone: 'amber',
+      permissions: [
+        {
+          key: 'driver_availability.view',
+          label: 'צפייה והגשת אילוצי כונן',
+          description:
+            'מאפשרת לכונן לצפות בחודש פתוח, לסמן את זמינותו לכל יום ולשלוח את ההגשה שלו.',
+        },
+        {
+          key: 'driver_availability.manage',
+          label: 'ניהול חודשי אילוצי כוננים',
+          description:
+            'מאפשרת ליצור, לפתוח, לסגור, לפתוח מחדש ולמחוק חודשי אילוצים של כוננים ולעקוב אחר ההגשות.',
         },
       ],
     },
     {
       id: 'driver-schedule',
-
-      title: 'כוננים',
-
+      title: 'כוננים — לוח כוננות',
       description:
-        'הגשת אילוצים, צפייה וניהול של לוח הכוננים.',
-
+        'צפייה בלוח הכוננים וניהול הקצאות הכוננות החודשיות.',
+      tone: 'amber',
       permissions: [
         {
-          key: 'driver_availability.view',
-
-          label: 'הגשת אילוצי כוננים',
-
-          description:
-            'מאפשר לכונן לצפות בחודש פתוח ולסמן זמינות יומית.',
-        },
-
-        {
-          key: 'driver_availability.manage',
-
-          label: 'ניהול אילוצי כוננים',
-
-          description:
-            'מאפשר ליצור, לפתוח, לסגור ולנהל תקופות אילוצים של כוננים.',
-        },
-
-        {
           key: 'driver_schedule.view',
-
-          label: 'צפייה בלוח כוננים',
-
+          label: 'צפייה בלוח הכוננות האישי',
           description:
-            'מאפשר להיכנס למסך לוח הכוננים ולצפות בשיבוץ האישי.',
+            'מאפשרת לכונן להיכנס ללוח הכוננים ולצפות בימים שבהם הוא משובץ.',
         },
-
         {
           key: 'driver_schedule.view_team',
-
           label: 'צפייה בלוח הכוננים המלא',
-
           description:
-            'מאפשר לצפות בשיבוץ של כל הכוננים ובנתוני הצוות.',
+            'מאפשרת לצפות בהקצאות של כלל הכוננים ובתמונת הכוננות החודשית המלאה.',
         },
-
         {
           key: 'driver_schedule.edit',
-
-          label: 'עריכת לוח כוננים',
-
+          label: 'יצירה ועריכה של לוח הכוננים',
           description:
-            'מאפשר ליצור, לערוך ולפרסם את לוח הכוננים.',
+            'מאפשרת ליצור טיוטה, לשנות כונן משובץ, לפרסם לוח ולבצע שינויים המותרים לאחר הפרסום.',
         },
       ],
     },
     {
-      id: 'users',
-      title: 'ניהול משתמשים',
+      id: 'morning-driver-availability',
+      title: 'כונני בוקר — אילוצים',
       description:
-        'צפייה וניהול של משתמשי המערכת.',
+        'הגשת זמינות לפי משמרת וניהול חודשי האילוצים של כונני הבוקר.',
+      tone: 'orange',
       permissions: [
         {
-          key: 'users.view',
-          label: 'צפייה במשתמשים',
+          key: 'morning_driver_availability.view',
+          label: 'צפייה והגשת אילוצי כונן בוקר',
           description:
-            'מאפשר להיכנס למסך ניהול המשתמשים.',
+            'מאפשרת לכונן בוקר לצפות במשמרות החודש, לסמן זמינות לכל משמרת ולהגיש את האילוצים שלו.',
         },
         {
-          key: 'users.manage',
-          label: 'ניהול משתמשים',
+          key: 'morning_driver_availability.manage',
+          label: 'ניהול חודשי אילוצי כונני בוקר',
           description:
-            'מאפשר ליצור, לערוך, להפעיל ולהשבית משתמשים ולשנות הרשאות.',
+            'מאפשרת ליצור חודש אילוצים, לפתוח אותו להגשה, למחוק טיוטה ולנהל את תקופת ההגשה של כונני הבוקר.',
+        },
+      ],
+    },
+    {
+      id: 'morning-driver-schedule',
+      title: 'כונני בוקר — לוח שיבוץ',
+      description:
+        'צפייה וניהול של לוח משמרות כונני הבוקר.',
+      tone: 'orange',
+      permissions: [
+        {
+          key: 'morning_driver_schedule.view',
+          label: 'צפייה בלוח האישי של כונן הבוקר',
+          description:
+            'מאפשרת לכונן בוקר לצפות רק במשמרות שאליהן הוא שובץ.',
+        },
+        {
+          key: 'morning_driver_schedule.view_team',
+          label: 'צפייה בלוח כונני הבוקר המלא',
+          description:
+            'מאפשרת לצפות בכל המשמרות ובהקצאות של כלל כונני הבוקר.',
+        },
+        {
+          key: 'morning_driver_schedule.edit',
+          label: 'יצירה ועריכה של לוח כונני הבוקר',
+          description:
+            'מאפשרת ליצור טיוטה, לשבץ עובדים במשמרות, לערוך הקצאות ולפרסם את הלוח.',
         },
       ],
     },
@@ -156,13 +190,20 @@ export const permissionGroups:
       id: 'notifications',
       title: 'התראות',
       description:
-        'גישה למערכת ההתראות.',
+        'צפייה בהתראות וניהול התוכן שנשלח למשתמשי המערכת.',
+      tone: 'purple',
       permissions: [
         {
           key: 'notifications.view',
           label: 'צפייה בהתראות',
           description:
-            'מאפשר להיכנס למסך ההתראות ולצפות בהן.',
+            'מאפשרת לפתוח את מסך ההתראות ולצפות בהתראות שהמערכת מציגה למשתמש.',
+        },
+        {
+          key: 'notifications.manage',
+          label: 'ניהול התראות',
+          description:
+            'מאפשרת ליצור ולנהל התראות מערכת, לרבות התראות מתוזמנות או מיועדות לקבוצות משתמשים.',
         },
       ],
     },
@@ -170,46 +211,56 @@ export const permissionGroups:
       id: 'statistics',
       title: 'סטטיסטיקות',
       description:
-        'גישה לנתונים ולדוחות סטטיסטיים.',
+        'גישה לדוחות, לטבלאות ולתרשימים הסטטיסטיים של המערכת.',
+      tone: 'purple',
       permissions: [
         {
           key: 'statistics.view',
           label: 'צפייה בסטטיסטיקות',
           description:
-            'מאפשר להיכנס למסך הסטטיסטיקות.',
+            'מאפשרת לצפות בנתוני משמרות, דוחות, גרפים והשוואות של מוקדנים וכוננים.',
         },
       ],
     },
     {
-  id: 'audit',
-
-  title: 'יומן מערכת',
-
-  description:
-    'צפייה ביומן הפעולות שבוצעו במערכת.',
-
-  permissions: [
-    {
-      key: 'audit.view',
-
-      label: 'צפייה ביומן מערכת',
-
-      description:
-        'מאפשר לצפות בכל פעולות הניהול שבוצעו במערכת.',
-    },
-  ],
-},
-    {
       id: 'shift-swaps',
       title: 'החלפות משמרת',
       description:
-        'גישה לבקשות החלפת משמרת.',
+        'הגשה, צפייה וטיפול בבקשות להחלפת משמרות.',
+      tone: 'purple',
       permissions: [
         {
           key: 'shift_swaps.view',
-          label: 'צפייה בהחלפות משמרת',
+          label: 'צפייה והגשת בקשות החלפה',
           description:
-            'מאפשר להיכנס למסך החלפות המשמרת.',
+            'מאפשרת לפתוח את מסך ההחלפות, לצפות בבקשות הרלוונטיות ולהגיש בקשת שינוי או החלפה.',
+        },
+        {
+          key: 'shift_swaps.approve',
+          label: 'אישור או דחייה של בקשות החלפה',
+          description:
+            'מאפשרת למנהל לבדוק בקשות ממתינות, לאשר או לדחות אותן ולעדכן את הלוח בהתאם.',
+        },
+      ],
+    },
+    {
+      id: 'users',
+      title: 'ניהול משתמשים',
+      description:
+        'צפייה במשתמשי המערכת וניהול חשבונות, תפקידים והרשאות.',
+      tone: 'rose',
+      permissions: [
+        {
+          key: 'users.view',
+          label: 'צפייה ברשימת המשתמשים',
+          description:
+            'מאפשרת לפתוח את מסך ניהול המשתמשים ולצפות בפרטי המשתמשים ובמצב החשבונות.',
+        },
+        {
+          key: 'users.manage',
+          label: 'ניהול משתמשים והרשאות',
+          description:
+            'מאפשרת ליצור, לערוך, להפעיל, להשבית ולמחוק משתמשים וכן לשנות תפקידים והרשאות.',
         },
       ],
     },
@@ -217,27 +268,50 @@ export const permissionGroups:
       id: 'archive',
       title: 'ארכיון',
       description:
-        'גישה לנתונים ולשיבוצים שנשמרו בארכיון.',
+        'גישה לחודשים, ללוחות ולנתונים שנשמרו לצפייה היסטורית.',
+      tone: 'slate',
       permissions: [
         {
           key: 'archive.view',
           label: 'צפייה בארכיון',
           description:
-            'מאפשר להיכנס למסך הארכיון.',
+            'מאפשרת לצפות בחודשי שיבוץ, בלוחות ובנתונים קודמים שנשמרו בארכיון המערכת.',
+        },
+      ],
+    },
+    {
+      id: 'audit',
+      title: 'יומן מערכת',
+      description:
+        'מעקב אחר פעולות ניהול ושינויים שבוצעו במערכת.',
+      tone: 'slate',
+      permissions: [
+        {
+          key: 'audit.view',
+          label: 'צפייה ביומן המערכת',
+          description:
+            'מאפשרת לצפות מי ביצע פעולות ניהול, באיזה מועד ועל איזה משתמש או רכיב במערכת.',
         },
       ],
     },
     {
       id: 'settings',
-      title: 'הגדרות',
+      title: 'הגדרות מערכת',
       description:
-        'גישה להגדרות המערכת.',
+        'צפייה בהגדרות המערכת ושינוי הגדרות ניהוליות.',
+      tone: 'slate',
       permissions: [
         {
           key: 'settings.view',
-          label: 'צפייה בהגדרות',
+          label: 'צפייה בהגדרות המערכת',
           description:
-            'מאפשר להיכנס למסך הגדרות המערכת.',
+            'מאפשרת לפתוח את מסך ההגדרות ולצפות בערכים ובהגדרות הקיימות.',
+        },
+        {
+          key: 'settings.manage',
+          label: 'עריכת הגדרות המערכת',
+          description:
+            'מאפשרת לשנות ולשמור הגדרות מערכת המשפיעות על התנהגות האפליקציה.',
         },
       ],
     },

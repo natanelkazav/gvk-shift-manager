@@ -1,0 +1,15 @@
+Extract this archive into the project root:
+C:\projectManagementApp\gvk-shift-manager
+
+Allow Windows to replace existing files.
+
+Verification commands:
+
+Select-String -Path src\services\morningDriverAvailabilityService.ts -Pattern "getManagementData|reopenSubmission|closePeriod"
+
+Select-String -Path src\components\morningDriverAvailability\MyMorningDriverAvailabilityPanel.tsx -Pattern "function MyMorningDriverAvailabilityPanel"
+
+Select-String -Path src\components\morningDriverAvailability\MorningDriverAvailabilityManagementPanel.tsx -Pattern "interface MorningDriverAvailabilityManagementPanelProps"
+
+Then run:
+npm run build

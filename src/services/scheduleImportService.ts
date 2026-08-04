@@ -4,6 +4,8 @@ import * as XLSX
 import type {
   ImportedDispatcherShift,
   ImportedDriverDuty,
+  ImportedMorningDriverShift,
+  ImportedMorningDriverShiftType,
   ScheduleImportPreview,
   ScheduleImportPeriodType,
 } from '../types/scheduleImport';
@@ -57,6 +59,8 @@ const COLUMN_INDEX = {
   date: 0,
   shiftHours: 2,
   dispatcherName: 3,
+  morningDriverHours: 4,
+  morningDriverNames: 5,
   driverName: 6,
   note: 7,
 } as const;
@@ -620,6 +624,92 @@ function parseShiftRange(
   };
 }
 
+
+function splitMorningDriverNames(
+  value: RawCellValue,
+): string[] {
+  return normalizeText(
+    value,
+  )
+    .split('/')
+    .map(
+      (
+        name,
+      ) =>
+        name.trim(),
+    )
+    .filter(
+      Boolean,
+    );
+}
+
+function getMorningDriverShiftType(
+  shiftRange:
+    ParsedShiftRange,
+): ImportedMorningDriverShiftType | null {
+  const shiftKey =
+    `${shiftRange.startTime}-${shiftRange.endTime}`;
+
+  if (
+    shiftKey ===
+      '06:00-16:00'
+  ) {
+    return 'weekday_morning';
+  }
+
+  if (
+    shiftKey ===
+      '15:00-23:00'
+  ) {
+    return 'weekday_evening';
+  }
+
+  if (
+    shiftKey ===
+      '06:00-14:00'
+  ) {
+    return 'friday_morning';
+  }
+
+  return null;
+}
+
+function getMorningDriverStaffing(
+  shiftType:
+    ImportedMorningDriverShiftType,
+): {
+  minimumWorkers: number;
+  recommendedWorkers: number;
+} {
+  if (
+    shiftType ===
+      'weekday_morning'
+  ) {
+    return {
+      minimumWorkers: 1,
+      recommendedWorkers: 2,
+    };
+  }
+
+  return {
+    minimumWorkers: 1,
+    recommendedWorkers: 1,
+  };
+}
+
+function createMorningDriverShiftKey(
+  shift:
+    ImportedMorningDriverShift,
+): string {
+  return [
+    shift.date,
+    shift.startTime,
+    shift.endTime,
+    shift.assignmentSlot,
+    shift.morningDriverName,
+  ].join('|');
+}
+
 function getFileExtension(
   fileName: string,
 ): string {
@@ -857,7 +947,14 @@ function parseScheduleRows(
       ImportedDriverDuty
     >();
 
+  const morningDriverShifts:
+    ImportedMorningDriverShift[] =
+    [];
+
   const dispatcherShiftKeys =
+    new Set<string>();
+
+  const morningDriverShiftKeys =
     new Set<string>();
 
   const warnings:
@@ -984,6 +1081,139 @@ function parseScheduleRows(
         );
       }
 
+
+      const morningDriverNames =
+        splitMorningDriverNames(
+          row[
+            COLUMN_INDEX
+              .morningDriverNames
+          ],
+        );
+
+      if (
+        morningDriverNames.length >
+        0
+      ) {
+        if (!currentDate) {
+          skippedRows +=
+            morningDriverNames.length;
+
+          warnings.push(
+            `שורה ${excelRowNumber}: נמצאו כונני בוקר ללא תאריך תקין.`,
+          );
+        } else {
+          const morningShiftRange =
+            parseShiftRange(
+              row[
+                COLUMN_INDEX
+                  .morningDriverHours
+              ],
+            );
+
+          if (
+            !morningShiftRange
+          ) {
+            skippedRows +=
+              morningDriverNames.length;
+
+            warnings.push(
+              `שורה ${excelRowNumber}: נמצאו כונני בוקר אך לא ניתן לזהות את שעות המשמרת בעמודה E.`,
+            );
+          } else {
+            const morningShiftType =
+              getMorningDriverShiftType(
+                morningShiftRange,
+              );
+
+            if (!morningShiftType) {
+              skippedRows +=
+                morningDriverNames.length;
+
+              warnings.push(
+                `שורה ${excelRowNumber}: שעות כונני הבוקר ${morningShiftRange.startTime}-${morningShiftRange.endTime} אינן תואמות למשמרת מוכרת.`,
+              );
+            } else {
+              if (
+                morningDriverNames.length >
+                2
+              ) {
+                warnings.push(
+                  `שורה ${excelRowNumber}: נמצאו ${morningDriverNames.length} כונני בוקר. רק שני השמות הראשונים ייובאו.`,
+                );
+              }
+
+              const staffing =
+                getMorningDriverStaffing(
+                  morningShiftType,
+                );
+
+              morningDriverNames
+                .slice(
+                  0,
+                  2,
+                )
+                .forEach(
+                  (
+                    morningDriverName,
+                    nameIndex,
+                  ) => {
+                    const importedShift:
+                      ImportedMorningDriverShift = {
+                        date:
+                          currentDate as string,
+
+                        startTime:
+                          morningShiftRange.startTime,
+
+                        endTime:
+                          morningShiftRange.endTime,
+
+                        morningDriverName,
+
+                        assignmentSlot:
+                          nameIndex + 1,
+
+                        shiftType:
+                          morningShiftType,
+
+                        minimumWorkers:
+                          staffing.minimumWorkers,
+
+                        recommendedWorkers:
+                          staffing.recommendedWorkers,
+                      };
+
+                    const shiftKey =
+                      createMorningDriverShiftKey(
+                        importedShift,
+                      );
+
+                    if (
+                      morningDriverShiftKeys.has(
+                        shiftKey,
+                      )
+                    ) {
+                      warnings.push(
+                        `שורה ${excelRowNumber}: נמצא שיבוץ כפול של ${morningDriverName} במשמרת כונני הבוקר בתאריך ${currentDate}.`,
+                      );
+
+                      return;
+                    }
+
+                    morningDriverShiftKeys.add(
+                      shiftKey,
+                    );
+
+                    morningDriverShifts.push(
+                      importedShift,
+                    );
+                  },
+                );
+            }
+          }
+        }
+      }
+
       const dispatcherName =
         normalizeText(
           row[
@@ -1104,6 +1334,41 @@ function parseScheduleRows(
     },
   );
 
+
+  morningDriverShifts.sort(
+    (
+      firstShift,
+      secondShift,
+    ) => {
+      const dateComparison =
+        firstShift.date.localeCompare(
+          secondShift.date,
+        );
+
+      if (
+        dateComparison !== 0
+      ) {
+        return dateComparison;
+      }
+
+      const startTimeComparison =
+        firstShift.startTime.localeCompare(
+          secondShift.startTime,
+        );
+
+      if (
+        startTimeComparison !== 0
+      ) {
+        return startTimeComparison;
+      }
+
+      return (
+        firstShift.assignmentSlot -
+        secondShift.assignmentSlot
+      );
+    },
+  );
+
   if (
     detectedPeriods.size ===
     0
@@ -1172,6 +1437,15 @@ function parseScheduleRows(
     );
   }
 
+  if (
+    morningDriverShifts.length ===
+    0
+  ) {
+    warnings.push(
+      'לא זוהו שיבוצי כונני בוקר בעמודות E ו-F.',
+    );
+  }
+
   const expectedDaysInMonth =
     new Date(
       year,
@@ -1193,6 +1467,7 @@ function parseScheduleRows(
     month,
     dispatcherShifts,
     driverDuties,
+    morningDriverShifts,
     skippedRows,
     warnings,
   };
