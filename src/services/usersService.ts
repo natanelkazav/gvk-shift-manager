@@ -12,6 +12,9 @@ import type {
   DeleteUserInput,
   DeleteUserResponse,
   UpdateUserProfileInput,
+  ResetUserPasswordInput,
+  ResetUserPasswordResponse,
+  ResetUserPasswordResult,
 } from '../types/users';
 
 interface ProfileDatabaseRow {
@@ -380,6 +383,74 @@ async function deleteUser(
 
   return data.deletedUser;
 }
+
+async function resetUserPassword(
+  input:
+    ResetUserPasswordInput,
+): Promise<ResetUserPasswordResult> {
+  const normalizedUserId =
+    input.userId.trim();
+
+  if (!normalizedUserId) {
+    throw new Error(
+      'לא התקבל מזהה משתמש לאיפוס הסיסמה.',
+    );
+  }
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.functions.invoke<
+      ResetUserPasswordResponse
+    >(
+      'reset-user-password',
+      {
+        body: {
+          userId:
+            normalizedUserId,
+        },
+      },
+    );
+
+  if (error) {
+    const errorMessage =
+      await getFunctionErrorMessage(
+        error,
+      );
+
+    throw new Error(
+      errorMessage,
+    );
+  }
+
+  if (!data) {
+    throw new Error(
+      'פונקציית איפוס הסיסמה לא החזירה נתונים.',
+    );
+  }
+
+  if (data.success !== true) {
+    throw new Error(
+      'השרת לא אישר שאיפוס הסיסמה הצליח.',
+    );
+  }
+
+  if (!data.user) {
+    throw new Error(
+      'הסיסמה אופסה, אך נתוני המשתמש לא הוחזרו מהשרת.',
+    );
+  }
+
+  if (!data.auditLogged) {
+    console.warn(
+      'הסיסמה אופסה, אך רישום הפעולה ביומן המערכת נכשל.',
+    );
+  }
+
+  return data.user;
+}
+
 export const usersService = {
   getUsers,
   createUser,
@@ -388,4 +459,5 @@ export const usersService = {
   getUserPermissions,
   setUserPermissions,
   deleteUser,
+  resetUserPassword,
 };

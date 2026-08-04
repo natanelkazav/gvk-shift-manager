@@ -25,6 +25,8 @@ import {
 } from 'react';
 import DriverScheduleDayEditor
   from '../components/driverSchedule/DriverScheduleDayEditor';
+import DriverDutyTransferDialog
+  from '../components/driverSchedule/DriverDutyTransferDialog';
 import {
   useAuth,
 } from '../auth/AuthContext';
@@ -153,6 +155,8 @@ function DriverSchedulePage() {
     user:
       authenticatedUser,
 
+    profile,
+
     hasPermission,
   } =
     useAuth();
@@ -189,6 +193,8 @@ function DriverSchedulePage() {
 
     updateScheduleDay,
 
+    transferMyDuty,
+
     publishSchedule,
 
     clearError:
@@ -199,6 +205,11 @@ function DriverSchedulePage() {
     hasPermission(
       'driver_schedule.edit',
     );
+
+  const canTransferMyDuties =
+    profile?.role ===
+      'on_call' &&
+    canViewPersonalSchedule;
 
   const defaultPeriod =
     useMemo(
@@ -313,6 +324,17 @@ const [
   useState<DriverScheduleViewMode>(
     'calendar',
   );
+  const [
+    selectedTransferDay,
+    setSelectedTransferDay,
+  ] =
+    useState<
+      import('../types/driverSchedule')
+        .DriverScheduleDay |
+      null
+    >(
+      null,
+    );
   const availableYears =
     useMemo(
       () => {
@@ -776,6 +798,77 @@ const effectiveWorkspaceTab =
     ? activeWorkspaceTab
     : visibleWorkspaceTabs[0]?.id ??
       'schedule';
+
+const isCurrentScheduleMonth =
+  (() => {
+    const period =
+      scheduleDraftState
+        .data
+        ?.period ??
+      null;
+
+    if (!period) {
+      return false;
+    }
+
+    const currentDate =
+      new Date();
+
+    return (
+      period.year ===
+        currentDate.getFullYear() &&
+      period.month ===
+        currentDate.getMonth() + 1
+    );
+  })();
+
+const transferableDutyDays =
+  (
+    scheduleDraftState
+      .data
+      ?.days ??
+    []
+  ).filter(
+    (day) => {
+      if (
+        !canTransferMyDuties ||
+        !authenticatedUser?.id ||
+        !isCurrentScheduleMonth ||
+        scheduleDraftState
+          .data
+          ?.period
+          ?.status !==
+          'published' ||
+        day.assignedUserId !==
+          authenticatedUser.id ||
+        day.isLocked
+      ) {
+        return false;
+      }
+
+      const todayKey =
+        new Intl.DateTimeFormat(
+          'en-CA',
+          {
+            timeZone:
+              'Asia/Jerusalem',
+            year:
+              'numeric',
+            month:
+              '2-digit',
+            day:
+              '2-digit',
+          },
+        ).format(
+          new Date(),
+        );
+
+      return (
+        day.dutyDate >=
+        todayKey
+      );
+    },
+  );
 
 const isBusy =
   state.isLoading ||
@@ -1919,7 +2012,8 @@ effectiveWorkspaceTab ===
           תצוגת חודש
         </button>
 
-        {canEditSchedule ? (
+        {canEditSchedule ||
+        canTransferMyDuties ? (
           <button
             type="button"
             className={[
@@ -1947,7 +2041,9 @@ effectiveWorkspaceTab ===
               aria-hidden="true"
             />
 
-            רשימת עריכה
+            {canEditSchedule
+              ? 'רשימת עריכה'
+              : 'רשימת הכוננויות שלי'}
           </button>
         ) : null}
       </div>
@@ -1981,6 +2077,16 @@ effectiveWorkspaceTab ===
           isLoading={
             scheduleDraftState.isLoading
           }
+          canTransferMyDuties={
+            canTransferMyDuties
+          }
+          onSelectTransferDay={(
+            day,
+          ) => {
+            setSelectedTransferDay(
+              day,
+            );
+          }}
           onLoadMonth={async (
             year,
             month,
@@ -2014,6 +2120,100 @@ effectiveWorkspaceTab ===
             השיבוץ.
           </span>
         </div>
+      </section>
+    ) : canTransferMyDuties ? (
+      <section className="driver-schedule-draft-preview">
+        <header className="driver-schedule-section-header">
+          <span className="driver-schedule-section-icon">
+            <List
+              size={22}
+              aria-hidden="true"
+            />
+          </span>
+
+          <div>
+            <h2>
+              הכוננויות שלי בחודש הנוכחי
+            </h2>
+
+            <p>
+              ניתן להעביר כוננות עתידית לכונן פעיל אחר.
+            </p>
+          </div>
+        </header>
+
+        {transferableDutyDays.length >
+        0 ? (
+          <div className="driver-duty-transfer-list">
+            {transferableDutyDays.map(
+              (day) => (
+                <article
+                  key={
+                    day.id
+                  }
+                  className="driver-duty-transfer-list-item"
+                >
+                  <div>
+                    <strong>
+                      {day.weekdayName}
+                    </strong>
+
+                    <span>
+                      {new Intl.DateTimeFormat(
+                        'he-IL',
+                        {
+                          day:
+                            '2-digit',
+                          month:
+                            '2-digit',
+                          year:
+                            'numeric',
+                        },
+                      ).format(
+                        new Date(
+                          `${day.dutyDate}T12:00:00`,
+                        ),
+                      )}
+                    </span>
+                  </div>
+
+                  <Button
+                    type="button"
+                    disabled={
+                      scheduleDraftState
+                        .transferringDayId !==
+                      null
+                    }
+                    onClick={() => {
+                      setSelectedTransferDay(
+                        day,
+                      );
+                    }}
+                  >
+                    שינוי כונן
+                  </Button>
+                </article>
+              ),
+            )}
+          </div>
+        ) : (
+          <section className="driver-schedule-placeholder-card">
+            <CalendarDays
+              size={31}
+              aria-hidden="true"
+            />
+
+            <div>
+              <strong>
+                אין כוננויות זמינות להעברה
+              </strong>
+
+              <span>
+                יוצגו כאן רק כוננויות שלך בחודש הנוכחי, מהיום והלאה.
+              </span>
+            </div>
+          </section>
+        )}
       </section>
     ) : scheduleDraftState.data?.period &&
       canEditSchedule ? (
@@ -2234,6 +2434,60 @@ effectiveWorkspaceTab ===
     )}
   </section>
 ) : null}
+
+      {selectedTransferDay &&
+      authenticatedUser?.id &&
+      scheduleDraftState.data ? (
+        <DriverDutyTransferDialog
+          day={
+            selectedTransferDay
+          }
+          drivers={
+            scheduleDraftState
+              .data
+              .drivers
+          }
+          currentUserId={
+            authenticatedUser.id
+          }
+          isSaving={
+            scheduleDraftState
+              .transferringDayId ===
+            selectedTransferDay.id
+          }
+          onClose={() => {
+            if (
+              scheduleDraftState
+                .transferringDayId ===
+              null
+            ) {
+              setSelectedTransferDay(
+                null,
+              );
+            }
+          }}
+          onTransfer={async (
+            newDriverId,
+          ) => {
+            try {
+              await transferMyDuty({
+                scheduleDayId:
+                  selectedTransferDay.id,
+
+                newDriverId,
+              });
+
+              setSelectedTransferDay(
+                null,
+              );
+            } catch {
+              /*
+               * השגיאה נשמרת בתוך ה-Hook.
+               */
+            }
+          }}
+        />
+      ) : null}
       {!canManageAvailability &&
       !canSubmitAvailability &&
       !hasAnyScheduleAccess ? (

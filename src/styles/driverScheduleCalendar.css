@@ -210,3 +210,24 @@
     flex: 1 1 180px;
   }
 }
+
+.driver-calendar-day-transferable {
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 2px #22c55e;
+}
+
+.driver-calendar-day-transferable:hover {
+  background: #f0fdf4;
+}
+
+.driver-calendar-assignment-transfer {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.55rem;
+  font-weight: 800;
+}

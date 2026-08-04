@@ -16,6 +16,7 @@ import type {
   UpdateUserProfileInput,
   UsersFilters,
   UsersState,
+  ResetUserPasswordResult,
 } from '../types/users';
 
 interface UsersStatisticsData {
@@ -51,7 +52,12 @@ interface UseUsersResult {
   statistics: UsersStatisticsData;
   updatingUserId: string | null;
   deletingUserId: string | null;
+  resettingPasswordUserId:
+    string | null;
   isCreatingUser: boolean;
+
+  lastResetPasswordResult:
+    ResetUserPasswordResult | null;
 
   userPermissionsState:
     UserPermissionsState;
@@ -74,6 +80,10 @@ interface UseUsersResult {
   deleteUser: (
     input: DeleteUserInput,
   ) => Promise<void>;
+
+  resetUserPassword: (
+    userId: string,
+  ) => Promise<ResetUserPasswordResult>;
 
   loadUserPermissions: (
     userId: string,
@@ -159,6 +169,22 @@ export function useUsers({
     isCreatingUser,
     setIsCreatingUser,
   ] = useState(false);
+
+  const [
+    resettingPasswordUserId,
+    setResettingPasswordUserId,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+  const [
+    lastResetPasswordResult,
+    setLastResetPasswordResult,
+  ] =
+    useState<ResetUserPasswordResult | null>(
+      null,
+    );
 
   const [
     userPermissionsState,
@@ -544,6 +570,101 @@ export function useUsers({
       ],
     );
 
+
+  const resetUserPassword =
+    useCallback(
+      async (
+        userId: string,
+      ): Promise<ResetUserPasswordResult> => {
+        const normalizedUserId =
+          userId.trim();
+
+        if (!normalizedUserId) {
+          throw new Error(
+            'לא התקבל מזהה משתמש לאיפוס הסיסמה.',
+          );
+        }
+
+        setResettingPasswordUserId(
+          normalizedUserId,
+        );
+
+        setLastResetPasswordResult(
+          null,
+        );
+
+        clearError();
+
+        try {
+          const result =
+            await usersService
+              .resetUserPassword({
+                userId:
+                  normalizedUserId,
+              });
+
+          setLastResetPasswordResult(
+            result,
+          );
+
+          setUsersState(
+            (
+              currentState,
+            ) => ({
+              ...currentState,
+
+              users:
+                currentState.users.map(
+                  (
+                    profile,
+                  ) =>
+                    profile.id ===
+                    result.userId
+                      ? {
+                          ...profile,
+
+                          mustChangePassword:
+                            true,
+                        }
+                      : profile,
+                ),
+
+              error:
+                null,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          const errorMessage =
+            getErrorMessage(
+              error,
+              'לא ניתן היה לאפס את סיסמת המשתמש.',
+            );
+
+          setUsersState(
+            (
+              currentState,
+            ) => ({
+              ...currentState,
+
+              error:
+                errorMessage,
+            }),
+          );
+
+          throw error;
+        } finally {
+          setResettingPasswordUserId(
+            null,
+          );
+        }
+      },
+      [
+        clearError,
+      ],
+    );
+
   const loadUserPermissions =
     useCallback(
       async (
@@ -792,13 +913,16 @@ export function useUsers({
     statistics,
     updatingUserId,
     deletingUserId,
+    resettingPasswordUserId,
     isCreatingUser,
+    lastResetPasswordResult,
     userPermissionsState,
     loadUsers,
     createUser,
     updateUser,
     toggleActiveStatus,
     deleteUser,
+    resetUserPassword,
     loadUserPermissions,
     saveUserPermissions,
     resetUserPermissionsState,

@@ -1684,3 +1684,227 @@
   background: #f1f5f9;
   color: #64748b;
 }
+
+.driver-duty-transfer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.driver-duty-transfer-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 11px;
+  background: #f8fbff;
+}
+
+.driver-duty-transfer-list-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.driver-duty-transfer-list-item strong {
+  color: #0f172a;
+  font-size: 0.76rem;
+}
+
+.driver-duty-transfer-list-item span {
+  color: #64748b;
+  font-size: 0.66rem;
+}
+
+.driver-duty-transfer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.driver-duty-transfer-dialog {
+  display: flex;
+  width: min(100%, 520px);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  flex-direction: column;
+  gap: 16px;
+  padding: 19px;
+  border: 1px solid #dbe3ef;
+  border-radius: 17px;
+  background: #ffffff;
+  box-shadow: 0 24px 65px rgba(15, 23, 42, 0.25);
+}
+
+.driver-duty-transfer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.driver-duty-transfer-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.driver-duty-transfer-icon {
+  display: inline-flex;
+  width: 43px;
+  height: 43px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.driver-duty-transfer-heading h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.driver-duty-transfer-heading p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+.driver-duty-transfer-close {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
+  cursor: pointer;
+}
+
+.driver-duty-transfer-close:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.driver-duty-transfer-date,
+.driver-duty-transfer-current,
+.driver-duty-transfer-confirmation,
+.driver-duty-transfer-notice {
+  padding: 12px 13px;
+  border-radius: 11px;
+}
+
+.driver-duty-transfer-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.driver-duty-transfer-date > div,
+.driver-duty-transfer-current {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.driver-duty-transfer-date span,
+.driver-duty-transfer-current span {
+  color: #64748b;
+  font-size: 0.64rem;
+}
+
+.driver-duty-transfer-date strong,
+.driver-duty-transfer-current strong {
+  color: #1e293b;
+  font-size: 0.76rem;
+}
+
+.driver-duty-transfer-current {
+  background: #f8fafc;
+}
+
+.driver-duty-transfer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.driver-duty-transfer-field > span {
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.driver-duty-transfer-field select {
+  width: 100%;
+  min-height: 43px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1e293b;
+  font: inherit;
+}
+
+.driver-duty-transfer-field select:focus {
+  outline: 3px solid #bfdbfe;
+  border-color: #60a5fa;
+}
+
+.driver-duty-transfer-confirmation {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 0.7rem;
+}
+
+.driver-duty-transfer-notice {
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.driver-duty-transfer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.driver-duty-transfer-loading {
+  animation: driver-availability-spin 1s linear infinite;
+}
+
+@media (max-width: 620px) {
+  .driver-duty-transfer-list-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .driver-duty-transfer-list-item .button,
+  .driver-duty-transfer-actions .button {
+    width: 100%;
+  }
+
+  .driver-duty-transfer-actions {
+    flex-direction: column-reverse;
+  }
+}

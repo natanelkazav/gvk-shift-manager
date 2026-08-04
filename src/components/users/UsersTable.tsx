@@ -5,6 +5,7 @@ import {
   Crown,
   Eye,
   Headphones,
+  KeyRound,
   Pencil,
   Power,
   RefreshCw,
@@ -45,6 +46,12 @@ interface UsersTableProps {
   deletingUserId:
     string | null;
 
+  resettingPasswordUserId:
+    string | null;
+
+  canResetPasswords:
+    boolean;
+
   onEditUser: (
     profile: UserProfile,
   ) => void;
@@ -52,6 +59,11 @@ interface UsersTableProps {
   onDeleteUser: (
     profile: UserProfile,
   ) => void;
+
+  onResetPassword: (
+    profile:
+      UserProfile,
+  ) => Promise<void>;
 
   onToggleActiveStatus: (
     profile: UserProfile,
@@ -259,8 +271,11 @@ function UsersTable({
   currentUserId,
   updatingUserId,
   deletingUserId,
+  resettingPasswordUserId,
+  canResetPasswords,
   onEditUser,
   onDeleteUser,
+  onResetPassword,
   onToggleActiveStatus,
 }: UsersTableProps) {
 const [
@@ -570,9 +585,14 @@ const [
                               deletingUserId ===
                               profile.id;
 
+                            const isResettingPassword =
+                              resettingPasswordUserId ===
+                              profile.id;
+
                             const isBusy =
                               isUpdating ||
-                              isDeleting;
+                              isDeleting ||
+                              isResettingPassword;
 
                             return (
                               <tr
@@ -706,6 +726,37 @@ const [
                                         aria-hidden="true"
                                       />
                                     </Button>
+
+
+                                    {canResetPasswords ? (
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        disabled={
+                                          isBusy
+                                        }
+                                        title={`איפוס הסיסמה של ${profile.displayName}`}
+                                        aria-label={`איפוס הסיסמה של ${profile.displayName}`}
+                                        onClick={() => {
+                                          void onResetPassword(
+                                            profile,
+                                          );
+                                        }}
+                                      >
+                                        {isResettingPassword ? (
+                                          <RefreshCw
+                                            size={16}
+                                            className="users-action-loading-icon"
+                                            aria-hidden="true"
+                                          />
+                                        ) : (
+                                          <KeyRound
+                                            size={16}
+                                            aria-hidden="true"
+                                          />
+                                        )}
+                                      </Button>
+                                    ) : null}
 
                                     <Button
                                       type="button"

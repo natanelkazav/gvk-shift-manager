@@ -53,3 +53,21 @@ export interface UsersState {
   isLoading: boolean;
   error: string | null;
 }
+
+export interface ResetUserPasswordInput {
+  userId: string;
+}
+
+export interface ResetUserPasswordResult {
+  userId: string;
+  email: string;
+  displayName: string;
+  mustChangePassword: true;
+}
+
+export interface ResetUserPasswordResponse {
+  success: boolean;
+  temporaryPassword: string;
+  user: ResetUserPasswordResult;
+  auditLogged: boolean;
+}

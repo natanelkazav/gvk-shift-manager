@@ -13,6 +13,8 @@ import type {
   UpdateDriverScheduleDayRequest,
   UpdateDriverScheduleDayResponse,
   PublishDriverScheduleResponse,
+  TransferMyDriverDutyRequest,
+  TransferMyDriverDutyResponse,
 } from '../types/driverSchedule';
 
 interface DriverScheduleDraftState {
@@ -26,6 +28,9 @@ interface DriverScheduleDraftState {
   updatingDayId:
     string | null;
 
+  transferringDayId:
+    string | null;
+
   error:
     string | null;
 
@@ -34,6 +39,10 @@ interface DriverScheduleDraftState {
 
   lastUpdatedDayResult:
     UpdateDriverScheduleDayResponse | null;
+
+  lastTransferredDutyResult:
+    TransferMyDriverDutyResponse | null;
+
     isPublishing: boolean;
 
   lastPublishedResult:
@@ -65,6 +74,11 @@ interface UseDriverScheduleDraftResult {
       UpdateDriverScheduleDayRequest,
   ) => Promise<UpdateDriverScheduleDayResponse>;
 
+  transferMyDuty: (
+    request:
+      TransferMyDriverDutyRequest,
+  ) => Promise<TransferMyDriverDutyResponse>;
+
   clearError:
     () => void;
 
@@ -88,6 +102,9 @@ const initialState:
     updatingDayId:
       null,
 
+    transferringDayId:
+      null,
+
     error: null,
 
     lastCreatedResult:
@@ -95,6 +112,10 @@ const initialState:
 
     lastUpdatedDayResult:
       null,
+
+    lastTransferredDutyResult:
+      null,
+
     isPublishing: false,
 
 lastPublishedResult: null,
@@ -272,6 +293,77 @@ function normalizeDriverScheduleDraftError(
       )
     ) {
       return 'לא התקבלה תשובה תקינה בעת עדכון יום בלוח הכוננים.';
+    }
+    if (
+      normalizedMessage.includes(
+        'active on-call driver profile not found',
+      )
+    ) {
+      return 'לא נמצא פרופיל כונן פעיל עבור המשתמש המחובר.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'new on-call driver id is required',
+      )
+    ) {
+      return 'יש לבחור כונן מחליף.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'new on-call driver must be different',
+      )
+    ) {
+      return 'יש לבחור כונן אחר.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'only published driver schedules can be changed by drivers',
+      )
+    ) {
+      return 'ניתן להעביר כוננות רק מלוח כוננים שפורסם.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'drivers can change duties only in the current month',
+      )
+    ) {
+      return 'ניתן לשנות כוננות רק בחודש הנוכחי.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'past driver duties cannot be changed',
+      )
+    ) {
+      return 'לא ניתן לשנות כוננות שכבר הסתיימה.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'driver can transfer only their own duty',
+      )
+    ) {
+      return 'ניתן להעביר רק כוננות שמשובצת כרגע אליך.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'locked driver duty cannot be changed',
+      )
+    ) {
+      return 'הכוננות נעולה ולא ניתן לשנות אותה.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'לא התקבלה תשובה בעת העברת הכוננות',
+      )
+    ) {
+      return 'לא התקבלה תשובה תקינה בעת העברת הכוננות.';
     }
     if (
       normalizedMessage.includes(
@@ -925,6 +1017,144 @@ const publishSchedule =
       ],
     );
 
+
+  const transferMyDuty =
+    useCallback(
+      async (
+        request:
+          TransferMyDriverDutyRequest,
+      ): Promise<TransferMyDriverDutyResponse> => {
+        const normalizedScheduleDayId =
+          request.scheduleDayId.trim();
+
+        if (
+          !normalizedScheduleDayId
+        ) {
+          const missingDayError =
+            new Error(
+              'Driver schedule day id is required.',
+            );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              error:
+                normalizeDriverScheduleDraftError(
+                  missingDayError,
+                ),
+            }),
+          );
+
+          throw missingDayError;
+        }
+
+        const schedulePeriodId =
+          state.data?.period?.id ??
+          null;
+
+        if (!schedulePeriodId) {
+          const missingPeriodError =
+            new Error(
+              'Driver schedule period id is required.',
+            );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              error:
+                normalizeDriverScheduleDraftError(
+                  missingPeriodError,
+                ),
+            }),
+          );
+
+          throw missingPeriodError;
+        }
+
+        setState(
+          (currentState) => ({
+            ...currentState,
+
+            transferringDayId:
+              normalizedScheduleDayId,
+
+            error:
+              null,
+
+            lastTransferredDutyResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await driverScheduleService
+              .transferMyDuty({
+                ...request,
+
+                scheduleDayId:
+                  normalizedScheduleDayId,
+
+                newDriverId:
+                  request.newDriverId.trim(),
+              });
+
+          const refreshedData =
+            await driverScheduleService
+              .getScheduleById(
+                schedulePeriodId,
+              );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              data:
+                refreshedData,
+
+              transferringDayId:
+                null,
+
+              error:
+                null,
+
+              lastTransferredDutyResult:
+                result,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          const normalizedError =
+            normalizeDriverScheduleDraftError(
+              error,
+            );
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+
+              transferringDayId:
+                null,
+
+              error:
+                normalizedError,
+
+              lastTransferredDutyResult:
+                null,
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [
+        state.data?.period?.id,
+      ],
+    );
+
   const clearError =
     useCallback(
       (): void => {
@@ -977,6 +1207,8 @@ const publishSchedule =
     createDraft,
 
     updateScheduleDay,
+
+    transferMyDuty,
 
     clearError,
 

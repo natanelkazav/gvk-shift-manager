@@ -240,3 +240,31 @@ export interface PublishDriverScheduleResponse {
 
   alreadyPublished: boolean;
 }
+
+export interface TransferMyDriverDutyRequest {
+  scheduleDayId: string;
+
+  newDriverId: string;
+}
+
+export interface TransferMyDriverDutyResponse {
+  scheduleDayId: string;
+
+  periodId: string;
+
+  dutyDate: string;
+
+  previousDriverId: string;
+
+  previousDriverName: string;
+
+  assignedUserId: string;
+
+  assignedUserName: string;
+
+  assignmentSource: 'swap';
+
+  hasWarnings: boolean;
+
+  warnings: string[];
+}

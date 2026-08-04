@@ -54,6 +54,14 @@ interface DriverScheduleCalendarProps {
     year: number,
     month: number,
   ) => Promise<void>;
+
+  canTransferMyDuties:
+    boolean;
+
+  onSelectTransferDay: (
+    day:
+      DriverScheduleDay,
+  ) => void;
 }
 
 type DriverCalendarFilter =
@@ -182,6 +190,8 @@ function DriverScheduleCalendar({
   showManagementDetails,
   isLoading,
   onLoadMonth,
+  canTransferMyDuties,
+  onSelectTransferDay,
 }: DriverScheduleCalendarProps) {
   const canViewAllDrivers =
     canViewTeamSchedule ||
@@ -347,6 +357,61 @@ const scheduleDaysByDate =
         default:
           return true;
       }
+    };
+
+
+  const isCurrentMonth =
+    (() => {
+      const now =
+        new Date();
+
+      return (
+        displayedYear ===
+          now.getFullYear() &&
+        displayedMonth ===
+          now.getMonth() + 1
+      );
+    })();
+
+  const canTransferDay =
+    (
+      day:
+        DriverScheduleDay,
+    ): boolean => {
+      if (
+        !canTransferMyDuties ||
+        !currentUserId ||
+        !isCurrentMonth ||
+        period?.status !==
+          'published' ||
+        day.assignedUserId !==
+          currentUserId ||
+        day.isLocked
+      ) {
+        return false;
+      }
+
+      const todayKey =
+        new Intl.DateTimeFormat(
+          'en-CA',
+          {
+            timeZone:
+              'Asia/Jerusalem',
+            year:
+              'numeric',
+            month:
+              '2-digit',
+            day:
+              '2-digit',
+          },
+        ).format(
+          new Date(),
+        );
+
+      return (
+        day.dutyDate >=
+        todayKey
+      );
     };
 
   return (
@@ -570,6 +635,16 @@ const scheduleDaysByDate =
           }
 
           if (
+            canTransferDay(
+              day,
+            )
+          ) {
+            classNames.push(
+              'driver-calendar-day-transferable',
+            );
+          }
+
+          if (
             showManagementDetails &&
             (
               day.spacingWarning ||
@@ -595,6 +670,29 @@ const scheduleDaysByDate =
             null
           );
         }}
+        onDayClick={
+          canTransferMyDuties
+            ? (
+                context,
+              ) => {
+                const day =
+                  scheduleDaysByDate.get(
+                    context.date,
+                  );
+
+                if (
+                  day &&
+                  canTransferDay(
+                    day,
+                  )
+                ) {
+                  onSelectTransferDay(
+                    day,
+                  );
+                }
+              }
+            : undefined
+        }
         renderDayContent={(
           context,
         ) => {
@@ -649,6 +747,14 @@ const scheduleDaysByDate =
                   {getAssignmentSourceLabel(
                     day,
                   )}
+                </span>
+              ) : null}
+
+              {canTransferDay(
+                day,
+              ) ? (
+                <span className="driver-calendar-assignment-transfer">
+                  לחיצה לשינוי כונן
                 </span>
               ) : null}
 

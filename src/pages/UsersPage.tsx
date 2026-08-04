@@ -38,6 +38,8 @@ const initialFilters:
 function UsersPage() {
   const {
     user: authenticatedUser,
+    profile:
+      authenticatedProfile,
     refreshProfile,
     refreshPermissions,
     hasPermission,
@@ -47,6 +49,10 @@ function UsersPage() {
     hasPermission(
       'users.manage',
     );
+
+  const canResetPasswords =
+    authenticatedProfile?.role ===
+      'admin';
 
   const [
     filters,
@@ -93,13 +99,16 @@ function UsersPage() {
     statistics,
     updatingUserId,
     deletingUserId,
+    resettingPasswordUserId,
     isCreatingUser,
+    lastResetPasswordResult,
     userPermissionsState,
     loadUsers,
     createUser,
     updateUser,
     toggleActiveStatus,
     deleteUser,
+    resetUserPassword,
     loadUserPermissions,
     saveUserPermissions,
     resetUserPermissionsState,
@@ -335,6 +344,35 @@ function UsersPage() {
       );
     };
 
+
+  const handleResetPassword =
+    async (
+      profile:
+        UserProfile,
+    ): Promise<void> => {
+      if (
+        !canResetPasswords ||
+        resettingPasswordUserId
+      ) {
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          `האם לאפס את הסיסמה של ${profile.displayName}?\n\n` +
+          'הסיסמה החדשה תהיה: 12345678\n\n' +
+          'המשתמש יידרש להחליף את הסיסמה לאחר הכניסה הבאה.',
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      await resetUserPassword(
+        profile.id,
+      );
+    };
+
   return (
     <section className="users-page">
       <PageHeader
@@ -398,6 +436,27 @@ function UsersPage() {
         </div>
       ) : null}
 
+
+      {lastResetPasswordResult ? (
+        <div
+          className="users-success"
+          role="status"
+        >
+          הסיסמה של{' '}
+          <strong>
+            {
+              lastResetPasswordResult
+                .displayName
+            }
+          </strong>{' '}
+          אופסה בהצלחה ל־
+          <strong>
+            12345678
+          </strong>
+          . המשתמש יידרש להחליף אותה לאחר הכניסה הבאה.
+        </div>
+      ) : null}
+
       {usersState.error ? (
         <div
           className="users-error"
@@ -438,11 +497,20 @@ function UsersPage() {
         deletingUserId={
           deletingUserId
         }
+        resettingPasswordUserId={
+          resettingPasswordUserId
+        }
+        canResetPasswords={
+          canResetPasswords
+        }
         onEditUser={
           openEditModal
         }
         onDeleteUser={
           openDeleteModal
+        }
+        onResetPassword={
+          handleResetPassword
         }
         onToggleActiveStatus={
           handleToggleActiveStatus

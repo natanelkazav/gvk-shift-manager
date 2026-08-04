@@ -9,6 +9,8 @@ import type {
   UpdateDriverScheduleDayRequest,
   PublishDriverScheduleResponse,
   UpdateDriverScheduleDayResponse,
+  TransferMyDriverDutyRequest,
+  TransferMyDriverDutyResponse,
 } from '../types/driverSchedule';
 
 function normalizeDriverScheduleError(
@@ -335,6 +337,63 @@ class DriverScheduleService {
   return data as
     UpdateDriverScheduleDayResponse;
 }
+  async transferMyDuty(
+    request:
+      TransferMyDriverDutyRequest,
+  ): Promise<TransferMyDriverDutyResponse> {
+    const normalizedScheduleDayId =
+      request.scheduleDayId.trim();
+
+    const normalizedNewDriverId =
+      request.newDriverId.trim();
+
+    if (
+      !normalizedScheduleDayId
+    ) {
+      throw new Error(
+        'Driver schedule day id is required.',
+      );
+    }
+
+    if (
+      !normalizedNewDriverId
+    ) {
+      throw new Error(
+        'New on-call driver id is required.',
+      );
+    }
+
+    const {
+      data,
+      error,
+    } =
+      await supabase.rpc(
+        'transfer_my_driver_duty',
+        {
+          requested_schedule_day_id:
+            normalizedScheduleDayId,
+
+          requested_new_driver_id:
+            normalizedNewDriverId,
+        },
+      );
+
+    if (error) {
+      throw normalizeDriverScheduleError(
+        error,
+      );
+    }
+
+    if (!data) {
+      throw new Error(
+        'לא התקבלה תשובה בעת העברת הכוננות.',
+      );
+    }
+
+    return data as
+      TransferMyDriverDutyResponse;
+  }
+
 }
 
 export const driverScheduleService =
