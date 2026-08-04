@@ -51,8 +51,6 @@ export default defineConfig({
         display:
           'standalone',
 
-        orientation:
-          'portrait',
 
         theme_color:
           '#0f172a',
