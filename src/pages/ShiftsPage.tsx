@@ -12,6 +12,9 @@ import {
   useState,
 } from 'react';
 
+import UnifiedAvailabilityManagement
+  from '../components/shifts/UnifiedAvailabilityManagement';
+
 import MonthCalendar, {
   type MonthCalendarDayContext,
 } from '../components/calendar/MonthCalendar';
@@ -714,9 +717,9 @@ function ShiftsPage() {
         )}
       </nav>
 
-      {activeTab ===
-      'calendar' ? (
-        <section className="unified-schedule-workspace">
+    {activeTab ===
+    'calendar' ? (
+      <section className="unified-schedule-workspace">
           <Card>
             <CardBody>
               <div className="unified-schedule-toolbar">
@@ -905,34 +908,37 @@ function ShiftsPage() {
             />
           )}
         </section>
-      ) : (
-        <Card>
-          <CardBody>
-            <section className="shifts-placeholder">
-              <activeTabDefinition.icon
-                size={
-                  36
-                }
-                aria-hidden="true"
-              />
+      ) :activeTab ===
+  'availability' ? (
+  <UnifiedAvailabilityManagement />
+) : (
+  <Card>
+    <CardBody>
+      <section className="shifts-placeholder">
+        <activeTabDefinition.icon
+          size={
+            36
+          }
+          aria-hidden="true"
+        />
 
-              <div>
-                <h2>
-                  {
-                    activeTabDefinition.label
-                  }
-                </h2>
+        <div>
+          <h2>
+            {
+              activeTabDefinition.label
+            }
+          </h2>
 
-                <p>
-                  {
-                    activeTabDefinition.description
-                  }
-                </p>
-              </div>
-            </section>
-          </CardBody>
-        </Card>
-      )}
+          <p>
+            {
+              activeTabDefinition.description
+            }
+          </p>
+        </div>
+      </section>
+    </CardBody>
+  </Card>
+)}
 
       <Modal
         isOpen={

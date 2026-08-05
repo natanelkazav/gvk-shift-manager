@@ -361,3 +361,136 @@
     min-width: 0;
   }
 }
+.unified-availability-management {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.unified-availability-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.unified-availability-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.unified-availability-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+  gap: 18px;
+}
+
+.unified-availability-card {
+  position: relative;
+  overflow: hidden;
+  border-block-start:
+    4px solid transparent;
+}
+
+.unified-availability-card-dispatchers {
+  border-block-start-color:
+    #2563eb;
+}
+
+.unified-availability-card-morning-drivers {
+  border-block-start-color:
+    #d97706;
+}
+
+.unified-availability-card-drivers {
+  border-block-start-color:
+    #16a34a;
+}
+
+.unified-availability-card .card-body {
+  display: flex;
+  min-height: 260px;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.unified-availability-card-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.unified-availability-card-icon {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.unified-availability-card-text {
+  min-width: 0;
+}
+
+.unified-availability-card-text h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.unified-availability-card-text p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.65;
+}
+
+.unified-availability-card-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.unified-availability-status-label {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.unified-availability-card-status strong {
+  color: #334155;
+  font-size: 0.72rem;
+}
+
+.unified-availability-card-action {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-block-start: auto;
+}
+
+@media (max-width: 1000px) {
+  .unified-availability-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .unified-availability-card .card-body {
+    min-height: auto;
+  }
+}
