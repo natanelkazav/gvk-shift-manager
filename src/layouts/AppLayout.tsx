@@ -48,6 +48,12 @@ interface NavigationItem {
 
   requiredPermissions:
     readonly PermissionKey[];
+
+  visibleForRoles?:
+    readonly UserRole[];
+
+  hiddenForRoles?:
+    readonly UserRole[];
 }
 
 const navigationItems:
@@ -68,7 +74,32 @@ const navigationItems:
       requiredPermissions: [
         'dashboard.view'],
     },
+    {
+      label:
+        'משמרות',
 
+      path:
+        '/shifts',
+
+      icon:
+        CalendarDays,
+
+      requiredPermissions: [
+        'schedule.edit',
+        'availability.manage',
+        'driver_schedule.view_team',
+        'driver_schedule.edit',
+        'driver_availability.manage',
+        'morning_driver_schedule.view_team',
+        'morning_driver_schedule.edit',
+        'morning_driver_availability.manage',
+      ],
+
+      visibleForRoles: [
+        'admin',
+        'manager',
+      ],
+    },
     {
       label:
         'שיבוץ מוקדנים',
@@ -81,6 +112,11 @@ const navigationItems:
 
       requiredPermissions: [
         'schedule.view'],
+
+      hiddenForRoles: [
+      'admin',
+      'manager',
+      ],
     },
 
 {
@@ -91,6 +127,10 @@ const navigationItems:
   requiredPermissions: [
     'availability.view',
     'availability.manage',
+  ],
+    hiddenForRoles: [
+    'admin',
+    'manager',
   ],
 },
 
@@ -104,11 +144,15 @@ const navigationItems:
       icon:
         Car,
 
-requiredPermissions: [
-  'driver_schedule.view',
-  'driver_schedule.view_team',
-  'driver_schedule.edit',
-],
+  requiredPermissions: [
+    'driver_schedule.view',
+    'driver_schedule.view_team',
+    'driver_schedule.edit',
+  ],
+          hiddenForRoles: [
+        'admin',
+        'manager',
+        ],
     },
 
 {
@@ -119,6 +163,10 @@ requiredPermissions: [
   requiredPermissions: [
     'morning_driver_availability.view',
     'morning_driver_availability.manage',
+  ],
+    hiddenForRoles: [
+    'admin',
+    'manager',
   ],
 },
     {
@@ -131,6 +179,10 @@ requiredPermissions: [
         'morning_driver_schedule.view_team',
         'morning_driver_schedule.edit',
       ],
+            hiddenForRoles: [
+        'admin',
+        'manager',
+        ],
     },
     {
       label:
@@ -352,22 +404,58 @@ function AppLayout() {
       false,
     );
 
-  const visibleNavigationItems =
-    useMemo(
-      () =>
-        navigationItems.filter(
-          (item) =>
+const visibleNavigationItems =
+  useMemo(
+    () => {
+      const currentRole =
+        profile?.role;
+
+      return navigationItems.filter(
+        (item) => {
+          const hasRequiredPermission =
             item.requiredPermissions.some(
               (permission) =>
                 hasPermission(
                   permission,
                 ),
-            ),
-        ),
-      [
-        hasPermission,
-      ],
-    );
+            );
+
+          if (
+            !hasRequiredPermission
+          ) {
+            return false;
+          }
+
+          if (
+            item.visibleForRoles &&
+            (
+              !currentRole ||
+              !item.visibleForRoles.includes(
+                currentRole,
+              )
+            )
+          ) {
+            return false;
+          }
+
+          if (
+            currentRole &&
+            item.hiddenForRoles?.includes(
+              currentRole,
+            )
+          ) {
+            return false;
+          }
+
+          return true;
+        },
+      );
+    },
+    [
+      hasPermission,
+      profile?.role,
+    ],
+  );
 
   const closeSidebar =
     (): void => {

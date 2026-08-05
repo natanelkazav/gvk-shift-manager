@@ -8,6 +8,10 @@ import type {
   CurrentScheduleData,
 } from '../types/schedule';
 
+import type {
+  DispatcherScheduleMonthData,
+} from '../types/unifiedSchedule';
+
 export interface SaveScheduleDraftRequest {
   availabilityPeriodId: string;
 
@@ -119,7 +123,61 @@ class ScheduleService {
     return data as
       CurrentScheduleData;
   }
+async getScheduleByMonth(
+  year: number,
+  month: number,
+): Promise<DispatcherScheduleMonthData> {
+  if (
+    !Number.isInteger(year) ||
+    year < 2020 ||
+    year > 2100
+  ) {
+    throw new Error(
+      'Dispatcher schedule year is invalid.',
+    );
+  }
 
+  if (
+    !Number.isInteger(month) ||
+    month < 1 ||
+    month > 12
+  ) {
+    throw new Error(
+      'Dispatcher schedule month is invalid.',
+    );
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase.rpc(
+    'get_dispatcher_schedule_by_month',
+    {
+      requested_year:
+        year,
+
+      requested_month:
+        month,
+    },
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return {
+      period:
+        null,
+
+      shifts:
+        [],
+    };
+  }
+
+  return data as
+    DispatcherScheduleMonthData;
+}
   async publishSchedulePeriod(
     schedulePeriodId: string,
   ): Promise<PublishSchedulePeriodResponse> {

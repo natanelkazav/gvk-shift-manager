@@ -1,7 +1,8 @@
 import {
   createBrowserRouter,
 } from 'react-router-dom';
-
+import ShiftsPage
+  from '../pages/ShiftsPage';
 import PermissionRoute
   from '../auth/PermissionRoute';
 
@@ -278,7 +279,34 @@ export const router =
                 },
               ],
             },
+          {
+            element: (
+              <PermissionRoute
+                anyPermissions={[
+                  'schedule.view',
+                  'schedule.edit',
+                  'availability.manage',
+                  'driver_schedule.view_team',
+                  'driver_schedule.edit',
+                  'driver_availability.manage',
+                  'morning_driver_schedule.view_team',
+                  'morning_driver_schedule.edit',
+                  'morning_driver_availability.manage',
+                ]}
+              />
+            ),
 
+            children: [
+              {
+                path:
+                  'shifts',
+
+                element: (
+                  <ShiftsPage />
+                ),
+              },
+            ],
+          },
             {
               element: (
                 <PermissionRoute
