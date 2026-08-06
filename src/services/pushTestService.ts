@@ -1,7 +1,9 @@
 import {
   supabase,
 } from '../lib/supabase';
-
+import {
+  FunctionsHttpError,
+} from '@supabase/supabase-js';
 export interface SendTestPushRequest {
   targetUserId: string;
 
@@ -86,9 +88,45 @@ class PushTestService {
           },
         );
 
-    if (error) {
-      throw error;
+if (error) {
+  if (
+    error instanceof
+      FunctionsHttpError
+  ) {
+    try {
+      const responseBody =
+        await error.context
+          .json() as {
+            error?: unknown;
+          };
+
+      if (
+        typeof responseBody.error ===
+          'string' &&
+        responseBody.error.trim()
+      ) {
+        throw new Error(
+          responseBody.error,
+        );
+      }
+    } catch (
+      responseError
+    ) {
+      if (
+        responseError instanceof
+          Error &&
+        responseError !== error
+      ) {
+        throw responseError;
+      }
     }
+  }
+
+  throw new Error(
+    error.message ||
+      'שליחת ההתראה נכשלה.',
+  );
+}
 
     if (
       typeof data !==
