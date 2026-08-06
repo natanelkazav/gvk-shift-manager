@@ -203,3 +203,40 @@
     border-block-end: 1px solid #e2e8f0;
   }
 }
+.push-test-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.push-test-form-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  gap: 14px;
+}
+
+.push-test-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+@media (max-width: 700px) {
+  .push-test-form-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .push-test-actions {
+    flex-direction: column-reverse;
+  }
+
+  .push-test-actions .button {
+    width: 100%;
+  }
+}

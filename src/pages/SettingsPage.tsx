@@ -18,6 +18,9 @@ import {
   PageHeader,
 } from '../components/ui';
 
+import PushTestNotification
+  from '../components/settings/PushTestNotification';
+
 import '../styles/settings.css';
 
 function SettingsPage() {
@@ -97,19 +100,7 @@ function SettingsPage() {
 
             <div className="settings-admin-grid">
               {canManageNotifications ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      שליחת התראת בדיקה
-                    </CardTitle>
-                  </CardHeader>
-
-                  <CardBody>
-                    <p className="settings-placeholder-text">
-                      בשלב הבא תחובר כאן בחירת משתמש ושליחת Push לבדיקה.
-                    </p>
-                  </CardBody>
-                </Card>
+                <PushTestNotification />
               ) : null}
 
               {canManageScheduleImport ? (
