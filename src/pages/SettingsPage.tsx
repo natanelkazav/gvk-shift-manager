@@ -1,128 +1,137 @@
-import { Mail, User } from 'lucide-react';
-import { useState } from 'react';
 import {
-  Button,
+  Settings,
+  ShieldCheck,
+} from 'lucide-react';
+
+import {
+  useAuth,
+} from '../auth/AuthContext';
+
+import PushNotificationSettings
+  from '../components/settings/PushNotificationSettings';
+
+import {
   Card,
   CardBody,
   CardHeader,
   CardTitle,
-  Input,
-  Modal,
   PageHeader,
-  Select,
-  Textarea,
 } from '../components/ui';
 
+import '../styles/settings.css';
+
 function SettingsPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const {
+    hasPermission,
+  } =
+    useAuth();
+
+  const canManageNotifications =
+    hasPermission(
+      'notifications.manage',
+    );
+
+  const canManageScheduleImport =
+    hasPermission(
+      'schedule.edit',
+    ) ||
+    hasPermission(
+      'users.manage',
+    );
+
+  const canViewAdminActions =
+    canManageNotifications ||
+    canManageScheduleImport;
 
   return (
-    <>
+    <section className="settings-page">
       <PageHeader
         title="הגדרות"
-        description="בדיקת רכיבי הטפסים והממשק."
-        actions={
-          <Button onClick={() => setIsModalOpen(true)}>
-            פתיחת חלון
-          </Button>
-        }
+        description="ניהול העדפות אישיות ופעולות מערכת."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>פרטי משתמש לדוגמה</CardTitle>
-        </CardHeader>
-
-        <CardBody>
-          <div className="form-grid">
-            <Input
-              label="שם מלא"
-              placeholder="הזן שם מלא"
-              startIcon={<User size={18} />}
-              required
+      <div className="settings-page-sections">
+        <section className="settings-section">
+          <div className="settings-section-header">
+            <Settings
+              size={
+                22
+              }
+              aria-hidden="true"
             />
 
-            <Input
-              label="כתובת אימייל"
-              type="email"
-              placeholder="name@example.com"
-              startIcon={<Mail size={18} />}
-              helperText="כתובת זו תשמש להתחברות למערכת."
-            />
+            <div>
+              <h2>
+                ההעדפות שלי
+              </h2>
 
-            <Select
-              label="תפקיד"
-              defaultValue=""
-              placeholder="בחר תפקיד"
-              options={[
-                {
-                  label: 'מנהל מערכת',
-                  value: 'admin',
-                },
-                {
-                  label: 'מנהל מוקד',
-                  value: 'manager',
-                },
-                {
-                  label: 'מוקדן',
-                  value: 'dispatcher',
-                },
-                {
-                  label: 'כונן',
-                  value: 'driver',
-                },
-              ]}
-            />
-
-            <Input
-              label="שדה עם שגיאה"
-              error="זהו שדה חובה."
-              placeholder="בדיקת הודעת שגיאה"
-            />
+              <p>
+                הגדרות אישיות שחלות על החשבון והמכשירים שלך.
+              </p>
+            </div>
           </div>
 
-          <div style={{ marginTop: '20px' }}>
-            <Textarea
-              label="הערות"
-              placeholder="הזן הערות נוספות"
-              rows={4}
-            />
-          </div>
+          <PushNotificationSettings />
+        </section>
 
-          <div className="form-actions">
-            <Button variant="secondary">ביטול</Button>
-            <Button>שמירה</Button>
-          </div>
-        </CardBody>
-      </Card>
+        {canViewAdminActions ? (
+          <section className="settings-section">
+            <div className="settings-section-header">
+              <ShieldCheck
+                size={
+                  22
+                }
+                aria-hidden="true"
+              />
 
-      <Modal
-        isOpen={isModalOpen}
-        title="חלון בדיקה"
-        onClose={() => setIsModalOpen(false)}
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setIsModalOpen(false)}
-            >
-              ביטול
-            </Button>
+              <div>
+                <h2>
+                  פעולות מנהל
+                </h2>
 
-            <Button onClick={() => setIsModalOpen(false)}>
-              אישור
-            </Button>
-          </>
-        }
-      >
-        <p>זהו חלון מודאלי שישמש אותנו ברחבי המערכת.</p>
+                <p>
+                  כלים ניהוליים בהתאם להרשאות המשתמש.
+                </p>
+              </div>
+            </div>
 
-        <Input
-          label="שם ההגדרה"
-          placeholder="הזן שם"
-        />
-      </Modal>
-    </>
+            <div className="settings-admin-grid">
+              {canManageNotifications ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      שליחת התראת בדיקה
+                    </CardTitle>
+                  </CardHeader>
+
+                  <CardBody>
+                    <p className="settings-placeholder-text">
+                      בשלב הבא תחובר כאן בחירת משתמש ושליחת Push לבדיקה.
+                    </p>
+                  </CardBody>
+                </Card>
+              ) : null}
+
+              {canManageScheduleImport ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>
+                      ייבוא קובץ שיבוצים
+                    </CardTitle>
+                  </CardHeader>
+
+                  <CardBody>
+                    <p className="settings-placeholder-text">
+                      לכאן נעביר את מנגנון ייבוא קובץ השיבוצים הקיים מלוח הכוננים.
+                    </p>
+                  </CardBody>
+                </Card>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
