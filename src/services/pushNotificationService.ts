@@ -336,6 +336,13 @@ class PushNotificationService {
     if (
       !subscription
     ) {
+              if (
+          !pushConfig.vapidPublicKey
+        ) {
+          throw new Error(
+            'מפתח ההתראות הציבורי אינו מוגדר במערכת.',
+          );
+        }
       subscription =
         await registration
           .pushManager
