@@ -15,10 +15,15 @@ import {
 import UnifiedAvailabilityManagement
   from '../components/shifts/UnifiedAvailabilityManagement';
 
+import UnifiedPeriodManagement
+  from '../components/shifts/UnifiedPeriodManagement';
+
 import MonthCalendar, {
   type MonthCalendarDayContext,
 } from '../components/calendar/MonthCalendar';
-
+import {
+  useSearchParams,
+} from 'react-router-dom';
 import {
   Button,
   Card,
@@ -321,15 +326,40 @@ function ShiftsPage() {
         getCurrentMonth(),
       [],
     );
+const initialPlanningMonth =
+  useMemo(
+    () =>
+      getNextMonth(
+        initialMonth.year,
+        initialMonth.month,
+      ),
+    [
+      initialMonth.month,
+      initialMonth.year,
+    ],
+  );
 
-  const [
-    activeTab,
-    setActiveTab,
-  ] =
-    useState<ShiftsWorkspaceTab>(
-      'calendar',
-    );
+const [
+  searchParams,
+  setSearchParams,
+] =
+  useSearchParams();
 
+const requestedWorkspaceTab =
+  searchParams.get(
+    'tab',
+  );
+
+const initialWorkspaceTab:
+  ShiftsWorkspaceTab =
+    requestedWorkspaceTab ===
+      'availability' ||
+    requestedWorkspaceTab ===
+      'period-management' ||
+    requestedWorkspaceTab ===
+      'calendar'
+      ? requestedWorkspaceTab
+      : 'calendar';
   const [
     displayedYear,
     setDisplayedYear,
@@ -337,7 +367,13 @@ function ShiftsPage() {
     useState(
       initialMonth.year,
     );
-
+const [
+  activeTab,
+  setActiveTab,
+] =
+  useState<ShiftsWorkspaceTab>(
+    initialWorkspaceTab,
+  );
   const [
     displayedMonth,
     setDisplayedMonth,
@@ -345,6 +381,22 @@ function ShiftsPage() {
     useState(
       initialMonth.month,
     );
+
+    const [
+  planningYear,
+  setPlanningYear,
+] =
+  useState(
+    initialPlanningMonth.year,
+  );
+
+const [
+  planningMonth,
+  setPlanningMonth,
+] =
+  useState(
+    initialPlanningMonth.month,
+  );
 
   const [
     selectedDate,
@@ -468,7 +520,59 @@ function ShiftsPage() {
         state.data.warnings,
       ],
     );
+const handlePreviousPlanningMonth =
+  (): void => {
+    const previousMonth =
+      getPreviousMonth(
+        planningYear,
+        planningMonth,
+      );
 
+    setPlanningYear(
+      previousMonth.year,
+    );
+
+    setPlanningMonth(
+      previousMonth.month,
+    );
+  };
+
+const handleNextPlanningMonth =
+  (): void => {
+    const nextMonth =
+      getNextMonth(
+        planningYear,
+        planningMonth,
+      );
+
+    setPlanningYear(
+      nextMonth.year,
+    );
+
+    setPlanningMonth(
+      nextMonth.month,
+    );
+  };
+
+const handleNextMonthPlanning =
+  (): void => {
+    const currentMonth =
+      getCurrentMonth();
+
+    const nextMonth =
+      getNextMonth(
+        currentMonth.year,
+        currentMonth.month,
+      );
+
+    setPlanningYear(
+      nextMonth.year,
+    );
+
+    setPlanningMonth(
+      nextMonth.month,
+    );
+  };
   const handlePreviousMonth =
     (): void => {
       const previousMonth =
@@ -489,7 +593,25 @@ function ShiftsPage() {
         null,
       );
     };
+const handleWorkspaceTabChange =
+  (
+    tab:
+      ShiftsWorkspaceTab,
+  ): void => {
+    setActiveTab(
+      tab,
+    );
 
+    setSearchParams(
+      {
+        tab,
+      },
+      {
+        replace:
+          true,
+      },
+    );
+  };
   const handleNextMonth =
     (): void => {
       const nextMonth =
@@ -696,7 +818,7 @@ function ShiftsPage() {
                   isActive
                 }
                 onClick={() =>
-                  setActiveTab(
+                  handleWorkspaceTabChange(
                     tab.id,
                   )
                 }
@@ -716,7 +838,81 @@ function ShiftsPage() {
           },
         )}
       </nav>
+{activeTab !==
+'calendar' ? (
+  <Card>
+    <CardBody>
+      <div className="unified-schedule-toolbar">
+        <div className="unified-schedule-month-navigation">
+          <Button
+            type="button"
+            variant="secondary"
+            className="unified-schedule-navigation-button"
+            aria-label="תקופת התכנון הקודמת"
+            onClick={
+              handlePreviousPlanningMonth
+            }
+          >
+            <ChevronRight
+              size={
+                18
+              }
+              aria-hidden="true"
+            />
 
+            חודש קודם
+          </Button>
+
+          <div className="unified-schedule-current-month">
+            <strong>
+              {
+                hebrewMonths[
+                  planningMonth -
+                    1
+                ]
+              }
+            </strong>
+
+            <span>
+              {
+                planningYear
+              }
+            </span>
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            className="unified-schedule-navigation-button"
+            aria-label="תקופת התכנון הבאה"
+            onClick={
+              handleNextPlanningMonth
+            }
+          >
+            חודש הבא
+
+            <ChevronLeft
+              size={
+                18
+              }
+              aria-hidden="true"
+            />
+          </Button>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={
+            handleNextMonthPlanning
+          }
+        >
+          החודש הבא לתכנון
+        </Button>
+      </div>
+    </CardBody>
+  </Card>
+) : null}
     {activeTab ===
     'calendar' ? (
       <section className="unified-schedule-workspace">
@@ -908,37 +1104,54 @@ function ShiftsPage() {
             />
           )}
         </section>
-      ) :activeTab ===
-  'availability' ? (
-  <UnifiedAvailabilityManagement />
-) : (
-  <Card>
-    <CardBody>
-      <section className="shifts-placeholder">
-        <activeTabDefinition.icon
-          size={
-            36
-          }
-          aria-hidden="true"
-        />
-
-        <div>
-          <h2>
-            {
-              activeTabDefinition.label
+          ) : activeTab ===
+            'availability' ? (
+          <UnifiedAvailabilityManagement
+            year={
+              planningYear
             }
-          </h2>
-
-          <p>
-            {
-              activeTabDefinition.description
+            month={
+              planningMonth
             }
-          </p>
-        </div>
-      </section>
-    </CardBody>
-  </Card>
-)}
+          />
+          ) : activeTab ===
+            'period-management' ? (
+          <UnifiedPeriodManagement
+            year={
+              planningYear
+            }
+            month={
+              planningMonth
+            }
+          />
+          ) : (
+            <Card>
+              <CardBody>
+                <section className="shifts-placeholder">
+                  <activeTabDefinition.icon
+                    size={
+                      36
+                    }
+                    aria-hidden="true"
+                  />
+
+                  <div>
+                    <h2>
+                      {
+                        activeTabDefinition.label
+                      }
+                    </h2>
+
+                    <p>
+                      {
+                        activeTabDefinition.description
+                      }
+                    </p>
+                  </div>
+                </section>
+              </CardBody>
+            </Card>
+          )}
 
       <Modal
         isOpen={

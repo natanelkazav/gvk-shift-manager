@@ -14,6 +14,15 @@ export default defineConfig({
     react(),
 
     VitePWA({
+      strategies:
+        'injectManifest',
+
+      srcDir:
+        'src',
+
+      filename:
+        'sw.ts',
+
       registerType:
         'autoUpdate',
 
@@ -22,6 +31,20 @@ export default defineConfig({
         'icon-192.png',
         'icon-512.png',
       ],
+
+      injectManifest: {
+        globPatterns: [
+          '**/*.{js,css,html,ico,png,svg,webp}',
+        ],
+      },
+
+      devOptions: {
+        enabled:
+          true,
+
+        type:
+          'module',
+      },
 
       manifest: {
         id:
@@ -51,7 +74,6 @@ export default defineConfig({
         display:
           'standalone',
 
-
         theme_color:
           '#0f172a',
 
@@ -72,6 +94,7 @@ export default defineConfig({
             purpose:
               'any',
           },
+
           {
             src:
               '/icon-512.png',
@@ -85,6 +108,7 @@ export default defineConfig({
             purpose:
               'any',
           },
+
           {
             src:
               '/icon-512.png',

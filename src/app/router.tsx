@@ -13,7 +13,6 @@ import PublicOnlyRoute
   from '../auth/PublicOnlyRoute';
   import MorningDriverSchedulePage
   from '../pages/MorningDriverSchedulePage';
-
 import AppLayout
   from '../layouts/AppLayout';
 

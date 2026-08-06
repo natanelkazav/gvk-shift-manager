@@ -1,13 +1,36 @@
 import {
   ArrowLeft,
+  CalendarClock,
   Car,
   Headphones,
   SunMedium,
+  Users,
 } from 'lucide-react';
+
+import {
+  useEffect,
+  useMemo,
+} from 'react';
 
 import {
   useNavigate,
 } from 'react-router-dom';
+
+import {
+  useAvailabilityPeriods,
+} from '../../hooks/useAvailabilityPeriods';
+
+import {
+  useAvailabilityPeriodSubmissions,
+} from '../../hooks/useAvailabilityPeriodSubmissions';
+
+import {
+  useDriverAvailabilityPeriods,
+} from '../../hooks/useDriverAvailabilityPeriods';
+
+import {
+  useMorningDriverAvailabilityPeriods,
+} from '../../hooks/useMorningDriverAvailabilityPeriods';
 
 import {
   Button,
@@ -15,111 +38,520 @@ import {
   CardBody,
 } from '../ui';
 
-interface AvailabilityCategoryDefinition {
+interface UnifiedAvailabilityManagementProps {
+  year: number;
+
+  month: number;
+}
+
+type AvailabilityCategoryId =
+  | 'dispatchers'
+  | 'morning-drivers'
+  | 'drivers';
+
+interface AvailabilityCategoryViewModel {
   id:
-    | 'dispatchers'
-    | 'morning-drivers'
-    | 'drivers';
+    AvailabilityCategoryId;
 
   title: string;
 
   description: string;
 
   route: string;
-
+  periodId: string | null;
   actionLabel: string;
-
+  
   icon:
     typeof Headphones;
 
   className: string;
+
+  status:
+    string;
+
+  statusClassName:
+    string;
+
+  deadline:
+    string;
+
+  submissions:
+    string;
+
+  isLoading:
+    boolean;
+
+  error:
+    string | null;
 }
 
-const availabilityCategories:
-  AvailabilityCategoryDefinition[] = [
+const hebrewMonths = [
+  'ינואר',
+  'פברואר',
+  'מרץ',
+  'אפריל',
+  'מאי',
+  'יוני',
+  'יולי',
+  'אוגוסט',
+  'ספטמבר',
+  'אוקטובר',
+  'נובמבר',
+  'דצמבר',
+];
+
+function getStatusLabel(
+  status:
+    string | null,
+): string {
+  switch (
+    status
+  ) {
+    case 'draft':
+      return 'טיוטה';
+
+    case 'open':
+      return 'פתוח להגשה';
+
+    case 'closed':
+      return 'סגור';
+
+    case 'archived':
+      return 'בארכיון';
+
+    default:
+      return 'לא נפתחה תקופה';
+  }
+}
+
+function getStatusClassName(
+  status:
+    string | null,
+): string {
+  switch (
+    status
+  ) {
+    case 'open':
+      return 'unified-availability-status-open';
+
+    case 'closed':
+      return 'unified-availability-status-closed';
+
+    case 'draft':
+      return 'unified-availability-status-draft';
+
+    case 'archived':
+      return 'unified-availability-status-archived';
+
+    default:
+      return 'unified-availability-status-missing';
+  }
+}
+
+function formatDeadline(
+  value:
+    string | null | undefined,
+): string {
+  if (
+    !value
+  ) {
+    return 'לא נקבע';
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(
+    'he-IL',
     {
-      id:
-        'dispatchers',
+      day:
+        '2-digit',
 
-      title:
-        'אילוצי מוקדנים',
+      month:
+        '2-digit',
 
-      description:
-        'פתיחת תקופה, קביעת מועד אחרון להגשה, מעקב אחר המוקדנים והכנת השיבוץ.',
+      year:
+        'numeric',
 
-      route:
-        '/availability',
+      hour:
+        '2-digit',
 
-      actionLabel:
-        'פתיחת ניהול מוקדנים',
+      minute:
+        '2-digit',
 
-      icon:
-        Headphones,
+      hourCycle:
+        'h23',
 
-      className:
-        'unified-availability-card-dispatchers',
+      timeZone:
+        'Asia/Jerusalem',
     },
+  ).format(date);
+}
 
-    {
-      id:
-        'morning-drivers',
 
-      title:
-        'אילוצי כונני בוקר',
 
-      description:
-        'פתיחת תקופה, קביעת דדליין, מעקב אחר הגשות וניהול הזמינות של כונני הבוקר.',
-
-      route:
-        '/morning-driver-availability',
-
-      actionLabel:
-        'פתיחת ניהול כונני בוקר',
-
-      icon:
-        SunMedium,
-
-      className:
-        'unified-availability-card-morning-drivers',
-    },
-
-    {
-      id:
-        'drivers',
-
-      title:
-        'אילוצי כוננים',
-
-      description:
-        'ניהול זמינות הכוננים, צפייה בהגשות ובדיקת הכיסוי לפני יצירת הלוח.',
-
-      route:
-        '/driver-schedule',
-
-      actionLabel:
-        'פתיחת ניהול כוננים',
-
-      icon:
-        Car,
-
-      className:
-        'unified-availability-card-drivers',
-    },
-  ];
-
-function UnifiedAvailabilityManagement() {
+function UnifiedAvailabilityManagement({
+  year,
+  month,
+}: UnifiedAvailabilityManagementProps) {
   const navigate =
     useNavigate();
+  const {state:dispatcherPeriodsState,} =
+    useAvailabilityPeriods();
 
-  const handleOpenCategory =
-    (
-      route: string,
-    ): void => {
-      navigate(
-        route,
+  const {
+    state:
+      dispatcherSubmissionsState,
+
+    loadPeriodSubmissions,
+
+    reset:
+      resetDispatcherSubmissions,
+  } =
+    useAvailabilityPeriodSubmissions();
+
+  const {
+    state:
+      driverPeriodsState,
+
+    loadPeriods:
+      loadDriverPeriods,
+  } =
+    useDriverAvailabilityPeriods();
+
+  const {
+    state:
+      morningDriverPeriodsState,
+
+    loadPeriods:
+      loadMorningDriverPeriods,
+  } =
+    useMorningDriverAvailabilityPeriods();
+
+  useEffect(
+    () => {
+      void Promise.all([
+        loadDriverPeriods(),
+
+        loadMorningDriverPeriods(),
+      ]);
+    },
+    [
+      loadDriverPeriods,
+      loadMorningDriverPeriods,
+    ],
+  );
+
+  const dispatcherPeriod =
+    useMemo(
+      () =>
+        dispatcherPeriodsState
+          .periods
+          .find(
+            (
+              period,
+            ) =>
+              period.year ===
+                year &&
+              period.month ===
+                month,
+          ) ??
+        null,
+      [
+        dispatcherPeriodsState
+          .periods,
+        month,
+        year,
+      ],
+    );
+
+  const driverPeriod =
+    useMemo(
+      () =>
+        driverPeriodsState
+          .periods
+          .find(
+            (
+              period,
+            ) =>
+              period.year ===
+                year &&
+              period.month ===
+                month,
+          ) ??
+        null,
+      [
+        driverPeriodsState
+          .periods,
+        month,
+        year,
+      ],
+    );
+
+  const morningDriverPeriod =
+    useMemo(
+      () =>
+        morningDriverPeriodsState
+          .periods
+          .find(
+            (
+              period,
+            ) =>
+              period.year ===
+                year &&
+              period.month ===
+                month,
+          ) ??
+        null,
+      [
+        morningDriverPeriodsState
+          .periods,
+        month,
+        year,
+      ],
+    );
+
+  useEffect(
+    () => {
+      if (
+        !dispatcherPeriod
+      ) {
+        resetDispatcherSubmissions();
+
+        return;
+      }
+
+      void loadPeriodSubmissions(
+        dispatcherPeriod.id,
       );
-    };
+    },
+    [
+      dispatcherPeriod,
+      loadPeriodSubmissions,
+      resetDispatcherSubmissions,
+    ],
+  );
 
+  const dispatcherSubmissionSummary =
+    dispatcherSubmissionsState
+      .data
+      ?.summary ??
+    null;
+
+  const availabilityCategories:
+    AvailabilityCategoryViewModel[] = [
+      {
+        id:
+          'dispatchers',
+
+        title:
+          'אילוצי מוקדנים',
+
+        description:
+          'פתיחת תקופה, קביעת מועד אחרון להגשה ומעקב אחר הגשות המוקדנים.',
+
+        route:
+          '/availability',
+        periodId: dispatcherPeriod ?.id ?? null,
+        actionLabel:
+          'ניהול אילוצי מוקדנים',
+
+        icon:
+          Headphones,
+
+        className:
+          'unified-availability-card-dispatchers',
+
+        status:
+          getStatusLabel(
+            dispatcherPeriod
+              ?.status ??
+              null,
+          ),
+
+        statusClassName:
+          getStatusClassName(
+            dispatcherPeriod
+              ?.status ??
+              null,
+          ),
+
+        deadline:
+          formatDeadline(
+            dispatcherPeriod
+              ?.submissionDeadline,
+          ),
+
+        submissions:
+          dispatcherSubmissionSummary
+            ? `${dispatcherSubmissionSummary.submittedDispatchers} מתוך ${dispatcherSubmissionSummary.totalDispatchers}`
+            : dispatcherPeriod
+              ? 'טוען נתוני הגשות...'
+              : 'אין תקופה',
+
+        isLoading:
+          dispatcherPeriodsState
+            .isLoading ||
+          dispatcherSubmissionsState
+            .isLoading,
+
+        error:
+          dispatcherPeriodsState
+            .error ??
+          dispatcherSubmissionsState
+            .error,
+      },
+
+      {
+        id:
+          'morning-drivers',
+
+        title:
+          'אילוצי כונני בוקר',
+
+        description:
+          'פתיחת תקופה, קביעת דדליין ומעקב אחר הגשות כונני הבוקר.',
+
+        route:
+          '/morning-driver-availability',
+        periodId: morningDriverPeriod ?.id ?? null,
+        actionLabel:
+          'ניהול אילוצי כונני בוקר',
+
+        icon:
+          SunMedium,
+
+        className:
+          'unified-availability-card-morning-drivers',
+
+        status:
+          getStatusLabel(
+            morningDriverPeriod
+              ?.status ??
+              null,
+          ),
+
+        statusClassName:
+          getStatusClassName(
+            morningDriverPeriod
+              ?.status ??
+              null,
+          ),
+
+        deadline:
+          formatDeadline(
+            morningDriverPeriod
+              ?.submissionDeadline,
+          ),
+
+        submissions:
+          morningDriverPeriod
+            ? `${morningDriverPeriod.submittedCount} מתוך ${morningDriverPeriod.submissionsCount}`
+            : 'אין תקופה',
+
+        isLoading:
+          morningDriverPeriodsState
+            .isLoading,
+
+        error:
+          morningDriverPeriodsState
+            .error,
+      },
+
+      {
+        id:
+          'drivers',
+
+        title:
+          'אילוצי כוננים',
+
+        description:
+          'ניהול זמינות הכוננים ומעקב אחר ההגשות לפני יצירת לוח הכוננויות.',
+
+        route:
+          '/driver-schedule',
+        periodId: driverPeriod ?.id ?? null,
+        actionLabel:
+          'ניהול אילוצי כוננים',
+
+        icon:
+          Car,
+
+        className:
+          'unified-availability-card-drivers',
+
+        status:
+          getStatusLabel(
+            driverPeriod
+              ?.status ??
+              null,
+          ),
+
+        statusClassName:
+          getStatusClassName(
+            driverPeriod
+              ?.status ??
+              null,
+          ),
+
+        deadline:
+          formatDeadline(
+            driverPeriod
+              ?.submissionDeadline,
+          ),
+
+        submissions:
+          driverPeriod
+            ? `${driverPeriod.submittedCount} מתוך ${driverPeriod.submissionsCount}`
+            : 'אין תקופה',
+
+        isLoading:
+          driverPeriodsState
+            .isLoading,
+
+        error:
+          driverPeriodsState
+            .error,
+      },
+    ];
+
+    const handleOpenCategory =
+      (
+        route: string,
+      ): void => {
+        navigate(
+          route,
+        );
+      };
+
+    const handleOpenSubmissions =
+      (
+        route: string,
+        periodId: string,
+      ): void => {
+        const searchParameters =
+          new URLSearchParams({
+            tab:
+              'submissions',
+
+            periodId,
+
+            returnTo:
+              '/shifts?tab=availability',
+          });
+
+        navigate(
+          `${route}?${searchParameters.toString()}`,
+        );
+      };
   return (
     <section className="unified-availability-management">
       <header className="unified-availability-header">
@@ -129,7 +561,13 @@ function UnifiedAvailabilityManagement() {
           </h2>
 
           <p>
-            ניהול תקופות ההגשה של מוקדנים, כונני בוקר וכוננים.
+            נתוני תקופות ההגשה עבור{' '}
+            {
+              hebrewMonths[
+                month - 1
+              ]
+            }{' '}
+            {year}.
           </p>
         </div>
       </header>
@@ -181,37 +619,132 @@ function UnifiedAvailabilityManagement() {
                     </div>
                   </div>
 
-                  <div className="unified-availability-card-status">
-                    <span className="unified-availability-status-label">
-                      סטטוס
-                    </span>
-
-                    <strong>
-                      יוצג בשלב הבא
-                    </strong>
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="unified-availability-card-action"
-                    onClick={() =>
-                      handleOpenCategory(
-                        category.route,
-                      )
-                    }
-                  >
-                    {
-                      category.actionLabel
-                    }
-
-                    <ArrowLeft
-                      size={
-                        17
+                  {category.error ? (
+                    <div
+                      className="unified-availability-card-error"
+                      role="alert"
+                    >
+                      {
+                        category.error
                       }
-                      aria-hidden="true"
-                    />
-                  </Button>
+                    </div>
+                  ) : null}
+
+                  <dl className="unified-availability-card-details">
+                    <div>
+                      <dt>
+                        סטטוס
+                      </dt>
+
+                      <dd>
+                        <span
+                          className={[
+                            'unified-availability-status-badge',
+
+                            category.statusClassName,
+                          ].join(
+                            ' ',
+                          )}
+                        >
+                          {
+                            category.isLoading
+                              ? 'טוען...'
+                              : category.status
+                          }
+                        </span>
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt>
+                        <CalendarClock
+                          size={
+                            16
+                          }
+                          aria-hidden="true"
+                        />
+
+                        דדליין
+                      </dt>
+
+                      <dd>
+                        {
+                          category.isLoading
+                            ? 'טוען...'
+                            : category.deadline
+                        }
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt>
+                        <Users
+                          size={
+                            16
+                          }
+                          aria-hidden="true"
+                        />
+
+                        הגישו
+                      </dt>
+
+                      <dd>
+                        {
+                          category.isLoading
+                            ? 'טוען...'
+                            : category.submissions
+                        }
+                      </dd>
+                    </div>
+                  </dl>
+
+
+              <div className="unified-availability-card-actions">
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="unified-availability-card-action"
+                  disabled={
+                    !category.periodId
+                  }
+                  onClick={() => {
+                    if (
+                      !category.periodId
+                    ) {
+                      return;
+                    }
+
+                    handleOpenSubmissions(
+                      category.route,
+                      category.periodId,
+                    );
+                  }}
+                >
+                  מעקב הגשות
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="unified-availability-card-action"
+                  onClick={() =>
+                    handleOpenCategory(
+                      category.route,
+                    )
+                  }
+                >
+                  {
+                    category.actionLabel
+                  }
+
+                  <ArrowLeft
+                    size={
+                      17
+                    }
+                    aria-hidden="true"
+                  />
+                </Button>
+              </div>
                 </CardBody>
               </Card>
             );

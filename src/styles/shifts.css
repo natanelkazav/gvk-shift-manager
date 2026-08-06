@@ -494,3 +494,349 @@
     min-height: auto;
   }
 }
+.unified-availability-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+.unified-availability-card-details > div {
+  display: grid;
+  grid-template-columns:
+    minmax(100px, auto)
+    minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.unified-availability-card-details dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.unified-availability-card-details dd {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.unified-availability-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.unified-availability-status-open {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.unified-availability-status-closed {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.unified-availability-status-draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.unified-availability-status-archived {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.unified-availability-status-missing {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.unified-availability-card-error {
+  padding: 10px 12px;
+  border: 1px solid #fca5a5;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 520px) {
+  .unified-availability-card-details > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .unified-availability-card-details dd {
+    text-align: right;
+  }
+}
+.unified-period-management {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.unified-period-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.unified-period-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.unified-period-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0, 1fr)
+    );
+  gap: 18px;
+}
+
+.unified-period-card {
+  overflow: hidden;
+  border-block-start:
+    4px solid transparent;
+}
+
+.unified-period-card-dispatchers {
+  border-block-start-color:
+    #2563eb;
+}
+
+.unified-period-card-morning-drivers {
+  border-block-start-color:
+    #d97706;
+}
+
+.unified-period-card-drivers {
+  border-block-start-color:
+    #16a34a;
+}
+
+.unified-period-card .card-body {
+  display: flex;
+  min-height: 410px;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.unified-period-card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.unified-period-card-icon {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.unified-period-card-heading h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.unified-period-card-heading p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.65;
+}
+
+.unified-period-card-status {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+}
+
+.unified-period-card-status > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.unified-period-card-status dt {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.unified-period-card-status dd {
+  margin: 0;
+  color: #334155;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.unified-period-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-block-start: auto;
+}
+
+.unified-period-card-actions .button {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+@media (max-width: 1100px) {
+  .unified-period-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .unified-period-card .card-body {
+    min-height: auto;
+  }
+}
+.unified-availability-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-block-start: auto;
+}
+
+.unified-availability-card-actions .unified-availability-card-action {
+  width: 100%;
+}
+
+.unified-availability-details-placeholder {
+  display: flex;
+  min-height: 180px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: #64748b;
+  text-align: center;
+}
+
+.unified-availability-details-placeholder p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.unified-availability-details-placeholder strong {
+  color: #0f172a;
+}
+.unified-period-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.unified-period-status-open {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.unified-period-status-ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.unified-period-status-draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.unified-period-status-missing {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.unified-period-status-archived {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.unified-period-recommendation {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px;
+  border: 1px solid #bfdbfe;
+  border-radius: 11px;
+  background: #eff6ff;
+}
+
+.unified-period-recommendation strong {
+  color: #1e3a8a;
+  font-size: 0.7rem;
+}
+
+.unified-period-recommendation span {
+  color: #1e40af;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.unified-period-recommendation small {
+  padding-block-start: 6px;
+  border-block-start: 1px solid #bfdbfe;
+  color: #475569;
+  font-size: 0.65rem;
+  line-height: 1.5;
+}
+
+.unified-period-error {
+  padding: 10px 12px;
+  border: 1px solid #fca5a5;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.unified-period-empty {
+  padding: 36px;
+  color: #64748b;
+  text-align: center;
+}

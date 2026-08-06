@@ -23,6 +23,10 @@ import { useAuth } from '../auth/AuthContext';
 import {
   useSchedule,
 } from '../hooks/useSchedule';
+import {
+    useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
 import AvailabilityMatrixPanel from '../components/availability/AvailabilityMatrixPanel';
 import AvailabilityPeriodPicker from '../components/availability/AvailabilityPeriodPicker';
 import AvailabilitySubmissionsPanel from '../components/availability/AvailabilitySubmissionsPanel';
@@ -140,7 +144,13 @@ const {
   profile,
   hasPermission,
 } = useAuth();
-
+const [
+  searchParams,
+  setSearchParams,
+] =
+  useSearchParams();
+  const navigate =
+  useNavigate();
 const canSubmitAvailability =
   hasPermission(
     'availability.view',
@@ -155,7 +165,19 @@ const canPrepareSchedule =
   hasPermission(
     'schedule.edit',
   );
+const requestedTab =
+  searchParams.get(
+    'tab',
+  );
 
+const requestedPeriodId =
+  searchParams.get(
+    'periodId',
+  );
+  const returnTo =
+  searchParams.get(
+    'returnTo',
+  );
 const isDispatcher =
   profile?.role ===
   'dispatcher';
@@ -382,7 +404,32 @@ const {
     clearError,
   } =
     useAvailabilityPeriods();
+  useEffect(
+  () => {
+    if (
+      requestedTab !==
+        'submissions' ||
+      !requestedPeriodId ||
+      !canManageAvailability
+    ) {
+      return;
+    }
 
+    setActiveWorkspaceTab(
+      'submissions',
+    );
+
+    void loadPeriodSubmissions(
+      requestedPeriodId,
+    );
+  },
+  [
+    canManageAvailability,
+    loadPeriodSubmissions,
+    requestedPeriodId,
+    requestedTab,
+  ],
+);
   const submissionsPanelRef =
     useRef<HTMLDivElement | null>(
       null,
@@ -558,7 +605,31 @@ useEffect(() => {
         importYear,
       );
     };
+const handleCloseSubmissionsTracking =
+  (): void => {
+    resetSubmissionsTracking();
 
+    resetMatrix();
+
+    if (
+      returnTo ===
+      '/shifts?tab=availability'
+    ) {
+      navigate(
+        returnTo,
+      );
+
+      return;
+    }
+
+    setSearchParams(
+      {},
+      {
+        replace:
+          true,
+      },
+    );
+  };
   const handleOpenSubmissionsTracking =
     async (
       periodId: string,
@@ -1877,10 +1948,9 @@ useEffect(() => {
                 onClosePeriod={
                   handleCloseAvailabilityPeriod
                 }
-                onClose={() => {
-                  resetSubmissionsTracking();
-                  resetMatrix();
-                }}
+                onClose={
+                  handleCloseSubmissionsTracking
+                }
               />
             </div>
           ) : (
@@ -1948,11 +2018,11 @@ useEffect(() => {
               assignmentCandidatesState
                 .isLoading
             }
-            onSelect={(periodId) => {
-              void handleOpenAssignmentCandidates(
-                periodId,
-              );
-            }}
+          onSelect={(periodId) => {
+            void handleOpenAssignmentCandidates(
+              periodId,
+            );
+          }}
           />
 
           {scheduleState.error ? (
