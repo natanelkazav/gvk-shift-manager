@@ -1,37 +1,192 @@
 import {
-  supabase,
-} from '../lib/supabase';
+  notificationService,
+  type NotificationDeliveryResult,
+} from '../features/notifications/services/notificationService';
+
 import {
-  FunctionsHttpError,
-} from '@supabase/supabase-js';
+  NotificationPriority,
+  NotificationType,
+} from '../features/notifications/types/notificationTypes';
+
 export interface SendTestPushRequest {
-  targetUserId: string;
+  targetUserId:
+    string;
 
-  title: string;
+  title:
+    string;
 
-  body: string;
+  body:
+    string;
 
-  url?: string;
+  url?:
+    string;
 }
 
 export interface SendTestPushResponse {
-  success: boolean;
+  success:
+    boolean;
 
-  targetUserId: string;
+  targetUserId:
+    string;
 
-  totalDevices: number;
+  notificationId:
+    string;
 
-  sent: number;
+  totalRecipients:
+    number;
 
-  failed: number;
+  recipientsWithDevices:
+    number;
 
-  failures: Array<{
-    subscriptionId: string;
+  recipientsDelivered:
+    number;
 
-    statusCode: number | null;
+  recipientsWithoutDevices:
+    number;
 
-    message: string;
-  }>;
+  totalDevices:
+    number;
+
+  sent:
+    number;
+
+  failed:
+    number;
+}
+
+function validateRequest(
+  request:
+    SendTestPushRequest,
+): {
+  targetUserId:
+    string;
+
+  title:
+    string;
+
+  body:
+    string;
+
+  url:
+    string;
+} {
+  const targetUserId =
+    request.targetUserId
+      .trim();
+
+  if (
+    !targetUserId
+  ) {
+    throw new Error(
+      'יש לבחור משתמש לקבלת ההתראה.',
+    );
+  }
+
+  const title =
+    request.title
+      .trim();
+
+  if (
+    !title
+  ) {
+    throw new Error(
+      'יש להזין כותרת להתראה.',
+    );
+  }
+
+  if (
+    title.length >
+    120
+  ) {
+    throw new Error(
+      'כותרת ההתראה יכולה להכיל עד 120 תווים.',
+    );
+  }
+
+  const body =
+    request.body
+      .trim();
+
+  if (
+    !body
+  ) {
+    throw new Error(
+      'יש להזין תוכן להתראה.',
+    );
+  }
+
+  if (
+    body.length >
+    500
+  ) {
+    throw new Error(
+      'תוכן ההתראה יכול להכיל עד 500 תווים.',
+    );
+  }
+
+  const url =
+    request.url
+      ?.trim() ||
+    '/';
+
+  if (
+    !url.startsWith(
+      '/',
+    )
+  ) {
+    throw new Error(
+      'כתובת הפתיחה חייבת להיות נתיב פנימי שמתחיל ב־/.',
+    );
+  }
+
+  return {
+    targetUserId,
+
+    title,
+
+    body,
+
+    url,
+  };
+}
+
+function mapDeliveryResult(
+  targetUserId:
+    string,
+
+  result:
+    NotificationDeliveryResult,
+): SendTestPushResponse {
+  return {
+    success:
+      result.success,
+
+    targetUserId,
+
+    notificationId:
+      result.notificationId,
+
+    totalRecipients:
+      result.totalRecipients,
+
+    recipientsWithDevices:
+      result.recipientsWithDevices,
+
+    recipientsDelivered:
+      result.recipientsDelivered,
+
+    recipientsWithoutDevices:
+      result.recipientsWithoutDevices,
+
+    totalDevices:
+      result.totalDevices,
+
+    sent:
+      result.sent,
+
+    failed:
+      result.failed,
+  };
 }
 
 class PushTestService {
@@ -39,161 +194,51 @@ class PushTestService {
     request:
       SendTestPushRequest,
   ): Promise<SendTestPushResponse> {
-    const targetUserId =
-      request.targetUserId.trim();
-
-    const title =
-      request.title.trim();
-
-    const body =
-      request.body.trim();
-
-    if (!targetUserId) {
-      throw new Error(
-        'יש לבחור משתמש לקבלת ההתראה.',
+    const validatedRequest =
+      validateRequest(
+        request,
       );
-    }
 
-    if (!title) {
-      throw new Error(
-        'יש להזין כותרת להתראה.',
-      );
-    }
+    const deliveryResult =
+      await notificationService
+        .createNotification({
+          userIds: [
+            validatedRequest
+              .targetUserId,
+          ],
 
-    if (!body) {
-      throw new Error(
-        'יש להזין תוכן להתראה.',
-      );
-    }
+          type:
+            NotificationType.TEST,
 
-    const {
-      data,
-      error,
-    } =
-      await supabase.functions
-        .invoke(
-          'send-test-push',
-          {
-            body: {
-              targetUserId,
+          priority:
+            NotificationPriority.NORMAL,
 
-              title,
+          title:
+            validatedRequest.title,
 
-              body,
+          body:
+            validatedRequest.body,
 
-              url:
-                request.url?.trim() ||
-                '/',
-            },
+          url:
+            validatedRequest.url,
+
+          source:
+            'manager',
+
+          data: {
+            isTest:
+              true,
+
+            targetUserId:
+              validatedRequest
+                .targetUserId,
           },
-        );
+        });
 
-if (error) {
-  if (
-    error instanceof
-      FunctionsHttpError
-  ) {
-    try {
-      const responseBody =
-        await error.context
-          .json() as {
-            error?: unknown;
-          };
-
-      if (
-        typeof responseBody.error ===
-          'string' &&
-        responseBody.error.trim()
-      ) {
-        throw new Error(
-          responseBody.error,
-        );
-      }
-    } catch (
-      responseError
-    ) {
-      if (
-        responseError instanceof
-          Error &&
-        responseError !== error
-      ) {
-        throw responseError;
-      }
-    }
-  }
-
-  throw new Error(
-    error.message ||
-      'שליחת ההתראה נכשלה.',
-  );
-}
-
-    if (
-      typeof data !==
-        'object' ||
-      data ===
-        null
-    ) {
-      throw new Error(
-        'התקבלה תשובה לא תקינה מפונקציית שליחת ההתראה.',
-      );
-    }
-
-    const response =
-      data as
-        Partial<SendTestPushResponse> & {
-          error?: unknown;
-        };
-
-    if (
-      typeof response.error ===
-      'string'
-    ) {
-      throw new Error(
-        response.error,
-      );
-    }
-
-    if (
-      typeof response.success !==
-        'boolean' ||
-      typeof response.targetUserId !==
-        'string' ||
-      typeof response.totalDevices !==
-        'number' ||
-      typeof response.sent !==
-        'number' ||
-      typeof response.failed !==
-        'number'
-    ) {
-      throw new Error(
-        'תוצאת שליחת ההתראה אינה תקינה.',
-      );
-    }
-
-    return {
-      success:
-        response.success,
-
-      targetUserId:
-        response.targetUserId,
-
-      totalDevices:
-        response.totalDevices,
-
-      sent:
-        response.sent,
-
-      failed:
-        response.failed,
-
-      failures:
-        Array.isArray(
-          response.failures,
-        )
-          ? response.failures
-          : [],
-    };
+    return mapDeliveryResult(
+      validatedRequest.targetUserId,
+      deliveryResult,
+    );
   }
 }
 

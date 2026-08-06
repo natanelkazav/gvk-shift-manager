@@ -16,15 +16,32 @@ import {
   X,
 } from 'lucide-react';
 
+import PushPermissionPrompt
+  from '../features/push/components/PushPermissionPrompt';
+
+import NotificationClickHandler
+  from '../features/notifications/components/NotificationClickHandler';
+
 import {
   useMemo,
   useState,
 } from 'react';
 
+import NotificationBell
+  from '../features/notifications/components/NotificationBell';
+
+  import {
+  PushStatusProvider,
+} from '../features/push/context/PushStatusProvider';
+
 import {
   NavLink,
   Outlet,
 } from 'react-router-dom';
+
+import {
+  NotificationProvider,
+} from '../features/notifications/context/NotificationProvider';
 
 import {
   useAuth,
@@ -474,20 +491,24 @@ const visibleNavigationItems =
       );
     };
 
-  const handleSignOut =
-    async (): Promise<void> => {
-      setIsSigningOut(
-        true,
+const handleSignOut =
+  async (): Promise<void> => {
+    setIsSigningOut(
+      true,
+    );
+
+    try {
+      sessionStorage.removeItem(
+        'push-permission-dismissed',
       );
 
-      try {
-        await signOut();
-      } finally {
-        setIsSigningOut(
-          false,
-        );
-      }
-    };
+      await signOut();
+    } finally {
+      setIsSigningOut(
+        false,
+      );
+    }
+  };
 
   const displayName =
     profile?.displayName ??
@@ -500,7 +521,10 @@ const visibleNavigationItems =
         ]
       : '';
 
-  return (
+return (
+<PushStatusProvider>
+  <NotificationProvider>
+    <NotificationClickHandler />
     <div className="app-layout">
       {isSidebarOpen ? (
         <button
@@ -658,8 +682,10 @@ const visibleNavigationItems =
               מערכת ניהול משמרות
             </span>
           </div>
+<div className="app-header-actions">
+  <NotificationBell />
 
-          <div className="app-user">
+  <div className="app-user">
             <div
               className="app-user-avatar"
               aria-hidden="true"
@@ -685,13 +711,18 @@ const visibleNavigationItems =
               </span>
             </div>
           </div>
+          </div>
         </header>
 
         <main className="app-main">
+          <PushPermissionPrompt />
+
           <Outlet />
         </main>
-      </div>
+        </div>
     </div>
+     </NotificationProvider>
+  </PushStatusProvider>
   );
 }
 

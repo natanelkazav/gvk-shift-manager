@@ -34,6 +34,17 @@ interface PushNotificationPayload {
   >;
 }
 
+interface NotificationClickData {
+  url:
+    string;
+
+  notificationId:
+    string | null;
+
+  recipientId:
+    string | null;
+}
+
 const defaultNotificationTitle =
   'GVK Shift Manager';
 
@@ -42,6 +53,9 @@ const defaultNotificationBody =
 
 const defaultNotificationUrl =
   '/';
+
+const notificationClickMessageType =
+  'GVK_NOTIFICATION_CLICKED';
 
 precacheAndRoute(
   self.__WB_MANIFEST,
@@ -73,6 +87,106 @@ function parsePushPayload(
         defaultNotificationBody,
     };
   }
+}
+
+function getStringValue(
+  value: unknown,
+): string | null {
+  if (
+    typeof value !==
+      'string'
+  ) {
+    return null;
+  }
+
+  const normalizedValue =
+    value.trim();
+
+  return normalizedValue ||
+    null;
+}
+
+function parseNotificationClickData(
+  value: unknown,
+): NotificationClickData {
+  const data =
+    typeof value ===
+        'object' &&
+      value !==
+        null
+      ? value as
+          Record<
+            string,
+            unknown
+          >
+      : {};
+
+  return {
+    url:
+      getStringValue(
+        data.url,
+      ) ??
+      defaultNotificationUrl,
+
+    notificationId:
+      getStringValue(
+        data.notificationId,
+      ),
+
+    recipientId:
+      getStringValue(
+        data.recipientId,
+      ),
+  };
+}
+
+function createTargetUrl(
+  clickData:
+    NotificationClickData,
+): string {
+  const targetUrl =
+    new URL(
+      clickData.url,
+      self.location.origin,
+    );
+
+  /*
+   * אם האפליקציה הייתה סגורה, React יקרא
+   * את הפרמטר ויסמן את ההתראה כנקראה
+   * לאחר עליית האפליקציה.
+   */
+  if (
+    clickData.recipientId
+  ) {
+    targetUrl.searchParams.set(
+      'notificationRecipientId',
+      clickData.recipientId,
+    );
+  }
+
+  return targetUrl.href;
+}
+
+async function sendClickMessageToClient(
+  client:
+    WindowClient,
+
+  clickData:
+    NotificationClickData,
+): Promise<void> {
+  client.postMessage({
+    type:
+      notificationClickMessageType,
+
+    notificationId:
+      clickData.notificationId,
+
+    recipientId:
+      clickData.recipientId,
+
+    url:
+      clickData.url,
+  });
 }
 
 self.addEventListener(
@@ -142,26 +256,21 @@ self.addEventListener(
     event:
       NotificationEvent,
   ) => {
+    /*
+     * סגירת ההתראה שנלחצה מסירה אותה
+     * ממגש ההתראות של המכשיר.
+     */
     event.notification.close();
 
-    const notificationData =
-      event.notification.data as
-        | {
-            url?: unknown;
-          }
-        | undefined;
-
-    const requestedUrl =
-      typeof notificationData?.url ===
-        'string'
-        ? notificationData.url
-        : defaultNotificationUrl;
+    const clickData =
+      parseNotificationClickData(
+        event.notification.data,
+      );
 
     const targetUrl =
-      new URL(
-        requestedUrl,
-        self.location.origin,
-      ).href;
+      createTargetUrl(
+        clickData,
+      );
 
     event.waitUntil(
       self.clients
@@ -190,19 +299,26 @@ self.addEventListener(
                 );
 
               if (
-                clientUrl.origin ===
+                clientUrl.origin !==
                 self.location.origin
               ) {
-                await windowClient
-                  .navigate(
-                    targetUrl,
-                  );
-
-                await windowClient
-                  .focus();
-
-                return;
+                continue;
               }
+
+              await sendClickMessageToClient(
+                windowClient,
+                clickData,
+              );
+
+              await windowClient
+                .navigate(
+                  targetUrl,
+                );
+
+              await windowClient
+                .focus();
+
+              return;
             }
 
             await self.clients

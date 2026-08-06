@@ -261,3 +261,240 @@
   cursor: wait;
   opacity: 0.55;
 }
+.notification-bell-button {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.notification-bell-button:hover:not(:disabled) {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.notification-bell-button:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 25%);
+  outline-offset: 2px;
+}
+
+.notification-bell-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.notification-bell-badge {
+  position: absolute;
+  top: -4px;
+  inset-inline-end: -5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding-inline: 5px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-inline-start: auto;
+}
+.notification-bell-container {
+  position: relative;
+  display: inline-flex;
+}
+
+.notification-popover {
+  position: absolute;
+  top: calc(100% + 12px);
+
+  /*
+   * הפעמון ממוקם בצד שמאל של הכותרת.
+   * לכן החלונית צריכה להיפתח ימינה אל תוך המסך.
+   */
+  inset-inline-end: 0;
+
+  z-index: 1000;
+  width: min(380px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 45px rgb(15 23 42 / 18%);
+}
+
+.notification-popover-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.notification-popover-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.notification-popover-header strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.notification-popover-header span {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.notification-popover-mark-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.notification-popover-mark-all:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.notification-popover-content {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.notification-popover-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 110px;
+  padding: 18px;
+  color: #64748b;
+  text-align: center;
+}
+
+.notification-popover-error {
+  color: #b91c1c;
+}
+
+.notification-popover-spinner {
+  animation: notification-popover-spin 800ms linear infinite;
+}
+
+.notification-popover-item {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  padding: 14px 16px;
+  border: 0;
+  border-bottom: 1px solid #eef2f7;
+  background: #ffffff;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.notification-popover-item:hover {
+  background: #f8fafc;
+}
+
+.notification-popover-item-unread {
+  background: #eff6ff;
+}
+
+.notification-popover-item-unread:hover {
+  background: #dbeafe;
+}
+
+.notification-popover-item-title {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.notification-popover-item-body {
+  overflow: hidden;
+  color: #475569;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-popover-item-date {
+  color: #94a3b8;
+  font-size: 0.65rem;
+}
+
+.notification-popover-footer {
+  width: 100%;
+  padding: 13px 16px;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #2563eb;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.notification-popover-footer:hover {
+  background: #f8fafc;
+}
+
+@keyframes notification-popover-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 600px) {
+  .notification-popover {
+    position: fixed;
+    top: 72px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+    max-width: none;
+  }
+}

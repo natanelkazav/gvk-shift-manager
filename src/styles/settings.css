@@ -240,3 +240,61 @@
     width: 100%;
   }
 }
+
+.push-permission-banner {
+  margin-block-end: 20px;
+  border-inline-start: 5px solid #2563eb;
+  background: #eff6ff;
+}
+
+.push-permission-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.push-permission-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.push-permission-content {
+  min-width: 0;
+}
+
+.push-permission-content h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.push-permission-content p {
+  margin: 6px 0 0;
+  color: #475569;
+  font-size: 0.74rem;
+  line-height: 1.6;
+}
+
+.push-permission-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block-start: 18px;
+}
+
+@media (max-width: 600px) {
+  .push-permission-actions {
+    flex-direction: column;
+  }
+
+  .push-permission-actions .button {
+    width: 100%;
+  }
+}
