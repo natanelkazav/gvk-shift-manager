@@ -1,0 +1,21 @@
+* [33m7492440[m[33m ([m[1;31morigin/feature/push-notifications-settings[m[33m, [m[1;32mfeature/push-notifications-settings[m[33m)[m feat: add push notification settings infrastructure
+[31m|[m * [33m71e9e32[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/unified-shifts-workspace[m[33m)[m feat: add push notification infrastructure
+[31m|[m * [33mbc82d03[m feat: add unified availability workspace
+[31m|[m * [33m73f9e27[m feat: add unified shifts calendar with monthly history
+[31m|[m[31m/[m  
+* [33mbbf8212[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m changed orientation of app
+* [33m3d08f4c[m[33m ([m[1;31morigin/feature/morning-driver-system[m[33m, [m[1;32mfeature/morning-driver-system[m[33m)[m Stabilize planning screen before weekly schedule layout update
+* [33m935bf85[m[33m ([m[1;33mtag: [m[1;33mv1.0.0-beta[m[33m)[m Add user password reset functionality
+* [33ma2cdc2c[m[33m ([m[1;31morigin/feature/pwa-support[m[33m, [m[1;32mfeature/pwa-support[m[33m)[m Add PWA support and app icons
+* [33mbc0bd9a[m[33m ([m[1;31morigin/feature/driver-availability-management[m[33m, [m[1;32mfeature/driver-availability-management[m[33m)[m Add driver availability period management
+* [33m0548038[m[33m ([m[1;31morigin/feature/statistics-dashboard[m[33m, [m[1;32mfeature/statistics-dashboard[m[33m)[m Build modular statistics dashboard with charts and analytics views
+* [33m9f0ace3[m Add role-based navigation labels and dispatcher schedule calendar
+* [33mf53c817[m Fix SPA route refresh on Vercel
+* [33m999eac2[m[33m ([m[1;31morigin/feature/auto-scheduling[m[33m, [m[1;32mfeature/auto-scheduling[m[33m)[m Add Excel import workflow, archive foundation and driver calendar improvements
+* [33m64bf78f[m Add schedule import execution and archive foundation
+* [33m2061a51[m Initial GVK Shift Manager MVP
+* [33m456eda1[m Add manual editing for driver schedule drafts
+* [33m9f59179[m Add driver availability and schedule draft workflow
+* [33m8b7dcd9[m Complete permission-based access and schedule publishing
+* [33m4850059[m Add validated schedule draft persistence
+* [33m29735d6[m Improve availability workspace and scheduling balance dashboard
