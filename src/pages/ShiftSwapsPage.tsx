@@ -170,7 +170,8 @@ function ShiftSwapsPage() {
     useState<string | null>(null);
   const [isCreating, setIsCreating] =
     useState(false);
-
+const [createError, setCreateError] =
+  useState<string | null>(null);
   const canCreate =
     profile?.role === 'dispatcher' &&
     hasPermission('shift_swaps.view');
@@ -332,37 +333,39 @@ useEffect(() => {
       setCounterpartyShiftId('');
     };
 
-  const handleCreate =
-    async (): Promise<void> => {
-      setIsCreating(true);
-      setError(null);
-      setSuccess(null);
+const handleCreate =
+  async (): Promise<void> => {
+    setIsCreating(true);
+    setCreateError(null);
+    setSuccess(null);
 
-      try {
-        await shiftSwapService.createRequest({
-          swapType,
-          requesterShiftId,
-          counterpartyUserId,
-          counterpartyShiftId:
-            swapType === 'two_way'
-              ? counterpartyShiftId
-              : null,
-        });
+    try {
+      await shiftSwapService.createRequest({
+        swapType,
+        requesterShiftId,
+        counterpartyUserId,
+        counterpartyShiftId:
+          swapType === 'two_way'
+            ? counterpartyShiftId
+            : null,
+      });
 
-        setSuccess(
-          'בקשת ההחלפה נשלחה למוקדן השני לאישור.',
-        );
-        setIsCreateOpen(false);
-        resetCreateForm();
-        await loadData();
-      } catch (createError) {
-        setError(
-          getErrorMessage(createError),
-        );
-      } finally {
-        setIsCreating(false);
-      }
-    };
+      setSuccess(
+        'בקשת ההחלפה נשלחה למוקדן השני לאישור.',
+      );
+
+      setIsCreateOpen(false);
+      resetCreateForm();
+
+      await loadData();
+    } catch (createRequestError) {
+      setCreateError(
+        getErrorMessage(createRequestError),
+      );
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const runRequestAction =
     async (
@@ -493,6 +496,7 @@ useEffect(() => {
             {canCreate ? (
               <Button
                 onClick={() => {
+                  setCreateError(null);
                   setIsCreateOpen(true);
                 }}
               >
@@ -744,6 +748,11 @@ useEffect(() => {
         )}
       >
         <div className="shift-swap-create-form">
+        {createError ? (
+          <div className="shift-swap-message shift-swap-message-error">
+            {createError}
+          </div>
+        ) : null}
           <div className="shift-swap-type-selector">
             <button
               type="button"
