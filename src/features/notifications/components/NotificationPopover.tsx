@@ -8,8 +8,16 @@ import {
 } from 'react-router-dom';
 
 import {
+  useAuth,
+} from '../../../auth/AuthContext';
+
+import {
   useNotificationContext,
 } from '../context/useNotificationContext';
+
+import {
+  NotificationType,
+} from '../types/notificationTypes';
 
 function formatNotificationDate(
   value:
@@ -47,6 +55,15 @@ function NotificationPopover() {
     useNavigate();
 
   const {
+    hasPermission,
+  } = useAuth();
+
+  const canApproveShiftSwaps =
+    hasPermission(
+      'shift_swaps.approve',
+    );
+
+  const {
     state,
     unreadCount,
     markAsRead,
@@ -61,25 +78,35 @@ function NotificationPopover() {
         6,
       );
 
-  const handleNotificationClick =
-    async (
-      recipientId:
-        string,
+const handleNotificationClick =
+  async (
+    recipientId:
+      string,
 
-      url:
-        string | null,
-    ): Promise<void> => {
-      try {
-        await markAsRead(
-          recipientId,
-        );
-      } finally {
-        navigate(
-          url ||
-          '/notifications',
-        );
-      }
-    };
+    url:
+      string | null,
+
+    type:
+      string,
+  ): Promise<void> => {
+    const targetUrl =
+      canApproveShiftSwaps &&
+      type ===
+        NotificationType.SHIFT_SWAP
+        ? '/notifications?tab=requests'
+        : url ||
+          '/notifications';
+
+    try {
+      await markAsRead(
+        recipientId,
+      );
+    } finally {
+      navigate(
+        targetUrl,
+      );
+    }
+  };
 
   const handleMarkAllAsRead =
     async (): Promise<void> => {
@@ -196,6 +223,8 @@ function NotificationPopover() {
                         .recipientId,
 
                       notification.url,
+
+                      notification.type,
                     );
                   }}
                 >
