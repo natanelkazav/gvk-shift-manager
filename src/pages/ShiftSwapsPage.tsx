@@ -184,7 +184,15 @@ function ShiftSwapsPage() {
   const [createError, setCreateError] =
     useState<string | null>(null);
   const [collapsedSections, setCollapsedSections] =
-    useState<Record<string, boolean>>({});
+    useState<Record<string, boolean>>({
+      myRequests: true,
+      swappedWithMe: true,
+    });
+  const [sectionSeenAt, setSectionSeenAt] =
+    useState<Record<string, string | null>>(() => ({
+      myRequests: localStorage.getItem('shift-swaps:my-requests-seen-at'),
+      swappedWithMe: localStorage.getItem('shift-swaps:swapped-with-me-seen-at'),
+    }));
   const canCreate =
     profile?.role === 'dispatcher' &&
     hasPermission('shift_swaps.view');
@@ -297,11 +305,73 @@ useEffect(() => {
     [requests, user?.id],
   );
 
-  const toggleSection = (sectionKey: string): void => {
-    setCollapsedSections((current) => ({
+  const getLatestUpdatedAt = (
+    items: ShiftSwapRequest[],
+  ): string | null =>
+    items.reduce<string | null>(
+      (latest, request) =>
+        !latest || request.updatedAt > latest
+          ? request.updatedAt
+          : latest,
+      null,
+    );
+
+  const latestMyRequestsUpdatedAt =
+    getLatestUpdatedAt(myRequests);
+  const latestSwappedWithMeUpdatedAt =
+    getLatestUpdatedAt(swappedWithMe);
+
+  const hasNewMyRequests = Boolean(
+    latestMyRequestsUpdatedAt &&
+      (!sectionSeenAt.myRequests ||
+        latestMyRequestsUpdatedAt > sectionSeenAt.myRequests),
+  );
+
+  const hasNewSwappedWithMe = Boolean(
+    latestSwappedWithMeUpdatedAt &&
+      (!sectionSeenAt.swappedWithMe ||
+        latestSwappedWithMeUpdatedAt > sectionSeenAt.swappedWithMe),
+  );
+
+  const markSectionSeen = (
+    sectionKey: 'myRequests' | 'swappedWithMe',
+  ): void => {
+    const latestUpdatedAt =
+      sectionKey === 'myRequests'
+        ? latestMyRequestsUpdatedAt
+        : latestSwappedWithMeUpdatedAt;
+
+    if (!latestUpdatedAt) {
+      return;
+    }
+
+    const storageKey =
+      sectionKey === 'myRequests'
+        ? 'shift-swaps:my-requests-seen-at'
+        : 'shift-swaps:swapped-with-me-seen-at';
+
+    localStorage.setItem(storageKey, latestUpdatedAt);
+    setSectionSeenAt((current) => ({
       ...current,
-      [sectionKey]: !current[sectionKey],
+      [sectionKey]: latestUpdatedAt,
     }));
+  };
+
+  const toggleSection = (
+    sectionKey: 'myRequests' | 'swappedWithMe',
+  ): void => {
+    setCollapsedSections((current) => {
+      const willOpen = Boolean(current[sectionKey]);
+
+      if (willOpen) {
+        markSectionSeen(sectionKey);
+      }
+
+      return {
+        ...current,
+        [sectionKey]: !current[sectionKey],
+      };
+    });
   };
 
   const awaitingMyResponse = useMemo(
@@ -702,7 +772,12 @@ const handleCreate =
               aria-expanded={!collapsedSections.myRequests}
             >
               <span>
-                <strong>הבקשות שלי</strong>
+                <span className="shift-swap-section-title-row">
+                  <strong>הבקשות שלי</strong>
+                  {hasNewMyRequests ? (
+                    <span className="shift-swap-new-badge">חדש</span>
+                  ) : null}
+                </span>
                 <small>{myRequests.length} בקשות</small>
               </span>
               <ChevronDown
@@ -757,7 +832,12 @@ const handleCreate =
               aria-expanded={!collapsedSections.swappedWithMe}
             >
               <span>
-                <strong>משמרות שהוחלפו איתי</strong>
+                <span className="shift-swap-section-title-row">
+                  <strong>משמרות שהוחלפו איתי</strong>
+                  {hasNewSwappedWithMe ? (
+                    <span className="shift-swap-new-badge">חדש</span>
+                  ) : null}
+                </span>
                 <small>{swappedWithMe.length} החלפות שאושרו</small>
               </span>
               <ChevronDown

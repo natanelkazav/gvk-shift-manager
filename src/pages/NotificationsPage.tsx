@@ -13,7 +13,10 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useNotificationContext } from '../features/notifications/context/useNotificationContext';
 import type { MyNotification } from '../features/notifications/services/notificationService';
@@ -69,13 +72,18 @@ function getErrorMessage(error: unknown): string {
 
 function NotificationsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { hasPermission } = useAuth();
   const canViewNotifications =
     hasPermission('notifications.view') || hasPermission('notifications.manage');
   const canApproveSwaps = hasPermission('shift_swaps.approve');
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>(
-    canViewNotifications ? 'notifications' : 'requests',
-  );
+  const requestedTab = searchParams.get('tab');
+  const activeTab: WorkspaceTab =
+    requestedTab === 'requests' && canApproveSwaps
+      ? 'requests'
+      : canViewNotifications
+        ? 'notifications'
+        : 'requests';
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>('all');
   const [swapRequests, setSwapRequests] = useState<ShiftSwapRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(canApproveSwaps);
@@ -115,6 +123,29 @@ function NotificationsPage() {
     [swapRequests],
   );
 
+  const reviewedManagerRequests = useMemo(
+    () =>
+      swapRequests
+        .filter(
+          (request) =>
+            Boolean(request.managerReviewedAt) &&
+            (request.status === 'approved' ||
+              request.status === 'rejected_by_manager'),
+        )
+        .sort((first, second) =>
+          (second.managerReviewedAt ?? '').localeCompare(
+            first.managerReviewedAt ?? '',
+          ),
+        ),
+    [swapRequests],
+  );
+
+  const selectWorkspaceTab = (tab: WorkspaceTab): void => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', tab);
+    setSearchParams(nextParams, { replace: true });
+  };
+
   const filteredNotifications = useMemo(() => {
     if (activeFilter === 'unread') {
       return state.notifications.filter((notification) => !notification.isRead);
@@ -128,8 +159,21 @@ function NotificationsPage() {
   const readCount = state.notifications.length - unreadCount;
 
   const handleNotificationClick = async (notification: MyNotification): Promise<void> => {
-    if (!notification.isRead) await markAsRead(notification.recipientId);
-    if (notification.url) navigate(notification.url);
+    if (!notification.isRead) {
+      await markAsRead(notification.recipientId);
+    }
+
+    if (
+      canApproveSwaps &&
+      notification.type === 'shift_swap'
+    ) {
+      navigate('/notifications?tab=requests');
+      return;
+    }
+
+    if (notification.url) {
+      navigate(notification.url);
+    }
   };
 
   const refreshRequests = async (): Promise<void> => {
@@ -177,7 +221,7 @@ function NotificationsPage() {
           <button
             type="button"
             className={activeTab === 'notifications' ? 'active' : ''}
-            onClick={() => setActiveTab('notifications')}
+            onClick={() => selectWorkspaceTab('notifications')}
           >
             התראות
             <span>{unreadCount}</span>
@@ -187,7 +231,7 @@ function NotificationsPage() {
           <button
             type="button"
             className={activeTab === 'requests' ? 'active' : ''}
-            onClick={() => setActiveTab('requests')}
+            onClick={() => selectWorkspaceTab('requests')}
           >
             בקשות
             <span>{pendingManagerRequests.length}</span>
@@ -280,6 +324,93 @@ function NotificationsPage() {
                   </div>
                 </article>
               ))}
+            </div>
+          ) : null}
+
+          <div className="notifications-request-history-heading">
+            <div>
+              <strong>היסטוריית בקשות</strong>
+              <span>בקשות שכבר התקבלה לגביהן החלטה</span>
+            </div>
+            <span>{reviewedManagerRequests.length}</span>
+          </div>
+
+          {!requestsLoading && reviewedManagerRequests.length === 0 ? (
+            <div className="notifications-request-history-empty">
+              עדיין אין בקשות שטופלו.
+            </div>
+          ) : null}
+
+          {!requestsLoading && reviewedManagerRequests.length > 0 ? (
+            <div className="notifications-requests-list notifications-request-history-list">
+              {reviewedManagerRequests.map((request) => {
+                const approved = request.status === 'approved';
+
+                return (
+                  <article
+                    key={request.id}
+                    className="notifications-request-card notifications-request-history-card"
+                  >
+                    <header>
+                      <div>
+                        <strong>
+                          {request.swapType === 'one_way'
+                            ? 'חילוף חד-כיווני'
+                            : 'חילוף דו-כיווני'}
+                        </strong>
+                        <span>
+                          {request.requesterName} ↔ {request.counterpartyName}
+                        </span>
+                      </div>
+                      <span
+                        className={
+                          approved
+                            ? 'notifications-request-decision notifications-request-decision-approved'
+                            : 'notifications-request-decision notifications-request-decision-rejected'
+                        }
+                      >
+                        {approved ? 'אושר' : 'נדחה'}
+                      </span>
+                    </header>
+
+                    <div className="notifications-request-flow">
+                      <div>
+                        <span>{request.requesterName}</span>
+                        <strong>
+                          {formatSwapShift(
+                            request.requesterShiftDate,
+                            request.requesterStartsAt,
+                            request.requesterEndsAt,
+                          )}
+                        </strong>
+                      </div>
+                      <ArrowLeftRight size={18} aria-hidden="true" />
+                      <div>
+                        <span>{request.counterpartyName}</span>
+                        <strong>
+                          {request.swapType === 'two_way'
+                            ? formatSwapShift(
+                                request.counterpartyShiftDate,
+                                request.counterpartyStartsAt,
+                                request.counterpartyEndsAt,
+                              )
+                            : 'מקבל את המשמרת'}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="notifications-request-history-meta">
+                      <Clock3 size={14} aria-hidden="true" />
+                      {request.managerReviewedAt
+                        ? `החלטה: ${formatNotificationDate(request.managerReviewedAt)}`
+                        : 'הבקשה טופלה'}
+                      {request.rejectionReason
+                        ? ` · סיבה: ${request.rejectionReason}`
+                        : ''}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           ) : null}
         </>
