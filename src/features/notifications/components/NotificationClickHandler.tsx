@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
 } from 'react';
 
@@ -6,6 +7,10 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
+
+import {
+  useAuth,
+} from '../../../auth/AuthContext';
 
 import {
   useNotificationContext,
@@ -31,7 +36,7 @@ const notificationClickMessageType =
 const recipientQueryParameter =
   'notificationRecipientId';
 
-function getRecipientId(
+function getStringValue(
   value: unknown,
 ): string | null {
   if (
@@ -56,17 +61,138 @@ function NotificationClickHandler() {
     useNavigate();
 
   const {
+    permissionsLoaded,
+    hasPermission,
+  } =
+    useAuth();
+
+  const {
     markAsRead,
   } =
     useNotificationContext();
 
+  const getNotificationTarget =
+    useCallback(
+      (
+        rawUrl:
+          unknown,
+      ): string => {
+        const url =
+          getStringValue(
+            rawUrl,
+          ) ??
+          '/notifications';
+
+        let parsedUrl:
+          URL;
+
+        try {
+          parsedUrl =
+            new URL(
+              url,
+              window.location.origin,
+            );
+        } catch {
+          return '/notifications';
+        }
+
+        const pathname =
+          parsedUrl.pathname;
+
+        /*
+         * בקשות להחלפת משמרת:
+         *
+         * מי שיכול לאשר בקשות יגיע ישירות
+         * לתת-הטאב "בקשות" במסך ההתראות.
+         *
+         * מוקדן רגיל יגיע למסך חילופי
+         * המשמרות שלו.
+         */
+        if (
+          pathname ===
+            '/shift-swaps' ||
+          (
+            pathname ===
+              '/notifications' &&
+            parsedUrl.searchParams.get(
+              'tab',
+            ) ===
+              'requests'
+          )
+        ) {
+          if (
+            hasPermission(
+              'shift_swaps.approve',
+            )
+          ) {
+            return '/notifications?tab=requests';
+          }
+
+          if (
+            hasPermission(
+              'shift_swaps.view',
+            )
+          ) {
+            return '/shift-swaps';
+          }
+
+          return '/notifications';
+        }
+
+        /*
+         * התראות אילוצים.
+         *
+         * בעל הרשאת ניהול/עריכת שיבוץ
+         * יגיע למרחב המשמרות המאוחד.
+         *
+         * משתמש שרשאי לצפות באילוצים
+         * האישיים שלו יגיע למסך האילוצים.
+         */
+        if (
+          pathname ===
+            '/availability'
+        ) {
+          if (
+            hasPermission(
+              'availability.manage',
+            ) ||
+            hasPermission(
+              'schedule.edit',
+            )
+          ) {
+            return '/shifts?tab=availability';
+          }
+
+          if (
+            hasPermission(
+              'availability.view',
+            )
+          ) {
+            return '/availability';
+          }
+
+          return '/';
+        }
+
+        /*
+         * עבור כל התראה אחרת נשמור
+         * את היעד שהוגדר בהתראה עצמה.
+         */
+        return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+      },
+      [
+        hasPermission,
+      ],
+    );
+
   /*
-   * טיפול במקרה שבו האפליקציה כבר הייתה
-   * פתוחה וה־Service Worker שלח postMessage.
+   * טיפול במקרה שבו האפליקציה כבר פתוחה
+   * וה-Service Worker שולח postMessage.
    */
   useEffect(
     () => {
       if (
+        !permissionsLoaded ||
         !(
           'serviceWorker' in
           navigator
@@ -101,18 +227,22 @@ function NotificationClickHandler() {
           }
 
           const recipientId =
-            getRecipientId(
+            getStringValue(
               message.recipientId,
             );
 
           if (
-            !recipientId
+            recipientId
           ) {
-            return;
+            void markAsRead(
+              recipientId,
+            );
           }
 
-          void markAsRead(
-            recipientId,
+          navigate(
+            getNotificationTarget(
+              message.url,
+            ),
           );
         };
 
@@ -131,23 +261,38 @@ function NotificationClickHandler() {
       };
     },
     [
+      getNotificationTarget,
       markAsRead,
+      navigate,
+      permissionsLoaded,
     ],
   );
 
   /*
-   * טיפול במקרה שבו האפליקציה הייתה סגורה
-   * ונפתחה דרך כתובת הכוללת recipientId.
+   * טיפול במקרה שבו ה-PWA הייתה סגורה
+   * ונפתחה כתוצאה מלחיצה על Push.
+   *
+   * ה-Service Worker כבר פתח את ה-URL
+   * של ההתראה והוסיף recipientId.
+   *
+   * אנחנו מחכים לטעינת ההרשאות לפני
+   * שמחליטים אם צריך לשנות את היעד.
    */
   useEffect(
     () => {
+      if (
+        !permissionsLoaded
+      ) {
+        return;
+      }
+
       const searchParameters =
         new URLSearchParams(
           location.search,
         );
 
       const recipientId =
-        getRecipientId(
+        getStringValue(
           searchParameters.get(
             recipientQueryParameter,
           ),
@@ -159,50 +304,62 @@ function NotificationClickHandler() {
         return;
       }
 
-      const markNotification =
+      const originalSearchParameters =
+        new URLSearchParams(
+          location.search,
+        );
+
+      originalSearchParameters.delete(
+        recipientQueryParameter,
+      );
+
+      const originalSearch =
+        originalSearchParameters
+          .toString();
+
+      const originalUrl =
+        `${location.pathname}${
+          originalSearch
+            ? `?${originalSearch}`
+            : ''
+        }${location.hash}`;
+
+      const handleNotificationOpen =
         async (): Promise<void> => {
           try {
             await markAsRead(
               recipientId,
             );
-          } finally {
-            searchParameters.delete(
-              recipientQueryParameter,
-            );
-
-            const nextSearch =
-              searchParameters
-                .toString();
-
-            navigate(
-              {
-                pathname:
-                  location.pathname,
-
-                search:
-                  nextSearch
-                    ? `?${nextSearch}`
-                    : '',
-
-                hash:
-                  location.hash,
-              },
-              {
-                replace:
-                  true,
-              },
+          } catch (
+            error
+          ) {
+            console.error(
+              'Failed to mark opened notification as read:',
+              error,
             );
           }
+
+          navigate(
+            getNotificationTarget(
+              originalUrl,
+            ),
+            {
+              replace:
+                true,
+            },
+          );
         };
 
-      void markNotification();
+      void handleNotificationOpen();
     },
     [
+      getNotificationTarget,
       location.hash,
       location.pathname,
       location.search,
       markAsRead,
       navigate,
+      permissionsLoaded,
     ],
   );
 
