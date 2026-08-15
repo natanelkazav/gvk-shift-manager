@@ -1,0 +1,200 @@
+.shift-swaps-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.shift-swaps-header-actions,
+.shift-swap-card-actions,
+.modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.shift-swaps-header-actions .button,
+.shift-swap-card-actions .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.shift-swaps-sections {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.shift-swaps-sections > section {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.shift-swaps-sections h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.shift-swap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.shift-swap-card {
+  overflow: hidden;
+}
+
+.shift-swap-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.shift-swap-card-header > div {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.shift-swap-status {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: var(--surface-muted, #f1f5f9);
+}
+
+.shift-swap-status-approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.shift-swap-status-pending_counterparty,
+.shift-swap-status-pending_manager {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.shift-swap-status-rejected_by_counterparty,
+.shift-swap-status-rejected_by_manager,
+.shift-swap-status-cancelled,
+.shift-swap-status-expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.shift-swap-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.shift-swap-flow > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.shift-swap-flow span,
+.shift-swap-flow small {
+  color: var(--text-secondary, #64748b);
+}
+
+.shift-swap-card-actions {
+  margin-top: 1rem;
+}
+
+.shift-swap-rejection-reason {
+  margin: 1rem 0 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.65rem;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.shift-swap-empty-state {
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border: 1px dashed var(--border-color, #cbd5e1);
+  border-radius: 0.9rem;
+  color: var(--text-secondary, #64748b);
+  text-align: center;
+  padding: 1rem;
+}
+
+.shift-swap-message {
+  padding: 0.8rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+}
+
+.shift-swap-message-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.shift-swap-message-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.shift-swap-create-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.shift-swap-type-selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.shift-swap-type-selector button {
+  border: 1px solid var(--border-color, #cbd5e1);
+  background: var(--surface, #fff);
+  border-radius: 0.85rem;
+  padding: 0.9rem;
+  text-align: right;
+  cursor: pointer;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.shift-swap-type-selector button.active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 12%);
+}
+
+.shift-swap-type-selector span {
+  color: var(--text-secondary, #64748b);
+  font-size: 0.85rem;
+}
+
+.shift-swap-validation-note {
+  padding: 0.8rem;
+  border-radius: 0.75rem;
+  background: #eff6ff;
+  color: #1e40af;
+  line-height: 1.55;
+}
+
+@media (max-width: 720px) {
+  .shift-swap-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .shift-swap-flow > svg {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+
+  .shift-swap-type-selector {
+    grid-template-columns: 1fr;
+  }
+}

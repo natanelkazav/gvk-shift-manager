@@ -254,6 +254,7 @@ Deno.serve(
 
             serviceRoleKey,
           },
+          requestBody.notificationId,
         );
 
       configurePushService({

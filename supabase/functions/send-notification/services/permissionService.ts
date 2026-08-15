@@ -18,6 +18,16 @@ interface AuthenticatedUserResult {
     SupabaseClient;
 }
 
+interface ShiftSwapNotificationAuthorizationRow {
+  type?: unknown;
+
+  source?: unknown;
+
+  created_by?: unknown;
+
+  data?: unknown;
+}
+
 function createUserClient(
   configuration:
     PermissionServiceConfiguration,
@@ -131,7 +141,7 @@ async function validateActiveProfile(
   }
 }
 
-async function validatePermission(
+async function hasPermission(
   adminClient:
     SupabaseClient,
 
@@ -140,7 +150,7 @@ async function validatePermission(
 
   permissionKey:
     string,
-): Promise<void> {
+): Promise<boolean> {
   const {
     data:
       permission,
@@ -170,13 +180,83 @@ async function validatePermission(
     throw error;
   }
 
+  return Boolean(
+    permission,
+  );
+}
+
+async function validateShiftSwapWorkflowNotification(
+  adminClient:
+    SupabaseClient,
+
+  userId:
+    string,
+
+  notificationId:
+    string,
+): Promise<boolean> {
+  const {
+    data,
+    error,
+  } =
+    await adminClient
+      .from(
+        'notifications',
+      )
+      .select(
+        'type, source, created_by, data',
+      )
+      .eq(
+        'id',
+        notificationId,
+      )
+      .maybeSingle();
+
   if (
-    !permission
+    error
   ) {
-    throw new Error(
-      'אין לך הרשאה לבצע פעולה זו.',
-    );
+    throw error;
   }
+
+  if (
+    !data
+  ) {
+    return false;
+  }
+
+  const notification =
+    data as
+      ShiftSwapNotificationAuthorizationRow;
+
+  if (
+    notification.type !==
+      'shift_swap' ||
+    notification.source !==
+      'shift_swap' ||
+    notification.created_by !==
+      userId ||
+    typeof notification.data !==
+      'object' ||
+    notification.data ===
+      null
+  ) {
+    return false;
+  }
+
+  const metadata =
+    notification.data as
+      Record<string, unknown>;
+
+  return (
+    metadata.workflow ===
+      'shift_swap' &&
+    metadata.actorUserId ===
+      userId &&
+    typeof metadata.shiftSwapRequestId ===
+      'string' &&
+    typeof metadata.event ===
+      'string'
+  );
 }
 
 export async function authenticateNotificationManager(
@@ -185,6 +265,9 @@ export async function authenticateNotificationManager(
 
   configuration:
     PermissionServiceConfiguration,
+
+  notificationId:
+    string,
 ): Promise<AuthenticatedUserResult> {
   const authorizationHeader =
     request.headers.get(
@@ -220,11 +303,31 @@ export async function authenticateNotificationManager(
     userId,
   );
 
-  await validatePermission(
-    adminClient,
-    userId,
-    'notifications.manage',
-  );
+  const canManageNotifications =
+    await hasPermission(
+      adminClient,
+      userId,
+      'notifications.manage',
+    );
+
+  if (
+    !canManageNotifications
+  ) {
+    const isAuthorizedShiftSwapDelivery =
+      await validateShiftSwapWorkflowNotification(
+        adminClient,
+        userId,
+        notificationId,
+      );
+
+    if (
+      !isAuthorizedShiftSwapDelivery
+    ) {
+      throw new Error(
+        'אין לך הרשאה לבצע פעולה זו.',
+      );
+    }
+  }
 
   return {
     userId,
