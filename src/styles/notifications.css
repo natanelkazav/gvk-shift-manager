@@ -504,6 +504,7 @@
 
 .notifications-request-history-heading {
   display: flex;
+  width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -512,19 +513,35 @@
   border: 1px solid #dbe3ef;
   border-radius: 14px;
   background: #fff;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
 }
 
-.notifications-request-history-heading > div {
+.notifications-request-history-heading:hover {
+  border-color: #cbd5e1;
+  background: #fdfefe;
+}
+
+.notifications-request-history-heading > div:first-child {
   display: grid;
   gap: 0.2rem;
 }
 
-.notifications-request-history-heading > div > span {
+.notifications-request-history-heading > div:first-child > span {
   color: #64748b;
   font-size: 0.78rem;
 }
 
-.notifications-request-history-heading > span {
+.notifications-request-history-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.notifications-request-history-heading-actions > span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -535,6 +552,15 @@
   background: #f1f5f9;
   color: #475569;
   font-weight: 800;
+}
+
+.notifications-request-history-chevron {
+  color: #64748b;
+  transition: transform 180ms ease;
+}
+
+.notifications-request-history-heading-open .notifications-request-history-chevron {
+  transform: rotate(180deg);
 }
 
 .notifications-request-history-empty {

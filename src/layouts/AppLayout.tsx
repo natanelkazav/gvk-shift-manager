@@ -233,7 +233,7 @@ requiredPermissions: [
 
     {
       label:
-        'התראות ובקשות',
+        'התראות',
 
       path:
         '/notifications',
@@ -244,7 +244,6 @@ requiredPermissions: [
       requiredPermissions: [
         'notifications.view',
         'notifications.manage',
-        'shift_swaps.approve',
       ],
     },
 
@@ -274,6 +273,7 @@ requiredPermissions: [
 
 requiredPermissions: [
   'shift_swaps.view',
+  'shift_swaps.approve',
 ],
     },
 
@@ -315,7 +315,19 @@ function getNavigationLabel(
   role:
     UserRole |
     undefined,
+
+  canApproveShiftSwaps:
+    boolean,
 ): string {
+  if (
+    item.path ===
+      '/notifications'
+  ) {
+    return canApproveShiftSwaps
+      ? 'התראות ובקשות'
+      : 'התראות';
+  }
+
   if (
     role ===
     'dispatcher'
@@ -624,6 +636,9 @@ return (
                         getNavigationLabel(
                           item,
                           profile?.role,
+                          hasPermission(
+                            'shift_swaps.approve',
+                          ),
                         )
                       }
                     </span>

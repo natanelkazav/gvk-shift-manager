@@ -5,6 +5,7 @@ import {
   CheckCheck,
   CircleCheck,
   Clock3,
+  ChevronDown,
   RefreshCw,
   X,
 } from 'lucide-react';
@@ -90,6 +91,7 @@ function NotificationsPage() {
   const [requestsError, setRequestsError] = useState<string | null>(null);
   const [requestsSuccess, setRequestsSuccess] = useState<string | null>(null);
   const [busyRequestId, setBusyRequestId] = useState<string | null>(null);
+  const [isRequestHistoryOpen, setIsRequestHistoryOpen] = useState(false);
 
   const {
     state,
@@ -211,12 +213,24 @@ function NotificationsPage() {
     <section className="notifications-page">
       <header className="notifications-page-header">
         <div>
-          <h1>התראות ובקשות</h1>
-          <p>מרכז אחד להתראות מערכת ולבקשות שממתינות לטיפול.</p>
+          <h1>
+            {canApproveSwaps
+              ? 'התראות ובקשות'
+              : 'התראות'}
+          </h1>
+          <p>
+            {canApproveSwaps
+              ? 'מרכז אחד להתראות מערכת ולבקשות שממתינות לטיפול.'
+              : 'כל העדכונים, התזכורות והודעות המערכת במקום אחד.'}
+          </p>
         </div>
       </header>
 
-      <div className="notifications-workspace-tabs" role="tablist" aria-label="התראות ובקשות">
+      <div
+        className="notifications-workspace-tabs"
+        role="tablist"
+        aria-label={canApproveSwaps ? 'התראות ובקשות' : 'התראות'}
+      >
         {canViewNotifications ? (
           <button
             type="button"
@@ -327,21 +341,43 @@ function NotificationsPage() {
             </div>
           ) : null}
 
-          <div className="notifications-request-history-heading">
+          <button
+            type="button"
+            className={`notifications-request-history-heading ${
+              isRequestHistoryOpen
+                ? 'notifications-request-history-heading-open'
+                : ''
+            }`}
+            aria-expanded={isRequestHistoryOpen}
+            onClick={() => {
+              setIsRequestHistoryOpen((current) => !current);
+            }}
+          >
             <div>
               <strong>היסטוריית בקשות</strong>
               <span>בקשות שכבר התקבלה לגביהן החלטה</span>
             </div>
-            <span>{reviewedManagerRequests.length}</span>
-          </div>
+            <div className="notifications-request-history-heading-actions">
+              <span>{reviewedManagerRequests.length}</span>
+              <ChevronDown
+                size={20}
+                aria-hidden="true"
+                className="notifications-request-history-chevron"
+              />
+            </div>
+          </button>
 
-          {!requestsLoading && reviewedManagerRequests.length === 0 ? (
+          {isRequestHistoryOpen &&
+          !requestsLoading &&
+          reviewedManagerRequests.length === 0 ? (
             <div className="notifications-request-history-empty">
               עדיין אין בקשות שטופלו.
             </div>
           ) : null}
 
-          {!requestsLoading && reviewedManagerRequests.length > 0 ? (
+          {isRequestHistoryOpen &&
+          !requestsLoading &&
+          reviewedManagerRequests.length > 0 ? (
             <div className="notifications-requests-list notifications-request-history-list">
               {reviewedManagerRequests.map((request) => {
                 const approved = request.status === 'approved';
