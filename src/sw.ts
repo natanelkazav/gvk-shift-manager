@@ -188,7 +188,10 @@ async function sendClickMessageToClient(
       clickData.url,
   });
 }
-
+interface ExtendedNotificationOptions
+  extends NotificationOptions {
+  vibrate?: number[];
+}
 self.addEventListener(
   'push',
   (
@@ -209,7 +212,7 @@ self.addEventListener(
       defaultNotificationUrl;
 
     const options:
-      NotificationOptions = {
+      ExtendedNotificationOptions = {
         body:
           payload.body?.trim() ||
           defaultNotificationBody,
@@ -231,6 +234,15 @@ self.addEventListener(
 
         lang:
           'he',
+
+        silent:
+          false,
+
+        vibrate: [
+          200,
+          100,
+          200,
+        ],
 
         data: {
           ...payload.data,
