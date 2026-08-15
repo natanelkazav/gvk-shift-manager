@@ -2,6 +2,7 @@ import {
   ArrowLeftRight,
   Check,
   Clock3,
+  ChevronDown,
   Plus,
   RefreshCw,
   X,
@@ -96,7 +97,17 @@ function formatShift(
     },
   ).format(new Date(shift.endsAt));
 
-  return `${date} · ${start}–${end}`;
+  const weekday = new Intl.DateTimeFormat(
+    'he-IL',
+    {
+      weekday: 'long',
+      timeZone: 'Asia/Jerusalem',
+    },
+  ).format(
+    new Date(`${shift.shiftDate}T12:00:00`),
+  );
+
+  return `${weekday} · ${date} · ${start}–${end}`;
 }
 
 function formatRequestShift(
@@ -170,8 +181,10 @@ function ShiftSwapsPage() {
     useState<string | null>(null);
   const [isCreating, setIsCreating] =
     useState(false);
-const [createError, setCreateError] =
-  useState<string | null>(null);
+  const [createError, setCreateError] =
+    useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] =
+    useState<Record<string, boolean>>({});
   const canCreate =
     profile?.role === 'dispatcher' &&
     hasPermission('shift_swaps.view');
@@ -272,6 +285,24 @@ useEffect(() => {
       ),
     [requests, user?.id],
   );
+
+
+  const swappedWithMe = useMemo(
+    () =>
+      requests.filter(
+        (request) =>
+          request.counterpartyUserId === user?.id &&
+          request.status === 'approved',
+      ),
+    [requests, user?.id],
+  );
+
+  const toggleSection = (sectionKey: string): void => {
+    setCollapsedSections((current) => ({
+      ...current,
+      [sectionKey]: !current[sectionKey],
+    }));
+  };
 
   const awaitingMyResponse = useMemo(
     () =>
@@ -661,49 +692,94 @@ const handleCreate =
             </section>
           ) : null}
 
-          <section>
-            <h2>הבקשות שלי</h2>
+          <section className="shift-swap-collapsible-section">
+            <button
+              type="button"
+              className="shift-swap-section-toggle"
+              onClick={() => {
+                toggleSection('myRequests');
+              }}
+              aria-expanded={!collapsedSections.myRequests}
+            >
+              <span>
+                <strong>הבקשות שלי</strong>
+                <small>{myRequests.length} בקשות</small>
+              </span>
+              <ChevronDown
+                size={20}
+                className={collapsedSections.myRequests ? 'collapsed' : ''}
+                aria-hidden="true"
+              />
+            </button>
 
-            {myRequests.length === 0 ? (
-              <div className="shift-swap-empty-state">
-                עדיין לא הגשת בקשות החלפה.
-              </div>
-            ) : (
-              <div className="shift-swap-grid">
-                {myRequests.map(
-                  (request) =>
+            {!collapsedSections.myRequests ? (
+              myRequests.length === 0 ? (
+                <div className="shift-swap-empty-state">
+                  עדיין לא הגשת בקשות החלפה.
+                </div>
+              ) : (
+                <div className="shift-swap-grid">
+                  {myRequests.map((request) =>
                     renderRequestCard(
                       request,
-                      request.status ===
-                          'pending_counterparty' ||
-                        request.status ===
-                          'pending_manager'
+                      request.status === 'pending_counterparty' ||
+                        request.status === 'pending_manager'
                         ? (
                             <Button
                               variant="secondary"
                               onClick={() => {
                                 void runRequestAction(
                                   request.id,
-                                  () =>
-                                    shiftSwapService.cancelRequest(
-                                      request.id,
-                                    ),
+                                  () => shiftSwapService.cancelRequest(request.id),
                                   'בקשת ההחלפה בוטלה.',
                                 );
                               }}
-                              disabled={
-                                busyRequestId ===
-                                request.id
-                              }
+                              disabled={busyRequestId === request.id}
                             >
                               ביטול בקשה
                             </Button>
                           )
                         : undefined,
                     ),
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )
+            ) : null}
+          </section>
+
+          <section className="shift-swap-collapsible-section">
+            <button
+              type="button"
+              className="shift-swap-section-toggle"
+              onClick={() => {
+                toggleSection('swappedWithMe');
+              }}
+              aria-expanded={!collapsedSections.swappedWithMe}
+            >
+              <span>
+                <strong>משמרות שהוחלפו איתי</strong>
+                <small>{swappedWithMe.length} החלפות שאושרו</small>
+              </span>
+              <ChevronDown
+                size={20}
+                className={collapsedSections.swappedWithMe ? 'collapsed' : ''}
+                aria-hidden="true"
+              />
+            </button>
+
+            {!collapsedSections.swappedWithMe ? (
+              swappedWithMe.length === 0 ? (
+                <div className="shift-swap-empty-state">
+                  עדיין אין משמרות שהוחלפו איתך.
+                </div>
+              ) : (
+                <div className="shift-swap-grid">
+                  {swappedWithMe.map((request) =>
+                    renderRequestCard(request),
+                  )}
+                </div>
+              )
+            ) : null}
           </section>
         </div>
       )}

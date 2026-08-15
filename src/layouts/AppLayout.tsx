@@ -233,7 +233,7 @@ requiredPermissions: [
 
     {
       label:
-        'התראות',
+        'התראות ובקשות',
 
       path:
         '/notifications',
@@ -244,6 +244,7 @@ requiredPermissions: [
       requiredPermissions: [
         'notifications.view',
         'notifications.manage',
+        'shift_swaps.approve',
       ],
     },
 
@@ -273,7 +274,6 @@ requiredPermissions: [
 
 requiredPermissions: [
   'shift_swaps.view',
-  'shift_swaps.approve',
 ],
     },
 

@@ -312,6 +312,7 @@ export const router =
                   anyPermissions={[
                     'notifications.view',
                     'notifications.manage',
+                    'shift_swaps.approve',
                   ]}
                 />
               ),
