@@ -4,6 +4,10 @@ import {
 } from 'react';
 
 import {
+  pushNotificationService,
+} from '../../../services/pushNotificationService';
+
+import {
   useNotifications,
 } from '../hooks/useNotifications';
 
@@ -41,6 +45,54 @@ export function NotificationProvider({
     [
       loadNotifications,
     ],
+  );
+
+  useEffect(
+    () => {
+      let isCancelled =
+        false;
+
+      const refreshPushSubscription =
+        async (): Promise<void> => {
+          try {
+            const subscription =
+              await pushNotificationService
+                .refreshSubscription();
+
+            if (
+              isCancelled ||
+              !subscription
+            ) {
+              return;
+            }
+
+            console.info(
+              'Push subscription refreshed successfully.',
+            );
+          } catch (
+            error
+          ) {
+            if (
+              isCancelled
+            ) {
+              return;
+            }
+
+            console.error(
+              'Failed to refresh Push subscription:',
+              error,
+            );
+          }
+        };
+
+      void refreshPushSubscription();
+
+      return () => {
+        isCancelled =
+          true;
+      };
+    },
+    [],
   );
 
   return (

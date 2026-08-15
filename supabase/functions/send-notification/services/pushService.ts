@@ -180,10 +180,10 @@ export async function sendPushNotification(
       JSON.stringify(
         payload,
       ),
-      {
-        TTL:
-          60,
-      },
+        {
+          TTL: 86400,
+          urgency: 'high',
+        }
     );
 
     return {
