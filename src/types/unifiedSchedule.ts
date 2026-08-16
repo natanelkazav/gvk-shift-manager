@@ -6,6 +6,8 @@ export type UnifiedScheduleCategory =
 export interface UnifiedScheduleEntry {
   id: string;
 
+  sourceId: string;
+
   date: string;
 
   category:

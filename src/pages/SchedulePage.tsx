@@ -2,6 +2,7 @@ import {
   CalendarDays,
   CheckCircle2,
   LayoutList,
+  Pencil,
   Clock3,
   Crown,
   RefreshCw,
@@ -26,6 +27,9 @@ import {
 import MonthCalendar
   from '../components/calendar/MonthCalendar';
 
+import ScheduleShiftEditModal
+  from '../components/schedule/ScheduleShiftEditModal';
+
 import {
   useAuth,
 } from '../auth/AuthContext';
@@ -34,8 +38,13 @@ import {
   useSchedule,
 } from '../hooks/useSchedule';
 
+import {
+  scheduleService,
+} from '../services/scheduleService';
+
 import type {
   DispatcherMonthlyStatistics,
+  ScheduleEditDispatcher,
   ScheduleShift,
   ScheduleViewMode,
 } from '../types/schedule';
@@ -634,12 +643,16 @@ function PersonalStatisticsGrid({
 function ScheduleShiftCard({
   shift,
   showAssignedUser,
+  onEdit,
 }: {
   shift:
     ScheduleShift;
 
   showAssignedUser:
     boolean;
+
+  onEdit?:
+    () => void;
 }) {
   return (
     <article
@@ -732,6 +745,23 @@ function ScheduleShiftCard({
         </div>
       ) : null}
 
+      {onEdit ? (
+        <div className="schedule-shift-edit-actions">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onEdit}
+          >
+            <Pencil
+              size={16}
+              aria-hidden="true"
+            />
+
+            עריכת שיבוץ
+          </Button>
+        </div>
+      ) : null}
+
       {shift.notes ? (
         <p className="schedule-shift-notes">
           {shift.notes}
@@ -744,6 +774,7 @@ function ScheduleShiftCard({
 function SchedulePage() {
   const {
     profile,
+    hasPermission,
   } =
     useAuth();
 
@@ -787,6 +818,50 @@ function SchedulePage() {
       string | null
     >(null);
 
+  const [
+    editingShift,
+    setEditingShift,
+  ] =
+    useState<
+      ScheduleShift | null
+    >(null);
+
+  const [
+    editDispatchers,
+    setEditDispatchers,
+  ] =
+    useState<
+      ScheduleEditDispatcher[]
+    >([]);
+
+  const [
+    isLoadingEditOptions,
+    setIsLoadingEditOptions,
+  ] =
+    useState(false);
+
+  const [
+    isSavingShiftEdit,
+    setIsSavingShiftEdit,
+  ] =
+    useState(false);
+
+  const [
+    shiftEditError,
+    setShiftEditError,
+  ] =
+    useState<
+      string | null
+    >(null);
+
+  const [
+    shiftEditSuccess,
+    setShiftEditSuccess,
+  ] =
+    useState<
+      string | null
+    >(null);
+
   useEffect(() => {
     void loadCurrentSchedule();
   }, [
@@ -824,6 +899,151 @@ function SchedulePage() {
 
   const currentSchedule =
     state.currentSchedule;
+
+const canEditCurrentSchedule =
+  hasPermission(
+    'schedule.edit',
+  ) &&
+  currentSchedule
+    ?.period
+    ?.status ===
+    'published';
+
+  const getEditErrorMessage =
+    (error: unknown): string => {
+      if (
+        error instanceof Error
+      ) {
+        const message =
+          error.message
+            .trim();
+
+        const normalizedMessage =
+          message.toLowerCase();
+
+        if (
+          normalizedMessage.includes(
+            'overlapping or consecutive',
+          )
+        ) {
+          return 'לא ניתן לבצע את השינוי: למוקדן שנבחר קיימת משמרת חופפת או משמרת רצופה אסורה.';
+        }
+
+        if (
+          normalizedMessage.includes(
+            'schedule edit permission required',
+          )
+        ) {
+          return 'אין לך הרשאה לערוך את השיבוץ.';
+        }
+
+        if (
+          normalizedMessage.includes(
+            'only current month schedule',
+          )
+        ) {
+          return 'ניתן לערוך במסך זה רק את שיבוץ החודש הנוכחי.';
+        }
+
+        if (
+          normalizedMessage.includes(
+            'only published current schedule',
+          )
+        ) {
+          return 'ניתן לערוך כאן רק שיבוץ שכבר פורסם.';
+        }
+
+        return message;
+      }
+
+      return 'לא ניתן היה לעדכן את השיבוץ.';
+    };
+
+  const openShiftEditor =
+    async (
+      shift: ScheduleShift,
+    ): Promise<void> => {
+      if (
+        !canEditCurrentSchedule
+      ) {
+        return;
+      }
+
+      setEditingShift(shift);
+      setShiftEditError(null);
+      setShiftEditSuccess(null);
+
+      if (
+        editDispatchers.length >
+        0
+      ) {
+        return;
+      }
+
+      setIsLoadingEditOptions(true);
+
+      try {
+        const options =
+          await scheduleService
+            .getCurrentScheduleEditOptions();
+
+        setEditDispatchers(
+          options.dispatchers,
+        );
+      } catch (error) {
+        setShiftEditError(
+          getEditErrorMessage(
+            error,
+          ),
+        );
+      } finally {
+        setIsLoadingEditOptions(false);
+      }
+    };
+
+  const saveShiftEdit =
+    async (
+      newUserId: string,
+      reason: string | null,
+    ): Promise<void> => {
+      if (
+        !editingShift ||
+        !canEditCurrentSchedule
+      ) {
+        return;
+      }
+
+      setIsSavingShiftEdit(true);
+      setShiftEditError(null);
+      setShiftEditSuccess(null);
+
+      try {
+        const result =
+          await scheduleService
+            .updateCurrentScheduleShift({
+              shiftId:
+                editingShift.id,
+              newUserId,
+              reason,
+            });
+
+        setEditingShift(null);
+        setSelectedCalendarDate(null);
+        setShiftEditSuccess(
+          `השיבוץ עודכן בהצלחה ל${result.newUserName}. המוקדנים הרלוונטיים קיבלו התראה.`,
+        );
+
+        await loadCurrentSchedule();
+      } catch (error) {
+        setShiftEditError(
+          getEditErrorMessage(
+            error,
+          ),
+        );
+      } finally {
+        setIsSavingShiftEdit(false);
+      }
+    };
 
   const isDispatcher =
     profile?.role ===
@@ -1029,9 +1249,9 @@ function SchedulePage() {
       }
 
       if (
-        !currentSchedule
-          .access
-          .canEditSchedule
+        !hasPermission(
+          'schedule.edit',
+        )
       ) {
         return;
       }
@@ -1259,9 +1479,9 @@ function SchedulePage() {
   }
 
 const canPublishSchedule =
-  currentSchedule
-    .access
-    .canEditSchedule &&
+  hasPermission(
+    'schedule.edit',
+  ) &&
   currentSchedule
     .period
     .status ===
@@ -1332,6 +1552,28 @@ const canPublishSchedule =
           <span>
             {state.error}
           </span>
+        </div>
+      ) : null}
+
+      {shiftEditSuccess ? (
+        <div
+          className="schedule-success-banner"
+          role="status"
+        >
+          <CheckCircle2
+            size={21}
+            aria-hidden="true"
+          />
+
+          <div>
+            <strong>
+              השיבוץ עודכן
+            </strong>
+
+            <span>
+              {shiftEditSuccess}
+            </span>
+          </div>
         </div>
       ) : null}
 
@@ -1952,7 +2194,17 @@ const canPublishSchedule =
                           }
                           showAssignedUser={
                             viewMode ===
-                            'team'
+                              'team' ||
+                            canEditCurrentSchedule
+                          }
+                          onEdit={
+                            canEditCurrentSchedule
+                              ? () => {
+                                  void openShiftEditor(
+                                    shift,
+                                  );
+                                }
+                              : undefined
                           }
                         />
                       ),
@@ -2028,7 +2280,17 @@ const canPublishSchedule =
                       }
                       showAssignedUser={
                         viewMode ===
-                        'team'
+                          'team' ||
+                        canEditCurrentSchedule
+                      }
+                      onEdit={
+                        canEditCurrentSchedule
+                          ? () => {
+                              void openShiftEditor(
+                                shift,
+                              );
+                            }
+                          : undefined
                       }
                     />
                   ),
@@ -2049,6 +2311,33 @@ const canPublishSchedule =
           </aside>
         </>
       ) : null}
+
+      <ScheduleShiftEditModal
+        key={
+          editingShift?.id ??
+          'closed'
+        }
+        shift={editingShift}
+        dispatchers={editDispatchers}
+        isLoadingOptions={
+          isLoadingEditOptions
+        }
+        isSaving={
+          isSavingShiftEdit
+        }
+        error={
+          shiftEditError
+        }
+        onClose={() => {
+          if (
+            !isSavingShiftEdit
+          ) {
+            setEditingShift(null);
+            setShiftEditError(null);
+          }
+        }}
+        onSave={saveShiftEdit}
+      />
 
       {selectedDispatcherStatistics ? (
         <div className="schedule-hours-summary">

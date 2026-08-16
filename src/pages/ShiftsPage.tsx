@@ -1,8 +1,11 @@
 import {
   CalendarDays,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  LayoutList,
+  Pencil,
   Settings2,
 } from 'lucide-react';
 
@@ -17,6 +20,10 @@ import UnifiedAvailabilityManagement
 
 import UnifiedPeriodManagement
   from '../components/shifts/UnifiedPeriodManagement';
+
+import UnifiedScheduleEntryEditModal, {
+  type UnifiedScheduleEditUser,
+} from '../components/shifts/UnifiedScheduleEntryEditModal';
 
 import MonthCalendar, {
   type MonthCalendarDayContext,
@@ -36,6 +43,26 @@ import {
   useUnifiedSchedule,
 } from '../hooks/useUnifiedSchedule';
 
+import {
+  useAuth,
+} from '../auth/AuthContext';
+
+import {
+  scheduleService,
+} from '../services/scheduleService';
+
+import {
+  driverScheduleService,
+} from '../services/driverScheduleService';
+
+import {
+  morningDriverScheduleService,
+} from '../services/morningDriverScheduleService';
+
+import {
+  unifiedScheduleEditService,
+} from '../services/unifiedScheduleEditService';
+
 import type {
   UnifiedScheduleCategory,
   UnifiedScheduleEntry,
@@ -48,6 +75,10 @@ type ShiftsWorkspaceTab =
   | 'calendar'
   | 'availability'
   | 'period-management';
+
+type UnifiedScheduleDisplayMode =
+  | 'calendar'
+  | 'list';
 
 interface ShiftsWorkspaceTabDefinition {
   id: ShiftsWorkspaceTab;
@@ -320,6 +351,11 @@ function getEntryDisplayName(
 }
 
 function ShiftsPage() {
+  const {
+    hasPermission,
+  } =
+    useAuth();
+
   const initialMonth =
     useMemo(
       () =>
@@ -405,6 +441,58 @@ const [
     useState<
       string | null
     >(
+      null,
+    );
+
+  const [
+    scheduleDisplayMode,
+    setScheduleDisplayMode,
+  ] =
+    useState<UnifiedScheduleDisplayMode>(
+      'calendar',
+    );
+
+  const [
+    editingEntry,
+    setEditingEntry,
+  ] =
+    useState<UnifiedScheduleEntry | null>(
+      null,
+    );
+
+  const [
+    editUsers,
+    setEditUsers,
+  ] =
+    useState<UnifiedScheduleEditUser[]>(
+      [],
+    );
+
+  const [
+    isLoadingEditUsers,
+    setIsLoadingEditUsers,
+  ] =
+    useState(false);
+
+  const [
+    isSavingEdit,
+    setIsSavingEdit,
+  ] =
+    useState(false);
+
+  const [
+    editError,
+    setEditError,
+  ] =
+    useState<string | null>(
+      null,
+    );
+
+  const [
+    editSuccess,
+    setEditSuccess,
+  ] =
+    useState<string | null>(
       null,
     );
 
@@ -649,6 +737,225 @@ const handleWorkspaceTabChange =
       setSelectedDate(
         null,
       );
+    };
+
+  const isDisplayedCurrentMonth =
+    displayedYear ===
+      initialMonth.year &&
+    displayedMonth ===
+      initialMonth.month;
+
+  const canEditEntry =
+    (
+      entry:
+        UnifiedScheduleEntry,
+    ): boolean => {
+      if (
+        !isDisplayedCurrentMonth
+      ) {
+        return false;
+      }
+
+      switch (
+        entry.category
+      ) {
+        case 'dispatcher':
+          return hasPermission(
+            'schedule.edit',
+          );
+
+        case 'on_call':
+          return hasPermission(
+            'driver_schedule.edit',
+          );
+
+        case 'morning_driver':
+          return hasPermission(
+            'morning_driver_schedule.edit',
+          );
+
+        default:
+          return false;
+      }
+    };
+
+  const openEntryEditor =
+    async (
+      entry:
+        UnifiedScheduleEntry,
+    ): Promise<void> => {
+      if (
+        !canEditEntry(
+          entry,
+        )
+      ) {
+        return;
+      }
+
+      setEditingEntry(
+        entry,
+      );
+      setEditUsers([]);
+      setEditError(null);
+      setEditSuccess(null);
+      setIsLoadingEditUsers(true);
+
+      try {
+        if (
+          entry.category ===
+            'dispatcher'
+        ) {
+          const options =
+            await scheduleService
+              .getCurrentScheduleEditOptions();
+
+          setEditUsers(
+            options.dispatchers.map(
+              (dispatcher) => ({
+                id:
+                  dispatcher.id,
+                displayName:
+                  dispatcher.displayName,
+                scheduleName:
+                  dispatcher.scheduleName,
+              }),
+            ),
+          );
+
+          return;
+        }
+
+        if (
+          entry.category ===
+            'on_call'
+        ) {
+          const schedule =
+            await driverScheduleService
+              .getScheduleByMonth(
+                displayedYear,
+                displayedMonth,
+              );
+
+          setEditUsers(
+            (
+              schedule?.drivers ??
+              []
+            ).map(
+              (driver) => ({
+                id:
+                  driver.id,
+                displayName:
+                  driver.displayName,
+                scheduleName:
+                  driver.scheduleName,
+              }),
+            ),
+          );
+
+          return;
+        }
+
+        const schedule =
+          await morningDriverScheduleService
+            .getSchedule(
+              null,
+              displayedYear,
+              displayedMonth,
+            );
+
+        setEditUsers(
+          (
+            schedule?.drivers ??
+            []
+          ).map(
+            (driver) => ({
+              id:
+                driver.id,
+              displayName:
+                driver.displayName,
+              scheduleName:
+                driver.scheduleName,
+            }),
+          ),
+        );
+      } catch (error) {
+        setEditError(
+          error instanceof Error
+            ? error.message
+            : 'לא ניתן היה לטעון את אפשרויות העריכה.',
+        );
+      } finally {
+        setIsLoadingEditUsers(
+          false,
+        );
+      }
+    };
+
+  const saveEntryEdit =
+    async (
+      newUserId:
+        string,
+      reason:
+        string | null,
+    ): Promise<void> => {
+      if (
+        !editingEntry
+      ) {
+        return;
+      }
+
+      setIsSavingEdit(true);
+      setEditError(null);
+
+      try {
+        if (
+          editingEntry.category ===
+            'dispatcher'
+        ) {
+          await scheduleService
+            .updateCurrentScheduleShift({
+              shiftId:
+                editingEntry.sourceId,
+              newUserId,
+              reason,
+            });
+        } else {
+          await unifiedScheduleEditService
+            .updateEntry({
+              category:
+                editingEntry.category,
+              sourceId:
+                editingEntry.sourceId,
+              year:
+                displayedYear,
+              month:
+                displayedMonth,
+              newUserId,
+              reason,
+            });
+        }
+
+        setEditingEntry(null);
+        setSelectedDate(null);
+        setEditSuccess(
+          'השיבוץ עודכן בהצלחה והמשתמשים שהושפעו קיבלו התראה.',
+        );
+
+        await loadMonth({
+          year:
+            displayedYear,
+          month:
+            displayedMonth,
+        });
+      } catch (error) {
+        setEditError(
+          error instanceof Error
+            ? error.message
+            : 'לא ניתן היה לעדכן את השיבוץ.',
+        );
+      } finally {
+        setIsSavingEdit(false);
+      }
     };
 
   const renderCalendarDayContent =
@@ -987,6 +1294,54 @@ const handleWorkspaceTabChange =
                 </Button>
               </div>
 
+              <div
+                className="unified-schedule-display-mode"
+                role="group"
+                aria-label="בחירת תצוגת לוח"
+              >
+                <Button
+                  type="button"
+                  variant={
+                    scheduleDisplayMode ===
+                      'calendar'
+                      ? 'primary'
+                      : 'secondary'
+                  }
+                  onClick={() => {
+                    setScheduleDisplayMode(
+                      'calendar',
+                    );
+                  }}
+                >
+                  <CalendarDays
+                    size={17}
+                    aria-hidden="true"
+                  />
+                  לוח שנה
+                </Button>
+
+                <Button
+                  type="button"
+                  variant={
+                    scheduleDisplayMode ===
+                      'list'
+                      ? 'primary'
+                      : 'secondary'
+                  }
+                  onClick={() => {
+                    setScheduleDisplayMode(
+                      'list',
+                    );
+                  }}
+                >
+                  <LayoutList
+                    size={17}
+                    aria-hidden="true"
+                  />
+                  רשימה
+                </Button>
+              </div>
+
               <fieldset className="unified-schedule-filters">
                 <legend>
                   הצג בלוח
@@ -1041,6 +1396,19 @@ const handleWorkspaceTabChange =
             </CardBody>
           </Card>
 
+          {editSuccess ? (
+            <div
+              className="unified-schedule-message unified-schedule-message-success"
+              role="status"
+            >
+              <CheckCircle2
+                size={18}
+                aria-hidden="true"
+              />
+              {editSuccess}
+            </div>
+          ) : null}
+
           {state.error ? (
             <div
               className="unified-schedule-message unified-schedule-message-error"
@@ -1087,7 +1455,8 @@ const handleWorkspaceTabChange =
                 </div>
               </CardBody>
             </Card>
-          ) : (
+          ) : scheduleDisplayMode ===
+            'calendar' ? (
             <MonthCalendar
               year={
                 displayedYear
@@ -1102,6 +1471,73 @@ const handleWorkspaceTabChange =
                 handleDayClick
               }
             />
+          ) : (
+            <div className="unified-schedule-list">
+              {visibleEntries.length ===
+              0 ? (
+                <Card>
+                  <CardBody>
+                    <div className="unified-schedule-loading">
+                      אין משמרות להצגה.
+                    </div>
+                  </CardBody>
+                </Card>
+              ) : (
+                visibleEntries.map(
+                  (entry) => {
+                    const timeLabel =
+                      formatEntryTime(
+                        entry,
+                      );
+
+                    return (
+                      <article
+                        key={entry.id}
+                        className={[
+                          'unified-schedule-list-entry',
+                          `unified-schedule-list-entry-${entry.category}`,
+                        ].join(' ')}
+                      >
+                        <div>
+                          <span className="unified-schedule-day-entry-category">
+                            {categoryLabels[entry.category]}
+                          </span>
+                          <strong>
+                            {formatDate(entry.date)}
+                          </strong>
+                          <span>
+                            {getEntryDisplayName(entry)}
+                            {timeLabel
+                              ? ` · ${timeLabel}`
+                              : ' · משמרת יום מלאה'}
+                          </span>
+                        </div>
+
+                        {canEditEntry(
+                          entry,
+                        ) ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                              void openEntryEditor(
+                                entry,
+                              );
+                            }}
+                          >
+                            <Pencil
+                              size={16}
+                              aria-hidden="true"
+                            />
+                            עריכת שיבוץ
+                          </Button>
+                        ) : null}
+                      </article>
+                    );
+                  },
+                )
+              )}
+            </div>
           )}
         </section>
           ) : activeTab ===
@@ -1244,6 +1680,28 @@ const handleWorkspaceTabChange =
                     </span>
                   )}
 
+                  {canEditEntry(
+                    entry,
+                  ) ? (
+                    <div className="unified-schedule-day-entry-actions">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          void openEntryEditor(
+                            entry,
+                          );
+                        }}
+                      >
+                        <Pencil
+                          size={16}
+                          aria-hidden="true"
+                        />
+                        עריכת שיבוץ
+                      </Button>
+                    </div>
+                  ) : null}
+
                   {entry.notes ? (
                     <p>
                       {
@@ -1257,6 +1715,31 @@ const handleWorkspaceTabChange =
           )}
         </div>
       </Modal>
+
+      <UnifiedScheduleEntryEditModal
+        key={
+          editingEntry?.id ??
+          'closed'
+        }
+        entry={editingEntry}
+        users={editUsers}
+        isLoadingUsers={
+          isLoadingEditUsers
+        }
+        isSaving={
+          isSavingEdit
+        }
+        error={editError}
+        onClose={() => {
+          if (
+            !isSavingEdit
+          ) {
+            setEditingEntry(null);
+            setEditError(null);
+          }
+        }}
+        onSave={saveEntryEdit}
+      />
     </>
   );
 }

@@ -259,6 +259,93 @@ async function validateShiftSwapWorkflowNotification(
   );
 }
 
+
+async function validateScheduleEditWorkflowNotification(
+  adminClient:
+    SupabaseClient,
+
+  userId:
+    string,
+
+  notificationId:
+    string,
+): Promise<boolean> {
+  const {
+    data,
+    error,
+  } =
+    await adminClient
+      .from(
+        'notifications',
+      )
+      .select(
+        'type, source, created_by, data',
+      )
+      .eq(
+        'id',
+        notificationId,
+      )
+      .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return false;
+  }
+
+  if (
+    data.type !==
+      'system' ||
+    data.source !==
+      'schedule_edit' ||
+    data.created_by !==
+      userId ||
+    typeof data.data !==
+      'object' ||
+    data.data ===
+      null
+  ) {
+    return false;
+  }
+
+  const metadata =
+    data.data as
+      Record<string, unknown>;
+
+  if (
+    metadata.workflow !==
+      'schedule_edit' ||
+    metadata.actorUserId !==
+      userId ||
+    metadata.event !==
+      'assignment_changed' ||
+    typeof metadata.shiftId !==
+      'string'
+  ) {
+    return false;
+  }
+
+  const category =
+    metadata.category;
+
+  const permissionKey =
+    category ===
+      'on_call'
+      ? 'driver_schedule.edit'
+      : category ===
+          'morning_driver'
+        ? 'morning_driver_schedule.edit'
+        : 'schedule.edit';
+
+  return hasPermission(
+    adminClient,
+    userId,
+    permissionKey,
+  );
+}
+
 export async function authenticateNotificationManager(
   request:
     Request,
@@ -320,8 +407,18 @@ export async function authenticateNotificationManager(
         notificationId,
       );
 
+    const isAuthorizedScheduleEditDelivery =
+      isAuthorizedShiftSwapDelivery
+        ? false
+        : await validateScheduleEditWorkflowNotification(
+            adminClient,
+            userId,
+            notificationId,
+          );
+
     if (
-      !isAuthorizedShiftSwapDelivery
+      !isAuthorizedShiftSwapDelivery &&
+      !isAuthorizedScheduleEditDelivery
     ) {
       throw new Error(
         'אין לך הרשאה לבצע פעולה זו.',

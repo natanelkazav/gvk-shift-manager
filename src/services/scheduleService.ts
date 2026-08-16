@@ -1,3 +1,7 @@
+import {
+  FunctionsHttpError,
+} from '@supabase/supabase-js';
+
 import { supabase } from '../lib/supabase';
 
 import type {
@@ -6,6 +10,9 @@ import type {
 
 import type {
   CurrentScheduleData,
+  CurrentScheduleEditOptions,
+  UpdateCurrentScheduleShiftRequest,
+  UpdateCurrentScheduleShiftResponse,
 } from '../types/schedule';
 
 import type {
@@ -63,6 +70,35 @@ export interface PublishSchedulePeriodResponse {
     number | null;
 
   alreadyPublished: boolean;
+}
+
+
+async function getFunctionErrorMessage(
+  error:
+    FunctionsHttpError,
+): Promise<string> {
+  try {
+    const responseBody =
+      await error.context
+        .json() as {
+          error?: unknown;
+        };
+
+    if (
+      typeof responseBody.error ===
+        'string' &&
+      responseBody.error.trim()
+    ) {
+      return responseBody.error;
+    }
+  } catch {
+    // Use the default function error message.
+  }
+
+  return (
+    error.message ||
+    'עדכון השיבוץ נכשל.'
+  );
 }
 
 class ScheduleService {
@@ -178,6 +214,95 @@ async getScheduleByMonth(
   return data as
     DispatcherScheduleMonthData;
 }
+  async getCurrentScheduleEditOptions():
+    Promise<CurrentScheduleEditOptions> {
+    const {
+      data,
+      error,
+    } = await supabase.rpc(
+      'get_current_schedule_edit_options',
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    if (
+      !data ||
+      typeof data !==
+        'object'
+    ) {
+      return {
+        dispatchers: [],
+      };
+    }
+
+    return data as
+      CurrentScheduleEditOptions;
+  }
+
+  async updateCurrentScheduleShift(
+    request:
+      UpdateCurrentScheduleShiftRequest,
+  ): Promise<UpdateCurrentScheduleShiftResponse> {
+    const shiftId =
+      request.shiftId.trim();
+
+    const newUserId =
+      request.newUserId.trim();
+
+    if (!shiftId || !newUserId) {
+      throw new Error(
+        'נתוני שינוי השיבוץ חסרים.',
+      );
+    }
+
+    const {
+      data,
+      error,
+    } = await supabase.functions.invoke(
+      'schedule-edit-action',
+      {
+        body: {
+          shiftId,
+          newUserId,
+          reason:
+            request.reason
+              ?.trim() ||
+            null,
+        },
+      },
+    );
+
+    if (error) {
+      if (
+        error instanceof
+          FunctionsHttpError
+      ) {
+        throw new Error(
+          await getFunctionErrorMessage(
+            error,
+          ),
+        );
+      }
+
+      throw error;
+    }
+
+    if (
+      !data ||
+      typeof data !==
+        'object'
+    ) {
+      throw new Error(
+        'לא התקבלה תשובה תקינה לאחר שינוי השיבוץ.',
+      );
+    }
+
+    return data as
+      UpdateCurrentScheduleShiftResponse;
+  }
+
   async publishSchedulePeriod(
     schedulePeriodId: string,
   ): Promise<PublishSchedulePeriodResponse> {

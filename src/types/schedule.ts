@@ -241,3 +241,48 @@ export interface CurrentScheduleFilters {
   includePremiumOnly:
     boolean;
 }
+export interface ScheduleEditDispatcher {
+  id: string;
+
+  displayName: string;
+
+  scheduleName:
+    string | null;
+}
+
+export interface CurrentScheduleEditOptions {
+  dispatchers:
+    ScheduleEditDispatcher[];
+}
+
+export interface UpdateCurrentScheduleShiftRequest {
+  shiftId: string;
+
+  newUserId: string;
+
+  reason:
+    string | null;
+}
+
+export interface UpdateCurrentScheduleShiftResponse {
+  shiftId: string;
+
+  previousUserId:
+    string | null;
+
+  previousUserName:
+    string | null;
+
+  newUserId: string;
+
+  newUserName: string;
+
+  shiftDate: string;
+
+  startsAt: string;
+
+  endsAt: string;
+
+  notificationIds:
+    string[];
+}

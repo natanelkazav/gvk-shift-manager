@@ -263,6 +263,9 @@ export function useUnifiedSchedule():
                     id:
                       `dispatcher-${shift.id}`,
 
+                    sourceId:
+                      shift.id,
+
                     date:
                       shift.shiftDate,
 
@@ -320,6 +323,9 @@ export function useUnifiedSchedule():
                   id:
                     `morning-driver-${assignment.id}`,
 
+                  sourceId:
+                    assignment.id,
+
                   date:
                     assignment.shiftDate,
 
@@ -375,6 +381,9 @@ export function useUnifiedSchedule():
                 {
                   id:
                     `on-call-${day.id}`,
+
+                  sourceId:
+                    day.id,
 
                   date:
                     day.dutyDate,

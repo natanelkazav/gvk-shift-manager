@@ -173,7 +173,11 @@ export const router =
             {
               element: (
                 <PermissionRoute
-                  permission="schedule.view"
+                  anyPermissions={[
+                    'schedule.view',
+                    'schedule.view_team',
+                    'schedule.edit',
+                  ]}
                 />
               ),
 

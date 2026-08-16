@@ -840,3 +840,137 @@
   color: #64748b;
   text-align: center;
 }
+.unified-schedule-display-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 16px;
+}
+
+.unified-schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.unified-schedule-list-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-inline-start: 4px solid;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.unified-schedule-list-entry > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.unified-schedule-list-entry strong {
+  color: #0f172a;
+  font-size: 0.88rem;
+}
+
+.unified-schedule-list-entry span {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.unified-schedule-list-entry-dispatcher {
+  border-inline-start-color: #2563eb;
+}
+
+.unified-schedule-list-entry-morning_driver {
+  border-inline-start-color: #d97706;
+}
+
+.unified-schedule-list-entry-on_call {
+  border-inline-start-color: #16a34a;
+}
+
+.unified-schedule-day-entry-actions {
+  display: flex;
+  justify-content: flex-start;
+  padding-block-start: 4px;
+}
+
+.unified-schedule-message-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.unified-schedule-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.unified-schedule-edit-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 16px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.unified-schedule-edit-summary span {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.unified-schedule-edit-summary strong {
+  color: #0f172a;
+  font-size: 0.78rem;
+}
+
+.unified-schedule-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.unified-schedule-edit-field > span {
+  color: #334155;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.unified-schedule-edit-field select,
+.unified-schedule-edit-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+}
+
+.unified-schedule-edit-loading {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 640px) {
+  .unified-schedule-display-mode {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .unified-schedule-list-entry {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

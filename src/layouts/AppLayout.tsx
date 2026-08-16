@@ -312,12 +312,11 @@ function getNavigationLabel(
   item:
     NavigationItem,
 
-  role:
-    UserRole |
-    undefined,
-
   canApproveShiftSwaps:
     boolean,
+
+  hasPermission:
+    (permission: PermissionKey) => boolean,
 ): string {
   if (
     item.path ===
@@ -329,39 +328,65 @@ function getNavigationLabel(
   }
 
   if (
-    role ===
-    'dispatcher'
+    item.path ===
+      '/schedule' &&
+    hasPermission(
+      'schedule.view',
+    ) &&
+    !hasPermission(
+      'schedule.view_team',
+    ) &&
+    !hasPermission(
+      'schedule.edit',
+    )
   ) {
-    if (
-      item.path ===
-      '/schedule'
-    ) {
-      return 'השיבוצים שלי';
-    }
-
-    if (
-      item.path ===
-      '/availability'
-    ) {
-      return 'האילוצים שלי';
-    }
+    return 'השיבוצים שלי';
   }
 
   if (
-    role ===
-      'on_call' &&
     item.path ===
-      '/driver-schedule'
+      '/availability' &&
+    hasPermission(
+      'availability.view',
+    ) &&
+    !hasPermission(
+      'availability.manage',
+    )
+  ) {
+    return 'האילוצים שלי';
+  }
+
+  if (
+    item.path ===
+      '/driver-schedule' &&
+    hasPermission(
+      'driver_schedule.view',
+    ) &&
+    !hasPermission(
+      'driver_schedule.view_team',
+    ) &&
+    !hasPermission(
+      'driver_schedule.edit',
+    )
   ) {
     return 'לוח הכוננים שלי';
   }
 
-    if (
-      role === 'morning_driver' &&
-      item.path === '/morning-driver-schedule'
-    ) {
-      return 'השיבוצים שלי';
-    }
+  if (
+    item.path ===
+      '/morning-driver-schedule' &&
+    hasPermission(
+      'morning_driver_schedule.view',
+    ) &&
+    !hasPermission(
+      'morning_driver_schedule.view_team',
+    ) &&
+    !hasPermission(
+      'morning_driver_schedule.edit',
+    )
+  ) {
+    return 'השיבוצים שלי';
+  }
 
   return item.label;
 }
@@ -436,8 +461,30 @@ function AppLayout() {
 const visibleNavigationItems =
   useMemo(
     () => {
-      const currentRole =
-        profile?.role;
+      const hasManagementWorkspaceAccess =
+        [
+          'schedule.edit',
+          'availability.manage',
+          'driver_schedule.edit',
+          'driver_availability.manage',
+          'morning_driver_schedule.edit',
+          'morning_driver_availability.manage',
+        ].some(
+          (permission) =>
+            hasPermission(
+              permission as
+                PermissionKey,
+            ),
+        );
+
+      const legacyManagementPaths =
+        new Set([
+          '/schedule',
+          '/availability',
+          '/driver-schedule',
+          '/morning-driver-availability',
+          '/morning-driver-schedule',
+        ]);
 
       return navigationItems.filter(
         (item) => {
@@ -456,21 +503,9 @@ const visibleNavigationItems =
           }
 
           if (
-            item.visibleForRoles &&
-            (
-              !currentRole ||
-              !item.visibleForRoles.includes(
-                currentRole,
-              )
-            )
-          ) {
-            return false;
-          }
-
-          if (
-            currentRole &&
-            item.hiddenForRoles?.includes(
-              currentRole,
+            hasManagementWorkspaceAccess &&
+            legacyManagementPaths.has(
+              item.path,
             )
           ) {
             return false;
@@ -482,7 +517,6 @@ const visibleNavigationItems =
     },
     [
       hasPermission,
-      profile?.role,
     ],
   );
 
@@ -635,10 +669,10 @@ return (
                       {
                         getNavigationLabel(
                           item,
-                          profile?.role,
                           hasPermission(
                             'shift_swaps.approve',
                           ),
+                          hasPermission,
                         )
                       }
                     </span>
