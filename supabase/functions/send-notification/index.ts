@@ -404,6 +404,111 @@ Deno.serve(
         }
       }
 
+      if (
+        notification.source ===
+          'manager'
+      ) {
+        const {
+          data:
+            actorProfile,
+        } =
+          await adminClient
+            .from(
+              'profiles',
+            )
+            .select(
+              'id, email, display_name',
+            )
+            .eq(
+              'id',
+              authenticatedUserId,
+            )
+            .maybeSingle();
+
+        const {
+          error:
+            auditLogError,
+        } =
+          await adminClient
+            .from(
+              'audit_logs',
+            )
+            .insert({
+              action:
+                'notification_sent',
+
+              actor_user_id:
+                authenticatedUserId,
+
+              actor_email:
+                actorProfile?.email ??
+                null,
+
+              actor_display_name:
+                actorProfile
+                  ?.display_name ??
+                null,
+
+              target_user_id:
+                null,
+
+              target_email:
+                null,
+
+              target_display_name:
+                null,
+
+              entity_type:
+                'notification',
+
+              entity_id:
+                notification.id,
+
+              summary:
+                `נשלחה התראה: ${notification.title}`,
+
+              old_values:
+                null,
+
+              new_values: {
+                title:
+                  notification.title,
+
+                type:
+                  notification.type,
+
+                priority:
+                  notification.priority,
+              },
+
+              metadata: {
+                source:
+                  'send-notification-edge-function',
+
+                total_recipients:
+                  summary.totalRecipients,
+
+                recipients_delivered:
+                  summary.recipientsDelivered,
+
+                sent:
+                  summary.sent,
+
+                failed:
+                  summary.failed,
+              },
+            });
+
+        if (
+          auditLogError
+        ) {
+          console.error(
+            'NOTIFICATION AUDIT LOG ERROR:',
+            auditLogError,
+          );
+        }
+      }
+
       console.log(
         'Notification delivery completed:',
         {

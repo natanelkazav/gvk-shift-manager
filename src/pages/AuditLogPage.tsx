@@ -25,7 +25,11 @@ const initialFilters:
   AuditLogFilters = {
     searchTerm: '',
     action: 'all',
+    timeRange: '30d',
+    dateFrom: '',
+    dateTo: '',
   };
+
 
 const actionLabels: Record<
   AuditAction,
@@ -42,9 +46,6 @@ const actionLabels: Record<
 
   user_deactivated:
     'השבתת משתמש',
-  
-  availability_period_opened:
-  'פתיחת תקופת אילוצים',
 
   user_permissions_updated:
     'עדכון הרשאות',
@@ -54,15 +55,95 @@ const actionLabels: Record<
 
   user_password_change_completed:
     'השלמת שינוי סיסמה',
-    availability_period_deleted:
-  'מחיקת תקופת אילוצים',
+
+  user_password_reset:
+    'איפוס סיסמה',
 
   user_deleted:
     'מחיקת משתמש',
-  availability_period_closed:
-  'סגירת תקופת אילוצים',
-};
 
+  availability_period_created:
+    'יצירת תקופת אילוצי מוקדנים',
+
+  availability_period_opened:
+    'פתיחת תקופת אילוצי מוקדנים',
+
+  availability_period_closed:
+    'סגירת תקופת אילוצי מוקדנים',
+
+  availability_period_deleted:
+    'מחיקת תקופת אילוצי מוקדנים',
+
+  driver_availability_period_created:
+    'יצירת תקופת אילוצי כוננים',
+
+  driver_availability_period_opened:
+    'פתיחת אילוצי כוננים',
+
+  driver_availability_period_closed:
+    'סגירת אילוצי כוננים',
+
+  driver_availability_period_deleted:
+    'מחיקת אילוצי כוננים',
+
+  morning_driver_availability_period_created:
+    'יצירת תקופת אילוצי כונני בוקר',
+
+  morning_driver_availability_period_opened:
+    'פתיחת אילוצי כונני בוקר',
+
+  morning_driver_availability_period_closed:
+    'סגירת אילוצי כונני בוקר',
+
+  morning_driver_availability_period_deleted:
+    'מחיקת אילוצי כונני בוקר',
+
+  schedule_draft_saved:
+    'שמירת טיוטת שיבוץ מוקדנים',
+
+  schedule_published:
+    'פרסום שיבוץ מוקדנים',
+
+  schedule_shift_updated:
+    'שינוי שיבוץ מוקדן',
+
+  driver_schedule_published:
+    'פרסום לוח כוננים',
+
+  driver_schedule_updated:
+    'שינוי שיבוץ כונן',
+
+  morning_driver_schedule_published:
+    'פרסום לוח כונני בוקר',
+
+  morning_driver_schedule_updated:
+    'שינוי שיבוץ כונן בוקר',
+
+  shift_swap_created:
+    'יצירת בקשת החלפה',
+
+  shift_swap_counterparty_approved:
+    'אישור מוקדן לבקשת החלפה',
+
+  shift_swap_counterparty_rejected:
+    'דחיית מוקדן לבקשת החלפה',
+
+  shift_swap_manager_approved:
+    'אישור סופי לבקשת החלפה',
+
+  shift_swap_manager_rejected:
+    'דחייה סופית לבקשת החלפה',
+
+  shift_swap_cancelled:
+    'ביטול בקשת החלפה',
+
+  notification_sent:
+    'שליחת התראה',
+
+  system_event:
+    'אירוע מערכת',
+
+};
 function formatDate(
   dateValue: string,
 ): string {
@@ -281,6 +362,91 @@ function AuditLogPage() {
             )}
           </select>
         </label>
+
+        <label className="audit-filter-field">
+          <span>טווח זמן</span>
+
+          <select
+            value={filters.timeRange}
+            onChange={(event) => {
+              setFilters(
+                (currentFilters) => ({
+                  ...currentFilters,
+
+                  timeRange:
+                    event.target
+                      .value as
+                      AuditLogFilters[
+                        'timeRange'
+                      ],
+                }),
+              );
+            }}
+          >
+            <option value="today">
+              היום
+            </option>
+
+            <option value="7d">
+              7 ימים אחרונים
+            </option>
+
+            <option value="30d">
+              30 ימים אחרונים
+            </option>
+
+            <option value="all">
+              כל התקופה
+            </option>
+
+            <option value="custom">
+              טווח מותאם
+            </option>
+          </select>
+        </label>
+
+        {filters.timeRange ===
+        'custom' ? (
+          <>
+            <label className="audit-filter-field">
+              <span>מתאריך</span>
+
+              <input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(event) => {
+                  setFilters(
+                    (currentFilters) => ({
+                      ...currentFilters,
+
+                      dateFrom:
+                        event.target.value,
+                    }),
+                  );
+                }}
+              />
+            </label>
+
+            <label className="audit-filter-field">
+              <span>עד תאריך</span>
+
+              <input
+                type="date"
+                value={filters.dateTo}
+                onChange={(event) => {
+                  setFilters(
+                    (currentFilters) => ({
+                      ...currentFilters,
+
+                      dateTo:
+                        event.target.value,
+                    }),
+                  );
+                }}
+              />
+            </label>
+          </>
+        ) : null}
       </div>
 
       {auditLogsState.error ? (

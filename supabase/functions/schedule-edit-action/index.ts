@@ -117,6 +117,11 @@ Deno.serve(
         getRequiredEnvironmentVariable(
           'SUPABASE_ANON_KEY',
         );
+
+      const serviceRoleKey =
+        getRequiredEnvironmentVariable(
+          'SUPABASE_SERVICE_ROLE_KEY',
+        );
       const authorizationHeader =
         request.headers
           .get('Authorization')
@@ -165,6 +170,20 @@ Deno.serve(
         },
       );
 
+      const adminClient = createClient(
+        supabaseUrl,
+        serviceRoleKey,
+        {
+          auth: {
+            persistSession:
+              false,
+
+            autoRefreshToken:
+              false,
+          },
+        },
+      );
+
       const {
         data: userData,
         error: userError,
@@ -200,8 +219,160 @@ Deno.serve(
 
       const result = data as {
         notificationIds?: unknown;
+        previousUserId?: unknown;
+        previousUserName?: unknown;
+        newUserId?: unknown;
+        newUserName?: unknown;
+        shiftDate?: unknown;
+        startsAt?: unknown;
+        endsAt?: unknown;
         [key: string]: unknown;
       };
+
+      const {
+        data:
+          actorProfile,
+      } =
+        await adminClient
+          .from(
+            'profiles',
+          )
+          .select(
+            'id, email, display_name',
+          )
+          .eq(
+            'id',
+            userData.user.id,
+          )
+          .maybeSingle();
+
+      const {
+        data:
+          targetProfile,
+      } =
+        await adminClient
+          .from(
+            'profiles',
+          )
+          .select(
+            'id, email, display_name',
+          )
+          .eq(
+            'id',
+            newUserId,
+          )
+          .maybeSingle();
+
+      const {
+        error:
+          auditLogError,
+      } =
+        await adminClient
+          .from(
+            'audit_logs',
+          )
+          .insert({
+            action:
+              'schedule_shift_updated',
+
+            actor_user_id:
+              userData.user.id,
+
+            actor_email:
+              actorProfile?.email ??
+              userData.user.email ??
+              null,
+
+            actor_display_name:
+              actorProfile
+                ?.display_name ??
+              null,
+
+            target_user_id:
+              newUserId,
+
+            target_email:
+              targetProfile?.email ??
+              null,
+
+            target_display_name:
+              targetProfile
+                ?.display_name ??
+              (
+                typeof result.newUserName ===
+                  'string'
+                  ? result.newUserName
+                  : null
+              ),
+
+            entity_type:
+              'schedule_shift',
+
+            entity_id:
+              shiftId,
+
+            summary:
+              `שונה שיבוץ מוקדן${reason ? `: ${reason}` : ''}`,
+
+            old_values: {
+              assigned_user_id:
+                typeof result.previousUserId ===
+                  'string'
+                  ? result.previousUserId
+                  : null,
+
+              assigned_user_name:
+                typeof result.previousUserName ===
+                  'string'
+                  ? result.previousUserName
+                  : null,
+            },
+
+            new_values: {
+              assigned_user_id:
+                newUserId,
+
+              assigned_user_name:
+                typeof result.newUserName ===
+                  'string'
+                  ? result.newUserName
+                  : null,
+            },
+
+            metadata: {
+              source:
+                'schedule-edit-action',
+
+              shift_date:
+                typeof result.shiftDate ===
+                  'string'
+                  ? result.shiftDate
+                  : null,
+
+              starts_at:
+                typeof result.startsAt ===
+                  'string'
+                  ? result.startsAt
+                  : null,
+
+              ends_at:
+                typeof result.endsAt ===
+                  'string'
+                  ? result.endsAt
+                  : null,
+
+              reason,
+            },
+          });
+
+      if (
+        auditLogError
+      ) {
+        console.error(
+          'SCHEDULE EDIT AUDIT LOG ERROR:',
+          auditLogError,
+        );
+      }
 
       const notificationIds =
         Array.isArray(result.notificationIds)

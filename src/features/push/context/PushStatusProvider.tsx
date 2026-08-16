@@ -43,6 +43,50 @@ export function PushStatusProvider({
     ],
   );
 
+  useEffect(
+    () => {
+      const handleFocus =
+        (): void => {
+          void loadStatus();
+        };
+
+      const handleVisibilityChange =
+        (): void => {
+          if (
+            document.visibilityState ===
+              'visible'
+          ) {
+            void loadStatus();
+          }
+        };
+
+      window.addEventListener(
+        'focus',
+        handleFocus,
+      );
+
+      document.addEventListener(
+        'visibilitychange',
+        handleVisibilityChange,
+      );
+
+      return () => {
+        window.removeEventListener(
+          'focus',
+          handleFocus,
+        );
+
+        document.removeEventListener(
+          'visibilitychange',
+          handleVisibilityChange,
+        );
+      };
+    },
+    [
+      loadStatus,
+    ],
+  );
+
   return (
     <PushStatusContext.Provider
       value={pushStatus}

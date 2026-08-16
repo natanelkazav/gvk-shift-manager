@@ -44,6 +44,10 @@ import {
 } from '../features/notifications/context/NotificationProvider';
 
 import {
+  useNotificationContext,
+} from '../features/notifications/context/useNotificationContext';
+
+import {
   useAuth,
 } from '../auth/AuthContext';
 
@@ -434,6 +438,47 @@ function getInitial(
     );
 }
 
+function NavigationActivityBadge({
+  path,
+}: {
+  path:
+    string;
+}) {
+  const {
+    unreadCount,
+    pendingRequestCount,
+  } =
+    useNotificationContext();
+
+  const count =
+    path ===
+      '/notifications'
+      ? unreadCount +
+        pendingRequestCount
+      : 0;
+
+  if (
+    count <=
+    0
+  ) {
+    return null;
+  }
+
+  return (
+    <span
+      className="navigation-link-badge"
+      aria-label={`${count} פריטים חדשים`}
+    >
+      {
+        count >
+        99
+          ? '99+'
+          : count
+      }
+    </span>
+  );
+}
+
 function AppLayout() {
   const {
     profile,
@@ -676,6 +721,12 @@ return (
                         )
                       }
                     </span>
+
+                    <NavigationActivityBadge
+                      path={
+                        item.path
+                      }
+                    />
                   </NavLink>
                 );
               },

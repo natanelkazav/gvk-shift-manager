@@ -5,6 +5,14 @@ import {
 } from 'react';
 
 import {
+  useAuth,
+} from '../../../auth/AuthContext';
+
+import {
+  shiftSwapService,
+} from '../../../services/shiftSwapService';
+
+import {
   notificationService,
   type MyNotification,
 } from '../services/notificationService';
@@ -12,6 +20,9 @@ import {
 interface NotificationsState {
   notifications:
     MyNotification[];
+
+  pendingRequestCount:
+    number;
 
   isLoading:
     boolean;
@@ -30,7 +41,16 @@ interface UseNotificationsResult {
   unreadCount:
     number;
 
+  pendingRequestCount:
+    number;
+
+  activityCount:
+    number;
+
   loadNotifications:
+    () => Promise<void>;
+
+  refreshActivity:
     () => Promise<void>;
 
   markAsRead:
@@ -50,6 +70,9 @@ const initialState:
   NotificationsState = {
     notifications:
       [],
+
+    pendingRequestCount:
+      0,
 
     isLoading:
       false,
@@ -75,12 +98,48 @@ function getErrorMessage(
 
 export function useNotifications():
   UseNotificationsResult {
+  const {
+    hasPermission,
+  } =
+    useAuth();
+
+  const canApproveShiftSwaps =
+    hasPermission(
+      'shift_swaps.approve',
+    );
+
   const [
     state,
     setState,
   ] =
     useState<NotificationsState>(
       initialState,
+    );
+
+  const fetchPendingRequestCount =
+    useCallback(
+      async (): Promise<number> => {
+        if (
+          !canApproveShiftSwaps
+        ) {
+          return 0;
+        }
+
+        const requests =
+          await shiftSwapService
+            .getRequests();
+
+        return requests.filter(
+          (
+            request,
+          ) =>
+            request.status ===
+              'pending_manager',
+        ).length;
+      },
+      [
+        canApproveShiftSwaps,
+      ],
     );
 
   const loadNotifications =
@@ -101,9 +160,16 @@ export function useNotifications():
         );
 
         try {
-          const notifications =
-            await notificationService
-              .getMyNotifications();
+          const [
+            notifications,
+            pendingRequestCount,
+          ] =
+            await Promise.all([
+              notificationService
+                .getMyNotifications(),
+
+              fetchPendingRequestCount(),
+            ]);
 
           setState(
             (
@@ -112,6 +178,8 @@ export function useNotifications():
               ...currentState,
 
               notifications,
+
+              pendingRequestCount,
 
               isLoading:
                 false,
@@ -140,7 +208,52 @@ export function useNotifications():
           );
         }
       },
-      [],
+      [
+        fetchPendingRequestCount,
+      ],
+    );
+
+  const refreshActivity =
+    useCallback(
+      async (): Promise<void> => {
+        try {
+          const [
+            notifications,
+            pendingRequestCount,
+          ] =
+            await Promise.all([
+              notificationService
+                .getMyNotifications(),
+
+              fetchPendingRequestCount(),
+            ]);
+
+          setState(
+            (
+              currentState,
+            ) => ({
+              ...currentState,
+
+              notifications,
+
+              pendingRequestCount,
+
+              error:
+                null,
+            }),
+          );
+        } catch (
+          error
+        ) {
+          console.error(
+            'Background notification refresh failed:',
+            error,
+          );
+        }
+      },
+      [
+        fetchPendingRequestCount,
+      ],
     );
 
   const markAsRead =
@@ -348,12 +461,23 @@ export function useNotifications():
       ],
     );
 
+  const activityCount =
+    unreadCount +
+    state.pendingRequestCount;
+
   return {
     state,
 
     unreadCount,
 
+    pendingRequestCount:
+      state.pendingRequestCount,
+
+    activityCount,
+
     loadNotifications,
+
+    refreshActivity,
 
     markAsRead,
 

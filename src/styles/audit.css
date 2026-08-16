@@ -7,8 +7,10 @@
 .audit-filters {
   display: grid;
   grid-template-columns:
-    minmax(280px, 2fr)
-    minmax(210px, 1fr);
+    minmax(260px, 2fr)
+    minmax(210px, 1fr)
+    minmax(190px, 1fr)
+    repeat(2, minmax(170px, 0.8fr));
   align-items: end;
   gap: 16px;
   padding: 18px;
@@ -33,7 +35,8 @@
   font-weight: 600;
 }
 
-.audit-filter-field select {
+.audit-filter-field select,
+.audit-filter-field input {
   width: 100%;
   min-height: 42px;
   padding: 0 12px;
@@ -48,7 +51,8 @@
   font: inherit;
 }
 
-.audit-filter-field select:focus {
+.audit-filter-field select:focus,
+.audit-filter-field input:focus {
   border-color:
     var(--color-primary, #2563eb);
   outline: 2px solid
@@ -283,4 +287,38 @@
 .audit-action-availability_period_opened {
   background: #ecfdf5;
   color: #047857;
+}
+
+.audit-action-schedule_shift_updated,
+.audit-action-driver_schedule_updated,
+.audit-action-morning_driver_schedule_updated {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.audit-action-shift_swap_created,
+.audit-action-shift_swap_counterparty_approved,
+.audit-action-shift_swap_manager_approved {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.audit-action-shift_swap_counterparty_rejected,
+.audit-action-shift_swap_manager_rejected,
+.audit-action-shift_swap_cancelled {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.audit-action-schedule_published,
+.audit-action-driver_schedule_published,
+.audit-action-morning_driver_schedule_published,
+.audit-action-notification_sent {
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.audit-action-system_event {
+  background: #f8fafc;
+  color: #475569;
 }

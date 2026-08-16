@@ -245,8 +245,10 @@ export function usePushStatus():
 
   const shouldPrompt =
     state.isSupported &&
-    state.permission ===
-      'default' &&
+    state.permission !==
+      'denied' &&
+    state.permission !==
+      'unsupported' &&
     !state.isSubscribed;
 
   const shouldShowBlockedMessage =

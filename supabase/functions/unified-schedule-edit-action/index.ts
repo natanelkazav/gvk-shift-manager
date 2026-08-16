@@ -831,6 +831,144 @@ Deno.serve(
         };
       }
 
+      const {
+        data:
+          actorProfile,
+      } =
+        await adminClient
+          .from(
+            'profiles',
+          )
+          .select(
+            'id, email, display_name',
+          )
+          .eq(
+            'id',
+            actorUserId,
+          )
+          .maybeSingle();
+
+      const {
+        data:
+          targetProfile,
+      } =
+        await adminClient
+          .from(
+            'profiles',
+          )
+          .select(
+            'id, email, display_name',
+          )
+          .eq(
+            'id',
+            context.newUserId,
+          )
+          .maybeSingle();
+
+      const auditAction =
+        context.category ===
+          'on_call'
+          ? 'driver_schedule_updated'
+          : 'morning_driver_schedule_updated';
+
+      const entityType =
+        context.category ===
+          'on_call'
+          ? 'driver_schedule_day'
+          : 'morning_driver_schedule_assignment';
+
+      const {
+        error:
+          auditLogError,
+      } =
+        await adminClient
+          .from(
+            'audit_logs',
+          )
+          .insert({
+            action:
+              auditAction,
+
+            actor_user_id:
+              actorUserId,
+
+            actor_email:
+              actorProfile?.email ??
+              userData.user.email ??
+              null,
+
+            actor_display_name:
+              actorProfile
+                ?.display_name ??
+              null,
+
+            target_user_id:
+              context.newUserId,
+
+            target_email:
+              targetProfile?.email ??
+              null,
+
+            target_display_name:
+              targetProfile
+                ?.display_name ??
+              context.newUserName,
+
+            entity_type:
+              entityType,
+
+            entity_id:
+              context.sourceId,
+
+            summary:
+              context.category ===
+                'on_call'
+                ? `שונה שיבוץ כונן בתאריך ${context.date}`
+                : `שונה שיבוץ כונן בוקר בתאריך ${context.date}`,
+
+            old_values: {
+              assigned_user_id:
+                context.oldUserId,
+
+              assigned_user_name:
+                context.oldUserName,
+            },
+
+            new_values: {
+              assigned_user_id:
+                context.newUserId,
+
+              assigned_user_name:
+                context.newUserName,
+            },
+
+            metadata: {
+              source:
+                'unified-schedule-edit-action',
+
+              category:
+                context.category,
+
+              date:
+                context.date,
+
+              time_label:
+                context.timeLabel,
+
+              reason:
+                context.reason,
+            },
+          });
+
+      if (
+        auditLogError
+      ) {
+        console.error(
+          'UNIFIED SCHEDULE EDIT AUDIT LOG ERROR:',
+          auditLogError,
+        );
+      }
+
       const notificationIds =
         await createChangeNotifications(
           adminClient,

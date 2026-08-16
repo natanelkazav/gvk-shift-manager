@@ -163,6 +163,21 @@ async function invokeShiftSwapAction(
     ShiftSwapMutationResult;
 }
 
+function announceActivityChange(): void {
+  if (
+    typeof window ===
+      'undefined'
+  ) {
+    return;
+  }
+
+  window.dispatchEvent(
+    new Event(
+      'gvk:activity-changed',
+    ),
+  );
+}
+
 class ShiftSwapService {
   async getCreateOptions():
     Promise<ShiftSwapCreateOptions> {
@@ -272,7 +287,8 @@ class ShiftSwapService {
       );
     }
 
-    return invokeShiftSwapAction({
+    const result =
+      await invokeShiftSwapAction({
       action:
         'create',
       payload: {
@@ -282,7 +298,11 @@ class ShiftSwapService {
         counterpartyUserId,
         counterpartyShiftId,
       },
-    });
+      });
+
+    announceActivityChange();
+
+    return result;
   }
 
   async respondToRequest(
@@ -304,7 +324,8 @@ class ShiftSwapService {
       );
     }
 
-    return invokeShiftSwapAction({
+    const result =
+      await invokeShiftSwapAction({
       action:
         'respond',
       payload: {
@@ -316,7 +337,11 @@ class ShiftSwapService {
             ?.trim() ||
           null,
       },
-    });
+      });
+
+    announceActivityChange();
+
+    return result;
   }
 
   async reviewRequest(
@@ -338,7 +363,8 @@ class ShiftSwapService {
       );
     }
 
-    return invokeShiftSwapAction({
+    const result =
+      await invokeShiftSwapAction({
       action:
         'review',
       payload: {
@@ -350,7 +376,11 @@ class ShiftSwapService {
             ?.trim() ||
           null,
       },
-    });
+      });
+
+    announceActivityChange();
+
+    return result;
   }
 
   async cancelRequest(
@@ -368,14 +398,19 @@ class ShiftSwapService {
       );
     }
 
-    return invokeShiftSwapAction({
+    const result =
+      await invokeShiftSwapAction({
       action:
         'cancel',
       payload: {
         requestId:
           normalizedRequestId,
       },
-    });
+      });
+
+    announceActivityChange();
+
+    return result;
   }
 }
 

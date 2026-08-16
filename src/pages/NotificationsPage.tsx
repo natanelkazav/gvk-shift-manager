@@ -97,6 +97,7 @@ function NotificationsPage() {
     state,
     unreadCount,
     loadNotifications,
+    refreshActivity,
     markAsRead,
     markAllAsRead,
   } = useNotificationContext();
@@ -201,7 +202,10 @@ function NotificationsPage() {
           ? 'ההחלפה אושרה ולוח השיבוצים עודכן.'
           : 'בקשת ההחלפה נדחתה.',
       );
-      await refreshRequests();
+      await Promise.all([
+        refreshRequests(),
+        refreshActivity(),
+      ]);
     } catch (error) {
       setRequestsError(getErrorMessage(error));
     } finally {

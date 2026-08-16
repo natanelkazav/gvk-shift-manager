@@ -111,6 +111,240 @@ function createUserClient(
   );
 }
 
+function createAdminClient(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+): SupabaseClient {
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        persistSession:
+          false,
+
+        autoRefreshToken:
+          false,
+      },
+    },
+  );
+}
+
+async function recordShiftSwapAudit(
+  adminClient:
+    SupabaseClient,
+  actorUserId:
+    string,
+  actorEmail:
+    string | null,
+  action:
+    ShiftSwapAction,
+  payload:
+    Record<string, unknown>,
+  result:
+    ShiftSwapMutationResult,
+): Promise<void> {
+  const {
+    data:
+      actorProfile,
+  } =
+    await adminClient
+      .from(
+        'profiles',
+      )
+      .select(
+        'id, email, display_name',
+      )
+      .eq(
+        'id',
+        actorUserId,
+      )
+      .maybeSingle();
+
+  const approve =
+    typeof payload.approve ===
+      'boolean'
+      ? payload.approve
+      : null;
+
+  let auditAction:
+    string;
+
+  let summary:
+    string;
+
+  if (
+    action ===
+      'create'
+  ) {
+    auditAction =
+      'shift_swap_created';
+
+    summary =
+      'נוצרה בקשת החלפת משמרת';
+  } else if (
+    action ===
+      'respond'
+  ) {
+    auditAction =
+      approve
+        ? 'shift_swap_counterparty_approved'
+        : 'shift_swap_counterparty_rejected';
+
+    summary =
+      approve
+        ? 'המוקדן השני אישר בקשת החלפת משמרת'
+        : 'המוקדן השני דחה בקשת החלפת משמרת';
+  } else if (
+    action ===
+      'review'
+  ) {
+    auditAction =
+      approve
+        ? 'shift_swap_manager_approved'
+        : 'shift_swap_manager_rejected';
+
+    summary =
+      approve
+        ? 'בקשת החלפת משמרת אושרה סופית'
+        : 'בקשת החלפת משמרת נדחתה סופית';
+  } else {
+    auditAction =
+      'shift_swap_cancelled';
+
+    summary =
+      'בקשת החלפת משמרת בוטלה';
+  }
+
+  const requestId =
+    typeof result.id ===
+      'string'
+      ? result.id
+      : (
+          typeof payload.requestId ===
+            'string'
+            ? payload.requestId
+            : null
+        );
+
+  const targetUserId =
+    typeof result.counterpartyUserId ===
+      'string'
+      ? result.counterpartyUserId
+      : null;
+
+  let targetProfile:
+    {
+      email?: string | null;
+      display_name?: string | null;
+    } | null =
+    null;
+
+  if (
+    targetUserId
+  ) {
+    const {
+      data,
+    } =
+      await adminClient
+        .from(
+          'profiles',
+        )
+        .select(
+          'email, display_name',
+        )
+        .eq(
+          'id',
+          targetUserId,
+        )
+        .maybeSingle();
+
+    targetProfile =
+      data;
+  }
+
+  const {
+    error:
+      auditLogError,
+  } =
+    await adminClient
+      .from(
+        'audit_logs',
+      )
+      .insert({
+        action:
+          auditAction,
+
+        actor_user_id:
+          actorUserId,
+
+        actor_email:
+          actorProfile?.email ??
+          actorEmail,
+
+        actor_display_name:
+          actorProfile
+            ?.display_name ??
+          null,
+
+        target_user_id:
+          targetUserId,
+
+        target_email:
+          targetProfile?.email ??
+          null,
+
+        target_display_name:
+          targetProfile
+            ?.display_name ??
+          null,
+
+        entity_type:
+          'shift_swap_request',
+
+        entity_id:
+          requestId,
+
+        summary,
+
+        old_values:
+          null,
+
+        new_values: {
+          status:
+            typeof result.status ===
+              'string'
+              ? result.status
+              : null,
+        },
+
+        metadata: {
+          source:
+            'shift-swap-action',
+
+          workflow_action:
+            action,
+
+          approve,
+
+          swap_type:
+            typeof result.swapType ===
+              'string'
+              ? result.swapType
+              : null,
+        },
+      });
+
+  if (
+    auditLogError
+  ) {
+    console.error(
+      'SHIFT SWAP AUDIT LOG ERROR:',
+      auditLogError,
+    );
+  }
+}
+
 function parseActionRequest(
   value: unknown,
 ): {
@@ -578,6 +812,11 @@ Deno.serve(
           'SUPABASE_ANON_KEY',
         );
 
+      const serviceRoleKey =
+        getRequiredEnvironmentVariable(
+          'SUPABASE_SERVICE_ROLE_KEY',
+        );
+
       const authorizationHeader =
         getAuthorizationHeader(
           request,
@@ -588,6 +827,12 @@ Deno.serve(
           supabaseUrl,
           supabaseAnonKey,
           authorizationHeader,
+        );
+
+      const adminClient =
+        createAdminClient(
+          supabaseUrl,
+          serviceRoleKey,
         );
 
       const {
@@ -634,6 +879,16 @@ Deno.serve(
           action,
           payload,
         );
+
+      await recordShiftSwapAudit(
+        adminClient,
+        userData.user.id,
+        userData.user.email ??
+          null,
+        action,
+        payload,
+        result,
+      );
 
       await deliverWorkflowNotifications(
         supabaseUrl,
