@@ -650,7 +650,7 @@ Deno.serve(
             updateError,
         } =
           await userClient.rpc(
-            'update_driver_schedule_day',
+            'update_current_driver_schedule_day',
             {
               requested_schedule_day_id:
                 sourceId,
