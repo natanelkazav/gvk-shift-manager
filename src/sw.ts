@@ -223,7 +223,7 @@ self.addEventListener(
 
         badge:
           payload.badge?.trim() ||
-          '/icon-192.png',
+          '/icon-96.png',
 
         tag:
           payload.tag?.trim() ||
