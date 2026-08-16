@@ -60,6 +60,10 @@ export const DEFAULT_ROLE_PERMISSIONS:
     manager: [
       'dashboard.view',
 
+      'schedule.view_team',
+      'schedule.edit',
+      'availability.manage',
+
       'driver_availability.view',
       'driver_availability.manage',
 
@@ -83,8 +87,6 @@ export const DEFAULT_ROLE_PERMISSIONS:
 
       'archive.view',
 
-      'availability.manage',
-
       'users.view',
     ],
 
@@ -92,12 +94,10 @@ export const DEFAULT_ROLE_PERMISSIONS:
       'dashboard.view',
 
       'schedule.view',
-      'schedule.edit',
 
       'availability.view',
 
       'notifications.view',
-      'notifications.manage',
 
       'statistics.view',
 
@@ -112,8 +112,6 @@ export const DEFAULT_ROLE_PERMISSIONS:
       'driver_availability.view',
 
       'driver_schedule.view',
-      'driver_schedule.view_team',
-      'driver_schedule.edit',
 
       'notifications.view',
 
@@ -125,7 +123,6 @@ export const DEFAULT_ROLE_PERMISSIONS:
       'morning_driver_availability.view',
 
       'morning_driver_schedule.view',
-      'morning_driver_schedule.view_team',
 
       'notifications.view',
 

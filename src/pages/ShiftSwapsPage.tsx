@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   ArrowLeftRight,
   Check,
   Clock3,
@@ -514,10 +515,17 @@ const handleCreate =
           </span>
         </div>
 
-        <ArrowLeftRight
-          size={22}
-          aria-hidden="true"
-        />
+        {request.swapType === 'one_way' ? (
+          <ArrowLeft
+            size={22}
+            aria-hidden="true"
+          />
+        ) : (
+          <ArrowLeftRight
+            size={22}
+            aria-hidden="true"
+          />
+        )}
       </CardHeader>
 
       <CardBody>
@@ -536,10 +544,17 @@ const handleCreate =
             </small>
           </div>
 
-          <ArrowLeftRight
-            size={18}
-            aria-hidden="true"
-          />
+          {request.swapType === 'one_way' ? (
+            <ArrowLeft
+              size={18}
+              aria-hidden="true"
+            />
+          ) : (
+            <ArrowLeftRight
+              size={18}
+              aria-hidden="true"
+            />
+          )}
 
           <div>
             <span>המוקדן השני</span>

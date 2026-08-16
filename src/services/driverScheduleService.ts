@@ -367,18 +367,63 @@ class DriverScheduleService {
       data,
       error,
     } =
-      await supabase.rpc(
-        'transfer_my_driver_duty',
-        {
-          requested_schedule_day_id:
-            normalizedScheduleDayId,
+      await supabase.functions
+        .invoke(
+          'driver-duty-transfer-action',
+          {
+            body: {
+              scheduleDayId:
+                normalizedScheduleDayId,
 
-          requested_new_driver_id:
-            normalizedNewDriverId,
-        },
-      );
+              newDriverId:
+                normalizedNewDriverId,
+            },
+          },
+        );
 
     if (error) {
+      const context =
+        typeof error === 'object' &&
+        error !== null &&
+        'context' in error
+          ? (
+              error as {
+                context?: Response;
+              }
+            ).context
+          : undefined;
+
+      if (
+        context instanceof Response
+      ) {
+        try {
+          const responseBody =
+            await context.json() as {
+              error?: unknown;
+            };
+
+          if (
+            typeof responseBody.error ===
+              'string' &&
+            responseBody.error.trim()
+          ) {
+            throw new Error(
+              responseBody.error,
+            );
+          }
+        } catch (
+          functionError
+        ) {
+          if (
+            functionError instanceof Error &&
+            functionError.message !==
+              error.message
+          ) {
+            throw functionError;
+          }
+        }
+      }
+
       throw normalizeDriverScheduleError(
         error,
       );

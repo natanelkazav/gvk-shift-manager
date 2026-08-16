@@ -44,10 +44,6 @@ import {
 } from '../features/notifications/context/NotificationProvider';
 
 import {
-  useNotificationContext,
-} from '../features/notifications/context/useNotificationContext';
-
-import {
   useAuth,
 } from '../auth/AuthContext';
 
@@ -70,11 +66,6 @@ interface NavigationItem {
   requiredPermissions:
     readonly PermissionKey[];
 
-  visibleForRoles?:
-    readonly UserRole[];
-
-  hiddenForRoles?:
-    readonly UserRole[];
 }
 
 const navigationItems:
@@ -106,19 +97,9 @@ const navigationItems:
         CalendarDays,
 
       requiredPermissions: [
-        'schedule.edit',
         'availability.manage',
-        'driver_schedule.view_team',
-        'driver_schedule.edit',
         'driver_availability.manage',
-        'morning_driver_schedule.view_team',
-        'morning_driver_schedule.edit',
         'morning_driver_availability.manage',
-      ],
-
-      visibleForRoles: [
-        'admin',
-        'manager',
       ],
     },
     {
@@ -134,10 +115,6 @@ const navigationItems:
       requiredPermissions: [
         'schedule.view'],
 
-      hiddenForRoles: [
-      'admin',
-      'manager',
-      ],
     },
 
 {
@@ -148,10 +125,6 @@ const navigationItems:
   requiredPermissions: [
     'availability.view',
     'availability.manage',
-  ],
-    hiddenForRoles: [
-    'admin',
-    'manager',
   ],
 },
 
@@ -170,10 +143,6 @@ const navigationItems:
     'driver_schedule.view_team',
     'driver_schedule.edit',
   ],
-          hiddenForRoles: [
-        'admin',
-        'manager',
-        ],
     },
 
 {
@@ -184,10 +153,6 @@ const navigationItems:
   requiredPermissions: [
     'morning_driver_availability.view',
     'morning_driver_availability.manage',
-  ],
-    hiddenForRoles: [
-    'admin',
-    'manager',
   ],
 },
     {
@@ -200,11 +165,7 @@ const navigationItems:
         'morning_driver_schedule.view_team',
         'morning_driver_schedule.edit',
       ],
-            hiddenForRoles: [
-        'admin',
-        'manager',
-        ],
-    },
+      },
     {
       label:
         'ניהול משתמשים',
@@ -336,15 +297,9 @@ function getNavigationLabel(
       '/schedule' &&
     hasPermission(
       'schedule.view',
-    ) &&
-    !hasPermission(
-      'schedule.view_team',
-    ) &&
-    !hasPermission(
-      'schedule.edit',
     )
   ) {
-    return 'השיבוצים שלי';
+    return 'המשמרות שלי';
   }
 
   if (
@@ -352,9 +307,6 @@ function getNavigationLabel(
       '/availability' &&
     hasPermission(
       'availability.view',
-    ) &&
-    !hasPermission(
-      'availability.manage',
     )
   ) {
     return 'האילוצים שלי';
@@ -365,15 +317,9 @@ function getNavigationLabel(
       '/driver-schedule' &&
     hasPermission(
       'driver_schedule.view',
-    ) &&
-    !hasPermission(
-      'driver_schedule.view_team',
-    ) &&
-    !hasPermission(
-      'driver_schedule.edit',
     )
   ) {
-    return 'לוח הכוננים שלי';
+    return 'הכוננויות שלי';
   }
 
   if (
@@ -381,15 +327,9 @@ function getNavigationLabel(
       '/morning-driver-schedule' &&
     hasPermission(
       'morning_driver_schedule.view',
-    ) &&
-    !hasPermission(
-      'morning_driver_schedule.view_team',
-    ) &&
-    !hasPermission(
-      'morning_driver_schedule.edit',
     )
   ) {
-    return 'השיבוצים שלי';
+    return 'כוננויות הבוקר שלי';
   }
 
   return item.label;
@@ -438,47 +378,6 @@ function getInitial(
     );
 }
 
-function NavigationActivityBadge({
-  path,
-}: {
-  path:
-    string;
-}) {
-  const {
-    unreadCount,
-    pendingRequestCount,
-  } =
-    useNotificationContext();
-
-  const count =
-    path ===
-      '/notifications'
-      ? unreadCount +
-        pendingRequestCount
-      : 0;
-
-  if (
-    count <=
-    0
-  ) {
-    return null;
-  }
-
-  return (
-    <span
-      className="navigation-link-badge"
-      aria-label={`${count} פריטים חדשים`}
-    >
-      {
-        count >
-        99
-          ? '99+'
-          : count
-      }
-    </span>
-  );
-}
-
 function AppLayout() {
   const {
     profile,
@@ -508,11 +407,8 @@ const visibleNavigationItems =
     () => {
       const hasManagementWorkspaceAccess =
         [
-          'schedule.edit',
           'availability.manage',
-          'driver_schedule.edit',
           'driver_availability.manage',
-          'morning_driver_schedule.edit',
           'morning_driver_availability.manage',
         ].some(
           (permission) =>
@@ -721,12 +617,6 @@ return (
                         )
                       }
                     </span>
-
-                    <NavigationActivityBadge
-                      path={
-                        item.path
-                      }
-                    />
                   </NavLink>
                 );
               },
