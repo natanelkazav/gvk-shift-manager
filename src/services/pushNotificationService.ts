@@ -144,9 +144,6 @@ async function saveSubscription(
   subscription:
     PushSubscription,
 ): Promise<void> {
-  const userId =
-    await getAuthenticatedUserId();
-
   const serializedSubscription =
     subscription.toJSON();
 
@@ -170,108 +167,37 @@ async function saveSubscription(
   }
 
   const {
-    data:
-      existingSubscription,
-
-    error:
-      existingSubscriptionError,
+    error,
   } =
-    await supabase
-      .from(
-        'push_subscriptions',
-      )
-      .select(
-        'id',
-      )
-      .eq(
-        'endpoint',
-        subscription.endpoint,
-      )
-      .eq(
-        'user_id',
-        userId,
-      )
-      .maybeSingle<{
-        id: string;
-      }>();
+    await supabase.rpc(
+      'register_push_subscription',
+      {
+        requested_endpoint:
+          subscription.endpoint,
+
+        requested_p256dh_key:
+          p256dhKey,
+
+        requested_auth_key:
+          authKey,
+
+        requested_user_agent:
+          navigator.userAgent,
+
+        requested_device_name:
+          getDeviceName(),
+      },
+    );
 
   if (
-    existingSubscriptionError
+    error
   ) {
-    throw existingSubscriptionError;
-  }
+    console.error(
+      'REGISTER PUSH SUBSCRIPTION ERROR:',
+      error,
+    );
 
-  const subscriptionData = {
-    user_id:
-      userId,
-
-    endpoint:
-      subscription.endpoint,
-
-    p256dh_key:
-      p256dhKey,
-
-    auth_key:
-      authKey,
-
-    user_agent:
-      navigator.userAgent,
-
-    device_name:
-      getDeviceName(),
-
-    is_active:
-      true,
-
-    last_used_at:
-      new Date()
-        .toISOString(),
-  };
-
-  if (
-    existingSubscription
-  ) {
-    const {
-      error:
-        updateError,
-    } =
-      await supabase
-        .from(
-          'push_subscriptions',
-        )
-        .update(
-          subscriptionData,
-        )
-        .eq(
-          'id',
-          existingSubscription.id,
-        );
-
-    if (
-      updateError
-    ) {
-      throw updateError;
-    }
-
-    return;
-  }
-
-  const {
-    error:
-      insertError,
-  } =
-    await supabase
-      .from(
-        'push_subscriptions',
-      )
-      .insert(
-        subscriptionData,
-      );
-
-  if (
-    insertError
-  ) {
-    throw insertError;
+    throw error;
   }
 }
 
