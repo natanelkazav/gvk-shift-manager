@@ -170,47 +170,108 @@ async function saveSubscription(
   }
 
   const {
-    error,
+    data:
+      existingSubscription,
+
+    error:
+      existingSubscriptionError,
   } =
     await supabase
       .from(
         'push_subscriptions',
       )
-      .upsert(
-        {
-          user_id:
-            userId,
+      .select(
+        'id',
+      )
+      .eq(
+        'endpoint',
+        subscription.endpoint,
+      )
+      .eq(
+        'user_id',
+        userId,
+      )
+      .maybeSingle<{
+        id: string;
+      }>();
 
-          endpoint:
-            subscription.endpoint,
+  if (
+    existingSubscriptionError
+  ) {
+    throw existingSubscriptionError;
+  }
 
-          p256dh_key:
-            p256dhKey,
+  const subscriptionData = {
+    user_id:
+      userId,
 
-          auth_key:
-            authKey,
+    endpoint:
+      subscription.endpoint,
 
-          user_agent:
-            navigator.userAgent,
+    p256dh_key:
+      p256dhKey,
 
-          device_name:
-            getDeviceName(),
+    auth_key:
+      authKey,
 
-          is_active:
-            true,
+    user_agent:
+      navigator.userAgent,
 
-          last_used_at:
-            new Date()
-              .toISOString(),
-        },
-        {
-          onConflict:
-            'endpoint',
-        },
+    device_name:
+      getDeviceName(),
+
+    is_active:
+      true,
+
+    last_used_at:
+      new Date()
+        .toISOString(),
+  };
+
+  if (
+    existingSubscription
+  ) {
+    const {
+      error:
+        updateError,
+    } =
+      await supabase
+        .from(
+          'push_subscriptions',
+        )
+        .update(
+          subscriptionData,
+        )
+        .eq(
+          'id',
+          existingSubscription.id,
+        );
+
+    if (
+      updateError
+    ) {
+      throw updateError;
+    }
+
+    return;
+  }
+
+  const {
+    error:
+      insertError,
+  } =
+    await supabase
+      .from(
+        'push_subscriptions',
+      )
+      .insert(
+        subscriptionData,
       );
 
-  if (error) {
-    throw error;
+  if (
+    insertError
+  ) {
+    throw insertError;
   }
 }
 
