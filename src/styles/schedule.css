@@ -897,3 +897,43 @@
   font-size: var(--font-size-sm);
   font-weight: 600;
 }
+
+.schedule-month-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.schedule-month-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 10px;
+  background: var(--color-white);
+  color: var(--color-gray-600);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 760px) {
+  .schedule-month-navigation {
+    display: grid;
+    grid-template-columns:
+      repeat(
+        3,
+        minmax(0, 1fr)
+      );
+  }
+
+  .schedule-month-navigation > button {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 8px;
+    font-size: 0.75rem;
+  }
+}

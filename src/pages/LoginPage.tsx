@@ -35,6 +35,9 @@ function LoginPage() {
   const [password, setPassword] =
     useState('');
 
+  const [rememberMe, setRememberMe] =
+    useState(false);
+
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
@@ -90,6 +93,7 @@ function LoginPage() {
       await signIn({
         email: email.trim(),
         password,
+        rememberMe,
       });
 
     navigate(
@@ -202,6 +206,26 @@ function LoginPage() {
               }}
               required
             />
+
+            <label className="auth-remember-row">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                disabled={isSubmitting}
+                onChange={(event) => {
+                  setRememberMe(
+                    event.target.checked,
+                  );
+                }}
+              />
+
+              <span>
+                <strong>זכור אותי</strong>
+                <small>
+                  השאר אותי מחובר גם לאחר סגירת האפליקציה במכשיר הזה.
+                </small>
+              </span>
+            </label>
 
             <Button
               type="submit"

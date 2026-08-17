@@ -1,6 +1,8 @@
 import {
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   LayoutList,
   Pencil,
   Clock3,
@@ -46,14 +48,206 @@ import type {
   DispatcherMonthlyStatistics,
   ScheduleEditDispatcher,
   ScheduleShift,
+  ScheduleShiftType,
   ScheduleViewMode,
 } from '../types/schedule';
+
+import type {
+  DispatcherScheduleMonthData,
+  DispatcherScheduleMonthShift,
+} from '../types/unifiedSchedule';
 
 import '../styles/schedule.css';
 
 type ScheduleDisplayMode =
   | 'calendar'
   | 'list';
+
+interface ScheduleMonthSelection {
+  year: number;
+  month: number;
+}
+
+const validScheduleTypes =
+  new Set<ScheduleShiftType>([
+    'weekday',
+    'friday',
+    'saturday',
+    'holiday_eve',
+    'holiday_full',
+    'holiday_end',
+    'chol_hamoed',
+  ]);
+
+function getCurrentMonthSelection():
+  ScheduleMonthSelection {
+  const now =
+    new Date();
+
+  return {
+    year:
+      now.getFullYear(),
+
+    month:
+      now.getMonth() + 1,
+  };
+}
+
+function moveMonth(
+  selection:
+    ScheduleMonthSelection,
+  offset: number,
+): ScheduleMonthSelection {
+  const date =
+    new Date(
+      selection.year,
+      selection.month - 1 + offset,
+      1,
+      12,
+      0,
+      0,
+      0,
+    );
+
+  return {
+    year:
+      date.getFullYear(),
+
+    month:
+      date.getMonth() + 1,
+  };
+}
+
+function isSameMonth(
+  first:
+    ScheduleMonthSelection,
+  second:
+    ScheduleMonthSelection,
+): boolean {
+  return (
+    first.year ===
+      second.year &&
+    first.month ===
+      second.month
+  );
+}
+
+function normalizeScheduleType(
+  value: string,
+): ScheduleShiftType {
+  return validScheduleTypes.has(
+    value as
+      ScheduleShiftType,
+  )
+    ? value as
+        ScheduleShiftType
+    : 'weekday';
+}
+
+function mapHistoricalShift(
+  shift:
+    DispatcherScheduleMonthShift,
+): ScheduleShift {
+  const now =
+    Date.now();
+
+  const startsAt =
+    new Date(
+      shift.startsAt,
+    ).getTime();
+
+  const endsAt =
+    new Date(
+      shift.endsAt,
+    ).getTime();
+
+  const progressState =
+    Number.isFinite(
+      startsAt,
+    ) &&
+    Number.isFinite(
+      endsAt,
+    )
+      ? now >=
+          startsAt &&
+        now <
+          endsAt
+        ? 'current'
+        : now >=
+            endsAt
+          ? 'completed'
+          : 'upcoming'
+      : 'completed';
+
+  return {
+    id:
+      shift.id,
+
+    periodId:
+      shift.periodId,
+
+    availabilityShiftSlotId:
+      null,
+
+    shiftDate:
+      shift.shiftDate,
+
+    startsAt:
+      shift.startsAt,
+
+    endsAt:
+      shift.endsAt,
+
+    shiftCode:
+      shift.shiftCode,
+
+    scheduleType:
+      normalizeScheduleType(
+        shift.scheduleType,
+      ),
+
+    isPremium:
+      shift.isPremium,
+
+    holidayName:
+      shift.holidayName,
+
+    assignedUser:
+      shift.assignedUserId
+        ? {
+            id:
+              shift.assignedUserId,
+
+            displayName:
+              shift.assignedUserName ??
+              '',
+
+            scheduleName:
+              shift.assignedUserName,
+
+            role:
+              'dispatcher',
+          }
+        : null,
+
+    assignmentSource:
+      null,
+
+    assignmentScore:
+      null,
+
+    assignmentReasons:
+      [],
+
+    isLocked:
+      shift.isLocked,
+
+    notes:
+      shift.notes,
+
+    progressState,
+  };
+}
 
 const hebrewMonths = [
   'ינואר',
@@ -773,6 +967,7 @@ function ScheduleShiftCard({
 
 function SchedulePage() {
   const {
+    user,
     profile,
     hasPermission,
   } =
@@ -800,6 +995,37 @@ function SchedulePage() {
   ] =
     useState<ScheduleDisplayMode>(
       'calendar',
+    );
+
+
+  const [
+    selectedMonth,
+    setSelectedMonth,
+  ] =
+    useState<ScheduleMonthSelection>(
+      getCurrentMonthSelection,
+    );
+
+  const [
+    selectedMonthSchedule,
+    setSelectedMonthSchedule,
+  ] =
+    useState<DispatcherScheduleMonthData | null>(
+      null,
+    );
+
+  const [
+    isLoadingSelectedMonth,
+    setIsLoadingSelectedMonth,
+  ] =
+    useState(false);
+
+  const [
+    selectedMonthError,
+    setSelectedMonthError,
+  ] =
+    useState<string | null>(
+      null,
     );
 
   const [
@@ -900,10 +1126,117 @@ function SchedulePage() {
   const currentSchedule =
     state.currentSchedule;
 
+  const currentMonthSelection =
+    getCurrentMonthSelection();
+
+  const isPersonalScheduleUser =
+    Boolean(
+      currentSchedule &&
+      !currentSchedule
+        .access
+        .canViewTeamSchedule,
+    );
+
+  const isViewingCurrentMonth =
+    isSameMonth(
+      selectedMonth,
+      currentMonthSelection,
+    );
+
+  useEffect(
+    () => {
+      if (
+        !isPersonalScheduleUser ||
+        isViewingCurrentMonth
+      ) {
+        setSelectedMonthSchedule(
+          null,
+        );
+        setSelectedMonthError(
+          null,
+        );
+        setIsLoadingSelectedMonth(
+          false,
+        );
+        return;
+      }
+
+      let isCancelled =
+        false;
+
+      const loadSelectedMonth =
+        async (): Promise<void> => {
+          setIsLoadingSelectedMonth(
+            true,
+          );
+          setSelectedMonthError(
+            null,
+          );
+
+          try {
+            const data =
+              await scheduleService
+                .getScheduleByMonth(
+                  selectedMonth.year,
+                  selectedMonth.month,
+                );
+
+            if (
+              isCancelled
+            ) {
+              return;
+            }
+
+            setSelectedMonthSchedule(
+              data,
+            );
+          } catch (error) {
+            if (
+              isCancelled
+            ) {
+              return;
+            }
+
+            setSelectedMonthSchedule(
+              null,
+            );
+
+            setSelectedMonthError(
+              error instanceof Error
+                ? error.message
+                : 'לא ניתן היה לטעון את השיבוץ לחודש שנבחר.',
+            );
+          } finally {
+            if (
+              !isCancelled
+            ) {
+              setIsLoadingSelectedMonth(
+                false,
+              );
+            }
+          }
+        };
+
+      void loadSelectedMonth();
+
+      return () => {
+        isCancelled =
+          true;
+      };
+    },
+    [
+      isPersonalScheduleUser,
+      isViewingCurrentMonth,
+      selectedMonth.month,
+      selectedMonth.year,
+    ],
+  );
+
 const canEditCurrentSchedule =
   hasPermission(
     'schedule.edit',
   ) &&
+  isViewingCurrentMonth &&
   currentSchedule
     ?.period
     ?.status ===
@@ -1068,8 +1401,10 @@ const canEditCurrentSchedule =
             .access
             .canViewTeamSchedule
         ) {
-          return currentSchedule
-            .personalStatistics;
+          return isViewingCurrentMonth
+            ? currentSchedule
+                .personalStatistics
+            : null;
         }
 
         if (
@@ -1093,6 +1428,7 @@ const canEditCurrentSchedule =
       },
       [
         currentSchedule,
+        isViewingCurrentMonth,
         selectedUserId,
         viewMode,
       ],
@@ -1105,6 +1441,40 @@ const canEditCurrentSchedule =
           !currentSchedule
         ) {
           return [];
+        }
+
+        if (
+          isPersonalScheduleUser &&
+          !isViewingCurrentMonth
+        ) {
+          if (
+            !user ||
+            !selectedMonthSchedule
+              ?.period ||
+            (
+              selectedMonthSchedule
+                .period
+                .status !==
+                'published' &&
+              selectedMonthSchedule
+                .period
+                .status !==
+                'archived'
+            )
+          ) {
+            return [];
+          }
+
+          return selectedMonthSchedule
+            .shifts
+            .filter(
+              (shift) =>
+                shift.assignedUserId ===
+                user.id,
+            )
+            .map(
+              mapHistoricalShift,
+            );
         }
 
         if (
@@ -1140,7 +1510,11 @@ const canEditCurrentSchedule =
       },
       [
         currentSchedule,
+        isPersonalScheduleUser,
+        isViewingCurrentMonth,
+        selectedMonthSchedule,
         selectedUserId,
+        user,
         viewMode,
       ],
     );
@@ -1406,19 +1780,27 @@ const canEditCurrentSchedule =
     );
   }
 
-  const periodTitle =
-    currentSchedule
-      .period
-      .title ??
+  const selectedMonthTitle =
     `${hebrewMonths[
-      currentSchedule
-        .period
-        .month - 1
-    ]} ${
-      currentSchedule
-        .period
-        .year
-    }`;
+      selectedMonth.month - 1
+    ]} ${selectedMonth.year}`;
+
+  const periodTitle =
+    isPersonalScheduleUser &&
+    !isViewingCurrentMonth
+      ? selectedMonthTitle
+      : currentSchedule
+          .period
+          .title ??
+        `${hebrewMonths[
+          currentSchedule
+            .period
+            .month - 1
+        ]} ${
+          currentSchedule
+            .period
+            .year
+        }`;
 
   const isPersonalUserBlocked =
     !currentSchedule
@@ -1609,7 +1991,9 @@ const canPublishSchedule =
       <div className="schedule-period-bar">
         <div>
           <span>
-            חודש נוכחי
+            {isPersonalScheduleUser
+              ? 'חודש מוצג'
+              : 'חודש נוכחי'}
           </span>
 
           <strong>
@@ -1617,18 +2001,139 @@ const canPublishSchedule =
           </strong>
         </div>
 
-        <span
-          className={`schedule-status schedule-status-${currentSchedule.period.status}`}
-        >
-          {
-            scheduleStatusLabels[
-              currentSchedule
-                .period
-                .status
-            ]
-          }
-        </span>
+        {isViewingCurrentMonth ? (
+          <span
+            className={`schedule-status schedule-status-${currentSchedule.period.status}`}
+          >
+            {
+              scheduleStatusLabels[
+                currentSchedule
+                  .period
+                  .status
+              ]
+            }
+          </span>
+        ) : selectedMonthSchedule
+            ?.period ? (
+          <span className="schedule-status schedule-status-published">
+            {selectedMonthSchedule
+              .period
+              .status ===
+              'archived'
+              ? 'בארכיון'
+              : 'פורסם'}
+          </span>
+        ) : null}
       </div>
+
+      {isPersonalScheduleUser ? (
+        <div
+          className="schedule-month-navigation"
+          aria-label="ניווט בין חודשי השיבוץ"
+        >
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={
+              isLoadingSelectedMonth
+            }
+            onClick={() => {
+              setSelectedCalendarDate(
+                null,
+              );
+              setSelectedMonth(
+                (current) =>
+                  moveMonth(
+                    current,
+                    -1,
+                  ),
+              );
+            }}
+          >
+            <ChevronRight
+              size={17}
+              aria-hidden="true"
+            />
+            חודש קודם
+          </Button>
+
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={
+              isLoadingSelectedMonth ||
+              isViewingCurrentMonth
+            }
+            onClick={() => {
+              setSelectedCalendarDate(
+                null,
+              );
+              setSelectedMonth(
+                getCurrentMonthSelection(),
+              );
+            }}
+          >
+            <CalendarDays
+              size={17}
+              aria-hidden="true"
+            />
+            היום
+          </Button>
+
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={
+              isLoadingSelectedMonth
+            }
+            onClick={() => {
+              setSelectedCalendarDate(
+                null,
+              );
+              setSelectedMonth(
+                (current) =>
+                  moveMonth(
+                    current,
+                    1,
+                  ),
+              );
+            }}
+          >
+            חודש הבא
+            <ChevronLeft
+              size={17}
+              aria-hidden="true"
+            />
+          </Button>
+        </div>
+      ) : null}
+
+      {isPersonalScheduleUser &&
+      selectedMonthError ? (
+        <div
+          className="schedule-error-banner"
+          role="alert"
+        >
+          <strong>
+            לא ניתן היה לטעון את החודש שנבחר
+          </strong>
+          <span>
+            {selectedMonthError}
+          </span>
+        </div>
+      ) : null}
+
+      {isPersonalScheduleUser &&
+      isLoadingSelectedMonth ? (
+        <div className="schedule-month-loading">
+          <RefreshCw
+            size={18}
+            className="schedule-loading-icon"
+            aria-hidden="true"
+          />
+          טוען את השיבוץ לחודש שנבחר...
+        </div>
+      ) : null}
 
       <div
         className="schedule-display-mode"
@@ -1966,14 +2471,18 @@ const canPublishSchedule =
           <div className="schedule-calendar-view">
             <MonthCalendar
               year={
-                currentSchedule
-                  .period
-                  .year
+                isPersonalScheduleUser
+                  ? selectedMonth.year
+                  : currentSchedule
+                      .period
+                      .year
               }
               month={
-                currentSchedule
-                  .period
-                  .month
+                isPersonalScheduleUser
+                  ? selectedMonth.month
+                  : currentSchedule
+                      .period
+                      .month
               }
               getDayClassName={(
                 context,

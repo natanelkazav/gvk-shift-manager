@@ -353,6 +353,8 @@ export function AuthProvider({
               credentials.email.trim(),
             password:
               credentials.password,
+            rememberMe:
+              credentials.rememberMe,
           });
 
         const {

@@ -1,5 +1,8 @@
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import {
+  setRememberMePreference,
+  supabase,
+} from '../lib/supabase';
 import type {
   SignInCredentials,
   UserProfile,
@@ -46,7 +49,11 @@ function mapProfileRow(
 async function signIn({
   email,
   password,
+  rememberMe,
 }: SignInCredentials): Promise<Session> {
+  setRememberMePreference(
+    rememberMe,
+  );
   const normalizedEmail =
     email.trim().toLowerCase();
 

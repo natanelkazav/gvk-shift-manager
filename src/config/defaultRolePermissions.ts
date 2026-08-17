@@ -44,6 +44,8 @@ export const ALL_PERMISSION_KEYS:
     'settings.view',
     'settings.manage',
 
+    'schedule_import.manage',
+
     'audit.view',
   ];
 

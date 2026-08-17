@@ -238,7 +238,6 @@ requiredPermissions: [
 
 requiredPermissions: [
   'shift_swaps.view',
-  'shift_swaps.approve',
 ],
     },
 
@@ -266,10 +265,7 @@ requiredPermissions: [
       icon:
         Settings,
 
-      requiredPermissions: [
-        'settings.view',
-        'settings.manage',
-      ],
+      requiredPermissions: [],
     },
   ];
 
@@ -430,6 +426,8 @@ const visibleNavigationItems =
       return navigationItems.filter(
         (item) => {
           const hasRequiredPermission =
+            item.requiredPermissions.length ===
+              0 ||
             item.requiredPermissions.some(
               (permission) =>
                 hasPermission(

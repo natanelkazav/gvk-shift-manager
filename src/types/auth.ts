@@ -51,7 +51,9 @@ export type PermissionKey =
   | 'users.manage'
 
   | 'settings.view'
-  | 'settings.manage';
+  | 'settings.manage'
+
+  | 'schedule_import.manage';
 
 export interface UserProfile {
   id: string;
@@ -79,4 +81,5 @@ export interface AuthState {
 export interface SignInCredentials {
   email: string;
   password: string;
+  rememberMe: boolean;
 }

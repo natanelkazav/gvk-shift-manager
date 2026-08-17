@@ -7,13 +7,10 @@ import {
   ClipboardList,
   RefreshCw,
   Send,
-  FileSpreadsheet,
   ShieldCheck,
   Trash2,
   UnlockKeyhole,
 } from 'lucide-react';
-import ScheduleImportPanel
-  from '../components/scheduleImport/ScheduleImportPanel';
 
 import DriverScheduleCalendar
   from '../components/driverSchedule/DriverScheduleCalendar';
@@ -89,7 +86,6 @@ type DriverScheduleWorkspaceTab =
   | 'periods'
   | 'submissions'
   | 'create-period'
-  | 'import-data'
   | 'my-availability';
 
 interface DriverScheduleWorkspaceTabDefinition {
@@ -761,13 +757,6 @@ const workspaceTabs =
         label: 'יצירת חודש',
         description: 'יצירת תקופת אילוצים חדשה',
         icon: CalendarPlus,
-        isVisible: canManageAvailability,
-      },
-      {
-        id: 'import-data',
-        label: 'ייבוא נתונים',
-        description: 'ייבוא לוחות שיבוץ וכוננויות מקובצי Excel',
-        icon: FileSpreadsheet,
         isVisible: canManageAvailability,
       },
       {
@@ -1894,15 +1883,6 @@ const isBusy =
               </div>
             </form>
           </section>
-      ) : null}
-      {canManageAvailability &&
-      effectiveWorkspaceTab ===
-        'import-data' ? (
-        <ScheduleImportPanel
-          disabled={
-            isBusy
-          }
-        />
       ) : null}
       {canSubmitAvailability &&
       effectiveWorkspaceTab ===

@@ -1,4 +1,5 @@
 import {
+  FileSpreadsheet,
   Settings,
   ShieldCheck,
 } from 'lucide-react';
@@ -7,14 +8,13 @@ import {
   useAuth,
 } from '../auth/AuthContext';
 
+import ScheduleImportPanel
+  from '../components/scheduleImport/ScheduleImportPanel';
+
 import PushNotificationSettings
   from '../components/settings/PushNotificationSettings';
 
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
   PageHeader,
 } from '../components/ui';
 
@@ -34,42 +34,35 @@ function SettingsPage() {
       'notifications.manage',
     );
 
-  const canManageScheduleImport =
+  const canImportSchedules =
     hasPermission(
-      'schedule.edit',
-    ) ||
-    hasPermission(
-      'users.manage',
+      'schedule_import.manage',
     );
 
   const canViewAdminActions =
     canManageNotifications ||
-    canManageScheduleImport;
+    canImportSchedules;
 
   return (
     <section className="settings-page">
       <PageHeader
         title="הגדרות"
-        description="ניהול העדפות אישיות ופעולות מערכת."
+        description="העדפות אישיות וכלי מערכת בהתאם להרשאות שלך."
       />
 
       <div className="settings-page-sections">
         <section className="settings-section">
           <div className="settings-section-header">
             <Settings
-              size={
-                22
-              }
+              size={22}
               aria-hidden="true"
             />
 
             <div>
-              <h2>
-                ההעדפות שלי
-              </h2>
+              <h2>ההעדפות שלי</h2>
 
               <p>
-                הגדרות אישיות שחלות על החשבון והמכשירים שלך.
+                הגדרות אישיות הזמינות לכל משתמש, כולל Push וזמן התראה לפני משמרת.
               </p>
             </div>
           </div>
@@ -81,42 +74,42 @@ function SettingsPage() {
           <section className="settings-section">
             <div className="settings-section-header">
               <ShieldCheck
-                size={
-                  22
-                }
+                size={22}
                 aria-hidden="true"
               />
 
               <div>
-                <h2>
-                  פעולות מנהל
-                </h2>
+                <h2>כלים ניהוליים</h2>
 
                 <p>
-                  כלים ניהוליים בהתאם להרשאות המשתמש.
+                  כלים שמופיעים רק כאשר קיימת למשתמש ההרשאה המתאימה.
                 </p>
               </div>
             </div>
 
-            <div className="settings-admin-grid">
+            <div className="settings-admin-stack">
               {canManageNotifications ? (
                 <PushTestNotification />
               ) : null}
 
-              {canManageScheduleImport ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      ייבוא קובץ שיבוצים
-                    </CardTitle>
-                  </CardHeader>
+              {canImportSchedules ? (
+                <section className="settings-import-section">
+                  <div className="settings-subsection-heading">
+                    <FileSpreadsheet
+                      size={20}
+                      aria-hidden="true"
+                    />
 
-                  <CardBody>
-                    <p className="settings-placeholder-text">
-                      לכאן נעביר את מנגנון ייבוא קובץ השיבוצים הקיים מלוח הכוננים.
-                    </p>
-                  </CardBody>
-                </Card>
+                    <div>
+                      <h3>ייבוא קובץ שיבוצים</h3>
+                      <p>
+                        ייבוא לוחות מוקדנים, כוננים וכונני בוקר מקובצי Excel.
+                      </p>
+                    </div>
+                  </div>
+
+                  <ScheduleImportPanel />
+                </section>
               ) : null}
             </div>
           </section>

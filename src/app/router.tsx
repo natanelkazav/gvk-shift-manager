@@ -262,25 +262,12 @@ export const router =
             },
 
             {
+              path:
+                'settings',
+
               element: (
-                <PermissionRoute
-                  anyPermissions={[
-                    'settings.view',
-                    'settings.manage',
-                  ]}
-                />
+                <SettingsPage />
               ),
-
-              children: [
-                {
-                  path:
-                    'settings',
-
-                  element: (
-                    <SettingsPage />
-                  ),
-                },
-              ],
             },
           {
             element: (
@@ -349,10 +336,7 @@ export const router =
             {
               element: (
                   <PermissionRoute
-                    anyPermissions={[
-                      'shift_swaps.view',
-                      'shift_swaps.approve',
-                    ]}
+                    permission="shift_swaps.view"
                   />
               ),
 
