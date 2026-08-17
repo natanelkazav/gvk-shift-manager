@@ -2026,115 +2026,6 @@ const canPublishSchedule =
         ) : null}
       </div>
 
-      {isPersonalScheduleUser ? (
-        <div
-          className="schedule-month-navigation"
-          aria-label="ניווט בין חודשי השיבוץ"
-        >
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={
-              isLoadingSelectedMonth
-            }
-            onClick={() => {
-              setSelectedCalendarDate(
-                null,
-              );
-              setSelectedMonth(
-                (current) =>
-                  moveMonth(
-                    current,
-                    -1,
-                  ),
-              );
-            }}
-          >
-            <ChevronRight
-              size={17}
-              aria-hidden="true"
-            />
-            חודש קודם
-          </Button>
-
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={
-              isLoadingSelectedMonth ||
-              isViewingCurrentMonth
-            }
-            onClick={() => {
-              setSelectedCalendarDate(
-                null,
-              );
-              setSelectedMonth(
-                getCurrentMonthSelection(),
-              );
-            }}
-          >
-            <CalendarDays
-              size={17}
-              aria-hidden="true"
-            />
-            היום
-          </Button>
-
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={
-              isLoadingSelectedMonth
-            }
-            onClick={() => {
-              setSelectedCalendarDate(
-                null,
-              );
-              setSelectedMonth(
-                (current) =>
-                  moveMonth(
-                    current,
-                    1,
-                  ),
-              );
-            }}
-          >
-            חודש הבא
-            <ChevronLeft
-              size={17}
-              aria-hidden="true"
-            />
-          </Button>
-        </div>
-      ) : null}
-
-      {isPersonalScheduleUser &&
-      selectedMonthError ? (
-        <div
-          className="schedule-error-banner"
-          role="alert"
-        >
-          <strong>
-            לא ניתן היה לטעון את החודש שנבחר
-          </strong>
-          <span>
-            {selectedMonthError}
-          </span>
-        </div>
-      ) : null}
-
-      {isPersonalScheduleUser &&
-      isLoadingSelectedMonth ? (
-        <div className="schedule-month-loading">
-          <RefreshCw
-            size={18}
-            className="schedule-loading-icon"
-            aria-hidden="true"
-          />
-          טוען את השיבוץ לחודש שנבחר...
-        </div>
-      ) : null}
-
       <div
         className="schedule-display-mode"
         role="group"
@@ -2463,8 +2354,123 @@ const canPublishSchedule =
               }{' '}
               משמרות.
             </p>
+
+            {isPersonalScheduleUser ? (
+              <strong className="schedule-month-section-viewed-month">
+                {selectedMonthTitle}
+              </strong>
+            ) : null}
           </div>
+
+          {isPersonalScheduleUser ? (
+            <div
+              className="schedule-month-navigation"
+              aria-label="ניווט בין חודשי השיבוץ"
+            >
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={
+                  isLoadingSelectedMonth
+                }
+                onClick={() => {
+                  setSelectedCalendarDate(
+                    null,
+                  );
+                  setSelectedMonth(
+                    (current) =>
+                      moveMonth(
+                        current,
+                        -1,
+                      ),
+                  );
+                }}
+              >
+                <ChevronRight
+                  size={17}
+                  aria-hidden="true"
+                />
+                חודש קודם
+              </Button>
+
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={
+                  isLoadingSelectedMonth ||
+                  isViewingCurrentMonth
+                }
+                onClick={() => {
+                  setSelectedCalendarDate(
+                    null,
+                  );
+                  setSelectedMonth(
+                    getCurrentMonthSelection(),
+                  );
+                }}
+              >
+                <CalendarDays
+                  size={17}
+                  aria-hidden="true"
+                />
+                היום
+              </Button>
+
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={
+                  isLoadingSelectedMonth
+                }
+                onClick={() => {
+                  setSelectedCalendarDate(
+                    null,
+                  );
+                  setSelectedMonth(
+                    (current) =>
+                      moveMonth(
+                        current,
+                        1,
+                      ),
+                  );
+                }}
+              >
+                חודש הבא
+                <ChevronLeft
+                  size={17}
+                  aria-hidden="true"
+                />
+              </Button>
+            </div>
+          ) : null}
         </div>
+
+        {isPersonalScheduleUser &&
+        selectedMonthError ? (
+          <div
+            className="schedule-error-banner schedule-month-feedback"
+            role="alert"
+          >
+            <strong>
+              לא ניתן היה לטעון את החודש שנבחר
+            </strong>
+            <span>
+              {selectedMonthError}
+            </span>
+          </div>
+        ) : null}
+
+        {isPersonalScheduleUser &&
+        isLoadingSelectedMonth ? (
+          <div className="schedule-month-loading schedule-month-feedback">
+            <RefreshCw
+              size={18}
+              className="schedule-loading-icon"
+              aria-hidden="true"
+            />
+            טוען את השיבוץ לחודש שנבחר...
+          </div>
+        ) : null}
 
         {displayMode ===
         'calendar' ? (

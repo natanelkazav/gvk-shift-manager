@@ -324,6 +324,14 @@
   background: #ffffff;
 }
 
+.schedule-month-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
 .schedule-month-section-header h2 {
   margin: 0;
   color: #0f172a;
@@ -920,6 +928,11 @@
 }
 
 @media (max-width: 760px) {
+  .schedule-month-section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .schedule-month-navigation {
     display: grid;
     grid-template-columns:
@@ -936,4 +949,15 @@
     padding-inline: 8px;
     font-size: 0.75rem;
   }
+}
+
+.schedule-month-section-viewed-month {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-primary-700);
+  font-size: 0.9rem;
+}
+
+.schedule-month-feedback {
+  margin-bottom: 14px;
 }
