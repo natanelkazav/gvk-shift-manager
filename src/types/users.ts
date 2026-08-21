@@ -15,6 +15,8 @@ export interface UpdateUserProfileInput {
   role?: UserRole;
   isActive?: boolean;
   mustChangePassword?: boolean;
+  hourlyRate?: number | null;
+  dailyDutyRate?: number | null;
 }
 
 export interface CreateUserInput {

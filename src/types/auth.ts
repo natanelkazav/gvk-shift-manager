@@ -40,6 +40,11 @@ export type PermissionKey =
 
   | 'statistics.view'
 
+  | 'payroll.view'
+  | 'payroll.manage'
+  | 'attendance.view'
+  | 'attendance.manage'
+
   | 'shift_swaps.view'
   | 'shift_swaps.approve'
 
@@ -66,6 +71,8 @@ export interface UserProfile {
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
+  hourlyRate?: number | null;
+  dailyDutyRate?: number | null;
 }
 
 export interface AuthState {

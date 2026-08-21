@@ -13,50 +13,26 @@ import type {
 } from '../types/statistics';
 
 interface StatisticsFilterState {
-  year:
-    number | null;
-
-  month:
-    number | null;
+  years: number[];
+  months: number[];
 }
 
 interface UseStatisticsResult {
   data:
     StatisticsDashboardResponse | null;
-
-  filters:
-    StatisticsFilterState;
-
+  filters: StatisticsFilterState;
   isLoading: boolean;
-
-  error:
-    string | null;
-
-  setYear:
-    (
-      year:
-        number | null,
-    ) => void;
-
-  setMonth:
-    (
-      month:
-        number | null,
-    ) => void;
-
-  load:
-    () => Promise<void>;
-
-  clearError:
-    () => void;
+  error: string | null;
+  setYears: (years: number[]) => void;
+  setMonths: (months: number[]) => void;
+  load: () => Promise<void>;
+  clearError: () => void;
 }
 
 function getErrorMessage(
   error: unknown,
 ): string {
-  if (
-    error instanceof Error
-  ) {
+  if (error instanceof Error) {
     return error.message;
   }
 
@@ -65,241 +41,151 @@ function getErrorMessage(
 
 function getInitialFilters():
   StatisticsFilterState {
-  const now =
-    new Date();
+  const now = new Date();
 
   return {
-    year:
-      now.getFullYear(),
-
-    month:
-      now.getMonth() + 1,
+    years: [now.getFullYear()],
+    months: [now.getMonth() + 1],
   };
 }
 
 export function useStatistics():
   UseStatisticsResult {
-  const [
-    data,
-    setData,
-  ] =
+  const [data, setData] =
     useState<StatisticsDashboardResponse | null>(
       null,
     );
 
-  const [
-    filters,
-    setFilters,
-  ] =
+  const [filters, setFilters] =
     useState<StatisticsFilterState>(
       getInitialFilters,
     );
 
-  const [
-    isLoading,
-    setIsLoading,
-  ] =
+  const [isLoading, setIsLoading] =
     useState(true);
 
-  const [
-    error,
-    setError,
-  ] =
-    useState<string | null>(
-      null,
-    );
+  const [error, setError] =
+    useState<string | null>(null);
 
-  useEffect(
-    () => {
-      let isCancelled =
-        false;
-
-      async function fetchStatistics():
-        Promise<void> {
-        try {
-          const response =
-            await statisticsService
-              .getStatisticsDashboard({
-                year:
-                  filters.year,
-
-                month:
-                  filters.month,
-              });
-
-          if (
-            isCancelled
-          ) {
-            return;
-          }
-
-          setData(
-            response,
-          );
-
-          setError(
-            null,
-          );
-        } catch (
-          loadError
-        ) {
-          if (
-            isCancelled
-          ) {
-            return;
-          }
-
-          setError(
-            getErrorMessage(
-              loadError,
-            ),
-          );
-        } finally {
-          if (
-            !isCancelled
-          ) {
-            setIsLoading(
-              false,
-            );
-          }
-        }
-      }
-
-      void fetchStatistics();
-
-      return () => {
-        isCancelled =
-          true;
-      };
-    },
-    [
-      filters.month,
-      filters.year,
-    ],
-  );
-
-  const load =
+  const fetchStatistics =
     useCallback(
-      async (): Promise<void> => {
-        setIsLoading(
-          true,
-        );
-
-        setError(
-          null,
-        );
-
-        try {
-          const response =
-            await statisticsService
-              .getStatisticsDashboard({
-                year:
-                  filters.year,
-
-                month:
-                  filters.month,
-              });
-
-          setData(
-            response,
-          );
-        } catch (
-          loadError
-        ) {
-          setError(
-            getErrorMessage(
-              loadError,
-            ),
-          );
-        } finally {
-          setIsLoading(
-            false,
-          );
-        }
-      },
+      async (): Promise<StatisticsDashboardResponse> =>
+        statisticsService
+          .getStatisticsDashboard({
+            years: filters.years,
+            months: filters.months,
+          }),
       [
-        filters.month,
-        filters.year,
+        filters.months,
+        filters.years,
       ],
     );
 
-  const setYear =
-    useCallback(
-      (
-        year:
-          number | null,
-      ): void => {
-        setIsLoading(
-          true,
-        );
+  useEffect(() => {
+    let isCancelled = false;
+
+    const run = async (): Promise<void> => {
+      setIsLoading(true);
+
+      try {
+        const response =
+          await fetchStatistics();
+
+        if (isCancelled) {
+          return;
+        }
+
+        setData(response);
+        setError(null);
+      } catch (loadError) {
+        if (isCancelled) {
+          return;
+        }
 
         setError(
-          null,
+          getErrorMessage(
+            loadError,
+          ),
         );
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
 
-        setFilters(
-          (
-            currentFilters,
-          ) => ({
-            ...currentFilters,
+    void run();
 
-            year,
+    return () => {
+      isCancelled = true;
+    };
+  }, [fetchStatistics]);
 
-            month:
-              year ===
-                null
-                ? null
-                : currentFilters.month,
-          }),
+  const load = useCallback(
+    async (): Promise<void> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        setData(
+          await fetchStatistics(),
         );
-      },
-      [],
-    );
-
-  const setMonth =
-    useCallback(
-      (
-        month:
-          number | null,
-      ): void => {
-        setIsLoading(
-          true,
-        );
-
+      } catch (loadError) {
         setError(
-          null,
+          getErrorMessage(
+            loadError,
+          ),
         );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchStatistics],
+  );
 
-        setFilters(
-          (
-            currentFilters,
-          ) => ({
-            ...currentFilters,
+  const setYears = useCallback(
+    (years: number[]): void => {
+      setError(null);
+      setFilters(
+        (currentFilters) => ({
+          years,
+          months:
+            years.length === 0
+              ? []
+              : currentFilters.months,
+        }),
+      );
+    },
+    [],
+  );
 
-            month,
-          }),
-        );
-      },
-      [],
-    );
+  const setMonths = useCallback(
+    (months: number[]): void => {
+      setError(null);
+      setFilters(
+        (currentFilters) => ({
+          ...currentFilters,
+          months,
+        }),
+      );
+    },
+    [],
+  );
 
-  const clearError =
-    useCallback(
-      (): void => {
-        setError(
-          null,
-        );
-      },
-      [],
-    );
+  const clearError = useCallback(
+    (): void => {
+      setError(null);
+    },
+    [],
+  );
 
   return {
     data,
     filters,
     isLoading,
     error,
-    setYear,
-    setMonth,
+    setYears,
+    setMonths,
     load,
     clearError,
   };

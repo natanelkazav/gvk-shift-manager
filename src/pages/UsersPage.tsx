@@ -50,6 +50,11 @@ function UsersPage() {
       'users.manage',
     );
 
+  const canManagePayroll =
+    hasPermission(
+      'payroll.manage',
+    );
+
   const canResetPasswords =
     authenticatedProfile?.role ===
       'admin';
@@ -547,6 +552,9 @@ function UsersPage() {
             currentUserId={
               authenticatedUser?.id ??
               null
+            }
+            canManagePayroll={
+              canManagePayroll
             }
             permissions={
               selectedUser &&

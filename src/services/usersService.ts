@@ -28,6 +28,8 @@ interface ProfileDatabaseRow {
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
+  hourly_rate: number | null;
+  daily_duty_rate: number | null;
 }
 
 interface ProfileDatabaseUpdate {
@@ -53,7 +55,9 @@ const PROFILE_COLUMNS = `
   must_change_password,
   last_login_at,
   created_at,
-  updated_at
+  updated_at,
+  hourly_rate,
+  daily_duty_rate
 `;
 
 function mapProfileRow(
@@ -77,6 +81,10 @@ function mapProfileRow(
       profileRow.created_at,
     updatedAt:
       profileRow.updated_at,
+    hourlyRate:
+      profileRow.hourly_rate,
+    dailyDutyRate:
+      profileRow.daily_duty_rate,
   };
 }
 
@@ -271,6 +279,39 @@ async function updateUser(
     );
   }
 
+  if (
+    input.hourlyRate !== undefined ||
+    input.dailyDutyRate !== undefined
+  ) {
+    await updateUserCompensation(
+      userId,
+      input.hourlyRate ?? null,
+      input.dailyDutyRate ?? null,
+    );
+
+    const {
+      data: refreshedProfile,
+      error: refreshedProfileError,
+    } = await supabase
+      .from('profiles')
+      .select(PROFILE_COLUMNS)
+      .eq('id', userId)
+      .single();
+
+    if (
+      refreshedProfileError ||
+      !refreshedProfile
+    ) {
+      throw new Error(
+        'השכר נשמר, אך לא ניתן היה לרענן את נתוני המשתמש.',
+      );
+    }
+
+    return mapProfileRow(
+      refreshedProfile as ProfileDatabaseRow,
+    );
+  }
+
   return mapProfileRow(
     data as ProfileDatabaseRow,
   );
@@ -317,6 +358,46 @@ async function setUserPermissions(
       userId,
       uniquePermissions,
     );
+}
+
+async function updateUserCompensation(
+  userId: string,
+  hourlyRate: number | null,
+  dailyDutyRate: number | null,
+): Promise<void> {
+  const normalizedUserId =
+    userId.trim();
+
+  if (!normalizedUserId) {
+    throw new Error(
+      'לא התקבל מזהה משתמש לעדכון השכר.',
+    );
+  }
+
+  const {
+    error,
+  } = await supabase.rpc(
+    'update_user_compensation',
+    {
+      target_user_id:
+        normalizedUserId,
+      requested_hourly_rate:
+        hourlyRate,
+      requested_daily_duty_rate:
+        dailyDutyRate,
+    },
+  );
+
+  if (error) {
+    console.error(
+      'UPDATE USER COMPENSATION ERROR:',
+      error,
+    );
+
+    throw new Error(
+      'לא ניתן היה לשמור את תעריף השכר של המשתמש.',
+    );
+  }
 }
 
 async function deleteUser(
@@ -458,6 +539,7 @@ export const usersService = {
   setUserActiveStatus,
   getUserPermissions,
   setUserPermissions,
+  updateUserCompensation,
   deleteUser,
   resetUserPassword,
 };

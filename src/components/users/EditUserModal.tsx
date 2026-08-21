@@ -40,6 +40,7 @@ interface EditUserModalProps {
   isOpen: boolean;
   isSaving: boolean;
   currentUserId: string | null;
+  canManagePayroll: boolean;
 
   permissions: PermissionKey[];
 
@@ -69,6 +70,8 @@ interface EditUserFormState {
   role: UserRole;
   isActive: boolean;
   mustChangePassword: boolean;
+  hourlyRate: string;
+  dailyDutyRate: string;
 }
 
 type EditUserTab =
@@ -93,6 +96,12 @@ function createFormState(
 
     mustChangePassword:
       user.mustChangePassword,
+
+    hourlyRate:
+      user.hourlyRate?.toString() ?? '',
+
+    dailyDutyRate:
+      user.dailyDutyRate?.toString() ?? '',
   };
 }
 
@@ -101,6 +110,7 @@ function EditUserModal({
   isOpen,
   isSaving,
   currentUserId,
+  canManagePayroll,
   permissions,
   isPermissionsLoading,
   permissionsError,
@@ -314,6 +324,30 @@ function EditUserModal({
         return 'לא ניתן לשמור לפני שהרשאות המשתמש נטענו בהצלחה.';
       }
 
+      if (
+        canManagePayroll &&
+        formState.role === 'dispatcher' &&
+        formState.hourlyRate.trim() &&
+        (
+          !Number.isFinite(Number(formState.hourlyRate)) ||
+          Number(formState.hourlyRate) < 0
+        )
+      ) {
+        return 'השכר השעתי חייב להיות מספר חיובי.';
+      }
+
+      if (
+        canManagePayroll &&
+        formState.role === 'on_call' &&
+        formState.dailyDutyRate.trim() &&
+        (
+          !Number.isFinite(Number(formState.dailyDutyRate)) ||
+          Number(formState.dailyDutyRate) < 0
+        )
+      ) {
+        return 'עלות הכוננות היומית חייבת להיות מספר חיובי.';
+      }
+
       return null;
     };
 
@@ -368,6 +402,26 @@ function EditUserModal({
           mustChangePassword:
             formState
               .mustChangePassword,
+
+          ...(canManagePayroll &&
+          formState.role === 'dispatcher'
+            ? {
+                hourlyRate:
+                  formState.hourlyRate.trim()
+                    ? Number(formState.hourlyRate)
+                    : null,
+              }
+            : {}),
+
+          ...(canManagePayroll &&
+          formState.role === 'on_call'
+            ? {
+                dailyDutyRate:
+                  formState.dailyDutyRate.trim()
+                    ? Number(formState.dailyDutyRate)
+                    : null,
+              }
+            : {}),
         },
         selectedPermissions,
       );
@@ -701,6 +755,58 @@ function EditUserModal({
                     setFormError(null);
                   }}
                 />
+
+                {canManagePayroll &&
+                formState.role === 'dispatcher' ? (
+                  <Input
+                    id="edit-user-hourly-rate"
+                    label="שכר שעתי (₪)"
+                    type="number"
+                    value={formState.hourlyRate}
+                    min="0"
+                    step="0.01"
+                    disabled={isSaving}
+                    onChange={(event) => {
+                      setFormState(
+                        (currentState) =>
+                          currentState
+                            ? {
+                                ...currentState,
+                                hourlyRate:
+                                  event.target.value,
+                              }
+                            : currentState,
+                      );
+                      setFormError(null);
+                    }}
+                  />
+                ) : null}
+
+                {canManagePayroll &&
+                formState.role === 'on_call' ? (
+                  <Input
+                    id="edit-user-daily-duty-rate"
+                    label="עלות כוננות יומית (₪)"
+                    type="number"
+                    value={formState.dailyDutyRate}
+                    min="0"
+                    step="0.01"
+                    disabled={isSaving}
+                    onChange={(event) => {
+                      setFormState(
+                        (currentState) =>
+                          currentState
+                            ? {
+                                ...currentState,
+                                dailyDutyRate:
+                                  event.target.value,
+                              }
+                            : currentState,
+                      );
+                      setFormError(null);
+                    }}
+                  />
+                ) : null}
 
                 <label className="edit-user-field">
                   <span>תפקיד</span>

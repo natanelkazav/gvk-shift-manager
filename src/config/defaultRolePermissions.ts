@@ -33,6 +33,11 @@ export const ALL_PERMISSION_KEYS:
 
     'statistics.view',
 
+    'payroll.view',
+    'payroll.manage',
+    'attendance.view',
+    'attendance.manage',
+
     'shift_swaps.view',
     'shift_swaps.approve',
 
@@ -83,6 +88,9 @@ export const DEFAULT_ROLE_PERMISSIONS:
       'notifications.manage',
 
       'statistics.view',
+
+      'payroll.view',
+      'attendance.view',
 
       'shift_swaps.view',
       'shift_swaps.approve',

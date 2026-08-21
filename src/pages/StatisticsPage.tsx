@@ -8,6 +8,10 @@ import {
 } from 'react';
 
 import {
+  useAuth,
+} from '../auth/AuthContext';
+
+import {
   Button,
   PageHeader,
 } from '../components/ui';
@@ -15,6 +19,9 @@ import {
 import {
   useStatistics,
 } from '../hooks/useStatistics';
+
+import StatisticsMultiSelect
+  from '../features/statistics/components/StatisticsMultiSelect';
 
 import StatisticsViewSwitcher, {
   type StatisticsDisplayMode,
@@ -29,12 +36,16 @@ import StatisticsChartsView
 import StatisticsTablesView
   from '../features/statistics/views/StatisticsTablesView';
 
+import PayrollStatisticsView
+  from '../features/statistics/views/PayrollStatisticsView';
+
 import '../styles/statistics.css';
 
 type StatisticsSectionFilter =
   | 'all'
   | 'dispatchers'
-  | 'drivers';
+  | 'drivers'
+  | 'payroll';
 
 const hebrewMonths = [
   'ינואר',
@@ -53,78 +64,130 @@ const hebrewMonths = [
 
 function StatisticsPage() {
   const {
+    hasPermission,
+  } = useAuth();
+
+  const {
     data,
     filters,
     isLoading,
     error,
-    setYear,
-    setMonth,
+    setYears,
+    setMonths,
     load,
-  } =
-    useStatistics();
+  } = useStatistics();
 
   const [
     sectionFilter,
     setSectionFilter,
-  ] =
-    useState<StatisticsSectionFilter>(
-      'all',
-    );
+  ] = useState<StatisticsSectionFilter>(
+    'all',
+  );
 
   const [
     displayMode,
     setDisplayMode,
-  ] =
-    useState<StatisticsDisplayMode>(
-      'dashboard',
+  ] = useState<StatisticsDisplayMode>(
+    'dashboard',
+  );
+
+  const canViewPayroll =
+    hasPermission(
+      'payroll.view',
     );
 
   const availableYears =
-    useMemo(
-      () => {
-        const currentYear =
-          new Date()
-            .getFullYear();
+    useMemo(() => {
+      const currentYear =
+        new Date().getFullYear();
 
-        return Array.from(
-          {
-            length: 7,
-          },
-          (
-            _,
-            index,
-          ) =>
-            currentYear -
-            5 +
-            index,
-        );
-      },
-      [],
+      return Array.from(
+        {
+          length:
+            currentYear - 2020 + 2,
+        },
+        (_, index) =>
+          2020 + index,
+      );
+    }, []);
+
+  const yearOptions =
+    availableYears.map(
+      (year) => ({
+        value: year,
+        label: String(year),
+      }),
+    );
+
+  const monthOptions =
+    hebrewMonths.map(
+      (monthName, index) => ({
+        value: index + 1,
+        label: monthName,
+      }),
     );
 
   const periodLabel =
-    filters.year ===
-      null
-      ? 'כל התקופה'
-      : filters.month ===
-          null
-        ? `שנת ${filters.year}`
-        : `${hebrewMonths[
-            filters.month - 1
-          ]} ${filters.year}`;
+    useMemo(() => {
+      const yearsLabel =
+        filters.years.length === 0
+          ? 'כל השנים'
+          : filters.years.join(', ');
+
+      const monthsLabel =
+        filters.months.length === 0
+          ? 'כל החודשים'
+          : filters.months
+              .map(
+                (month) =>
+                  hebrewMonths[
+                    month - 1
+                  ],
+              )
+              .join(', ');
+
+      if (
+        filters.years.length === 0
+      ) {
+        return 'כל התקופה';
+      }
+
+      return `${monthsLabel} | ${yearsLabel}`;
+    }, [filters.months, filters.years]);
+
+  const sectionOptions = [
+    {
+      value: 'all' as const,
+      label: 'הכול',
+    },
+    {
+      value: 'dispatchers' as const,
+      label: 'מוקדנים',
+    },
+    {
+      value: 'drivers' as const,
+      label: 'כוננים',
+    },
+    ...(canViewPayroll
+      ? [
+          {
+            value: 'payroll' as const,
+            label: 'שכר ונוכחות',
+          },
+        ]
+      : []),
+  ];
 
   return (
     <section className="statistics-page">
       <PageHeader
         title="סטטיסטיקות"
-        description="נתוני משמרות, כוננויות, מגמות וחלוקת עבודה."
+        description="נתוני משמרות, כוננויות, מגמות, חלוקת עבודה ושכר צפוי לפי הרשאה."
         actions={
           <Button
             type="button"
             variant="secondary"
-            disabled={
-              isLoading
-            }
+            disabled={isLoading}
             onClick={() => {
               void load();
             }}
@@ -157,149 +220,47 @@ function StatisticsPage() {
           </strong>
         </div>
 
-        <label>
-          <span>
-            שנה
-          </span>
+        <StatisticsMultiSelect
+          label="שנים"
+          allLabel="כל השנים"
+          selectedValues={
+            filters.years
+          }
+          options={yearOptions}
+          disabled={isLoading}
+          onChange={setYears}
+        />
 
-          <select
-            value={
-              filters.year ??
-              ''
-            }
-            disabled={
-              isLoading
-            }
-            onChange={(
-              event,
-            ) => {
-              const value =
-                event.target
-                  .value;
-
-              setYear(
-                value
-                  ? Number(
-                      value,
-                    )
-                  : null,
-              );
-            }}
-          >
-            <option value="">
-              כל השנים
-            </option>
-
-            {availableYears.map(
-              (
-                year,
-              ) => (
-                <option
-                  key={
-                    year
-                  }
-                  value={
-                    year
-                  }
-                >
-                  {year}
-                </option>
-              ),
-            )}
-          </select>
-        </label>
-
-        <label>
-          <span>
-            חודש
-          </span>
-
-          <select
-            value={
-              filters.month ??
-              ''
-            }
-            disabled={
-              isLoading ||
-              filters.year ===
-                null
-            }
-            onChange={(
-              event,
-            ) => {
-              const value =
-                event.target
-                  .value;
-
-              setMonth(
-                value
-                  ? Number(
-                      value,
-                    )
-                  : null,
-              );
-            }}
-          >
-            <option value="">
-              כל השנה
-            </option>
-
-            {hebrewMonths.map(
-              (
-                monthName,
-                index,
-              ) => (
-                <option
-                  key={
-                    monthName
-                  }
-                  value={
-                    index + 1
-                  }
-                >
-                  {monthName}
-                </option>
-              ),
-            )}
-          </select>
-        </label>
+        <StatisticsMultiSelect
+          label="חודשים"
+          allLabel="כל החודשים"
+          selectedValues={
+            filters.months
+          }
+          options={monthOptions}
+          disabled={
+            isLoading ||
+            filters.years.length === 0
+          }
+          onChange={setMonths}
+        />
       </section>
+
+      {filters.years.length === 0 ? (
+        <div className="statistics-filter-note">
+          בחירת חודשים ספציפיים זמינה לאחר בחירת שנה אחת או יותר. כאשר נבחרות "כל השנים", מוצגת כל התקופה.
+        </div>
+      ) : null}
 
       <div className="statistics-toolbar">
         <section
           className="statistics-section-filter"
           aria-label="סינון סוג סטטיסטיקה"
         >
-          {[
-            {
-              value:
-                'all' as const,
-
-              label:
-                'הכול',
-            },
-            {
-              value:
-                'dispatchers' as const,
-
-              label:
-                'מוקדנים',
-            },
-            {
-              value:
-                'drivers' as const,
-
-              label:
-                'כוננים',
-            },
-          ].map(
-            (
-              option,
-            ) => (
+          {sectionOptions.map(
+            (option) => (
               <button
-                key={
-                  option.value
-                }
+                key={option.value}
                 type="button"
                 className={
                   sectionFilter ===
@@ -317,22 +278,18 @@ function StatisticsPage() {
                   );
                 }}
               >
-                {
-                  option.label
-                }
+                {option.label}
               </button>
             ),
           )}
         </section>
 
-        <StatisticsViewSwitcher
-          value={
-            displayMode
-          }
-          onChange={
-            setDisplayMode
-          }
-        />
+        {sectionFilter !== 'payroll' ? (
+          <StatisticsViewSwitcher
+            value={displayMode}
+            onChange={setDisplayMode}
+          />
+        ) : null}
       </div>
 
       {error ? (
@@ -341,18 +298,14 @@ function StatisticsPage() {
           role="alert"
         >
           <strong>
-            לא ניתן היה לטעון את
-            הסטטיסטיקות
+            לא ניתן היה לטעון את הסטטיסטיקות
           </strong>
 
-          <span>
-            {error}
-          </span>
+          <span>{error}</span>
         </div>
       ) : null}
 
-      {isLoading &&
-      !data ? (
+      {isLoading && !data ? (
         <div className="statistics-loading">
           <RefreshCw
             size={30}
@@ -366,14 +319,21 @@ function StatisticsPage() {
         </div>
       ) : null}
 
-      {data ? (
+      {sectionFilter === 'payroll' &&
+      canViewPayroll ? (
+        <PayrollStatisticsView
+          years={filters.years}
+          months={filters.months}
+        />
+      ) : null}
+
+      {data &&
+      sectionFilter !== 'payroll' ? (
         <>
           {displayMode ===
           'dashboard' ? (
             <StatisticsDashboardView
-              data={
-                data
-              }
+              data={data}
               sectionFilter={
                 sectionFilter
               }
@@ -383,9 +343,7 @@ function StatisticsPage() {
           {displayMode ===
           'charts' ? (
             <StatisticsChartsView
-              data={
-                data
-              }
+              data={data}
               sectionFilter={
                 sectionFilter
               }
@@ -395,9 +353,7 @@ function StatisticsPage() {
           {displayMode ===
           'tables' ? (
             <StatisticsTablesView
-              data={
-                data
-              }
+              data={data}
               sectionFilter={
                 sectionFilter
               }

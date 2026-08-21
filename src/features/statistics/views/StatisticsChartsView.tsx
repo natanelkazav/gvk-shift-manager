@@ -8,6 +8,9 @@ import StatisticsBarChart
 import StatisticsPieChart
   from '../components/StatisticsPieChart';
 
+import StatisticsTrendChart
+  from '../components/StatisticsTrendChart';
+
 interface StatisticsChartsViewProps {
   data:
     StatisticsDashboardResponse;
@@ -34,6 +37,12 @@ function StatisticsChartsView({
   data,
   sectionFilter,
 }: StatisticsChartsViewProps) {
+  const monthLabel = (
+    year: number,
+    month: number,
+  ): string =>
+    `${String(month).padStart(2, '0')}/${String(year).slice(-2)}`;
+
   return (
     <section className="statistics-charts-grid">
       {sectionFilter !==
@@ -143,6 +152,40 @@ function StatisticsChartsView({
             }
           />
 
+          <StatisticsTrendChart
+            title="מגמת משמרות לאורך זמן"
+            description="מספר משמרות המוקדנים בכל חודש בתקופה שנבחרה."
+            points={
+              data.monthlyStatistics.map(
+                (row) => ({
+                  label: monthLabel(
+                    row.year,
+                    row.month,
+                  ),
+                  value:
+                    row.dispatcherShiftCount,
+                }),
+              )
+            }
+          />
+
+          <StatisticsBarChart
+            title="משמרות 200% לפי מוקדן"
+            items={
+              data.dispatcherStatistics.map(
+                (dispatcher) => ({
+                  label:
+                    getDisplayName(
+                      dispatcher.displayName,
+                      dispatcher.scheduleName,
+                    ),
+                  value:
+                    dispatcher.premiumShifts,
+                }),
+              )
+            }
+          />
+
           <StatisticsBarChart
             title="משמרות לילה לפי מוקדן"
             items={
@@ -191,6 +234,40 @@ function StatisticsChartsView({
                     .weekendDriverDuties,
               },
             ]}
+          />
+
+          <StatisticsTrendChart
+            title="מגמת כוננויות לאורך זמן"
+            description="מספר הכוננויות בכל חודש בתקופה שנבחרה."
+            points={
+              data.monthlyStatistics.map(
+                (row) => ({
+                  label: monthLabel(
+                    row.year,
+                    row.month,
+                  ),
+                  value:
+                    row.driverDutyCount,
+                }),
+              )
+            }
+          />
+
+          <StatisticsBarChart
+            title="כוננויות סופ״ש לפי כונן"
+            items={
+              data.driverStatistics.map(
+                (driver) => ({
+                  label:
+                    getDisplayName(
+                      driver.displayName,
+                      driver.scheduleName,
+                    ),
+                  value:
+                    driver.weekendDuties,
+                }),
+              )
+            }
           />
 
           <StatisticsBarChart
