@@ -11,7 +11,6 @@ interface RequestingProfile {
   id: string;
   email: string;
   display_name: string;
-  role: string;
   is_active: boolean;
 }
 
@@ -19,11 +18,12 @@ interface TargetProfile {
   id: string;
   email: string;
   display_name: string;
-  must_change_password: boolean;
+  is_active: boolean;
 }
 
-const TEMPORARY_PASSWORD =
-  '12345678';
+interface PermissionRow {
+  permission_key: string;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin':
@@ -61,7 +61,7 @@ function getRequiredEnvironmentVariable(
   const value =
     Deno.env.get(
       variableName,
-    );
+    )?.trim();
 
   if (!value) {
     throw new Error(
@@ -106,7 +106,6 @@ async function getAuthenticatedUser(
     data: {
       user,
     },
-
     error,
   } =
     await authenticationClient
@@ -181,6 +180,11 @@ Deno.serve(
           'SUPABASE_SERVICE_ROLE_KEY',
         );
 
+      const passwordResetRedirectUrl =
+        getRequiredEnvironmentVariable(
+          'PASSWORD_RESET_REDIRECT_URL',
+        );
+
       const authorizationHeader =
         request.headers.get(
           'Authorization',
@@ -235,7 +239,6 @@ Deno.serve(
       const {
         data:
           requestingProfile,
-
         error:
           requestingProfileError,
       } =
@@ -247,7 +250,6 @@ Deno.serve(
             id,
             email,
             display_name,
-            role,
             is_active
           `)
           .eq(
@@ -272,15 +274,51 @@ Deno.serve(
       }
 
       if (
-        requestingProfile.role !==
-          'admin' ||
         !requestingProfile
           .is_active
       ) {
         return createJsonResponse(
           {
             error:
-              'אין לך הרשאה לאפס סיסמאות של משתמשים.',
+              'המשתמש המחובר אינו פעיל.',
+          },
+          403,
+        );
+      }
+
+      const {
+        data:
+          managementPermission,
+        error:
+          permissionError,
+      } =
+        await adminClient
+          .from(
+            'user_permissions',
+          )
+          .select(
+            'permission_key',
+          )
+          .eq(
+            'user_id',
+            requestingProfile.id,
+          )
+          .eq(
+            'permission_key',
+            'users.manage',
+          )
+          .maybeSingle<
+            PermissionRow
+          >();
+
+      if (
+        permissionError ||
+        !managementPermission
+      ) {
+        return createJsonResponse(
+          {
+            error:
+              'אין לך הרשאה לשלוח קישורי איפוס סיסמה.',
           },
           403,
         );
@@ -322,7 +360,6 @@ Deno.serve(
       const {
         data:
           targetProfile,
-
         error:
           targetProfileError,
       } =
@@ -334,7 +371,7 @@ Deno.serve(
             id,
             email,
             display_name,
-            must_change_password
+            is_active
           `)
           .eq(
             'id',
@@ -364,91 +401,60 @@ Deno.serve(
         );
       }
 
-      const previousMustChangePassword =
-        targetProfile
-          .must_change_password;
-
-      const {
-        error:
-          profileUpdateError,
-      } =
-        await adminClient
-          .from(
-            'profiles',
-          )
-          .update({
-            must_change_password:
-              true,
-
-            updated_at:
-              new Date()
-                .toISOString(),
-          })
-          .eq(
-            'id',
-            targetUserId,
-          );
-
       if (
-        profileUpdateError
+        !targetProfile
+          .is_active
       ) {
-        throw new Error(
-          'לא ניתן היה לסמן שהמשתמש חייב להחליף סיסמה.',
+        return createJsonResponse(
+          {
+            error:
+              'לא ניתן לשלוח קישור איפוס למשתמש שאינו פעיל.',
+          },
+          400,
         );
       }
 
+      const recoveryClient =
+        createClient(
+          supabaseUrl,
+          publishableKey,
+          {
+            auth: {
+              autoRefreshToken:
+                false,
+
+              persistSession:
+                false,
+            },
+          },
+        );
+
       const {
         error:
-          passwordUpdateError,
+          recoveryError,
       } =
-        await adminClient
+        await recoveryClient
           .auth
-          .admin
-          .updateUserById(
-            targetUserId,
+          .resetPasswordForEmail(
+            targetProfile.email,
             {
-              password:
-                TEMPORARY_PASSWORD,
+              redirectTo:
+                passwordResetRedirectUrl,
             },
           );
 
       if (
-        passwordUpdateError
+        recoveryError
       ) {
-        const {
-          error:
-            rollbackError,
-        } =
-          await adminClient
-            .from(
-              'profiles',
-            )
-            .update({
-              must_change_password:
-                previousMustChangePassword,
-
-              updated_at:
-                new Date()
-                  .toISOString(),
-            })
-            .eq(
-              'id',
-              targetUserId,
-            );
-
-        if (
-          rollbackError
-        ) {
-          console.error(
-            'RESET PASSWORD PROFILE ROLLBACK ERROR:',
-            rollbackError,
-          );
-        }
+        console.error(
+          'SEND PASSWORD RECOVERY EMAIL ERROR:',
+          recoveryError,
+        );
 
         return createJsonResponse(
           {
             error:
-              'לא ניתן היה לאפס את סיסמת המשתמש.',
+              'לא ניתן היה לשלוח את קישור איפוס הסיסמה. נסה שוב מאוחר יותר.',
           },
           400,
         );
@@ -490,24 +496,23 @@ Deno.serve(
               'user',
 
             summary:
-              `אופסה הסיסמה של ${targetProfile.display_name}`,
+              `נשלח קישור איפוס סיסמה ל${targetProfile.display_name}`,
 
-            old_values: {
-              must_change_password:
-                previousMustChangePassword,
-            },
+            old_values:
+              null,
 
-            new_values: {
-              must_change_password:
-                true,
-            },
+            new_values:
+              null,
 
             metadata: {
               source:
                 'reset-user-password-edge-function',
 
-              temporary_password:
-                false,
+              mode:
+                'recovery_email',
+
+              redirect_url:
+                passwordResetRedirectUrl,
             },
           });
 
@@ -528,9 +533,6 @@ Deno.serve(
           success:
             true,
 
-          temporaryPassword:
-            TEMPORARY_PASSWORD,
-
           user: {
             userId:
               targetProfile.id,
@@ -542,7 +544,7 @@ Deno.serve(
               targetProfile
                 .display_name,
 
-            mustChangePassword:
+            emailSent:
               true,
           },
 
@@ -563,7 +565,7 @@ Deno.serve(
           error:
             error instanceof Error
               ? error.message
-              : 'אירעה שגיאה בלתי צפויה באיפוס הסיסמה.',
+              : 'אירעה שגיאה בלתי צפויה בשליחת קישור איפוס הסיסמה.',
         },
         500,
       );

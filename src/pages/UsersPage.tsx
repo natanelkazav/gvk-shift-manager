@@ -38,8 +38,6 @@ const initialFilters:
 function UsersPage() {
   const {
     user: authenticatedUser,
-    profile:
-      authenticatedProfile,
     refreshProfile,
     refreshPermissions,
     hasPermission,
@@ -56,8 +54,9 @@ function UsersPage() {
     );
 
   const canResetPasswords =
-    authenticatedProfile?.role ===
-      'admin';
+    hasPermission(
+      'users.manage',
+    );
 
   const [
     filters,
@@ -364,9 +363,8 @@ function UsersPage() {
 
       const confirmed =
         window.confirm(
-          `האם לאפס את הסיסמה של ${profile.displayName}?\n\n` +
-          'הסיסמה החדשה תהיה: 12345678\n\n' +
-          'המשתמש יידרש להחליף את הסיסמה לאחר הכניסה הבאה.',
+          `האם לשלוח ל${profile.displayName} קישור מאובטח לאיפוס הסיסמה?\n\n` +
+          `הקישור יישלח לכתובת ${profile.email}.`,
         );
 
       if (!confirmed) {
@@ -447,18 +445,21 @@ function UsersPage() {
           className="users-success"
           role="status"
         >
-          הסיסמה של{' '}
+          קישור מאובטח לאיפוס הסיסמה נשלח אל{' '}
+          <strong>
+            {
+              lastResetPasswordResult
+                .email
+            }
+          </strong>
+          {' '}עבור{' '}
           <strong>
             {
               lastResetPasswordResult
                 .displayName
             }
-          </strong>{' '}
-          אופסה בהצלחה ל־
-          <strong>
-            12345678
           </strong>
-          . המשתמש יידרש להחליף אותה לאחר הכניסה הבאה.
+          .
         </div>
       ) : null}
 

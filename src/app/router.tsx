@@ -37,6 +37,9 @@ import DriverSchedulePage
 import LoginPage
   from '../pages/LoginPage';
 
+import ResetPasswordPage
+  from '../pages/ResetPasswordPage';
+
 import MorningDriverAvailabilityPage
   from '../pages/MorningDriverAvailabilityPage';
 
@@ -63,6 +66,15 @@ import UsersPage
 
 export const router =
   createBrowserRouter([
+    {
+      path:
+        '/reset-password',
+
+      element: (
+        <ResetPasswordPage />
+      ),
+    },
+
     {
       element:
         <PublicOnlyRoute />,

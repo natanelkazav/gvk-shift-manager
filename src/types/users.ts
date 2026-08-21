@@ -64,12 +64,11 @@ export interface ResetUserPasswordResult {
   userId: string;
   email: string;
   displayName: string;
-  mustChangePassword: true;
+  emailSent: true;
 }
 
 export interface ResetUserPasswordResponse {
   success: boolean;
-  temporaryPassword: string;
   user: ResetUserPasswordResult;
   auditLogged: boolean;
 }
