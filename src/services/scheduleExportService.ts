@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs';
+import type ExcelJS from 'exceljs';
 
 import {
   driverScheduleService,
@@ -792,8 +792,15 @@ async function loadTemplate():
     await response
       .arrayBuffer();
 
+  const excelJsModule =
+    await import(
+      'exceljs'
+    );
+
   const workbook =
-    new ExcelJS.Workbook();
+    new excelJsModule
+      .default
+      .Workbook();
 
   await workbook.xlsx.load(
     arrayBuffer,
@@ -1151,6 +1158,14 @@ class ScheduleExportService {
           dateKey,
         ) ??
         null;
+
+      worksheet.mergeCells(
+        `H${firstRow}:H${
+          firstRow +
+          ROWS_PER_DAY -
+          1
+        }`,
+      );
 
       const notesCell =
         worksheet.getCell(
