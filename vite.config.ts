@@ -24,7 +24,7 @@ export default defineConfig({
         'sw.ts',
 
       registerType:
-        'autoUpdate',
+        'prompt',
 
       includeAssets: [
         'favicon.svg',

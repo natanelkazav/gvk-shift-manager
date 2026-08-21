@@ -1,0 +1,143 @@
+.pwa-update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-block-end: 20px;
+  padding: 16px 18px;
+  border: 1px solid #bfdbfe;
+  border-inline-start: 5px solid #2563eb;
+  border-radius: 14px;
+  background: #eff6ff;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 8%);
+}
+
+.pwa-update-banner-main {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.pwa-update-banner-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.pwa-update-banner-content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pwa-update-banner-content strong {
+  color: #0f172a;
+  font-size: 0.93rem;
+}
+
+.pwa-update-banner-content span {
+  color: #475569;
+  font-size: 0.79rem;
+  line-height: 1.55;
+}
+
+.pwa-update-banner-error {
+  margin-block-start: 3px;
+  color: #b91c1c;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.pwa-update-banner-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.pwa-update-button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 9px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    opacity 150ms ease;
+}
+
+.pwa-update-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.pwa-update-button-primary {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.pwa-update-button-primary:not(:disabled):hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.pwa-update-button-secondary {
+  border: 1px solid #bfdbfe;
+  background: #ffffff;
+  color: #334155;
+}
+
+.pwa-update-button-secondary:not(:disabled):hover {
+  background: #f8fafc;
+}
+
+.pwa-update-button-spinner {
+  animation: pwa-update-spin 850ms linear infinite;
+}
+
+@keyframes pwa-update-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .pwa-update-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pwa-update-banner-actions {
+    width: 100%;
+  }
+
+  .pwa-update-button {
+    flex: 1 1 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .pwa-update-banner-actions {
+    flex-direction: column;
+  }
+
+  .pwa-update-button {
+    width: 100%;
+  }
+}

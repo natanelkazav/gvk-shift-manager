@@ -192,6 +192,54 @@ interface ExtendedNotificationOptions
   extends NotificationOptions {
   vibrate?: number[];
 }
+
+const skipWaitingMessageType =
+  'SKIP_WAITING';
+
+self.addEventListener(
+  'message',
+  (
+    event:
+      ExtendableMessageEvent,
+  ) => {
+    if (
+      typeof event.data !==
+        'object' ||
+      event.data ===
+        null
+    ) {
+      return;
+    }
+
+    const message =
+      event.data as {
+        type?: unknown;
+      };
+
+    if (
+      message.type !==
+        skipWaitingMessageType
+    ) {
+      return;
+    }
+
+    event.waitUntil(
+      self.skipWaiting(),
+    );
+  },
+);
+
+self.addEventListener(
+  'activate',
+  (
+    event:
+      ExtendableEvent,
+  ) => {
+    event.waitUntil(
+      self.clients.claim(),
+    );
+  },
+);
 self.addEventListener(
   'push',
   (

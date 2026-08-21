@@ -19,6 +19,9 @@ import {
 import PushPermissionPrompt
   from '../features/push/components/PushPermissionPrompt';
 
+import PwaUpdatePrompt
+  from '../features/pwa/components/PwaUpdatePrompt';
+
 import NotificationClickHandler
   from '../features/notifications/components/NotificationClickHandler';
 
@@ -703,6 +706,8 @@ return (
         </header>
 
         <main className="app-main">
+          <PwaUpdatePrompt />
+
           <PushPermissionPrompt />
 
           <Outlet />
