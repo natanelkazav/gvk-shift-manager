@@ -273,6 +273,59 @@ async function changePassword(
   }
 }
 
+
+async function requestPasswordReset(
+  email: string,
+): Promise<void> {
+  const normalizedEmail =
+    email
+      .trim()
+      .toLowerCase();
+
+  if (
+    !normalizedEmail ||
+    !normalizedEmail.includes(
+      '@',
+    )
+  ) {
+    throw new Error(
+      'יש להזין כתובת אימייל תקינה.',
+    );
+  }
+
+  const redirectUrl =
+    `${window.location.origin}/reset-password`;
+
+  const {
+    error,
+  } =
+    await supabase.auth
+      .resetPasswordForEmail(
+        normalizedEmail,
+        {
+          redirectTo:
+            redirectUrl,
+        },
+      );
+
+  if (
+    error
+  ) {
+    console.error(
+      'PASSWORD RESET REQUEST ERROR:',
+      error,
+    );
+
+    /*
+     * בכוונה לא חושפים למשתמש האם
+     * כתובת האימייל קיימת במערכת.
+     */
+    throw new Error(
+      'לא ניתן היה לשלוח כרגע את בקשת האיפוס. נסה שוב מאוחר יותר.',
+    );
+  }
+}
+
 export const authService = {
   signIn,
   signOut,
@@ -280,4 +333,5 @@ export const authService = {
   getProfile,
   recordLogin,
   changePassword,
+  requestPasswordReset,
 };

@@ -13,6 +13,9 @@ import {
 } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import {
+  authService,
+} from '../services/authService';
+import {
   Button,
   Input,
 } from '../components/ui';
@@ -42,6 +45,18 @@ function LoginPage() {
     useState(false);
 
   const [formError, setFormError] =
+    useState<string | null>(null);
+
+  const [
+    isSendingPasswordReset,
+    setIsSendingPasswordReset,
+  ] =
+    useState(false);
+
+  const [
+    passwordResetMessage,
+    setPasswordResetMessage,
+  ] =
     useState<string | null>(null);
 
   useEffect(() => {
@@ -118,6 +133,67 @@ function LoginPage() {
     }
   };
 
+  const handleForgotPassword =
+    async (): Promise<void> => {
+      const normalizedEmail =
+        email
+          .trim()
+          .toLowerCase();
+
+      setPasswordResetMessage(
+        null,
+      );
+      setFormError(
+        null,
+      );
+      clearError();
+
+      if (
+        !normalizedEmail ||
+        !normalizedEmail.includes(
+          '@',
+        )
+      ) {
+        setFormError(
+          'הזן קודם כתובת אימייל תקינה בשדה האימייל.',
+        );
+
+        return;
+      }
+
+      setIsSendingPasswordReset(
+        true,
+      );
+
+      try {
+        await authService
+          .requestPasswordReset(
+            normalizedEmail,
+          );
+
+        /*
+         * הודעה כללית בכוונה:
+         * לא חושפים האם האימייל קיים במערכת.
+         */
+        setPasswordResetMessage(
+          'אם קיימת כתובת משתמש תואמת, נשלח אליה קישור לאיפוס הסיסמה.',
+        );
+      } catch (
+        resetError
+      ) {
+        setFormError(
+          resetError instanceof
+            Error
+            ? resetError.message
+            : 'לא ניתן היה לשלוח כרגע את בקשת האיפוס.',
+        );
+      } finally {
+        setIsSendingPasswordReset(
+          false,
+        );
+      }
+    };
+
   const displayedError =
     formError ?? error;
 
@@ -160,6 +236,15 @@ function LoginPage() {
             </div>
           ) : null}
 
+          {passwordResetMessage ? (
+            <div
+              className="auth-success"
+              role="status"
+            >
+              {passwordResetMessage}
+            </div>
+          ) : null}
+
           <form
             className="auth-form"
             onSubmit={handleSubmit}
@@ -182,6 +267,9 @@ function LoginPage() {
                 );
 
                 setFormError(null);
+                setPasswordResetMessage(
+                  null,
+                );
               }}
               required
             />
@@ -207,6 +295,26 @@ function LoginPage() {
               required
             />
 
+            <div className="auth-forgot-password-row">
+              <button
+                type="button"
+                className="auth-forgot-password-button"
+                disabled={
+                  isSubmitting ||
+                  isSendingPasswordReset
+                }
+                onClick={() => {
+                  void handleForgotPassword();
+                }}
+              >
+                {
+                  isSendingPasswordReset
+                    ? 'שולח קישור לאיפוס...'
+                    : 'שכחתי סיסמה'
+                }
+              </button>
+            </div>
+
             <label className="auth-remember-row">
               <input
                 type="checkbox"
@@ -230,7 +338,10 @@ function LoginPage() {
             <Button
               type="submit"
               className="auth-submit-button"
-              disabled={isSubmitting}
+              disabled={
+                isSubmitting ||
+                isSendingPasswordReset
+              }
             >
               <LogIn
                 size={19}
