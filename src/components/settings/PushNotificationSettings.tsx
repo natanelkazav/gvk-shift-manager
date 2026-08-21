@@ -29,8 +29,238 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
-  Input,
 } from '../ui';
+
+
+type ReminderUnit =
+  | 'minutes'
+  | 'hours';
+
+const reminderMinuteOptions =
+  Array.from(
+    {
+      length:
+        60,
+    },
+    (
+      _,
+      index,
+    ) =>
+      index,
+  );
+
+const reminderHourOptions =
+  Array.from(
+    {
+      length:
+        25,
+    },
+    (
+      _,
+      index,
+    ) =>
+      index,
+  );
+
+function getReminderPickerValue(
+  totalMinutes:
+    number,
+): {
+  value: number;
+  unit: ReminderUnit;
+} {
+  if (
+    totalMinutes >=
+      60 &&
+    totalMinutes %
+      60 ===
+      0
+  ) {
+    return {
+      value:
+        totalMinutes /
+        60,
+      unit:
+        'hours',
+    };
+  }
+
+  return {
+    value:
+      Math.min(
+        59,
+        Math.max(
+          0,
+          totalMinutes,
+        ),
+      ),
+    unit:
+      'minutes',
+  };
+}
+
+interface ReminderWheelPickerProps {
+  minutes: number;
+
+  disabled: boolean;
+
+  onChange: (
+    minutes:
+      number,
+  ) => void;
+}
+
+function ReminderWheelPicker({
+  minutes,
+  disabled,
+  onChange,
+}: ReminderWheelPickerProps) {
+  const pickerValue =
+    getReminderPickerValue(
+      minutes,
+    );
+
+  const options =
+    pickerValue.unit ===
+      'hours'
+      ? reminderHourOptions
+      : reminderMinuteOptions;
+
+  return (
+    <div className="reminder-wheel-field">
+      <span className="reminder-wheel-label">
+        זמן לפני המשמרת
+      </span>
+
+      <div
+        className="reminder-wheel-picker"
+        aria-label="זמן התזכורת לפני המשמרת"
+      >
+        <select
+          className="reminder-wheel-select reminder-wheel-number"
+          value={
+            pickerValue.value
+          }
+          disabled={
+            disabled
+          }
+          aria-label="מספר"
+          onChange={(
+            event,
+          ) => {
+            const value =
+              Number(
+                event.target.value,
+              );
+
+            onChange(
+              pickerValue.unit ===
+                'hours'
+                ? value *
+                  60
+                : value,
+            );
+          }}
+        >
+          {
+            options.map(
+              (
+                value,
+              ) => (
+                <option
+                  key={
+                    value
+                  }
+                  value={
+                    value
+                  }
+                >
+                  {
+                    value
+                  }
+                </option>
+              ),
+            )
+          }
+        </select>
+
+        <select
+          className="reminder-wheel-select reminder-wheel-unit"
+          value={
+            pickerValue.unit
+          }
+          disabled={
+            disabled
+          }
+          aria-label="יחידת זמן"
+          onChange={(
+            event,
+          ) => {
+            const unit =
+              event.target
+                .value as
+                ReminderUnit;
+
+            if (
+              unit ===
+                'hours'
+            ) {
+              const hours =
+                minutes ===
+                  0
+                  ? 0
+                  : Math.min(
+                      24,
+                      Math.max(
+                        1,
+                        Math.round(
+                          minutes /
+                          60,
+                        ),
+                      ),
+                    );
+
+              onChange(
+                hours *
+                  60,
+              );
+
+              return;
+            }
+
+            onChange(
+              minutes >=
+                60
+                ? Math.min(
+                    59,
+                    Math.max(
+                      1,
+                      Math.round(
+                        minutes /
+                        60,
+                      ),
+                    ),
+                  )
+                : minutes,
+            );
+          }}
+        >
+          <option value="minutes">
+            דקות
+          </option>
+
+          <option value="hours">
+            שעות
+          </option>
+        </select>
+      </div>
+
+      <span className="reminder-wheel-helper">
+        גלול במספר ובחר דקות או שעות. ניתן לבחור עד 24 שעות לפני המשמרת.
+      </span>
+    </div>
+  );
+}
 
 interface PushDeviceState {
   isSupported: boolean;
@@ -660,19 +890,8 @@ function PushNotificationSettings() {
               </span>
             </label>
 
-            <Input
-              label="מספר דקות לפני המשמרת"
-              type="number"
-              min={
-                0
-              }
-              max={
-                1440
-              }
-              step={
-                1
-              }
-              value={
+            <ReminderWheelPicker
+              minutes={
                 reminderMinutes
               }
               disabled={
@@ -681,23 +900,9 @@ function PushNotificationSettings() {
                 !pushEnabled ||
                 !shiftRemindersEnabled
               }
-              helperText="ניתן לבחור בין 0 דקות ל־24 שעות לפני המשמרת."
-              onChange={(
-                event,
-              ) => {
-                const nextValue =
-                  Number(
-                    event.target.value,
-                  );
-
-                setReminderMinutes(
-                  Number.isFinite(
-                    nextValue,
-                  )
-                    ? nextValue
-                    : 10,
-                );
-              }}
+              onChange={
+                setReminderMinutes
+              }
             />
 
             {preferencesState.error ? (

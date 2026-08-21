@@ -456,7 +456,7 @@ Deno.serve(
                   : `המשמרת שלך מתחילה בעוד ${minutesBefore} דקות (${formatted.date} בשעה ${formatted.time}).`,
 
               url:
-                '/my-schedule',
+                '/',
 
               data: {
                 workflow:
