@@ -1,5 +1,4 @@
-import * as XLSX
-  from 'xlsx';
+import ExcelJS from 'exceljs';
 
 import {
   driverScheduleService,
@@ -78,11 +77,6 @@ interface DayRowDefinition {
   morningDriverHours: string;
 }
 
-interface StyledCell
-  extends XLSX.CellObject {
-  s?: unknown;
-}
-
 function padNumber(
   value: number,
 ): string {
@@ -111,22 +105,6 @@ function getDaysInMonth(
     month,
     0,
   ).getDate();
-}
-
-function getExcelDateSerial(
-  year: number,
-  month: number,
-  day: number,
-): number {
-  return (
-    Date.UTC(
-      year,
-      month - 1,
-      day,
-    ) /
-      86_400_000 +
-    25_569
-  );
 }
 
 function normalizeTime(
@@ -208,8 +186,10 @@ function createShiftRange(
 
 function getDayRows(
   weekdayNumber: number,
+  useWeekendOrHolidayLayout: boolean,
 ): DayRowDefinition[] {
   if (
+    useWeekendOrHolidayLayout ||
     weekdayNumber === 5 ||
     weekdayNumber === 6
   ) {
@@ -260,8 +240,12 @@ function getDayRows(
 function getTemplateSourceRow(
   weekdayNumber: number,
   rowOffset: number,
+  useWeekendOrHolidayLayout: boolean,
 ): number {
-  if (weekdayNumber === 6) {
+  if (
+    weekdayNumber === 6 ||
+    useWeekendOrHolidayLayout
+  ) {
     return 2 + rowOffset;
   }
 
@@ -272,142 +256,52 @@ function getTemplateSourceRow(
   return 5 + rowOffset;
 }
 
-function cloneStyle(
-  value: unknown,
-): unknown {
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return value;
-  }
-
+function deepClone<T>(
+  value: T,
+): T {
   return JSON.parse(
     JSON.stringify(value),
-  ) as unknown;
+  ) as T;
 }
 
 function copyTemplateRowStyle(
-  worksheet: XLSX.WorkSheet,
-  sourceRow: number,
-  targetRow: number,
+  worksheet: ExcelJS.Worksheet,
+  sourceRowNumber: number,
+  targetRowNumber: number,
 ): void {
+  const sourceRow =
+    worksheet.getRow(
+      sourceRowNumber,
+    );
+
+  const targetRow =
+    worksheet.getRow(
+      targetRowNumber,
+    );
+
+  targetRow.height =
+    sourceRow.height;
+
   for (
-    let columnIndex = 0;
-    columnIndex < 8;
-    columnIndex += 1
+    let columnNumber = 1;
+    columnNumber <= 8;
+    columnNumber += 1
   ) {
-    const sourceAddress =
-      XLSX.utils.encode_cell({
-        r:
-          sourceRow - 1,
-        c:
-          columnIndex,
-      });
-
-    const targetAddress =
-      XLSX.utils.encode_cell({
-        r:
-          targetRow - 1,
-        c:
-          columnIndex,
-      });
-
     const sourceCell =
-      worksheet[
-        sourceAddress
-      ] as StyledCell | undefined;
-
-    const targetCell =
-      worksheet[
-        targetAddress
-      ] as StyledCell | undefined;
-
-    if (!targetCell) {
-      worksheet[
-        targetAddress
-      ] = {
-        t: 's',
-        v: '',
-      } satisfies StyledCell;
-    }
-
-    const ensuredTargetCell =
-      worksheet[
-        targetAddress
-      ] as StyledCell;
-
-    ensuredTargetCell.s =
-      cloneStyle(
-        sourceCell?.s,
+      sourceRow.getCell(
+        columnNumber,
       );
 
-    if (
-      sourceCell?.z
-    ) {
-      ensuredTargetCell.z =
-        sourceCell.z;
-    }
+    const targetCell =
+      targetRow.getCell(
+        columnNumber,
+      );
+
+    targetCell.style =
+      deepClone(
+        sourceCell.style,
+      );
   }
-
-  const rows =
-    worksheet['!rows'] ??
-    [];
-
-  worksheet['!rows'] =
-    rows;
-
-  const sourceRowInfo =
-    rows[
-      sourceRow - 1
-    ];
-
-  rows[
-    targetRow - 1
-  ] = sourceRowInfo
-    ? {
-        ...sourceRowInfo,
-        hidden: false,
-      }
-    : {
-        hidden: false,
-      };
-}
-
-function setCellValue(
-  worksheet: XLSX.WorkSheet,
-  address: string,
-  value:
-    | string
-    | number
-    | null,
-  type:
-    's' | 'n' = 's',
-): void {
-  const cell =
-    (
-      worksheet[
-        address
-      ] ?? {
-        t: type,
-        v:
-          value ?? '',
-      }
-    ) as StyledCell;
-
-  if (
-    value === null
-  ) {
-    cell.t = 's';
-    cell.v = '';
-  } else {
-    cell.t = type;
-    cell.v = value;
-  }
-
-  worksheet[
-    address
-  ] = cell;
 }
 
 function createDispatcherMap(
@@ -447,6 +341,41 @@ function createDispatcherMap(
   return map;
 }
 
+function createDispatcherShiftsByDate(
+  shifts:
+    DispatcherScheduleMonthShift[],
+): Map<
+  string,
+  DispatcherScheduleMonthShift[]
+> {
+  const map =
+    new Map<
+      string,
+      DispatcherScheduleMonthShift[]
+    >();
+
+  shifts.forEach(
+    (
+      shift,
+    ) => {
+      const current =
+        map.get(
+          shift.shiftDate,
+        ) ?? [];
+
+      current.push(
+        shift,
+      );
+
+      map.set(
+        shift.shiftDate,
+        current,
+      );
+    },
+  );
+
+  return map;
+}
 
 function createHolidayNoteMap(
   shifts:
@@ -466,9 +395,7 @@ function createHolidayNoteMap(
         shift.holidayName
           ?.trim();
 
-      if (
-        !holidayName
-      ) {
+      if (!holidayName) {
         return;
       }
 
@@ -502,9 +429,7 @@ function createHolidayNoteMap(
         date,
         Array.from(
           notes,
-        ).join(
-          ' / ',
-        ),
+        ).join(' / '),
       ],
     ),
   );
@@ -632,67 +557,6 @@ function createMorningDriverMap(
   return result;
 }
 
-function copyCellStyle(
-  worksheet: XLSX.WorkSheet,
-  sourceAddress: string,
-  targetAddress: string,
-): void {
-  const sourceCell =
-    worksheet[
-      sourceAddress
-    ] as StyledCell | undefined;
-
-  const targetCell =
-    (
-      worksheet[
-        targetAddress
-      ] ?? {
-        t: 's',
-        v: '',
-      }
-    ) as StyledCell;
-
-  targetCell.s =
-    cloneStyle(
-      sourceCell?.s,
-    );
-
-  if (sourceCell?.z) {
-    targetCell.z =
-      sourceCell.z;
-  }
-
-  worksheet[
-    targetAddress
-  ] = targetCell;
-}
-
-function applyShiftHourStyle(
-  worksheet: XLSX.WorkSheet,
-  row: number,
-  isPremium: boolean,
-  isNight: boolean,
-): void {
-  const sourceRow =
-    isPremium
-      ? 2
-      : isNight
-        ? 4
-        : 5;
-
-  copyCellStyle(
-    worksheet,
-    `C${sourceRow}`,
-    `C${row}`,
-  );
-
-  copyCellStyle(
-    worksheet,
-    `E${sourceRow}`,
-    `E${row}`,
-  );
-}
-
 function isNightShiftRange(
   range: string,
 ): boolean {
@@ -704,35 +568,55 @@ function isNightShiftRange(
   );
 }
 
-function setExportDate(
-  worksheet: XLSX.WorkSheet,
-  address: string,
-  year: number,
-  month: number,
-  day: number,
+function copyFill(
+  worksheet: ExcelJS.Worksheet,
+  sourceAddress: string,
+  targetAddress: string,
 ): void {
-  setCellValue(
+  const sourceCell =
+    worksheet.getCell(
+      sourceAddress,
+    );
+
+  const targetCell =
+    worksheet.getCell(
+      targetAddress,
+    );
+
+  targetCell.fill =
+    deepClone(
+      sourceCell.fill,
+    );
+}
+
+function applyShiftHourStyle(
+  worksheet: ExcelJS.Worksheet,
+  row: number,
+  isPremium: boolean,
+  isNight: boolean,
+): void {
+  const sourceRow =
+    isPremium
+      ? 2
+      : isNight
+        ? 4
+        : 5;
+
+  copyFill(
     worksheet,
-    address,
-    getExcelDateSerial(
-      year,
-      month,
-      day,
-    ),
-    'n',
+    `C${sourceRow}`,
+    `C${row}`,
   );
 
-  const cell =
-    worksheet[
-      address
-    ] as StyledCell;
-
-  cell.z =
-    'dd/mm/yyyy';
+  copyFill(
+    worksheet,
+    `E${sourceRow}`,
+    `E${row}`,
+  );
 }
 
 function clearTemplateValues(
-  worksheet: XLSX.WorkSheet,
+  worksheet: ExcelJS.Worksheet,
 ): void {
   for (
     let row = FIRST_DATA_ROW;
@@ -740,24 +624,49 @@ function clearTemplateValues(
     row += 1
   ) {
     for (
-      let column = 0;
-      column < 8;
+      let column = 1;
+      column <= 8;
       column += 1
     ) {
-      setCellValue(
-        worksheet,
-        XLSX.utils.encode_cell({
-          r: row - 1,
-          c: column,
-        }),
-        null,
-      );
+      worksheet
+        .getCell(
+          row,
+          column,
+        )
+        .value = null;
     }
   }
 }
 
+function setExportDate(
+  worksheet: ExcelJS.Worksheet,
+  address: string,
+  year: number,
+  month: number,
+  day: number,
+): void {
+  const cell =
+    worksheet.getCell(
+      address,
+    );
+
+  cell.value =
+    new Date(
+      year,
+      month - 1,
+      day,
+      12,
+      0,
+      0,
+      0,
+    );
+
+  cell.numFmt =
+    'dd/mm/yyyy';
+}
+
 function hideUnusedRows(
-  worksheet: XLSX.WorkSheet,
+  worksheet: ExcelJS.Worksheet,
   daysInMonth: number,
 ): void {
   const firstUnusedRow =
@@ -765,25 +674,54 @@ function hideUnusedRows(
     daysInMonth *
       ROWS_PER_DAY;
 
-  const rows =
-    worksheet['!rows'] ??
-    [];
-
-  worksheet['!rows'] =
-    rows;
-
   for (
     let row = FIRST_DATA_ROW;
     row <= LAST_TEMPLATE_ROW;
     row += 1
   ) {
-    rows[row - 1] = {
-      ...(rows[row - 1] ?? {}),
-      hidden:
+    worksheet
+      .getRow(row)
+      .hidden =
         row >=
-        firstUnusedRow,
-    };
+        firstUnusedRow;
   }
+}
+
+function hasWeekendOrHolidayDispatcherLayout(
+  shifts:
+    DispatcherScheduleMonthShift[],
+): boolean {
+  const ranges =
+    new Set(
+      shifts
+        .map(
+          (
+            shift,
+          ) =>
+            createShiftRange(
+              shift.startsAt,
+              shift.endsAt,
+            ),
+        )
+        .filter(
+          (
+            value,
+          ): value is string =>
+            Boolean(value),
+        ),
+    );
+
+  return (
+    ranges.has(
+      '06:00-14:00',
+    ) ||
+    ranges.has(
+      '14:00-22:00',
+    ) ||
+    ranges.has(
+      '22:00-06:00',
+    )
+  );
 }
 
 function validatePublishedSchedules(
@@ -834,7 +772,7 @@ function validatePublishedSchedules(
 }
 
 async function loadTemplate():
-  Promise<XLSX.WorkBook> {
+  Promise<ExcelJS.Workbook> {
   const response =
     await fetch(
       TEMPLATE_URL,
@@ -851,16 +789,17 @@ async function loadTemplate():
   }
 
   const arrayBuffer =
-    await response.arrayBuffer();
+    await response
+      .arrayBuffer();
 
-  return XLSX.read(
+  const workbook =
+    new ExcelJS.Workbook();
+
+  await workbook.xlsx.load(
     arrayBuffer,
-    {
-      type: 'array',
-      cellStyles: true,
-      cellDates: false,
-    },
   );
+
+  return workbook;
 }
 
 function createFileName(
@@ -879,6 +818,54 @@ function createFileName(
     );
 
   return `לוח שיבוצים ${monthName} ${shortYear}.xlsx`;
+}
+
+async function downloadWorkbook(
+  workbook: ExcelJS.Workbook,
+  fileName: string,
+): Promise<void> {
+  const buffer =
+    await workbook.xlsx
+      .writeBuffer();
+
+  const blob =
+    new Blob(
+      [buffer as BlobPart],
+      {
+        type:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      },
+    );
+
+  const url =
+    URL.createObjectURL(
+      blob,
+    );
+
+  const anchor =
+    document.createElement(
+      'a',
+    );
+
+  anchor.href = url;
+  anchor.download =
+    fileName;
+
+  document.body.appendChild(
+    anchor,
+  );
+
+  anchor.click();
+  anchor.remove();
+
+  window.setTimeout(
+    () => {
+      URL.revokeObjectURL(
+        url,
+      );
+    },
+    0,
+  );
 }
 
 class ScheduleExportService {
@@ -950,9 +937,9 @@ class ScheduleExportService {
     }
 
     const worksheet =
-      workbook.Sheets[
-        TEMPLATE_SHEET_NAME
-      ];
+      workbook.getWorksheet(
+        TEMPLATE_SHEET_NAME,
+      );
 
     if (!worksheet) {
       throw new Error(
@@ -962,6 +949,11 @@ class ScheduleExportService {
 
     const dispatcherMap =
       createDispatcherMap(
+        dispatcherSchedule.shifts,
+      );
+
+    const dispatcherShiftsByDate =
+      createDispatcherShiftsByDate(
         dispatcherSchedule.shifts,
       );
 
@@ -991,11 +983,28 @@ class ScheduleExportService {
       worksheet,
     );
 
-    setCellValue(
-      worksheet,
-      'H1',
-      'הערות',
-    );
+    /*
+     * עמודת H מיועדת להערות עסקיות בלבד.
+     * אין להכניס לכאן אזהרות פנימיות של מנוע
+     * השיבוץ (driverDuty.notes).
+     */
+    const notesHeader =
+      worksheet.getCell(
+        'H1',
+      );
+
+    notesHeader.style =
+      deepClone(
+        worksheet.getCell(
+          'G1',
+        ).style,
+      );
+
+    notesHeader.value =
+      'הערות';
+
+    worksheet.getColumn(8).width =
+      32;
 
     for (
       let day = 1;
@@ -1023,6 +1032,16 @@ class ScheduleExportService {
           day,
         );
 
+      const dayDispatcherShifts =
+        dispatcherShiftsByDate.get(
+          dateKey,
+        ) ?? [];
+
+      const weekendOrHolidayLayout =
+        hasWeekendOrHolidayDispatcherLayout(
+          dayDispatcherShifts,
+        );
+
       const firstRow =
         FIRST_DATA_ROW +
         (day - 1) *
@@ -1031,6 +1050,7 @@ class ScheduleExportService {
       const rows =
         getDayRows(
           weekdayNumber,
+          weekendOrHolidayLayout,
         );
 
       rows.forEach(
@@ -1047,15 +1067,9 @@ class ScheduleExportService {
             getTemplateSourceRow(
               weekdayNumber,
               rowOffset,
+              weekendOrHolidayLayout,
             ),
             targetRow,
-          );
-
-          setCellValue(
-            worksheet,
-            `C${targetRow}`,
-            rowDefinition
-              .dispatcherHours,
           );
 
           const dispatcherShift =
@@ -1063,20 +1077,24 @@ class ScheduleExportService {
               `${dateKey}|${rowDefinition.dispatcherHours}`,
             );
 
-          setCellValue(
-            worksheet,
+          worksheet.getCell(
+            `C${targetRow}`,
+          ).value =
+            rowDefinition
+              .dispatcherHours;
+
+          worksheet.getCell(
             `D${targetRow}`,
+          ).value =
             dispatcherShift
               ?.assignedUserName ??
-              null,
-          );
+            null;
 
-          setCellValue(
-            worksheet,
+          worksheet.getCell(
             `E${targetRow}`,
+          ).value =
             rowDefinition
-              .morningDriverHours,
-          );
+              .morningDriverHours;
 
           applyShiftHourStyle(
             worksheet,
@@ -1090,14 +1108,13 @@ class ScheduleExportService {
             ),
           );
 
-          setCellValue(
-            worksheet,
+          worksheet.getCell(
             `F${targetRow}`,
+          ).value =
             morningDriverMap.get(
               `${dateKey}|${rowDefinition.morningDriverHours}`,
             ) ??
-              null,
-          );
+            null;
         },
       );
 
@@ -1109,27 +1126,25 @@ class ScheduleExportService {
         day,
       );
 
-      setCellValue(
-        worksheet,
+      worksheet.getCell(
         `B${firstRow}`,
+      ).value =
         hebrewWeekdays[
           weekdayNumber
         ] ??
-          '',
-      );
+        '';
 
       const driverDuty =
         driverMap.get(
           dateKey,
         );
 
-      setCellValue(
-        worksheet,
+      worksheet.getCell(
         `G${firstRow}`,
+      ).value =
         driverDuty
           ?.assignedUserName ??
-          null,
-      );
+        null;
 
       const holidayNote =
         holidayNoteMap.get(
@@ -1137,45 +1152,26 @@ class ScheduleExportService {
         ) ??
         null;
 
-      const driverNote =
-        driverDuty?.notes
-          ?.trim() ??
-        null;
+      const notesCell =
+        worksheet.getCell(
+          `H${firstRow}`,
+        );
 
-      const dayNote =
-        [
-          holidayNote,
-          driverNote,
-        ]
-          .filter(
-            (
-              value,
-            ): value is string =>
-              Boolean(
-                value,
-              ),
-          )
-          .filter(
-            (
-              value,
-              index,
-              values,
-            ) =>
-              values.indexOf(
-                value,
-              ) ===
-              index,
-          )
-          .join(
-            ' / ',
-          ) ||
-        null;
+      notesCell.style =
+        deepClone(
+          worksheet.getCell(
+            `G${firstRow}`,
+          ).style,
+        );
 
-      setCellValue(
-        worksheet,
-        `H${firstRow}`,
-        dayNote,
-      );
+      notesCell.alignment = {
+        ...notesCell.alignment,
+        wrapText: true,
+        vertical: 'middle',
+      };
+
+      notesCell.value =
+        holidayNote;
     }
 
     hideUnusedRows(
@@ -1189,14 +1185,9 @@ class ScheduleExportService {
         month,
       );
 
-    XLSX.writeFile(
+    await downloadWorkbook(
       workbook,
       fileName,
-      {
-        bookType: 'xlsx',
-        cellStyles: true,
-        compression: true,
-      },
     );
 
     return {

@@ -25,19 +25,16 @@ export default defineConfig({
 
       registerType:
         'prompt',
-
+      injectManifest: {
+        maximumFileSizeToCacheInBytes:
+          5 * 1024 * 1024,
+      },
       includeAssets: [
         'favicon.svg',
         'icon-96.png',
         'icon-192.png',
         'icon-512.png',
       ],
-
-      injectManifest: {
-        globPatterns: [
-          '**/*.{js,css,html,ico,png,svg,webp}',
-        ],
-      },
 
       devOptions: {
         enabled:
