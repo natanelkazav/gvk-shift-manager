@@ -27,7 +27,27 @@ interface ShiftSwapNotificationAuthorizationRow {
 
   data?: unknown;
 }
+function isAuthorizedInternalReminderDelivery(
+  request:
+    Request,
+): boolean {
+  const expectedSecret =
+    Deno.env.get(
+      'SHIFT_REMINDER_CRON_SECRET',
+    )?.trim();
 
+  const providedSecret =
+    request.headers.get(
+      'x-cron-secret',
+    )?.trim();
+
+  return Boolean(
+    expectedSecret &&
+    providedSecret &&
+    expectedSecret ===
+      providedSecret
+  );
+}
 function createUserClient(
   configuration:
     PermissionServiceConfiguration,
@@ -356,6 +376,11 @@ export async function authenticateNotificationManager(
   notificationId:
     string,
 ): Promise<AuthenticatedUserResult> {
+
+  if (isAuthorizedInternalReminderDelivery(request)) {
+     return {
+      userId: 'system',adminClient: createAdminClient(configuration), };
+    }
   const authorizationHeader =
     request.headers.get(
       'Authorization',
