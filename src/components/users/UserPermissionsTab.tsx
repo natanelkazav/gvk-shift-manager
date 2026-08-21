@@ -1,5 +1,6 @@
 import {
   CheckCheck,
+  ChevronDown,
   KeyRound,
   RotateCcw,
   Search,
@@ -45,6 +46,13 @@ function UserPermissionsTab({
     searchTerm,
     setSearchTerm,
   ] = useState('');
+
+  const [
+    openGroups,
+    setOpenGroups,
+  ] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const selectedPermissionSet =
     useMemo(
@@ -352,31 +360,83 @@ function UserPermissionsTab({
                 selectedGroupCount ===
                 group.permissions.length;
 
+              const isOpen =
+                Boolean(
+                  normalizedSearchTerm,
+                ) ||
+                openGroups.has(
+                  group.id,
+                );
+
+              const toggleGroup =
+                (): void => {
+                  setOpenGroups(
+                    (currentGroups) => {
+                      const nextGroups =
+                        new Set(
+                          currentGroups,
+                        );
+
+                      if (
+                        nextGroups.has(
+                          group.id,
+                        )
+                      ) {
+                        nextGroups.delete(
+                          group.id,
+                        );
+                      } else {
+                        nextGroups.add(
+                          group.id,
+                        );
+                      }
+
+                      return nextGroups;
+                    },
+                  );
+                };
+
               return (
                 <section
                   key={group.id}
                   className={[
                     'user-permissions-group',
                     `user-permissions-group-${group.tone}`,
-                  ].join(' ')}
+                    isOpen
+                      ? 'user-permissions-group-open'
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                 >
                   <header className="user-permissions-group-header">
-                    <div className="user-permissions-group-heading">
+                    <button
+                      type="button"
+                      className="user-permissions-group-toggle"
+                      aria-expanded={isOpen}
+                      onClick={toggleGroup}
+                    >
                       <span
                         className="user-permissions-group-accent"
                         aria-hidden="true"
                       />
 
-                      <div>
-                        <h3>
+                      <span className="user-permissions-group-heading-text">
+                        <strong>
                           {group.title}
-                        </h3>
+                        </strong>
 
-                        <p>
+                        <small>
                           {group.description}
-                        </p>
-                      </div>
-                    </div>
+                        </small>
+                      </span>
+
+                      <ChevronDown
+                        size={18}
+                        className="user-permissions-group-chevron"
+                        aria-hidden="true"
+                      />
+                    </button>
 
                     <div className="user-permissions-group-summary">
                       <span>
@@ -419,59 +479,61 @@ function UserPermissionsTab({
                     </div>
                   </header>
 
-                  <div className="user-permissions-list">
-                    {group.permissions.map(
-                      (permission) => {
-                        const isSelected =
-                          selectedPermissionSet.has(
-                            permission.key,
+                  {isOpen ? (
+                    <div className="user-permissions-list">
+                      {group.permissions.map(
+                        (permission) => {
+                          const isSelected =
+                            selectedPermissionSet.has(
+                              permission.key,
+                            );
+
+                          return (
+                            <label
+                              key={permission.key}
+                              className={[
+                                'user-permission-item',
+                                isSelected
+                                  ? 'user-permission-item-selected'
+                                  : '',
+                                isDisabled
+                                  ? 'user-permission-item-disabled'
+                                  : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                disabled={isDisabled}
+                                onChange={(event) => {
+                                  handlePermissionChange(
+                                    permission.key,
+                                    event.target.checked,
+                                  );
+                                }}
+                              />
+
+                              <span className="user-permission-switch">
+                                <span />
+                              </span>
+
+                              <span className="user-permission-content">
+                                <strong>
+                                  {permission.label}
+                                </strong>
+
+                                <small>
+                                  {permission.description}
+                                </small>
+                              </span>
+                            </label>
                           );
-
-                        return (
-                          <label
-                            key={permission.key}
-                            className={[
-                              'user-permission-item',
-                              isSelected
-                                ? 'user-permission-item-selected'
-                                : '',
-                              isDisabled
-                                ? 'user-permission-item-disabled'
-                                : '',
-                            ]
-                              .filter(Boolean)
-                              .join(' ')}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              disabled={isDisabled}
-                              onChange={(event) => {
-                                handlePermissionChange(
-                                  permission.key,
-                                  event.target.checked,
-                                );
-                              }}
-                            />
-
-                            <span className="user-permission-switch">
-                              <span />
-                            </span>
-
-                            <span className="user-permission-content">
-                              <strong>
-                                {permission.label}
-                              </strong>
-
-                              <small>
-                                {permission.description}
-                              </small>
-                            </span>
-                          </label>
-                        );
-                      },
-                    )}
-                  </div>
+                        },
+                      )}
+                    </div>
+                  ) : null}
                 </section>
               );
             },

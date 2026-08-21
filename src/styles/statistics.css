@@ -548,3 +548,225 @@
 .statistics-attendance-placeholder {
   border-style: dashed;
 }
+
+.statistics-filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 16px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.statistics-filter-panel-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.statistics-filter-panel-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statistics-filter-panel-heading span,
+.statistics-filter-panel-heading small {
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+}
+
+.statistics-filter-panel-heading strong {
+  color: var(--color-gray-900);
+  font-size: 1.05rem;
+}
+
+.statistics-filter-panel-heading small {
+  max-width: 420px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.statistics-period-filters {
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(145px, 1fr)
+    );
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.statistics-filter-selection-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.statistics-filter-selection-summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  font-size: 0.72rem;
+}
+
+.statistics-filter-selection-summary strong {
+  color: var(--color-gray-900);
+}
+
+@media (max-width: 1000px) {
+  .statistics-period-filters {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .statistics-filter-panel-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .statistics-filter-panel-heading small {
+    text-align: right;
+  }
+
+  .statistics-period-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .statistics-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .statistics-section-filter,
+  .statistics-view-switcher {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .statistics-section-filter-button,
+  .statistics-view-switcher-button {
+    flex: 1 0 auto;
+  }
+}
+
+.statistics-filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 16px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.statistics-filter-panel-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.statistics-filter-panel-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statistics-filter-panel-heading span,
+.statistics-filter-panel-heading small {
+  color: var(--color-gray-500);
+  font-size: var(--font-size-sm);
+}
+
+.statistics-filter-panel-heading strong {
+  color: var(--color-gray-900);
+  font-size: 1.05rem;
+}
+
+.statistics-filter-panel-heading small {
+  max-width: 420px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.statistics-period-filters {
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(145px, 1fr)
+    );
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.statistics-filter-selection-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.statistics-filter-selection-summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+  font-size: 0.72rem;
+}
+
+.statistics-filter-selection-summary strong {
+  color: var(--color-gray-900);
+}
+
+@media (max-width: 1000px) {
+  .statistics-period-filters {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .statistics-filter-panel-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .statistics-filter-panel-heading small {
+    text-align: right;
+  }
+
+  .statistics-period-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .statistics-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .statistics-section-filter,
+  .statistics-view-switcher {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .statistics-section-filter-button,
+  .statistics-view-switcher-button {
+    flex: 1 0 auto;
+  }
+}

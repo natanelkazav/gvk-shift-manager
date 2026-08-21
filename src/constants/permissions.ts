@@ -320,23 +320,11 @@ export const permissionGroups:
     },
     {
       id: 'settings',
-      title: 'הגדרות מערכת',
+      title: 'קבצים וכלי מערכת',
       description:
-        'צפייה בהגדרות המערכת ושינוי הגדרות ניהוליות.',
+        'הרשאות לפעולות מערכת נקודתיות שמופיעות במסך ההגדרות.',
       tone: 'slate',
       permissions: [
-        {
-          key: 'settings.view',
-          label: 'צפייה בהגדרות המערכת',
-          description:
-            'מאפשרת לפתוח את מסך ההגדרות ולצפות בערכים ובהגדרות הקיימות.',
-        },
-        {
-          key: 'settings.manage',
-          label: 'עריכת הגדרות המערכת',
-          description:
-            'מאפשרת לשנות ולשמור הגדרות מערכת המשפיעות על התנהגות האפליקציה.',
-        },
         {
           key: 'schedule_import.manage',
           label: 'ייבוא קובצי שיבוצים',

@@ -3,17 +3,17 @@ import {
 } from 'lucide-react';
 
 interface StatisticsMultiSelectOption {
-  value: number;
+  value: string | number;
   label: string;
 }
 
 interface StatisticsMultiSelectProps {
   label: string;
   allLabel: string;
-  selectedValues: number[];
+  selectedValues: Array<string | number>;
   options: StatisticsMultiSelectOption[];
   disabled?: boolean;
-  onChange: (values: number[]) => void;
+  onChange: (values: Array<string | number>) => void;
 }
 
 function StatisticsMultiSelect({
@@ -40,7 +40,7 @@ function StatisticsMultiSelect({
         : `${selectedValues.length} נבחרו`;
 
   const toggleValue = (
-    value: number,
+    value: string | number,
   ): void => {
     if (
       selectedValues.includes(
@@ -56,13 +56,23 @@ function StatisticsMultiSelect({
       return;
     }
 
-    onChange([
+    const nextValues = [
       ...selectedValues,
       value,
-    ].sort(
-      (firstValue, secondValue) =>
-        firstValue - secondValue,
-    ));
+    ];
+
+    onChange(
+      options
+        .filter((option) =>
+          nextValues.includes(
+            option.value,
+          ),
+        )
+        .map(
+          (option) =>
+            option.value,
+        ),
+    );
   };
 
   return (

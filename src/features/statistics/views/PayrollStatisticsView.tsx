@@ -20,6 +20,8 @@ import type {
 interface PayrollStatisticsViewProps {
   years: number[];
   months: number[];
+  dispatcherIds: string[];
+  driverIds: string[];
 }
 
 function formatCurrency(
@@ -42,6 +44,8 @@ function formatCurrency(
 function PayrollStatisticsView({
   years,
   months,
+  dispatcherIds,
+  driverIds,
 }: PayrollStatisticsViewProps) {
   const {
     hasPermission,
@@ -128,6 +132,42 @@ function PayrollStatisticsView({
     return null;
   }
 
+  const visibleDispatchers =
+    dispatcherIds.length === 0
+      ? data.dispatchers
+      : data.dispatchers.filter(
+          (row) =>
+            dispatcherIds.includes(
+              row.userId,
+            ),
+        );
+
+  const visibleDrivers =
+    driverIds.length === 0
+      ? data.drivers
+      : data.drivers.filter(
+          (row) =>
+            driverIds.includes(
+              row.userId,
+            ),
+        );
+
+  const projectedDispatcherPay =
+    visibleDispatchers.reduce(
+      (sum, row) =>
+        sum +
+        (row.projectedPay ?? 0),
+      0,
+    );
+
+  const projectedDriverPay =
+    visibleDrivers.reduce(
+      (sum, row) =>
+        sum +
+        (row.projectedPay ?? 0),
+      0,
+    );
+
   return (
     <div className="statistics-payroll-view">
       <section className="statistics-summary-grid">
@@ -144,7 +184,7 @@ function PayrollStatisticsView({
 
             <strong>
               {formatCurrency(
-                data.projectedDispatcherPay,
+                projectedDispatcherPay,
               )}
             </strong>
           </div>
@@ -163,7 +203,7 @@ function PayrollStatisticsView({
 
             <strong>
               {formatCurrency(
-                data.projectedDriverPay,
+                projectedDriverPay,
               )}
             </strong>
           </div>
@@ -211,7 +251,7 @@ function PayrollStatisticsView({
             </thead>
 
             <tbody>
-              {data.dispatchers.map(
+              {visibleDispatchers.map(
                 (row) => (
                   <tr key={row.userId}>
                     <td>
@@ -265,7 +305,7 @@ function PayrollStatisticsView({
             </thead>
 
             <tbody>
-              {data.drivers.map(
+              {visibleDrivers.map(
                 (row) => (
                   <tr key={row.userId}>
                     <td>

@@ -434,3 +434,83 @@
     font-size: 1.05rem;
   }
 }
+
+.settings-section-card {
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.settings-file-tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.settings-file-tab {
+  min-width: 92px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.settings-file-tab:hover {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.settings-file-tab-active {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgb(37 99 235 / 18%);
+}
+
+.settings-file-tab-active:hover {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.settings-file-tool-content {
+  padding-top: 4px;
+}
+
+.settings-permission-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .settings-section-card {
+    padding: 16px;
+  }
+
+  .settings-file-tabs {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .settings-file-tab {
+    width: 100%;
+  }
+}

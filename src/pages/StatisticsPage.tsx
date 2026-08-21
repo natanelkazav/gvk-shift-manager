@@ -39,6 +39,10 @@ import StatisticsTablesView
 import PayrollStatisticsView
   from '../features/statistics/views/PayrollStatisticsView';
 
+import type {
+  StatisticsDashboardResponse,
+} from '../types/statistics';
+
 import '../styles/statistics.css';
 
 type StatisticsSectionFilter =
@@ -61,6 +65,187 @@ const hebrewMonths = [
   'נובמבר',
   'דצמבר',
 ];
+
+function getPersonLabel(
+  displayName: string,
+  scheduleName: string | null,
+): string {
+  return (
+    scheduleName?.trim() ||
+    displayName.trim() ||
+    'ללא שם'
+  );
+}
+
+function filterStatisticsData(
+  data: StatisticsDashboardResponse,
+  dispatcherIds: string[],
+  driverIds: string[],
+): StatisticsDashboardResponse {
+  const dispatcherSet =
+    new Set(dispatcherIds);
+  const driverSet =
+    new Set(driverIds);
+
+  const dispatcherStatistics =
+    dispatcherIds.length === 0
+      ? data.dispatcherStatistics
+      : data.dispatcherStatistics.filter(
+          (row) =>
+            dispatcherSet.has(
+              row.userId,
+            ),
+        );
+
+  const driverStatistics =
+    driverIds.length === 0
+      ? data.driverStatistics
+      : data.driverStatistics.filter(
+          (row) =>
+            driverSet.has(
+              row.userId,
+            ),
+        );
+
+  const dispatcherMonthlyBreakdown =
+    dispatcherIds.length === 0
+      ? data.dispatcherMonthlyBreakdown
+      : data.dispatcherMonthlyBreakdown.filter(
+          (row) =>
+            dispatcherSet.has(
+              row.userId,
+            ),
+        );
+
+  const driverMonthlyBreakdown =
+    driverIds.length === 0
+      ? data.driverMonthlyBreakdown
+      : data.driverMonthlyBreakdown.filter(
+          (row) =>
+            driverSet.has(
+              row.userId,
+            ),
+        );
+
+  const monthlyStatistics =
+    data.monthlyStatistics.map(
+      (row) => ({
+        ...row,
+        dispatcherShiftCount:
+          dispatcherMonthlyBreakdown
+            .filter(
+              (item) =>
+                item.year === row.year &&
+                item.month === row.month,
+            )
+            .reduce(
+              (sum, item) =>
+                sum + item.totalShifts,
+              0,
+            ),
+        driverDutyCount:
+          driverMonthlyBreakdown
+            .filter(
+              (item) =>
+                item.year === row.year &&
+                item.month === row.month,
+            )
+            .reduce(
+              (sum, item) =>
+                sum + item.totalDuties,
+              0,
+            ),
+      }),
+    );
+
+  const sumDispatcher = (
+    key:
+      | 'totalShifts'
+      | 'premiumShifts'
+      | 'regularShifts'
+      | 'fridayShifts'
+      | 'saturdayShifts'
+      | 'holidayShifts'
+      | 'nightShifts',
+  ): number =>
+    dispatcherStatistics.reduce(
+      (sum, row) =>
+        sum + row[key],
+      0,
+    );
+
+  const sumDriver = (
+    key:
+      | 'totalDuties'
+      | 'weekdayDuties'
+      | 'weekendDuties'
+      | 'holidayDuties',
+  ): number =>
+    driverStatistics.reduce(
+      (sum, row) =>
+        sum + row[key],
+      0,
+    );
+
+  return {
+    ...data,
+    summary: {
+      ...data.summary,
+      dispatcherCount:
+        dispatcherStatistics.length,
+      driverCount:
+        driverStatistics.length,
+      totalDispatcherShifts:
+        sumDispatcher(
+          'totalShifts',
+        ),
+      totalDriverDuties:
+        sumDriver(
+          'totalDuties',
+        ),
+      premiumShifts:
+        sumDispatcher(
+          'premiumShifts',
+        ),
+      regularShifts:
+        sumDispatcher(
+          'regularShifts',
+        ),
+      nightShifts:
+        sumDispatcher(
+          'nightShifts',
+        ),
+      holidayShifts:
+        sumDispatcher(
+          'holidayShifts',
+        ),
+      weekendShifts:
+        sumDispatcher(
+          'fridayShifts',
+        ) +
+        sumDispatcher(
+          'saturdayShifts',
+        ),
+      weekdayDriverDuties:
+        sumDriver(
+          'weekdayDuties',
+        ),
+      weekendDriverDuties:
+        sumDriver(
+          'weekendDuties',
+        ),
+      holidayDriverDuties:
+        sumDriver(
+          'holidayDuties',
+        ),
+    },
+    dispatcherStatistics,
+    driverStatistics,
+    monthlyStatistics,
+    dispatcherMonthlyBreakdown,
+    driverMonthlyBreakdown,
+  };
+}
 
 function StatisticsPage() {
   const {
@@ -90,6 +275,16 @@ function StatisticsPage() {
   ] = useState<StatisticsDisplayMode>(
     'dashboard',
   );
+
+  const [
+    selectedDispatcherIds,
+    setSelectedDispatcherIds,
+  ] = useState<string[]>([]);
+
+  const [
+    selectedDriverIds,
+    setSelectedDriverIds,
+  ] = useState<string[]>([]);
 
   const canViewPayroll =
     hasPermission(
@@ -125,6 +320,53 @@ function StatisticsPage() {
         value: index + 1,
         label: monthName,
       }),
+    );
+
+  const dispatcherOptions =
+    useMemo(
+      () =>
+        data?.dispatcherStatistics.map(
+          (row) => ({
+            value: row.userId,
+            label: getPersonLabel(
+              row.displayName,
+              row.scheduleName,
+            ),
+          }),
+        ) ?? [],
+      [data],
+    );
+
+  const driverOptions =
+    useMemo(
+      () =>
+        data?.driverStatistics.map(
+          (row) => ({
+            value: row.userId,
+            label: getPersonLabel(
+              row.displayName,
+              row.scheduleName,
+            ),
+          }),
+        ) ?? [],
+      [data],
+    );
+
+  const filteredData =
+    useMemo(
+      () =>
+        data
+          ? filterStatisticsData(
+              data,
+              selectedDispatcherIds,
+              selectedDriverIds,
+            )
+          : null,
+      [
+        data,
+        selectedDispatcherIds,
+        selectedDriverIds,
+      ],
     );
 
   const periodLabel =
@@ -178,6 +420,16 @@ function StatisticsPage() {
       : []),
   ];
 
+  const showDispatcherFilter =
+    sectionFilter === 'all' ||
+    sectionFilter === 'dispatchers' ||
+    sectionFilter === 'payroll';
+
+  const showDriverFilter =
+    sectionFilter === 'all' ||
+    sectionFilter === 'drivers' ||
+    sectionFilter === 'payroll';
+
   return (
     <section className="statistics-page">
       <PageHeader
@@ -209,48 +461,135 @@ function StatisticsPage() {
         }
       />
 
-      <section className="statistics-filters">
-        <div>
-          <span>
-            תקופה נבחרת
-          </span>
+      <section className="statistics-filter-panel">
+        <div className="statistics-filter-panel-heading">
+          <div>
+            <span>תקופה נבחרת</span>
+            <strong>{periodLabel}</strong>
+          </div>
 
-          <strong>
-            {periodLabel}
-          </strong>
+          <small>
+            כל הכרטיסים, הגרפים והטבלאות מתעדכנים לפי הבחירה.
+          </small>
         </div>
 
-        <StatisticsMultiSelect
-          label="שנים"
-          allLabel="כל השנים"
-          selectedValues={
-            filters.years
-          }
-          options={yearOptions}
-          disabled={isLoading}
-          onChange={setYears}
-        />
+        <div className="statistics-filters statistics-period-filters">
+          <StatisticsMultiSelect
+            label="שנים"
+            allLabel="כל השנים"
+            selectedValues={
+              filters.years
+            }
+            options={yearOptions}
+            disabled={isLoading}
+            onChange={(values) => {
+              setYears(
+                values.filter(
+                  (value): value is number =>
+                    typeof value === 'number',
+                ),
+              );
+            }}
+          />
 
-        <StatisticsMultiSelect
-          label="חודשים"
-          allLabel="כל החודשים"
-          selectedValues={
-            filters.months
-          }
-          options={monthOptions}
-          disabled={
-            isLoading ||
-            filters.years.length === 0
-          }
-          onChange={setMonths}
-        />
+          <StatisticsMultiSelect
+            label="חודשים"
+            allLabel="כל החודשים"
+            selectedValues={
+              filters.months
+            }
+            options={monthOptions}
+            disabled={
+              isLoading ||
+              filters.years.length === 0
+            }
+            onChange={(values) => {
+              setMonths(
+                values.filter(
+                  (value): value is number =>
+                    typeof value === 'number',
+                ),
+              );
+            }}
+          />
+
+          {showDispatcherFilter ? (
+            <StatisticsMultiSelect
+              label="מוקדנים"
+              allLabel="כל המוקדנים"
+              selectedValues={
+                selectedDispatcherIds
+              }
+              options={dispatcherOptions}
+              disabled={
+                isLoading ||
+                !data
+              }
+              onChange={(values) => {
+                setSelectedDispatcherIds(
+                  values.filter(
+                    (value): value is string =>
+                      typeof value === 'string',
+                  ),
+                );
+              }}
+            />
+          ) : null}
+
+          {showDriverFilter ? (
+            <StatisticsMultiSelect
+              label="כוננים"
+              allLabel="כל הכוננים"
+              selectedValues={
+                selectedDriverIds
+              }
+              options={driverOptions}
+              disabled={
+                isLoading ||
+                !data
+              }
+              onChange={(values) => {
+                setSelectedDriverIds(
+                  values.filter(
+                    (value): value is string =>
+                      typeof value === 'string',
+                  ),
+                );
+              }}
+            />
+          ) : null}
+        </div>
+
+        {filters.years.length === 0 ? (
+          <div className="statistics-filter-note">
+            בחירת חודשים ספציפיים זמינה לאחר בחירת שנה אחת או יותר. כאשר נבחרות "כל השנים", מוצגת כל התקופה.
+          </div>
+        ) : null}
+
+        <div className="statistics-filter-selection-summary">
+          {showDispatcherFilter ? (
+            <span>
+              מוקדנים:{' '}
+              <strong>
+                {selectedDispatcherIds.length === 0
+                  ? 'כולם'
+                  : `${selectedDispatcherIds.length} נבחרו`}
+              </strong>
+            </span>
+          ) : null}
+
+          {showDriverFilter ? (
+            <span>
+              כוננים:{' '}
+              <strong>
+                {selectedDriverIds.length === 0
+                  ? 'כולם'
+                  : `${selectedDriverIds.length} נבחרו`}
+              </strong>
+            </span>
+          ) : null}
+        </div>
       </section>
-
-      {filters.years.length === 0 ? (
-        <div className="statistics-filter-note">
-          בחירת חודשים ספציפיים זמינה לאחר בחירת שנה אחת או יותר. כאשר נבחרות "כל השנים", מוצגת כל התקופה.
-        </div>
-      ) : null}
 
       <div className="statistics-toolbar">
         <section
@@ -263,14 +602,12 @@ function StatisticsPage() {
                 key={option.value}
                 type="button"
                 className={
-                  sectionFilter ===
-                  option.value
+                  sectionFilter === option.value
                     ? 'statistics-section-filter-button statistics-section-filter-button-active'
                     : 'statistics-section-filter-button'
                 }
                 aria-pressed={
-                  sectionFilter ===
-                  option.value
+                  sectionFilter === option.value
                 }
                 onClick={() => {
                   setSectionFilter(
@@ -324,36 +661,39 @@ function StatisticsPage() {
         <PayrollStatisticsView
           years={filters.years}
           months={filters.months}
+          dispatcherIds={
+            selectedDispatcherIds
+          }
+          driverIds={
+            selectedDriverIds
+          }
         />
       ) : null}
 
-      {data &&
+      {filteredData &&
       sectionFilter !== 'payroll' ? (
         <>
-          {displayMode ===
-          'dashboard' ? (
+          {displayMode === 'dashboard' ? (
             <StatisticsDashboardView
-              data={data}
+              data={filteredData}
               sectionFilter={
                 sectionFilter
               }
             />
           ) : null}
 
-          {displayMode ===
-          'charts' ? (
+          {displayMode === 'charts' ? (
             <StatisticsChartsView
-              data={data}
+              data={filteredData}
               sectionFilter={
                 sectionFilter
               }
             />
           ) : null}
 
-          {displayMode ===
-          'tables' ? (
+          {displayMode === 'tables' ? (
             <StatisticsTablesView
-              data={data}
+              data={filteredData}
               sectionFilter={
                 sectionFilter
               }

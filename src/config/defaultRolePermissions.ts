@@ -46,8 +46,6 @@ export const ALL_PERMISSION_KEYS:
     'users.view',
     'users.manage',
 
-    'settings.view',
-    'settings.manage',
 
     'schedule_import.manage',
     'schedule_export.manage',

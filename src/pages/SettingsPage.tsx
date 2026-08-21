@@ -1,8 +1,13 @@
 import {
+  BellRing,
   FileSpreadsheet,
   Settings,
   ShieldCheck,
 } from 'lucide-react';
+
+import {
+  useState,
+} from 'react';
 
 import {
   useAuth,
@@ -26,11 +31,14 @@ import PushTestNotification
 
 import '../styles/settings.css';
 
+type FileToolTab =
+  | 'import'
+  | 'export';
+
 function SettingsPage() {
   const {
     hasPermission,
-  } =
-    useAuth();
+  } = useAuth();
 
   const canManageNotifications =
     hasPermission(
@@ -47,8 +55,20 @@ function SettingsPage() {
       'schedule_export.manage',
     );
 
-  const canViewAdminActions =
-    canManageNotifications ||
+  const defaultFileTab:
+    FileToolTab =
+      canImportSchedules
+        ? 'import'
+        : 'export';
+
+  const [
+    fileToolTab,
+    setFileToolTab,
+  ] = useState<FileToolTab>(
+    defaultFileTab,
+  );
+
+  const canUseFileTools =
     canImportSchedules ||
     canExportSchedules;
 
@@ -56,11 +76,11 @@ function SettingsPage() {
     <section className="settings-page">
       <PageHeader
         title="הגדרות"
-        description="העדפות אישיות וכלי מערכת בהתאם להרשאות שלך."
+        description="העדפות אישיות וכלי מערכת מסודרים לפי תחום ובהתאם להרשאות שלך."
       />
 
       <div className="settings-page-sections">
-        <section className="settings-section">
+        <section className="settings-section settings-section-card">
           <div className="settings-section-header">
             <Settings
               size={22}
@@ -68,10 +88,10 @@ function SettingsPage() {
             />
 
             <div>
-              <h2>ההעדפות שלי</h2>
+              <h2>העדפות אישיות</h2>
 
               <p>
-                הגדרות אישיות הזמינות לכל משתמש, כולל Push וזמן התראה לפני משמרת.
+                הגדרות ששייכות למשתמש שלך, כולל Push וזמן התראה לפני משמרת.
               </p>
             </div>
           </div>
@@ -79,29 +99,83 @@ function SettingsPage() {
           <PushNotificationSettings />
         </section>
 
-        {canViewAdminActions ? (
-          <section className="settings-section">
+        {canUseFileTools ? (
+          <section className="settings-section settings-section-card">
             <div className="settings-section-header">
-              <ShieldCheck
+              <FileSpreadsheet
                 size={22}
                 aria-hidden="true"
               />
 
               <div>
-                <h2>כלים ניהוליים</h2>
+                <h2>קבצים ונתונים</h2>
 
                 <p>
-                  כלים שמופיעים רק כאשר קיימת למשתמש ההרשאה המתאימה.
+                  ייבוא וייצוא לוחות Excel במקום אחד. יוצגו רק הפעולות שמותר לך לבצע.
                 </p>
               </div>
             </div>
 
-            <div className="settings-admin-stack">
-              {canManageNotifications ? (
-                <PushTestNotification />
-              ) : null}
+            {canImportSchedules &&
+            canExportSchedules ? (
+              <div
+                className="settings-file-tabs"
+                role="tablist"
+                aria-label="כלי קבצים"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={
+                    fileToolTab ===
+                    'import'
+                  }
+                  className={
+                    fileToolTab ===
+                    'import'
+                      ? 'settings-file-tab settings-file-tab-active'
+                      : 'settings-file-tab'
+                  }
+                  onClick={() => {
+                    setFileToolTab(
+                      'import',
+                    );
+                  }}
+                >
+                  ייבוא
+                </button>
 
-              {canImportSchedules ? (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={
+                    fileToolTab ===
+                    'export'
+                  }
+                  className={
+                    fileToolTab ===
+                    'export'
+                      ? 'settings-file-tab settings-file-tab-active'
+                      : 'settings-file-tab'
+                  }
+                  onClick={() => {
+                    setFileToolTab(
+                      'export',
+                    );
+                  }}
+                >
+                  ייצוא
+                </button>
+              </div>
+            ) : null}
+
+            <div className="settings-file-tool-content">
+              {canImportSchedules &&
+              (
+                fileToolTab ===
+                  'import' ||
+                !canExportSchedules
+              ) ? (
                 <section className="settings-import-section">
                   <div className="settings-subsection-heading">
                     <FileSpreadsheet
@@ -112,7 +186,7 @@ function SettingsPage() {
                     <div>
                       <h3>ייבוא קובץ שיבוצים</h3>
                       <p>
-                        ייבוא לוחות מוקדנים, כוננים וכונני בוקר מקובצי Excel.
+                        טעינת לוחות מוקדנים, כוננים וכונני בוקר מקובץ Excel קיים.
                       </p>
                     </div>
                   </div>
@@ -121,13 +195,53 @@ function SettingsPage() {
                 </section>
               ) : null}
 
-              {canExportSchedules ? (
+              {canExportSchedules &&
+              (
+                fileToolTab ===
+                  'export' ||
+                !canImportSchedules
+              ) ? (
                 <section className="settings-export-section">
                   <ScheduleExportPanel />
                 </section>
               ) : null}
             </div>
           </section>
+        ) : null}
+
+        {canManageNotifications ? (
+          <section className="settings-section settings-section-card">
+            <div className="settings-section-header">
+              <BellRing
+                size={22}
+                aria-hidden="true"
+              />
+
+              <div>
+                <h2>התראות וכלי בדיקה</h2>
+
+                <p>
+                  כלי בדיקה ניהוליים למערכת ההתראות וה-Push.
+                </p>
+              </div>
+            </div>
+
+            <PushTestNotification />
+          </section>
+        ) : null}
+
+        {(canUseFileTools ||
+          canManageNotifications) ? (
+          <div className="settings-permission-note">
+            <ShieldCheck
+              size={17}
+              aria-hidden="true"
+            />
+
+            <span>
+              כלים ניהוליים מוצגים לפי ההרשאות שהוקצו למשתמש שלך.
+            </span>
+          </div>
         ) : null}
       </div>
     </section>
