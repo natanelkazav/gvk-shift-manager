@@ -413,23 +413,20 @@ function setCellValue(
 function createDispatcherMap(
   shifts:
     DispatcherScheduleMonthShift[],
-): Map<string, string> {
+): Map<
+  string,
+  DispatcherScheduleMonthShift
+> {
   const map =
     new Map<
       string,
-      string
+      DispatcherScheduleMonthShift
     >();
 
   shifts.forEach(
     (
       shift,
     ) => {
-      if (
-        !shift.assignedUserName
-      ) {
-        return;
-      }
-
       const range =
         createShiftRange(
           shift.startsAt,
@@ -442,12 +439,75 @@ function createDispatcherMap(
 
       map.set(
         `${shift.shiftDate}|${range}`,
-        shift.assignedUserName,
+        shift,
       );
     },
   );
 
   return map;
+}
+
+
+function createHolidayNoteMap(
+  shifts:
+    DispatcherScheduleMonthShift[],
+): Map<string, string> {
+  const notesByDate =
+    new Map<
+      string,
+      Set<string>
+    >();
+
+  shifts.forEach(
+    (
+      shift,
+    ) => {
+      const holidayName =
+        shift.holidayName
+          ?.trim();
+
+      if (
+        !holidayName
+      ) {
+        return;
+      }
+
+      const existingNotes =
+        notesByDate.get(
+          shift.shiftDate,
+        ) ??
+        new Set<string>();
+
+      existingNotes.add(
+        holidayName,
+      );
+
+      notesByDate.set(
+        shift.shiftDate,
+        existingNotes,
+      );
+    },
+  );
+
+  return new Map(
+    Array.from(
+      notesByDate.entries(),
+    ).map(
+      (
+        [
+          date,
+          notes,
+        ],
+      ) => [
+        date,
+        Array.from(
+          notes,
+        ).join(
+          ' / ',
+        ),
+      ],
+    ),
+  );
 }
 
 function createDriverMap(
@@ -570,6 +630,105 @@ function createMorningDriverMap(
   );
 
   return result;
+}
+
+function copyCellStyle(
+  worksheet: XLSX.WorkSheet,
+  sourceAddress: string,
+  targetAddress: string,
+): void {
+  const sourceCell =
+    worksheet[
+      sourceAddress
+    ] as StyledCell | undefined;
+
+  const targetCell =
+    (
+      worksheet[
+        targetAddress
+      ] ?? {
+        t: 's',
+        v: '',
+      }
+    ) as StyledCell;
+
+  targetCell.s =
+    cloneStyle(
+      sourceCell?.s,
+    );
+
+  if (sourceCell?.z) {
+    targetCell.z =
+      sourceCell.z;
+  }
+
+  worksheet[
+    targetAddress
+  ] = targetCell;
+}
+
+function applyShiftHourStyle(
+  worksheet: XLSX.WorkSheet,
+  row: number,
+  isPremium: boolean,
+  isNight: boolean,
+): void {
+  const sourceRow =
+    isPremium
+      ? 2
+      : isNight
+        ? 4
+        : 5;
+
+  copyCellStyle(
+    worksheet,
+    `C${sourceRow}`,
+    `C${row}`,
+  );
+
+  copyCellStyle(
+    worksheet,
+    `E${sourceRow}`,
+    `E${row}`,
+  );
+}
+
+function isNightShiftRange(
+  range: string,
+): boolean {
+  return (
+    range ===
+      '22:00-06:00' ||
+    range ===
+      '23:00-06:00'
+  );
+}
+
+function setExportDate(
+  worksheet: XLSX.WorkSheet,
+  address: string,
+  year: number,
+  month: number,
+  day: number,
+): void {
+  setCellValue(
+    worksheet,
+    address,
+    getExcelDateSerial(
+      year,
+      month,
+      day,
+    ),
+    'n',
+  );
+
+  const cell =
+    worksheet[
+      address
+    ] as StyledCell;
+
+  cell.z =
+    'dd/mm/yyyy';
 }
 
 function clearTemplateValues(
@@ -811,6 +970,11 @@ class ScheduleExportService {
         driverSchedule.days,
       );
 
+    const holidayNoteMap =
+      createHolidayNoteMap(
+        dispatcherSchedule.shifts,
+      );
+
     const morningDriverMap =
       createMorningDriverMap(
         morningDriverSchedule
@@ -825,6 +989,12 @@ class ScheduleExportService {
 
     clearTemplateValues(
       worksheet,
+    );
+
+    setCellValue(
+      worksheet,
+      'H1',
+      'הערות',
     );
 
     for (
@@ -888,12 +1058,16 @@ class ScheduleExportService {
               .dispatcherHours,
           );
 
+          const dispatcherShift =
+            dispatcherMap.get(
+              `${dateKey}|${rowDefinition.dispatcherHours}`,
+            );
+
           setCellValue(
             worksheet,
             `D${targetRow}`,
-            dispatcherMap.get(
-              `${dateKey}|${rowDefinition.dispatcherHours}`,
-            ) ??
+            dispatcherShift
+              ?.assignedUserName ??
               null,
           );
 
@@ -902,6 +1076,18 @@ class ScheduleExportService {
             `E${targetRow}`,
             rowDefinition
               .morningDriverHours,
+          );
+
+          applyShiftHourStyle(
+            worksheet,
+            targetRow,
+            dispatcherShift
+              ?.isPremium ===
+              true,
+            isNightShiftRange(
+              rowDefinition
+                .dispatcherHours,
+            ),
           );
 
           setCellValue(
@@ -915,15 +1101,12 @@ class ScheduleExportService {
         },
       );
 
-      setCellValue(
+      setExportDate(
         worksheet,
         `A${firstRow}`,
-        getExcelDateSerial(
-          year,
-          month,
-          day,
-        ),
-        'n',
+        year,
+        month,
+        day,
       );
 
       setCellValue(
@@ -948,11 +1131,50 @@ class ScheduleExportService {
           null,
       );
 
+      const holidayNote =
+        holidayNoteMap.get(
+          dateKey,
+        ) ??
+        null;
+
+      const driverNote =
+        driverDuty?.notes
+          ?.trim() ??
+        null;
+
+      const dayNote =
+        [
+          holidayNote,
+          driverNote,
+        ]
+          .filter(
+            (
+              value,
+            ): value is string =>
+              Boolean(
+                value,
+              ),
+          )
+          .filter(
+            (
+              value,
+              index,
+              values,
+            ) =>
+              values.indexOf(
+                value,
+              ) ===
+              index,
+          )
+          .join(
+            ' / ',
+          ) ||
+        null;
+
       setCellValue(
         worksheet,
         `H${firstRow}`,
-        driverDuty?.notes ??
-          null,
+        dayNote,
       );
     }
 
