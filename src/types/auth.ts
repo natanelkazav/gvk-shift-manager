@@ -58,7 +58,8 @@ export type PermissionKey =
   | 'settings.view'
   | 'settings.manage'
 
-  | 'schedule_import.manage';
+  | 'schedule_import.manage'
+  | 'schedule_export.manage';
 
 export interface UserProfile {
   id: string;

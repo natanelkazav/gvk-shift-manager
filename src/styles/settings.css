@@ -329,3 +329,42 @@
   font-size: 0.72rem;
   line-height: 1.5;
 }
+
+.schedule-export-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.schedule-export-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #eff6ff;
+}
+
+.schedule-export-summary span {
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.schedule-export-summary strong {
+  color: #1d4ed8;
+  font-size: 0.76rem;
+}
+
+.schedule-export-spinner {
+  animation: schedule-export-spin 0.85s linear infinite;
+}
+
+@keyframes schedule-export-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

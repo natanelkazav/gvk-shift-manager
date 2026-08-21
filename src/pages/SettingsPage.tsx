@@ -11,6 +11,9 @@ import {
 import ScheduleImportPanel
   from '../components/scheduleImport/ScheduleImportPanel';
 
+import ScheduleExportPanel
+  from '../components/settings/ScheduleExportPanel';
+
 import PushNotificationSettings
   from '../components/settings/PushNotificationSettings';
 
@@ -39,9 +42,15 @@ function SettingsPage() {
       'schedule_import.manage',
     );
 
+  const canExportSchedules =
+    hasPermission(
+      'schedule_export.manage',
+    );
+
   const canViewAdminActions =
     canManageNotifications ||
-    canImportSchedules;
+    canImportSchedules ||
+    canExportSchedules;
 
   return (
     <section className="settings-page">
@@ -109,6 +118,12 @@ function SettingsPage() {
                   </div>
 
                   <ScheduleImportPanel />
+                </section>
+              ) : null}
+
+              {canExportSchedules ? (
+                <section className="settings-export-section">
+                  <ScheduleExportPanel />
                 </section>
               ) : null}
             </div>
