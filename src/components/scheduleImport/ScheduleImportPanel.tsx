@@ -2384,7 +2384,7 @@ const handlePreviewImport =
                           )}
                         </td>
 
-                          <td>
+                          <td dir="ltr">
                             {formatShiftTime(
                               shift.startTime,
                               shift.endTime,
@@ -2592,7 +2592,7 @@ const handlePreviewImport =
                           )}
                         </td>
 
-                        <td>
+                        <td dir="ltr">
                           {formatShiftTime(
                             shift.startTime,
                             shift.endTime,
