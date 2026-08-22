@@ -65,6 +65,7 @@ interface EditUserModalProps {
 }
 
 interface EditUserFormState {
+  email: string;
   displayName: string;
   scheduleName: string;
   role: UserRole;
@@ -82,6 +83,9 @@ function createFormState(
   user: UserProfile,
 ): EditUserFormState {
   return {
+    email:
+      user.email,
+
     displayName:
       user.displayName,
 
@@ -295,8 +299,22 @@ function EditUserModal({
 
   const validateForm =
     (): string | null => {
+      const normalizedEmail =
+        formState.email
+          .trim()
+          .toLowerCase();
+
       const normalizedDisplayName =
         formState.displayName.trim();
+
+      if (
+        !normalizedEmail ||
+        !normalizedEmail.includes(
+          '@',
+        )
+      ) {
+        return 'יש להזין כתובת אימייל תקינה.';
+      }
 
       if (!normalizedDisplayName) {
         return 'יש להזין שם תצוגה.';
@@ -384,6 +402,11 @@ function EditUserModal({
       await onSave(
         user.id,
         {
+          email:
+            formState.email
+              .trim()
+              .toLowerCase(),
+
           displayName:
             formState.displayName
               .trim(),
@@ -555,7 +578,7 @@ function EditUserModal({
                 עריכת משתמש
               </h2>
 
-              <p>{user.email}</p>
+              <p>{formState.email}</p>
             </div>
           </div>
 
@@ -688,6 +711,42 @@ function EditUserModal({
               className="edit-user-tab-panel"
             >
               <div className="edit-user-form-grid">
+                <Input
+                  id="edit-user-email"
+                  label="כתובת אימייל"
+                  type="email"
+                  value={
+                    formState.email
+                  }
+                  disabled={
+                    isInteractionDisabled
+                  }
+                  onChange={(
+                    event,
+                  ) => {
+                    setFormState(
+                      (
+                        currentState,
+                      ) =>
+                        currentState
+                          ? {
+                              ...currentState,
+
+                              email:
+                                event
+                                  .target
+                                  .value,
+                            }
+                          : currentState,
+                    );
+
+                    setFormError(
+                      null,
+                    );
+                  }}
+                  required
+                />
+
                 <Input
                   id="edit-user-display-name"
                   label="שם תצוגה"

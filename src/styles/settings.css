@@ -514,3 +514,19 @@
     width: 100%;
   }
 }
+
+.schedule-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .schedule-export-actions {
+    flex-direction: column;
+  }
+
+  .schedule-export-actions .button {
+    width: 100%;
+  }
+}

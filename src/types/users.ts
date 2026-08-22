@@ -10,6 +10,7 @@ export interface UsersFilters {
 }
 
 export interface UpdateUserProfileInput {
+  email?: string;
   displayName?: string;
   scheduleName?: string | null;
   role?: UserRole;

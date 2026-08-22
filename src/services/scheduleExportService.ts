@@ -72,6 +72,11 @@ interface ScheduleExportResult {
   morningDriverAssignments: number;
 }
 
+interface ScheduleExportFile {
+  blob: Blob;
+  result: ScheduleExportResult;
+}
+
 interface DayRowDefinition {
   dispatcherHours: string;
   morningDriverHours: string;
@@ -827,23 +832,28 @@ function createFileName(
   return `לוח שיבוצים ${monthName} ${shortYear}.xlsx`;
 }
 
-async function downloadWorkbook(
+async function createWorkbookBlob(
   workbook: ExcelJS.Workbook,
-  fileName: string,
-): Promise<void> {
+): Promise<Blob> {
   const buffer =
     await workbook.xlsx
       .writeBuffer();
 
-  const blob =
-    new Blob(
-      [buffer as BlobPart],
-      {
-        type:
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      },
-    );
+  return new Blob(
+    [
+      buffer as BlobPart,
+    ],
+    {
+      type:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    },
+  );
+}
 
+function downloadWorkbookBlob(
+  blob: Blob,
+  fileName: string,
+): void {
   const url =
     URL.createObjectURL(
       blob,
@@ -876,10 +886,10 @@ async function downloadWorkbook(
 }
 
 class ScheduleExportService {
-  async exportMonth(
+  async createMonthFile(
     year: number,
     month: number,
-  ): Promise<ScheduleExportResult> {
+  ): Promise<ScheduleExportFile> {
     if (
       !Number.isInteger(year) ||
       year < 2020 ||
@@ -1200,42 +1210,67 @@ class ScheduleExportService {
         month,
       );
 
-    await downloadWorkbook(
-      workbook,
-      fileName,
-    );
+    const blob =
+      await createWorkbookBlob(
+        workbook,
+      );
 
     return {
-      fileName,
-      year,
-      month,
-      dispatcherShifts:
-        dispatcherSchedule
-          .shifts.length,
-      driverDuties:
-        driverSchedule.days
-          .filter(
-            (
-              day,
-            ) =>
-              Boolean(
-                day.assignedUserId,
-              ),
-          )
-          .length,
-      morningDriverAssignments:
-        morningDriverSchedule
-          .assignments
-          .filter(
-            (
-              assignment,
-            ) =>
-              Boolean(
-                assignment.assignedUserId,
-              ),
-          )
-          .length,
+      blob,
+
+      result: {
+        fileName,
+        year,
+        month,
+        dispatcherShifts:
+          dispatcherSchedule
+            .shifts.length,
+        driverDuties:
+          driverSchedule.days
+            .filter(
+              (
+                day,
+              ) =>
+                Boolean(
+                  day.assignedUserId,
+                ),
+            )
+            .length,
+        morningDriverAssignments:
+          morningDriverSchedule
+            .assignments
+            .filter(
+              (
+                assignment,
+              ) =>
+                Boolean(
+                  assignment.assignedUserId,
+                ),
+            )
+            .length,
+      },
     };
+  }
+
+  async exportMonth(
+    year: number,
+    month: number,
+  ): Promise<ScheduleExportResult> {
+    const {
+      blob,
+      result,
+    } =
+      await this.createMonthFile(
+        year,
+        month,
+      );
+
+    downloadWorkbookBlob(
+      blob,
+      result.fileName,
+    );
+
+    return result;
   }
 }
 
@@ -1243,5 +1278,6 @@ export const scheduleExportService =
   new ScheduleExportService();
 
 export type {
+  ScheduleExportFile,
   ScheduleExportResult,
 };

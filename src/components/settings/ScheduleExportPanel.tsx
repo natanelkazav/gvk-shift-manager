@@ -1,4 +1,5 @@
 import {
+  CloudUpload,
   Download,
   FileSpreadsheet,
   LoaderCircle,
@@ -8,6 +9,10 @@ import {
   useMemo,
   useState,
 } from 'react';
+
+import {
+  scheduleArchiveService,
+} from '../../services/scheduleArchiveService';
 
 import {
   scheduleExportService,
@@ -112,6 +117,12 @@ function ScheduleExportPanel() {
     useState(false);
 
   const [
+    isSending,
+    setIsSending,
+  ] =
+    useState(false);
+
+  const [
     error,
     setError,
   ] =
@@ -180,6 +191,58 @@ function ScheduleExportPanel() {
       }
     };
 
+  const handleSendToTeams =
+    async (): Promise<void> => {
+      setIsSending(
+        true,
+      );
+      setError(
+        null,
+      );
+      setSuccessMessage(
+        null,
+      );
+
+      try {
+        const {
+          blob,
+          result,
+        } =
+          await scheduleExportService
+            .createMonthFile(
+              selectedTarget.year,
+              selectedTarget.month,
+            );
+
+        const response =
+          await scheduleArchiveService
+            .sendScheduleFile(
+              blob,
+              result.fileName,
+              result.year,
+              result.month,
+            );
+
+        setSuccessMessage(
+          response.auditLogged
+            ? 'המייל עם קובץ השיבוצים נשלח בהצלחה. Power Automate אמור להעביר אותו ל-Teams.'
+            : 'המייל נשלח בהצלחה, אך רישום הפעולה ביומן המערכת נכשל.',
+        );
+      } catch (
+        sendError
+      ) {
+        setError(
+          getErrorMessage(
+            sendError,
+          ),
+        );
+      } finally {
+        setIsSending(
+          false,
+        );
+      }
+    };
+
   return (
     <Card>
       <CardHeader>
@@ -204,7 +267,7 @@ function ScheduleExportPanel() {
           <Select
             label="חודש לייצוא"
             value={target}
-            disabled={isExporting}
+            disabled={isExporting || isSending}
             options={[
               {
                 value: 'current',
@@ -268,30 +331,64 @@ function ScheduleExportPanel() {
             </div>
           ) : null}
 
-          <Button
-            type="button"
-            disabled={isExporting}
-            onClick={() => {
-              void handleExport();
-            }}
-          >
-            {isExporting ? (
-              <LoaderCircle
-                className="schedule-export-spinner"
-                size={17}
-                aria-hidden="true"
-              />
-            ) : (
-              <Download
-                size={17}
-                aria-hidden="true"
-              />
-            )}
+          <div className="schedule-export-actions">
+            <Button
+              type="button"
+              disabled={
+                isExporting ||
+                isSending
+              }
+              onClick={() => {
+                void handleExport();
+              }}
+            >
+              {isExporting ? (
+                <LoaderCircle
+                  className="schedule-export-spinner"
+                  size={17}
+                  aria-hidden="true"
+                />
+              ) : (
+                <Download
+                  size={17}
+                  aria-hidden="true"
+                />
+              )}
 
-            {isExporting
-              ? 'יוצר קובץ...'
-              : 'הורדת קובץ Excel'}
-          </Button>
+              {isExporting
+                ? 'יוצר קובץ...'
+                : 'הורדת קובץ Excel'}
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={
+                isExporting ||
+                isSending
+              }
+              onClick={() => {
+                void handleSendToTeams();
+              }}
+            >
+              {isSending ? (
+                <LoaderCircle
+                  className="schedule-export-spinner"
+                  size={17}
+                  aria-hidden="true"
+                />
+              ) : (
+                <CloudUpload
+                  size={17}
+                  aria-hidden="true"
+                />
+              )}
+
+              {isSending
+                ? 'שולח...'
+                : 'שליחה ל-Teams'}
+            </Button>
+          </div>
         </div>
       </CardBody>
     </Card>

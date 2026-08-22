@@ -253,12 +253,82 @@ async function createUser(
   return data.user;
 }
 
+async function updateUserEmail(
+  userId: string,
+  email: string,
+): Promise<void> {
+  const normalizedEmail =
+    email
+      .trim()
+      .toLowerCase();
+
+  if (
+    !normalizedEmail ||
+    !normalizedEmail.includes(
+      '@',
+    )
+  ) {
+    throw new Error(
+      'כתובת האימייל אינה תקינה.',
+    );
+  }
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.functions
+      .invoke<{
+        success: boolean;
+        email: string;
+      }>(
+        'update-user-email',
+        {
+          body: {
+            userId,
+            email:
+              normalizedEmail,
+          },
+        },
+      );
+
+  if (
+    error
+  ) {
+    throw new Error(
+      await getFunctionErrorMessage(
+        error,
+      ),
+    );
+  }
+
+  if (
+    !data ||
+    data.success !==
+      true
+  ) {
+    throw new Error(
+      'השרת לא אישר את עדכון כתובת האימייל.',
+    );
+  }
+}
+
 async function updateUser(
   userId: string,
   input: UpdateUserProfileInput,
 ): Promise<UserProfile> {
   const updateData =
     buildProfileUpdate(input);
+
+  if (
+    input.email !==
+      undefined
+  ) {
+    await updateUserEmail(
+      userId,
+      input.email,
+    );
+  }
 
   const { data, error } =
     await supabase
