@@ -99,6 +99,14 @@ export interface OpenMorningDriverAvailabilityPeriodResponse {
     number;
 }
 
+export interface ReopenMorningDriverAvailabilityPeriodResponse {
+  periodId: string;
+  year: number;
+  month: number;
+  status: 'open';
+  openedAt: string;
+}
+
 export interface DeleteMorningDriverAvailabilityPeriodResponse {
   deletedPeriodId: string;
 

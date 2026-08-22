@@ -4,7 +4,6 @@ import {
   Clock3,
   LoaderCircle,
   Lock,
-  RefreshCw,
   RotateCcw,
   Users,
   XCircle,
@@ -17,6 +16,15 @@ import {
 import {
   Button,
 } from '../ui';
+
+import AvailabilityManagementHeader
+  from '../availability/AvailabilityManagementHeader';
+
+import AvailabilityManagementStats
+  from '../availability/AvailabilityManagementStats';
+
+import AvailabilityManagementActionBar
+  from '../availability/AvailabilityManagementActionBar';
 
 import type {
   MorningDriverAvailabilityManagementData,
@@ -47,6 +55,18 @@ interface MorningDriverAvailabilityManagementPanelProps {
   onClosePeriod: (
     force: boolean,
   ) => void;
+
+  onReopenPeriod:
+    () => void;
+
+  onDeletePeriod:
+    () => void;
+
+  onPrepareSchedule:
+    () => void;
+
+  onGoToSchedule:
+    () => void;
 }
 
 function formatDate(
@@ -150,6 +170,10 @@ function MorningDriverAvailabilityManagementPanel({
   onRefresh,
   onReopenSubmission,
   onClosePeriod,
+  onReopenPeriod,
+  onDeletePeriod,
+  onPrepareSchedule,
+  onGoToSchedule,
 }: MorningDriverAvailabilityManagementPanelProps) {
   const submissionsByUserId =
     useMemo(
@@ -271,42 +295,35 @@ function MorningDriverAvailabilityManagementPanel({
 
   return (
     <section className="morning-driver-management-panel">
-      <header className="morning-driver-management-header">
-        <div>
-          <span>
-            מעקב מנהל
-          </span>
-
-          <h2>
-            {data.period.title ??
-              `${data.period.month}/${data.period.year}`}
-          </h2>
-
-          <p>
-            סטטוס הגשות ומטריצת זמינות לפי משמרת.
-          </p>
-        </div>
-
-        <div className="morning-driver-management-header-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={
-              isLoading
-            }
-            onClick={
-              onRefresh
-            }
-          >
-            <RefreshCw
-              size={17}
-              aria-hidden="true"
-            />
-
-            רענון
-          </Button>
-
-          {data.period.status ===
+      <AvailabilityManagementHeader
+        category="morning_driver"
+        categoryLabel="כונני בוקר"
+        title={
+          data.period.title ??
+          `${data.period.month}/${data.period.year}`
+        }
+        description="מעקב אחר סטטוס ההגשות, זמינות לפי משמרת וכלי ניהול התקופה."
+        periodId={
+          data.period.id
+        }
+        periodStatus={
+          data.period.status
+        }
+        submissionDeadline={
+          data.period.submissionDeadline
+        }
+        isBusy={
+          isLoading ||
+          isClosing ||
+          reopeningUserId !==
+            null
+        }
+        error={error}
+        onRefresh={
+          onRefresh
+        }
+        actions={
+          data.period.status ===
           'open' ? (
             <Button
               type="button"
@@ -358,83 +375,80 @@ function MorningDriverAvailabilityManagementPanel({
               {isClosing
                 ? 'סוגר...'
                 : canCloseNormally
-                  ? 'סגירת חודש'
+                  ? 'סגירת תקופה'
                   : 'סגירה כפויה'}
             </Button>
-          ) : null}
-        </div>
-      </header>
+          ) : null
+        }
+      />
 
-      {error ? (
-        <div
-          className="morning-driver-management-error"
-          role="alert"
-        >
-          {error}
-        </div>
-      ) : null}
+      <AvailabilityManagementActionBar
+        status={data.period.status}
+        isBusy={
+          isLoading ||
+          isClosing ||
+          reopeningUserId !==
+            null
+        }
+        onClose={
+          data.period.status === 'open'
+            ? () => {
+                onClosePeriod(
+                  !canCloseNormally,
+                );
+              }
+            : null
+        }
+        onReopen={
+          data.period.status === 'closed'
+            ? onReopenPeriod
+            : null
+        }
+        onDelete={onDeletePeriod}
+        onPrepareSchedule={
+          data.period.status === 'closed'
+            ? onPrepareSchedule
+            : null
+        }
+        onGoToSchedule={onGoToSchedule}
+      />
 
-      <div className="morning-driver-management-statistics">
-        <article>
-          <Users
-            size={21}
-            aria-hidden="true"
-          />
-
-          <strong>
-            {data.statistics.totalDrivers}
-          </strong>
-
-          <span>
-            כונני בוקר
-          </span>
-        </article>
-
-        <article>
-          <CheckCircle2
-            size={21}
-            aria-hidden="true"
-          />
-
-          <strong>
-            {data.statistics.submittedDrivers}
-          </strong>
-
-          <span>
-            הגישו
-          </span>
-        </article>
-
-        <article>
-          <Clock3
-            size={21}
-            aria-hidden="true"
-          />
-
-          <strong>
-            {data.statistics.draftDrivers}
-          </strong>
-
-          <span>
-            בטיוטה
-          </span>
-        </article>
-
-        <article>
-          <RotateCcw
-            size={21}
-            aria-hidden="true"
-          />
-
-          <strong>
-            {data.statistics.reopenedDrivers}
-          </strong>
-
-          <span>
-            נפתחו מחדש
-          </span>
-        </article>
-      </div>
+      <AvailabilityManagementStats
+        items={[
+          {
+            label:
+              'כונני בוקר פעילים',
+            value:
+              data.statistics.totalDrivers,
+            icon:
+              Users,
+          },
+          {
+            label:
+              'הגישו',
+            value:
+              data.statistics.submittedDrivers,
+            icon:
+              CheckCircle2,
+          },
+          {
+            label:
+              'בטיוטה',
+            value:
+              data.statistics.draftDrivers,
+            icon:
+              Clock3,
+          },
+          {
+            label:
+              'לא התחילו',
+            value:
+              data.statistics.notStartedDrivers,
+            icon:
+              CircleAlert,
+          },
+        ]}
+      />
 
       <section className="morning-driver-management-submissions">
         <header>

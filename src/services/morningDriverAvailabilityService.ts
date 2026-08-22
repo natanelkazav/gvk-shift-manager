@@ -10,6 +10,7 @@ import type {
   MorningDriverAvailabilityManagementData,
   MorningDriverAvailabilityPeriodListItem,
   OpenMorningDriverAvailabilityPeriodResponse,
+  ReopenMorningDriverAvailabilityPeriodResponse,
   MorningDriverAvailabilityPersonalData,
   SaveMorningDriverAvailabilityRequest,
   ReopenMorningDriverAvailabilitySubmissionResponse,
@@ -224,6 +225,47 @@ class MorningDriverAvailabilityService {
 
     return data as
       OpenMorningDriverAvailabilityPeriodResponse;
+  }
+
+
+  async reopenPeriod(
+    periodId: string,
+  ): Promise<ReopenMorningDriverAvailabilityPeriodResponse> {
+    const normalizedPeriodId =
+      periodId.trim();
+
+    if (!normalizedPeriodId) {
+      throw new Error(
+        'Morning driver availability period id is required.',
+      );
+    }
+
+    const {
+      data,
+      error,
+    } =
+      await supabase.rpc(
+        'reopen_morning_driver_availability_period',
+        {
+          requested_period_id:
+            normalizedPeriodId,
+        },
+      );
+
+    if (error) {
+      throw normalizeMorningDriverAvailabilityError(
+        error,
+      );
+    }
+
+    if (!data) {
+      throw new Error(
+        'לא התקבלה תשובה בעת פתיחת חודש אילוצי כונני הבוקר מחדש.',
+      );
+    }
+
+    return data as
+      ReopenMorningDriverAvailabilityPeriodResponse;
   }
 
   async deletePeriod(

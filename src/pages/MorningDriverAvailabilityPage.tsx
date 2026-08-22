@@ -21,6 +21,10 @@ import {
 } from 'react';
 
 import {
+  useNavigate,
+} from 'react-router-dom';
+
+import {
   useAuth,
 } from '../auth/AuthContext';
 
@@ -31,6 +35,10 @@ import {
 import {
   useMorningDriverAvailabilityManagement,
 } from '../hooks/useMorningDriverAvailabilityManagement';
+
+import {
+  useMorningDriverSchedule,
+} from '../hooks/useMorningDriverSchedule';
 
 import MorningDriverAvailabilityManagementPanel
   from '../components/morningDriverAvailability/MorningDriverAvailabilityManagementPanel';
@@ -172,6 +180,7 @@ function getPeriodLabel(
 }
 
 function MorningDriverAvailabilityPage() {
+  const navigate = useNavigate();
   const {
     hasPermission,
   } =
@@ -182,6 +191,7 @@ function MorningDriverAvailabilityPage() {
     loadPeriods,
     createPeriod,
     openPeriod,
+    reopenPeriod,
     deletePeriod,
     clearError,
   } =
@@ -201,6 +211,15 @@ function MorningDriverAvailabilityPage() {
       resetManagement,
   } =
     useMorningDriverAvailabilityManagement();
+
+  const {
+    state:
+      scheduleState,
+
+    createDraft:
+      createMorningDriverScheduleDraft,
+  } =
+    useMorningDriverSchedule();
 
   const [
     isCreateDialogOpen,
@@ -552,6 +571,94 @@ function MorningDriverAvailabilityPage() {
       }
     };
 
+  const handleReopenManagementPeriod =
+    async (): Promise<void> => {
+      if (
+        !managementState.data
+      ) {
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          'לפתוח מחדש את חודש האילוצים? כונני הבוקר יוכלו שוב לערוך ולהגיש.',
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await reopenPeriod(
+          managementState.data.period.id,
+        );
+
+        await loadManagement(
+          managementState.data.period.id,
+        );
+
+        await loadPeriods();
+      } catch {
+        // Hook exposes the error.
+      }
+    };
+
+  const handleDeleteManagementPeriod =
+    async (): Promise<void> => {
+      if (
+        !managementState.data
+      ) {
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          'למחוק את חודש אילוצי כונני הבוקר ואת כל הנתונים שנשמרו בו?',
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await deletePeriod(
+          managementState.data.period.id,
+        );
+
+        resetManagement();
+        await loadPeriods();
+      } catch {
+        // Hook exposes the error.
+      }
+    };
+
+  const handlePrepareMorningDriverSchedule =
+    async (): Promise<void> => {
+      if (
+        !managementState.data ||
+        scheduleState.isCreating
+      ) {
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          'ליצור טיוטת לוח כונני בוקר מהאילוצים הסגורים?',
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await createMorningDriverScheduleDraft(
+          managementState.data.period.id,
+        );
+      } catch {
+        // Schedule hook exposes the error.
+      }
+    };
+
   return (
     <section className="morning-driver-availability-page">
       <header className="morning-driver-page-header">
@@ -764,6 +871,20 @@ function MorningDriverAvailabilityPage() {
             ) => {
               void handleClosePeriod(
                 force,
+              );
+            }}
+            onReopenPeriod={() => {
+              void handleReopenManagementPeriod();
+            }}
+            onDeletePeriod={() => {
+              void handleDeleteManagementPeriod();
+            }}
+            onPrepareSchedule={() => {
+              void handlePrepareMorningDriverSchedule();
+            }}
+            onGoToSchedule={() => {
+              navigate(
+                '/morning-driver-schedule',
               );
             }}
           />

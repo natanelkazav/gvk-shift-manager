@@ -12,6 +12,7 @@ import type {
   DeleteAvailabilityPeriodResult,
   ImportSpecialDaysResult,
   OpenAvailabilityPeriodResult,
+  ReopenAvailabilityPeriodResult,
   RebuildAvailabilityPeriodResult,
 } from '../types/availability';
 
@@ -25,6 +26,7 @@ interface AvailabilityPeriodsState {
   rebuildingPeriodId: string | null;
   openingPeriodId: string | null;
   closingPeriodId: string | null;
+  reopeningPeriodId: string | null;
   deletingPeriodId: string | null;
 
   error: string | null;
@@ -43,6 +45,9 @@ interface AvailabilityPeriodsState {
 
   lastClosedResult:
     CloseAvailabilityPeriodResult | null;
+
+  lastReopenedResult:
+    ReopenAvailabilityPeriodResult | null;
 
   lastDeletedResult:
     DeleteAvailabilityPeriodResult | null;
@@ -73,6 +78,10 @@ interface UseAvailabilityPeriodsResult {
   closePeriod: (
     periodId: string,
   ) => Promise<CloseAvailabilityPeriodResult>;
+
+  reopenPeriod: (
+    periodId: string,
+  ) => Promise<ReopenAvailabilityPeriodResult>;
 
   deletePeriod: (
     periodId: string,
@@ -108,6 +117,7 @@ const initialState:
     rebuildingPeriodId: null,
     openingPeriodId: null,
     closingPeriodId: null,
+    reopeningPeriodId: null,
     deletingPeriodId: null,
 
     error: null,
@@ -117,6 +127,7 @@ const initialState:
     lastRebuildResult: null,
     lastOpenedResult: null,
     lastClosedResult: null,
+    lastReopenedResult: null,
     lastDeletedResult: null,
   };
 
@@ -471,6 +482,65 @@ export function useAvailabilityPeriods():
       [],
     );
 
+  const reopenPeriod =
+    useCallback(
+      async (
+        periodId: string,
+      ): Promise<ReopenAvailabilityPeriodResult> => {
+        setState(
+          (currentState) => ({
+            ...currentState,
+            reopeningPeriodId:
+              periodId,
+            error:
+              null,
+            lastReopenedResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await availabilityService
+              .reopenAvailabilityPeriod(
+                periodId,
+              );
+
+          const periods =
+            await availabilityService
+              .getAvailabilityPeriods();
+
+          setState(
+            (currentState) => ({
+              ...currentState,
+              periods,
+              reopeningPeriodId:
+                null,
+              lastReopenedResult:
+                result,
+            }),
+          );
+
+          return result;
+        } catch (error) {
+          setState(
+            (currentState) => ({
+              ...currentState,
+              reopeningPeriodId:
+                null,
+              error:
+                getErrorMessage(
+                  error,
+                ),
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [],
+    );
+
   const deletePeriod =
     useCallback(
       async (
@@ -612,6 +682,7 @@ export function useAvailabilityPeriods():
     rebuildPeriodSlots,
     openPeriod,
     closePeriod,
+    reopenPeriod,
     deletePeriod,
     clearError,
     clearCreatedResult,

@@ -16,6 +16,15 @@ import {
   Button,
 } from '../ui';
 
+import AvailabilityManagementHeader
+  from '../availability/AvailabilityManagementHeader';
+
+import AvailabilityManagementStats
+  from '../availability/AvailabilityManagementStats';
+
+import AvailabilityManagementActionBar
+  from '../availability/AvailabilityManagementActionBar';
+
 import type {
   DriverAvailabilityEntry,
   DriverAvailabilityManagementData,
@@ -34,6 +43,24 @@ interface DriverAvailabilityManagementPanelProps {
     string | null;
 
   onRefresh:
+    () => void;
+
+  onOpenPeriod:
+    () => void;
+
+  onClosePeriod:
+    () => void;
+
+  onReopenPeriod:
+    () => void;
+
+  onDeletePeriod:
+    () => void;
+
+  onPrepareSchedule:
+    () => void;
+
+  onGoToSchedule:
     () => void;
 }
 
@@ -154,6 +181,12 @@ function DriverAvailabilityManagementPanel({
   isLoading,
   error,
   onRefresh,
+  onOpenPeriod,
+  onClosePeriod,
+  onReopenPeriod,
+  onDeletePeriod,
+  onPrepareSchedule,
+  onGoToSchedule,
 }: DriverAvailabilityManagementPanelProps) {
   const submissionsByUserId =
     useMemo(
@@ -320,149 +353,94 @@ function DriverAvailabilityManagementPanel({
 
   return (
     <section className="driver-availability-management-panel">
-      <header className="driver-availability-management-header">
-        <div className="driver-availability-management-heading">
-          <span className="driver-availability-management-heading-icon">
-            <ClipboardCheck
-              size={23}
-              aria-hidden="true"
-            />
-          </span>
+      <AvailabilityManagementHeader
+        category="driver"
+        categoryLabel="כוננים"
+        title={
+          periodTitle
+        }
+        description="מעקב אחר סטטוס ההגשות, זמינות יומית ומוכנות ליצירת לוח הכוננויות."
+        periodId={
+          data.period.id
+        }
+        periodStatus={
+          data.period.status
+        }
+        submissionDeadline={
+          data.period.submissionDeadline
+        }
+        isBusy={
+          isLoading
+        }
+        error={error}
+        onRefresh={
+          onRefresh
+        }
+      />
 
-          <div>
-            <span>
-              מעקב אילוצי כוננים
-            </span>
+      <AvailabilityManagementActionBar
+        status={data.period.status}
+        isBusy={isLoading}
+        onOpen={
+          data.period.status === 'draft'
+            ? onOpenPeriod
+            : null
+        }
+        onClose={
+          data.period.status === 'open'
+            ? onClosePeriod
+            : null
+        }
+        onReopen={
+          data.period.status === 'closed'
+            ? onReopenPeriod
+            : null
+        }
+        onDelete={onDeletePeriod}
+        onPrepareSchedule={
+          data.period.status === 'closed'
+            ? onPrepareSchedule
+            : null
+        }
+        onGoToSchedule={onGoToSchedule}
+      />
 
-            <h2>
-              {periodTitle}
-            </h2>
-
-            <p>
-              סטטוס הגשות ומטריצת
-              זמינות יומית.
-            </p>
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={
-            onRefresh
-          }
-        >
-          <RefreshCw
-            size={17}
-            aria-hidden="true"
-          />
-
-          רענון
-        </Button>
-      </header>
-
-      <div className="driver-availability-management-period-info">
-        <span>
-          סטטוס חודש:
-        </span>
-
-        <strong>
-          {data.period.status}
-        </strong>
-
-        <span>
-          מועד אחרון:
-        </span>
-
-        <strong>
-          {formatDateTime(
-            data.period
-              .submissionDeadline,
-          )}
-        </strong>
-      </div>
-
-      <div className="driver-availability-management-statistics">
-        <article>
-          <Users
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <strong>
-              {
-                data.statistics
-                  .totalDrivers
-              }
-            </strong>
-
-            <span>
-              כוננים פעילים
-            </span>
-          </div>
-        </article>
-
-        <article>
-          <CheckCircle2
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <strong>
-              {
-                data.statistics
-                  .submittedDrivers
-              }
-            </strong>
-
-            <span>
-              הגישו
-            </span>
-          </div>
-        </article>
-
-        <article>
-          <ClipboardCheck
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <strong>
-              {
-                data.statistics
-                  .draftDrivers
-              }
-            </strong>
-
-            <span>
-              בטיוטה
-            </span>
-          </div>
-        </article>
-
-        <article>
-          <CircleAlert
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <strong>
-              {
-                data.statistics
-                  .notStartedDrivers
-              }
-            </strong>
-
-            <span>
-              טרם התחילו
-            </span>
-          </div>
-        </article>
-      </div>
+      <AvailabilityManagementStats
+        items={[
+          {
+            label:
+              'כוננים פעילים',
+            value:
+              data.statistics.totalDrivers,
+            icon:
+              Users,
+          },
+          {
+            label:
+              'הגישו',
+            value:
+              data.statistics.submittedDrivers,
+            icon:
+              CheckCircle2,
+          },
+          {
+            label:
+              'בטיוטה',
+            value:
+              data.statistics.draftDrivers,
+            icon:
+              ClipboardCheck,
+          },
+          {
+            label:
+              'לא התחילו',
+            value:
+              data.statistics.notStartedDrivers,
+            icon:
+              CircleAlert,
+          },
+        ]}
+      />
 
       <section className="driver-availability-submissions-section">
         <header>

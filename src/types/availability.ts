@@ -73,6 +73,12 @@ export interface CloseAvailabilityPeriodResult {
   totalDispatchers: number;
   submittedDispatchers: number;
 }
+export interface ReopenAvailabilityPeriodResult {
+  periodId: string;
+  periodStatus: 'open';
+  openedAt: string;
+}
+
 export interface DeleteAvailabilityPeriodResult {
   deletedPeriodId: string;
   deletedPeriodTitle: string | null;

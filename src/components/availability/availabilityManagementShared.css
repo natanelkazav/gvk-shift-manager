@@ -1,0 +1,252 @@
+.availability-management-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.availability-management-heading {
+  min-width: 0;
+}
+
+.availability-management-eyebrow {
+  color: #2563eb;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.availability-management-heading h2 {
+  margin: 4px 0 5px;
+  color: #0f172a;
+  font-size: 1.15rem;
+}
+
+.availability-management-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.availability-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.availability-management-period-bar {
+  display: grid;
+  grid-template-columns:
+    minmax(150px, auto)
+    minmax(220px, 1fr)
+    auto;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border: 1px solid #dbe3ef;
+  border-radius: 13px;
+  background: #f8fafc;
+}
+
+.availability-management-period-bar > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.availability-management-period-bar span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+.availability-management-period-bar strong {
+  color: #0f172a;
+  font-size: 0.82rem;
+}
+
+.availability-management-status {
+  display: inline-flex;
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+.availability-management-status-draft {
+  background: #f1f5f9;
+  color: #475569 !important;
+}
+
+.availability-management-status-open {
+  background: #dcfce7;
+  color: #166534 !important;
+}
+
+.availability-management-status-closed {
+  background: #ffedd5;
+  color: #9a3412 !important;
+}
+
+.availability-management-status-archived {
+  background: #e0e7ff;
+  color: #4338ca !important;
+}
+
+.availability-management-stats {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0, 1fr)
+    );
+  gap: 10px;
+}
+
+.availability-management-stats article {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.availability-management-stats article > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.availability-management-stats strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.availability-management-stats span {
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+.availability-management-inline-error {
+  padding: 11px 13px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.76rem;
+}
+
+.availability-management-deadline-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.availability-management-deadline-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.availability-management-deadline-form label > span {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.availability-management-deadline-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  direction: ltr;
+}
+
+.availability-management-deadline-form p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .availability-management-header {
+    flex-direction: column;
+  }
+
+  .availability-management-actions,
+  .availability-management-actions > * {
+    width: 100%;
+  }
+
+  .availability-management-period-bar {
+    grid-template-columns:
+      1fr;
+  }
+
+  .availability-management-period-bar > .button {
+    width: 100%;
+  }
+
+  .availability-management-stats {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0, 1fr)
+      );
+  }
+}
+
+
+.availability-management-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 16px;
+  background: var(--color-surface, #fff);
+}
+
+.availability-management-action-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.availability-management-action-copy strong {
+  font-size: 0.95rem;
+}
+
+.availability-management-action-copy span {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.availability-management-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .availability-management-action-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .availability-management-action-buttons > * {
+    flex: 1 1 145px;
+  }
+}

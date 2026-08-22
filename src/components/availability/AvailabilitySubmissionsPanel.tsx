@@ -7,6 +7,15 @@ import {
   UserRoundCheck,
   UsersRound,
 } from 'lucide-react';
+
+import AvailabilityManagementHeader
+  from './AvailabilityManagementHeader';
+
+import AvailabilityManagementStats
+  from './AvailabilityManagementStats';
+
+import AvailabilityManagementActionBar
+  from './AvailabilityManagementActionBar';
 import { Button } from '../ui';
 import type {
   AvailabilitySubmissionTrackingDispatcher,
@@ -43,6 +52,10 @@ interface AvailabilitySubmissionsPanelProps {
   onRefresh: () => Promise<void>;
   onOpenMatrix: () => Promise<void>;
   onClosePeriod: () => Promise<void>;
+  onReopenPeriod?: () => Promise<void>;
+  onDeletePeriod?: () => Promise<void>;
+  onPrepareSchedule?: () => Promise<void>;
+  onGoToSchedule?: () => void;
   onClose: () => void;
 }
 
@@ -90,6 +103,10 @@ function AvailabilitySubmissionsPanel({
   onRefresh,
   onOpenMatrix,
   onClosePeriod,
+  onReopenPeriod,
+  onDeletePeriod,
+  onPrepareSchedule,
+  onGoToSchedule,
   onClose,
 }: AvailabilitySubmissionsPanelProps) {
   if (isLoading) {
@@ -161,171 +178,163 @@ function AvailabilitySubmissionsPanel({
 
   return (
     <section className="availability-submissions-panel">
-      <header className="availability-submissions-header">
-        <div>
-          <span className="availability-submissions-eyebrow">
-            מעקב מנהל
-          </span>
-
-          <h2>
-            מעקב הגשות —{' '}
-            {data.period.title ??
-              `${data.period.month}/${data.period.year}`}
-          </h2>
-
-          <p>
-            מועד אחרון להגשה:{' '}
-            {formatDate(
-              data.period.submissionDeadline,
-            )}
-          </p>
-        </div>
-
-        <div className="availability-submissions-header-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              void onOpenMatrix();
-            }}
-          >
-            <BarChart3
-              size={17}
-              aria-hidden="true"
-            />
-
-            הצגת זמינות למשמרות
-          </Button>
-
-          {data.period.status ===
-          'open' ? (
+      <AvailabilityManagementHeader
+        category="dispatcher"
+        categoryLabel="מוקדנים"
+        title={
+          data.period.title ??
+          `${data.period.month}/${data.period.year}`
+        }
+        description="מעקב אחר סטטוס ההגשות, זמינות למשמרות וכלי ניהול התקופה."
+        periodId={
+          data.period.id
+        }
+        periodStatus={
+          data.period.status
+        }
+        submissionDeadline={
+          data.period.submissionDeadline
+        }
+        isBusy={
+          isLoading ||
+          isClosing
+        }
+        error={error}
+        onRefresh={
+          onRefresh
+        }
+        actions={
+          <>
             <Button
               type="button"
-              disabled={
-                !canClose ||
-                isClosing
-              }
+              variant="secondary"
               onClick={() => {
-                void onClosePeriod();
+                void onOpenMatrix();
               }}
             >
-              <LockKeyhole
+              <BarChart3
                 size={17}
                 aria-hidden="true"
               />
 
-              {isClosing
-                ? 'סוגר תקופה...'
-                : 'סגירת תקופת האילוצים'}
+              מטריצת זמינות
             </Button>
-          ) : null}
 
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              void onRefresh();
-            }}
-          >
-            <RefreshCw
-              size={17}
-              aria-hidden="true"
-            />
+            {data.period.status ===
+            'open' ? (
+              <Button
+                type="button"
+                disabled={
+                  !canClose ||
+                  isClosing
+                }
+                onClick={() => {
+                  void onClosePeriod();
+                }}
+              >
+                <LockKeyhole
+                  size={17}
+                  aria-hidden="true"
+                />
 
-            רענון
-          </Button>
+                {isClosing
+                  ? 'סוגר תקופה...'
+                  : 'סגירת תקופה'}
+              </Button>
+            ) : null}
 
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onClose}
-          >
-            סגירה
-          </Button>
-        </div>
-      </header>
-
-      <div className="availability-submissions-summary">
-        <article>
-          <UsersRound
-            size={21}
-            aria-hidden="true"
-          />
-
-          <div>
-            <strong>
-              {
-                data.summary
-                  .totalDispatchers
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={
+                onClose
               }
-            </strong>
+            >
+              סגירה
+            </Button>
+          </>
+        }
+      />
 
-            <span>
-              מוקדנים פעילים
-            </span>
-          </div>
-        </article>
-
-        <article>
-          <UserRoundCheck
-            size={21}
-            aria-hidden="true"
-          />
-
-          <div>
-            <strong>
-              {
-                data.summary
-                  .submittedDispatchers
+      <AvailabilityManagementActionBar
+        status={data.period.status}
+        isBusy={
+          isLoading ||
+          isClosing
+        }
+        onClose={
+          data.period.status === 'open' &&
+          canClose
+            ? () => {
+                void onClosePeriod();
               }
-            </strong>
-
-            <span>
-              הגישו
-            </span>
-          </div>
-        </article>
-
-        <article>
-          <Clock3
-            size={21}
-            aria-hidden="true"
-          />
-
-          <div>
-            <strong>
-              {
-                data.summary
-                  .draftDispatchers
+            : null
+        }
+        onReopen={
+          data.period.status === 'closed' &&
+          onReopenPeriod
+            ? () => {
+                void onReopenPeriod();
               }
-            </strong>
-
-            <span>
-              בטיוטה
-            </span>
-          </div>
-        </article>
-
-        <article>
-          <CircleDashed
-            size={21}
-            aria-hidden="true"
-          />
-
-          <div>
-            <strong>
-              {
-                data.summary
-                  .notStartedDispatchers
+            : null
+        }
+        onDelete={
+          onDeletePeriod
+            ? () => {
+                void onDeletePeriod();
               }
-            </strong>
+            : null
+        }
+        onPrepareSchedule={
+          data.period.status === 'closed' &&
+          onPrepareSchedule
+            ? () => {
+                void onPrepareSchedule();
+              }
+            : null
+        }
+        onGoToSchedule={
+          onGoToSchedule ??
+          null
+        }
+      />
 
-            <span>
-              לא התחילו
-            </span>
-          </div>
-        </article>
-      </div>
+      <AvailabilityManagementStats
+        items={[
+          {
+            label:
+              'מוקדנים פעילים',
+            value:
+              data.summary.totalDispatchers,
+            icon:
+              UsersRound,
+          },
+          {
+            label:
+              'הגישו',
+            value:
+              data.summary.submittedDispatchers,
+            icon:
+              UserRoundCheck,
+          },
+          {
+            label:
+              'בטיוטה',
+            value:
+              data.summary.draftDispatchers,
+            icon:
+              Clock3,
+          },
+          {
+            label:
+              'לא התחילו',
+            value:
+              data.summary.notStartedDispatchers,
+            icon:
+              CircleDashed,
+          },
+        ]}
+      />
 
       <div className="availability-submissions-list">
         {data.dispatchers.map(

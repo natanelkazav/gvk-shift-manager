@@ -13,6 +13,7 @@ import type {
   DeleteMorningDriverAvailabilityPeriodResponse,
   MorningDriverAvailabilityPeriodListItem,
   OpenMorningDriverAvailabilityPeriodResponse,
+  ReopenMorningDriverAvailabilityPeriodResponse,
 } from '../types/morningDriverAvailability';
 
 interface MorningDriverAvailabilityPeriodsState {
@@ -28,6 +29,9 @@ interface MorningDriverAvailabilityPeriodsState {
   openingPeriodId:
     string | null;
 
+  reopeningPeriodId:
+    string | null;
+
   deletingPeriodId:
     string | null;
 
@@ -39,6 +43,9 @@ interface MorningDriverAvailabilityPeriodsState {
 
   lastOpenedResult:
     OpenMorningDriverAvailabilityPeriodResponse | null;
+
+  lastReopenedResult:
+    ReopenMorningDriverAvailabilityPeriodResponse | null;
 
   lastDeletedResult:
     DeleteMorningDriverAvailabilityPeriodResponse | null;
@@ -61,6 +68,10 @@ interface UseMorningDriverAvailabilityPeriodsResult {
   openPeriod: (
     periodId: string,
   ) => Promise<OpenMorningDriverAvailabilityPeriodResponse>;
+
+  reopenPeriod: (
+    periodId: string,
+  ) => Promise<ReopenMorningDriverAvailabilityPeriodResponse>;
 
   deletePeriod: (
     periodId: string,
@@ -86,6 +97,9 @@ const initialState:
     openingPeriodId:
       null,
 
+    reopeningPeriodId:
+      null,
+
     deletingPeriodId:
       null,
 
@@ -96,6 +110,9 @@ const initialState:
       null,
 
     lastOpenedResult:
+      null,
+
+    lastReopenedResult:
       null,
 
     lastDeletedResult:
@@ -502,6 +519,70 @@ export function useMorningDriverAvailabilityPeriods():
       [],
     );
 
+  const reopenPeriod =
+    useCallback(
+      async (
+        periodId: string,
+      ): Promise<ReopenMorningDriverAvailabilityPeriodResponse> => {
+        setState(
+          (
+            current,
+          ) => ({
+            ...current,
+            reopeningPeriodId:
+              periodId,
+            error:
+              null,
+            lastReopenedResult:
+              null,
+          }),
+        );
+
+        try {
+          const result =
+            await morningDriverAvailabilityService
+              .reopenPeriod(
+                periodId,
+              );
+
+          const periods =
+            await morningDriverAvailabilityService
+              .getPeriods();
+
+          setState(
+            (
+              current,
+            ) => ({
+              ...current,
+              periods,
+              reopeningPeriodId:
+                null,
+              lastReopenedResult:
+                result,
+          }));
+
+          return result;
+        } catch (error) {
+          setState(
+            (
+              current,
+            ) => ({
+              ...current,
+              reopeningPeriodId:
+                null,
+              error:
+                normalizeMorningDriverAvailabilityError(
+                  error,
+                ),
+            }),
+          );
+
+          throw error;
+        }
+      },
+      [],
+    );
+
   const deletePeriod =
     useCallback(
       async (
@@ -642,6 +723,8 @@ export function useMorningDriverAvailabilityPeriods():
     createPeriod,
 
     openPeriod,
+
+    reopenPeriod,
 
     deletePeriod,
 

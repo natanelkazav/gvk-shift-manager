@@ -400,6 +400,7 @@ const {
     rebuildPeriodSlots,
     openPeriod,
     closePeriod,
+    reopenPeriod,
     deletePeriod,
     clearError,
   } =
@@ -724,6 +725,72 @@ const handleCloseSubmissionsTracking =
          * מתוך useAvailabilityPeriods.
          */
       }
+    };
+
+  const handleReopenAvailabilityPeriod =
+    async (): Promise<void> => {
+      if (
+        !selectedPeriodId ||
+        !submissionsState.data
+      ) {
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          'לפתוח מחדש את תקופת האילוצים? המוקדנים יוכלו שוב לערוך ולהגיש.',
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await reopenPeriod(
+          selectedPeriodId,
+        );
+
+        await loadPeriodSubmissions(
+          selectedPeriodId,
+        );
+      } catch {
+        // Hook exposes the error.
+      }
+    };
+
+  const handleDeleteSelectedAvailabilityPeriod =
+    async (): Promise<void> => {
+      if (
+        !selectedPeriodId ||
+        !submissionsState.data
+      ) {
+        return;
+      }
+
+      const title =
+        submissionsState.data
+          .period.title ??
+        `${submissionsState.data.period.month}/${submissionsState.data.period.year}`;
+
+      await handleDeleteAvailabilityPeriod(
+        selectedPeriodId,
+        title,
+      );
+    };
+
+  const handlePrepareSelectedAvailabilityPeriod =
+    async (): Promise<void> => {
+      if (!selectedPeriodId) {
+        return;
+      }
+
+      setActiveWorkspaceTab(
+        'schedule-preparation',
+      );
+
+      await handleOpenAssignmentCandidates(
+        selectedPeriodId,
+      );
     };
 
   const canCloseSelectedPeriod =
@@ -1948,6 +2015,18 @@ const handleCloseSubmissionsTracking =
                 onClosePeriod={
                   handleCloseAvailabilityPeriod
                 }
+                onReopenPeriod={
+                  handleReopenAvailabilityPeriod
+                }
+                onDeletePeriod={
+                  handleDeleteSelectedAvailabilityPeriod
+                }
+                onPrepareSchedule={
+                  handlePrepareSelectedAvailabilityPeriod
+                }
+                onGoToSchedule={() => {
+                  navigate('/schedule');
+                }}
                 onClose={
                   handleCloseSubmissionsTracking
                 }

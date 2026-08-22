@@ -666,7 +666,7 @@ const handleClosePeriod =
     const confirmed =
       window.confirm(
         `האם ליצור טיוטת לוח כוננים עבור "${periodTitle}"?\n\n` +
-        'המערכת תתחשב בזמינות, תאסור כוננות ביומיים רצופים ותעדיף מרווח של חמישה ימים.',
+        'המערכת תמשיך את רוטציית חמשת הכוננים מהחודשים הקודמים. אילוצים שהוגשו ישמשו כחריגים בלבד, והיעדר הגשה לא יחסום את השיבוץ.',
       );
 
     if (!confirmed) {
@@ -1646,6 +1646,75 @@ const isBusy =
                 void loadManagementData(
                   selectedManagementPeriodId,
                 );
+              }}
+              onOpenPeriod={() => {
+                if (!managementState.data) {
+                  return;
+                }
+
+                void handleOpenPeriod(
+                  managementState.data.period.id,
+                  managementState.data.period.title ??
+                    `${managementState.data.period.month}/${managementState.data.period.year}`,
+                );
+              }}
+              onClosePeriod={() => {
+                if (!managementState.data) {
+                  return;
+                }
+
+                void handleClosePeriod(
+                  managementState.data.period.id,
+                  managementState.data.period.title ??
+                    `${managementState.data.period.month}/${managementState.data.period.year}`,
+                );
+              }}
+              onReopenPeriod={() => {
+                if (!managementState.data) {
+                  return;
+                }
+
+                void handleReopenPeriod(
+                  managementState.data.period.id,
+                  managementState.data.period.title ??
+                    `${managementState.data.period.month}/${managementState.data.period.year}`,
+                );
+              }}
+              onDeletePeriod={() => {
+                if (!managementState.data) {
+                  return;
+                }
+
+                void handleDeletePeriod(
+                  managementState.data.period.id,
+                  managementState.data.period.title ??
+                    `${managementState.data.period.month}/${managementState.data.period.year}`,
+                );
+              }}
+              onPrepareSchedule={() => {
+                if (!managementState.data) {
+                  return;
+                }
+
+                void handleCreateScheduleDraft(
+                  managementState.data.period.id,
+                  managementState.data.period.title ??
+                    `${managementState.data.period.month}/${managementState.data.period.year}`,
+                );
+              }}
+              onGoToSchedule={() => {
+                setActiveWorkspaceTab(
+                  'schedule',
+                );
+
+                if (
+                  managementState.data
+                ) {
+                  void loadScheduleByMonth(
+                    managementState.data.period.year,
+                    managementState.data.period.month,
+                  );
+                }
               }}
             />
         ) : (

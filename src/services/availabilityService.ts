@@ -637,6 +637,71 @@ async function closeAvailabilityPeriod(
       result.submitted_dispatchers,
   };
 }
+
+async function reopenAvailabilityPeriod(
+  periodId: string,
+): Promise<import('../types/availability').ReopenAvailabilityPeriodResult> {
+  const normalizedPeriodId =
+    periodId.trim();
+
+  if (!normalizedPeriodId) {
+    throw new Error(
+      'לא התקבל מזהה תקופת אילוצים תקין.',
+    );
+  }
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.rpc(
+      'reopen_availability_period',
+      {
+        requested_period_id:
+          normalizedPeriodId,
+      },
+    );
+
+  if (error) {
+    const message =
+      error.message
+        .toLowerCase();
+
+    if (
+      message.includes(
+        'only closed',
+      )
+    ) {
+      throw new Error(
+        'ניתן לפתוח מחדש רק תקופת אילוצים סגורה.',
+      );
+    }
+
+    if (
+      message.includes(
+        'not allowed',
+      )
+    ) {
+      throw new Error(
+        'אין לך הרשאה לפתוח מחדש תקופת אילוצים.',
+      );
+    }
+
+    throw new Error(
+      'לא ניתן היה לפתוח מחדש את תקופת האילוצים.',
+    );
+  }
+
+  if (!data) {
+    throw new Error(
+      'לא התקבלה תשובה לאחר פתיחת התקופה מחדש.',
+    );
+  }
+
+  return data as
+    import('../types/availability').ReopenAvailabilityPeriodResult;
+}
+
 async function deleteAvailabilityPeriod(
   periodId: string,
 ): Promise<DeleteAvailabilityPeriodResult> {
@@ -763,5 +828,6 @@ export const availabilityService = {
   rebuildAvailabilityPeriodSlots,
   openAvailabilityPeriod,
   closeAvailabilityPeriod,
+  reopenAvailabilityPeriod,
   deleteAvailabilityPeriod,
 };
