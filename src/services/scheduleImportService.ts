@@ -628,10 +628,21 @@ function parseShiftRange(
 function splitMorningDriverNames(
   value: RawCellValue,
 ): string[] {
-  return normalizeText(
-    value,
-  )
-    .split('/')
+  const normalizedValue =
+    normalizeText(
+      value,
+    );
+
+  if (
+    !normalizedValue
+  ) {
+    return [];
+  }
+
+  return normalizedValue
+    .split(
+      /\s*(?:\/|\\|;|,|&|\+)\s*/g,
+    )
     .map(
       (
         name,
@@ -650,16 +661,25 @@ function getMorningDriverShiftType(
   const shiftKey =
     `${shiftRange.startTime}-${shiftRange.endTime}`;
 
+  /*
+   * לוחות היסטוריים השתמשו גם ב-06:00-15:00,
+   * בעוד שהמבנה הנוכחי הוא 06:00-16:00.
+   * שתי התבניות מייצגות את משמרת הבוקר של א'-ה'.
+   */
   if (
     shiftKey ===
-      '06:00-16:00'
+      '06:00-16:00' ||
+    shiftKey ===
+      '06:00-15:00'
   ) {
     return 'weekday_morning';
   }
 
   if (
     shiftKey ===
-      '15:00-23:00'
+      '15:00-23:00' ||
+    shiftKey ===
+      '16:00-23:00'
   ) {
     return 'weekday_evening';
   }
@@ -967,6 +987,8 @@ function parseScheduleRows(
 
   let correctedDateCount = 0;
 
+  let legacyMorningHoursCount = 0;
+
   let currentDate:
     string | null =
     null;
@@ -1133,6 +1155,19 @@ function parseScheduleRows(
                 `שורה ${excelRowNumber}: שעות כונני הבוקר ${morningShiftRange.startTime}-${morningShiftRange.endTime} אינן תואמות למשמרת מוכרת.`,
               );
             } else {
+              const morningShiftKey =
+                `${morningShiftRange.startTime}-${morningShiftRange.endTime}`;
+
+              if (
+                morningShiftKey ===
+                  '06:00-15:00' ||
+                morningShiftKey ===
+                  '16:00-23:00'
+              ) {
+                legacyMorningHoursCount +=
+                  1;
+              }
+
               if (
                 morningDriverNames.length >
                 2
@@ -1384,6 +1419,15 @@ function parseScheduleRows(
   ) {
     warnings.push(
       `תוקנו אוטומטית ${correctedDateCount} תאריכים ש-Excel פירש בפורמט אמריקאי. החודש זוהה כ-${padNumber(expectedPeriod.month)}/${expectedPeriod.year}.`,
+    );
+  }
+
+  if (
+    legacyMorningHoursCount >
+      0
+  ) {
+    warnings.push(
+      `זוהו ${legacyMorningHoursCount} שורות של כונני בוקר במבנה שעות היסטורי. הן סווגו אוטומטית לפי סוג המשמרת המתאים.`,
     );
   }
 

@@ -105,13 +105,17 @@ function normalizeScheduleImportIdentityError(
   );
 }
 
-function normalizeImportName(
+function normalizeImportNameStrict(
   value: string,
 ): string {
   return value
     .replace(
       /\u00a0/g,
       ' ',
+    )
+    .replace(
+      /[״"'׳]/g,
+      '',
     )
     .replace(
       /\s+/g,
@@ -121,6 +125,44 @@ function normalizeImportName(
     .toLocaleLowerCase(
       'he-IL',
     );
+}
+
+/**
+ * Normalization used only as a conservative typo fallback.
+ *
+ * Important:
+ * - Exact schedule_name/display_name matching is always attempted first.
+ * - Different initials remain different identities:
+ *   "אולג מ" !== "אולג ג".
+ * - Final-letter normalization is allowed only when it produces exactly
+ *   one possible user, e.g. historical typo "אולג ם" -> "אולג מ".
+ */
+function normalizeImportNameTypoFallback(
+  value: string,
+): string {
+  return normalizeImportNameStrict(
+    value,
+  ).replace(
+    /[ךםןףץ]/g,
+    (character) => {
+      const finalLetterMap:
+        Record<
+          string,
+          string
+        > = {
+          ך: 'כ',
+          ם: 'מ',
+          ן: 'נ',
+          ף: 'פ',
+          ץ: 'צ',
+        };
+
+      return finalLetterMap[
+        character
+      ] ??
+        character;
+    },
+  );
 }
 
 function getUserNameCandidates(
@@ -140,7 +182,7 @@ function getUserNameCandidates(
         ),
     )
     .map(
-      normalizeImportName,
+      normalizeImportNameStrict,
     );
 }
 
@@ -161,6 +203,48 @@ function findUserById(
   );
 }
 
+function findUniqueUserMatch(
+  sourceName: string,
+
+  users:
+    ScheduleImportUser[],
+
+  field:
+    'scheduleName' |
+    'displayName',
+
+  normalizer:
+    (
+      value: string,
+    ) => string,
+): ScheduleImportUser | null {
+  const normalizedSourceName =
+    normalizer(
+      sourceName,
+    );
+
+  const matches =
+    users.filter(
+      (user) => {
+        const candidate =
+          user[field];
+
+        return Boolean(
+          candidate &&
+          normalizer(
+            candidate,
+          ) ===
+            normalizedSourceName,
+        );
+      },
+    );
+
+  return matches.length ===
+      1
+    ? matches[0]
+    : null;
+}
+
 function findExactUserMatch(
   sourceName: string,
 
@@ -175,21 +259,13 @@ function findExactUserMatch(
     | 'display_name'
     | 'unmatched';
 } {
-  const normalizedSourceName =
-    normalizeImportName(
-      sourceName,
-    );
-
   const scheduleNameMatch =
-    users.find(
-      (user) =>
-        user.scheduleName &&
-        normalizeImportName(
-          user.scheduleName,
-        ) ===
-          normalizedSourceName,
-    ) ??
-    null;
+    findUniqueUserMatch(
+      sourceName,
+      users,
+      'scheduleName',
+      normalizeImportNameStrict,
+    );
 
   if (
     scheduleNameMatch
@@ -204,14 +280,75 @@ function findExactUserMatch(
   }
 
   const displayNameMatch =
-    users.find(
-      (user) =>
-        normalizeImportName(
-          user.displayName,
-        ) ===
-          normalizedSourceName,
-    ) ??
-    null;
+    findUniqueUserMatch(
+      sourceName,
+      users,
+      'displayName',
+      normalizeImportNameStrict,
+    );
+
+  if (
+    displayNameMatch
+  ) {
+    return {
+      user:
+        displayNameMatch,
+
+      matchSource:
+        'display_name',
+    };
+  }
+
+  return {
+    user:
+      null,
+
+    matchSource:
+      'unmatched',
+  };
+}
+
+function findConservativeTypoMatch(
+  sourceName: string,
+
+  users:
+    ScheduleImportUser[],
+): {
+  user:
+    ScheduleImportUser | null;
+
+  matchSource:
+    | 'schedule_name'
+    | 'display_name'
+    | 'unmatched';
+} {
+  const scheduleNameMatch =
+    findUniqueUserMatch(
+      sourceName,
+      users,
+      'scheduleName',
+      normalizeImportNameTypoFallback,
+    );
+
+  if (
+    scheduleNameMatch
+  ) {
+    return {
+      user:
+        scheduleNameMatch,
+
+      matchSource:
+        'schedule_name',
+    };
+  }
+
+  const displayNameMatch =
+    findUniqueUserMatch(
+      sourceName,
+      users,
+      'displayName',
+      normalizeImportNameTypoFallback,
+    );
 
   if (
     displayNameMatch
@@ -247,7 +384,48 @@ function resolveImportName(
     ScheduleImportNameAlias[],
 ): ScheduleImportResolvedName {
   const normalizedSourceName =
-    normalizeImportName(
+    normalizeImportNameStrict(
+      sourceName,
+    );
+
+  /*
+   * 1. Exact user identity always wins.
+   * This is what keeps "אולג מ" and "אולג ג" strictly separate.
+   */
+  const exactMatch =
+    findExactUserMatch(
+      sourceName,
+      users,
+    );
+
+  if (
+    exactMatch.user
+  ) {
+    return {
+      sourceName,
+
+      normalizedSourceName,
+
+      userType,
+
+      matchedUserId:
+        exactMatch.user.id,
+
+      matchedUser:
+        exactMatch.user,
+
+      matchSource:
+        exactMatch.matchSource,
+    };
+  }
+
+  /*
+   * 2. Previously approved alias.
+   * Support aliases saved by both the current strict normalizer and
+   * the older final-letter normalizer so existing aliases keep working.
+   */
+  const legacyNormalizedSourceName =
+    normalizeImportNameTypoFallback(
       sourceName,
     );
 
@@ -256,9 +434,14 @@ function resolveImportName(
       (currentAlias) =>
         currentAlias.userType ===
           userType &&
-        currentAlias
-          .normalizedSourceName ===
-          normalizedSourceName,
+        (
+          currentAlias
+            .normalizedSourceName ===
+            normalizedSourceName ||
+          currentAlias
+            .normalizedSourceName ===
+            legacyNormalizedSourceName
+        ),
     ) ??
     null;
 
@@ -289,8 +472,14 @@ function resolveImportName(
     }
   }
 
-  const exactMatch =
-    findExactUserMatch(
+  /*
+   * 3. Conservative typo fallback.
+   * It is accepted only when exactly one user matches after final-letter
+   * normalization. Ambiguous names remain unmatched and must be resolved
+   * manually instead of guessing.
+   */
+  const typoMatch =
+    findConservativeTypoMatch(
       sourceName,
       users,
     );
@@ -303,14 +492,14 @@ function resolveImportName(
     userType,
 
     matchedUserId:
-      exactMatch.user?.id ??
+      typoMatch.user?.id ??
       null,
 
     matchedUser:
-      exactMatch.user,
+      typoMatch.user,
 
     matchSource:
-      exactMatch.matchSource,
+      typoMatch.matchSource,
   };
 }
 

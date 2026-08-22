@@ -119,6 +119,31 @@ function normalizeImportedName(
       ' ',
     )
     .replace(
+      /[״"'׳]/g,
+      '',
+    )
+    .replace(
+      /[ךםןףץ]/g,
+      (character) => {
+        const finalLetterMap:
+          Record<
+            string,
+            string
+          > = {
+            ך: 'כ',
+            ם: 'מ',
+            ן: 'נ',
+            ף: 'פ',
+            ץ: 'צ',
+          };
+
+        return finalLetterMap[
+          character
+        ] ??
+          character;
+      },
+    )
+    .replace(
       /\s+/g,
       ' ',
     )
