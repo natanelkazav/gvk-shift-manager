@@ -122,6 +122,82 @@ class MorningDriverScheduleService {
       CreateMorningDriverScheduleDraftResponse;
   }
 
+  async getScheduleByMonthIncludingArchive(
+    year:
+      number,
+
+    month:
+      number,
+  ): Promise<MorningDriverScheduleData | null> {
+    const {
+      data,
+      error,
+    } =
+      await supabase.rpc(
+        'get_morning_driver_schedule_by_month',
+        {
+          requested_year:
+            year,
+
+          requested_month:
+            month,
+        },
+      );
+
+    if (error) {
+      throw normalizeMorningDriverScheduleError(
+        error,
+      );
+    }
+
+    if (!data) {
+      if (
+        year !==
+          null &&
+        month !==
+          null
+      ) {
+        return this
+          .getScheduleByMonthIncludingArchive(
+            year,
+            month,
+          );
+      }
+
+      return null;
+    }
+
+    const scheduleData =
+      data as
+        MorningDriverScheduleData;
+
+    /*
+     * Imported historical periods can exist with their assignments
+     * while the legacy RPC returns an empty active-period result.
+     * In a month-specific read, retry through the archive-aware RPC.
+     */
+    if (
+      year !==
+        null &&
+      month !==
+        null &&
+      scheduleData.assignments
+        .length ===
+        0 &&
+      scheduleData.period
+        ?.status ===
+        'archived'
+    ) {
+      return this
+        .getScheduleByMonthIncludingArchive(
+          year,
+          month,
+        );
+    }
+
+    return scheduleData;
+  }
+
   async getSchedule(
     schedulePeriodId:
       string | null = null,

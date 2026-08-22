@@ -6,6 +6,17 @@ import type {
   ArchivePeriodsResponse,
 } from '../types/archive';
 
+interface MorningDriverArchiveSummary {
+  year: number;
+  month: number;
+  periodId: string | null;
+  status: string | null;
+  assignmentCount: number;
+  driverCount: number;
+  archivedAt: string | null;
+  hasSchedule: boolean;
+}
+
 interface SupabaseErrorShape {
   message?: unknown;
 
@@ -113,23 +124,39 @@ function isArchivePeriodsResponse(
 class ArchiveService {
   async getPeriods():
     Promise<ArchivePeriodsResponse> {
-    const {
-      data,
-      error,
-    } =
-      await supabase.rpc(
-        'get_archive_periods',
-      );
+    const [
+      archiveResult,
+      morningDriverResult,
+    ] =
+      await Promise.all([
+        supabase.rpc(
+          'get_archive_periods',
+        ),
 
-    if (error) {
+        supabase.rpc(
+          'get_morning_driver_archive_summary',
+        ),
+      ]);
+
+    if (
+      archiveResult.error
+    ) {
       throw normalizeArchiveError(
-        error,
+        archiveResult.error,
+      );
+    }
+
+    if (
+      morningDriverResult.error
+    ) {
+      throw normalizeArchiveError(
+        morningDriverResult.error,
       );
     }
 
     if (
       !isArchivePeriodsResponse(
-        data,
+        archiveResult.data,
       )
     ) {
       throw new Error(
@@ -137,7 +164,201 @@ class ArchiveService {
       );
     }
 
-    return data;
+    const morningSummaries =
+      Array.isArray(
+        morningDriverResult.data,
+      )
+        ? morningDriverResult
+            .data as
+              MorningDriverArchiveSummary[]
+        : [];
+
+    const summaryMap =
+      new Map(
+        morningSummaries.map(
+          (
+            summary,
+          ) => [
+            `${summary.year}-${summary.month}`,
+            summary,
+          ],
+        ),
+      );
+
+    const periods =
+      archiveResult.data
+        .periods.map(
+          (
+            period,
+          ) => {
+            const summary =
+              summaryMap.get(
+                `${period.year}-${period.month}`,
+              );
+
+            return {
+              ...period,
+
+              morningDriverPeriodId:
+                summary?.periodId ??
+                null,
+
+              morningDriverStatus:
+                summary?.status ??
+                null,
+
+              morningDriverAssignmentCount:
+                summary?.assignmentCount ??
+                0,
+
+              morningDriverCount:
+                summary?.driverCount ??
+                0,
+
+              morningDriverArchivedAt:
+                summary?.archivedAt ??
+                null,
+
+              hasMorningDriverSchedule:
+                summary?.hasSchedule ??
+                false,
+
+              isFullyArchived:
+                period.isFullyArchived &&
+                (
+                  !summary ||
+                  summary.status ===
+                    'archived'
+                ),
+            };
+          },
+        );
+
+    /*
+     * A historical import may theoretically contain only a morning-driver
+     * period. Include those months even if the legacy archive RPC does not.
+     */
+    for (
+      const summary
+      of morningSummaries
+    ) {
+      const key =
+        `${summary.year}-${summary.month}`;
+
+      if (
+        periods.some(
+          (
+            period,
+          ) =>
+            `${period.year}-${period.month}` ===
+              key,
+        )
+      ) {
+        continue;
+      }
+
+      periods.push({
+        year:
+          summary.year,
+
+        month:
+          summary.month,
+
+        dispatcherPeriodId:
+          null,
+
+        driverPeriodId:
+          null,
+
+        morningDriverPeriodId:
+          summary.periodId,
+
+        dispatcherStatus:
+          null,
+
+        driverStatus:
+          null,
+
+        morningDriverStatus:
+          summary.status,
+
+        dispatcherShiftCount:
+          0,
+
+        driverDutyCount:
+          0,
+
+        morningDriverAssignmentCount:
+          summary.assignmentCount,
+
+        dispatcherCount:
+          0,
+
+        driverCount:
+          0,
+
+        morningDriverCount:
+          summary.driverCount,
+
+        dispatcherPublishedAt:
+          null,
+
+        driverPublishedAt:
+          null,
+
+        dispatcherArchivedAt:
+          null,
+
+        driverArchivedAt:
+          null,
+
+        morningDriverArchivedAt:
+          summary.archivedAt,
+
+        importRunId:
+          null,
+
+        importFileName:
+          null,
+
+        importedAt:
+          null,
+
+        importedBy:
+          null,
+
+        isFullyArchived:
+          summary.status ===
+            'archived',
+
+        hasDispatcherSchedule:
+          false,
+
+        hasDriverSchedule:
+          false,
+
+        hasMorningDriverSchedule:
+          summary.hasSchedule,
+      });
+    }
+
+    periods.sort(
+      (
+        first,
+        second,
+      ) =>
+        second.year -
+          first.year ||
+        second.month -
+          first.month,
+    );
+
+    return {
+      ...archiveResult.data,
+      periods,
+      count:
+        periods.length,
+    };
   }
 }
 

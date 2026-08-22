@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   FileSpreadsheet,
   RefreshCw,
+  Sunrise,
   Users,
   Wrench,
 } from 'lucide-react';
@@ -383,7 +384,7 @@ function ArchivePage() {
 
                               <span>
                                 {period.isFullyArchived
-                                  ? 'שני הלוחות בארכיון'
+                                  ? 'כל הלוחות בארכיון'
                                   : 'ארכוב חלקי'}
                               </span>
                             </div>
@@ -481,6 +482,40 @@ function ArchivePage() {
                                 כוננים
                               </span>
                             </div>
+
+                            <div>
+                              <Sunrise
+                                size={19}
+                                aria-hidden="true"
+                              />
+
+                              <strong>
+                                {
+                                  period.morningDriverAssignmentCount
+                                }
+                              </strong>
+
+                              <span>
+                                שיבוצי כונני בוקר
+                              </span>
+                            </div>
+
+                            <div>
+                              <Sunrise
+                                size={19}
+                                aria-hidden="true"
+                              />
+
+                              <strong>
+                                {
+                                  period.morningDriverCount
+                                }
+                              </strong>
+
+                              <span>
+                                כונני בוקר
+                              </span>
+                            </div>
                           </div>
 
                           <dl className="archive-card-details">
@@ -512,13 +547,27 @@ function ArchivePage() {
 
                             <div>
                               <dt>
+                                לוח כונני בוקר
+                              </dt>
+
+                              <dd>
+                                {period.hasMorningDriverSchedule
+                                  ? period.morningDriverStatus ??
+                                    'קיים'
+                                  : 'לא קיים'}
+                              </dd>
+                            </div>
+
+                            <div>
+                              <dt>
                                 תאריך ארכוב
                               </dt>
 
                               <dd>
                                 {formatDateTime(
                                   period.dispatcherArchivedAt ??
-                                    period.driverArchivedAt,
+                                    period.driverArchivedAt ??
+                                    period.morningDriverArchivedAt,
                                 )}
                               </dd>
                             </div>

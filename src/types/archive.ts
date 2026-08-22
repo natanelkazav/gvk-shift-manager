@@ -7,17 +7,28 @@ export interface ArchivePeriod {
 
   driverPeriodId: string | null;
 
+  morningDriverPeriodId:
+    string | null;
+
   dispatcherStatus: string | null;
 
   driverStatus: string | null;
+
+  morningDriverStatus:
+    string | null;
 
   dispatcherShiftCount: number;
 
   driverDutyCount: number;
 
+  morningDriverAssignmentCount:
+    number;
+
   dispatcherCount: number;
 
   driverCount: number;
+
+  morningDriverCount: number;
 
   dispatcherPublishedAt: string | null;
 
@@ -26,6 +37,9 @@ export interface ArchivePeriod {
   dispatcherArchivedAt: string | null;
 
   driverArchivedAt: string | null;
+
+  morningDriverArchivedAt:
+    string | null;
 
   importRunId: string | null;
 
@@ -40,6 +54,9 @@ export interface ArchivePeriod {
   hasDispatcherSchedule: boolean;
 
   hasDriverSchedule: boolean;
+
+  hasMorningDriverSchedule:
+    boolean;
 }
 
 export interface ArchivePeriodsResponse {
