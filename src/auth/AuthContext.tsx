@@ -338,10 +338,15 @@ export function AuthProvider({
       credentials:
         SignInCredentials,
     ): Promise<void> => {
+      /*
+       * LoginPage manages its own submit/loading state.
+       * Do not toggle the global auth loading flag here:
+       * PublicOnlyRoute would replace LoginPage with LoadingScreen,
+       * unmounting the form and clearing its local error message.
+       */
       setAuthState(
         (currentState) => ({
           ...currentState,
-          isLoading: true,
           error: null,
         }),
       );

@@ -231,6 +231,7 @@ function LoginPage() {
             <div
               className="auth-error"
               role="alert"
+              aria-live="assertive"
             >
               {displayedError}
             </div>
@@ -291,6 +292,9 @@ function LoginPage() {
                 );
 
                 setFormError(null);
+                setPasswordResetMessage(
+                  null,
+                );
               }}
               required
             />
