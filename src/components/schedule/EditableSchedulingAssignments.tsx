@@ -223,13 +223,15 @@ function EditableSchedulingAssignments({
                       shift.date,
                     )}
                     {' · '}
-                    {formatTime(
-                      shift.startTime,
-                    )}
-                    –
-                    {formatTime(
-                      shift.endTime,
-                    )}
+                    <bdi dir="ltr">
+                      {formatTime(
+                        shift.startTime,
+                      )}
+                      –
+                      {formatTime(
+                        shift.endTime,
+                      )}
+                    </bdi>
                   </strong>
 
                   <span>

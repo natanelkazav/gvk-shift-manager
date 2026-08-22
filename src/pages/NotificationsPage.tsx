@@ -60,7 +60,7 @@ function formatSwapShift(
     hour12: false,
     timeZone: 'Asia/Jerusalem',
   });
-  return `${weekday} · ${formattedDate} · ${timeFormatter.format(new Date(startsAt))}–${timeFormatter.format(new Date(endsAt))}`;
+  return `${weekday} · ${formattedDate} · \u2066${timeFormatter.format(new Date(startsAt))}–${timeFormatter.format(new Date(endsAt))}\u2069`;
 }
 
 function getNotificationIcon(notification: MyNotification) {

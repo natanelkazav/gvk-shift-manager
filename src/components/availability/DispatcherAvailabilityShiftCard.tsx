@@ -163,7 +163,7 @@ function DispatcherAvailabilityShiftCard({
             aria-hidden="true"
           />
 
-          <strong>
+          <strong dir="ltr">
             {formatShiftTime(
               shift.startTime,
             )}

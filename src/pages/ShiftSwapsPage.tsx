@@ -108,7 +108,7 @@ function formatShift(
     new Date(`${shift.shiftDate}T12:00:00`),
   );
 
-  return `${weekday} · ${date} · ${start}–${end}`;
+  return `${weekday} · ${date} · \u2066${start}–${end}\u2069`;
 }
 
 function formatRequestShift(

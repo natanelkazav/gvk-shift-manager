@@ -398,7 +398,7 @@ function AssignmentCandidateCard({
             aria-hidden="true"
           />
 
-          <strong>
+          <strong dir="ltr">
             {formatTime(
               shift.startTime,
             )}
@@ -1485,13 +1485,15 @@ function AssignmentCandidatesPanel({
                                   shift.date,
                                 )}
                                 {' · '}
-                                {formatTime(
-                                  shift.startTime,
-                                )}
-                                –
-                                {formatTime(
-                                  shift.endTime,
-                                )}
+                                <bdi dir="ltr">
+                                  {formatTime(
+                                    shift.startTime,
+                                  )}
+                                  –
+                                  {formatTime(
+                                    shift.endTime,
+                                  )}
+                                </bdi>
                               </span>
                             ) : null}
 

@@ -864,7 +864,7 @@ function ScheduleShiftCard({
     >
       <div className="schedule-shift-card-main">
         <div>
-          <strong>
+          <strong dir="ltr">
             {getShiftTimeLabel(
               shift,
             )}

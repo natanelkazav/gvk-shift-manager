@@ -495,7 +495,7 @@ function AvailabilityMatrixPanel({
                     aria-hidden="true"
                   />
 
-                  <strong>
+                  <strong dir="ltr">
                     {formatTime(
                       shift.startTime,
                     )}

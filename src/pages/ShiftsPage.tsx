@@ -1039,7 +1039,10 @@ const handleWorkspaceTabChange =
                   </span>
 
                   {timeLabel ? (
-                    <span className="unified-calendar-entry-time">
+                    <span
+                      className="unified-calendar-entry-time"
+                      dir="ltr"
+                    >
                       {
                         timeLabel
                       }
@@ -1507,9 +1510,14 @@ const handleWorkspaceTabChange =
                           </strong>
                           <span>
                             {getEntryDisplayName(entry)}
-                            {timeLabel
-                              ? ` · ${timeLabel}`
-                              : ' · משמרת יום מלאה'}
+                            {' · '}
+                            {timeLabel ? (
+                              <bdi dir="ltr">
+                                {timeLabel}
+                              </bdi>
+                            ) : (
+                              'משמרת יום מלאה'
+                            )}
                           </span>
                         </div>
 
@@ -1670,9 +1678,11 @@ const handleWorkspaceTabChange =
                   {timeLabel ? (
                     <span>
                       שעות:{' '}
-                      {
-                        timeLabel
-                      }
+                      <bdi dir="ltr">
+                        {
+                          timeLabel
+                        }
+                      </bdi>
                     </span>
                   ) : (
                     <span>

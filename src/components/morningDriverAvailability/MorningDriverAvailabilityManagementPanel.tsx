@@ -639,13 +639,15 @@ function MorningDriverAvailabilityManagementPanel({
                       </strong>
 
                       <span>
-                        {formatTime(
-                          shift.startTime,
-                        )}
-                        {' – '}
-                        {formatTime(
-                          shift.endTime,
-                        )}
+                        <bdi dir="ltr">
+                          {formatTime(
+                            shift.startTime,
+                          )}
+                          {' – '}
+                          {formatTime(
+                            shift.endTime,
+                          )}
+                        </bdi>
                         {' · '}
                         {shift.recommendedWorkers >
                         shift.minimumWorkers

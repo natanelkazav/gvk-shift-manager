@@ -594,7 +594,7 @@ function MyMorningDriverAvailabilityPanel() {
                               }
                             </strong>
 
-                            <span>
+                            <span dir="ltr">
                               {formatTime(
                                 shift.startTime,
                               )}

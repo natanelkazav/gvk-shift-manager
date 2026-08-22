@@ -107,7 +107,11 @@ function formatShiftTime(
   startTime: string,
   endTime: string,
 ): string {
-  return `${startTime}–${endTime}`;
+  /*
+   * LRI/PDI keep a time range in chronological order
+   * even when rendered inside an RTL table or sentence.
+   */
+  return `\u2066${startTime}–${endTime}\u2069`;
 }
 
 function normalizeImportedName(

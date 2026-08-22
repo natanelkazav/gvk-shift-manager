@@ -124,7 +124,10 @@ function DispatcherDashboard({
           }
         >
           <div className="dashboard-assignment-details">
-            <strong className="dashboard-assignment-main">
+            <strong
+              className="dashboard-assignment-main"
+              dir="ltr"
+            >
               {formatTime(
                 currentShift.startsAt,
               )}
@@ -186,7 +189,7 @@ function DispatcherDashboard({
               )}
             </strong>
 
-            <span>
+            <span dir="ltr">
               {formatTime(
                 nextShift.startsAt,
               )}
