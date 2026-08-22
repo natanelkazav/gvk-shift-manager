@@ -119,6 +119,31 @@ function normalizeImportedName(
       ' ',
     )
     .replace(
+      /[״"'׳]/g,
+      '',
+    )
+    .replace(
+      /[ךםןףץ]/g,
+      (character) => {
+        const finalLetterMap:
+          Record<
+            string,
+            string
+          > = {
+            ך: 'כ',
+            ם: 'מ',
+            ן: 'נ',
+            ף: 'פ',
+            ץ: 'צ',
+          };
+
+        return finalLetterMap[
+          character
+        ] ??
+          character;
+      },
+    )
+    .replace(
       /\s+/g,
       ' ',
     )
@@ -1035,10 +1060,7 @@ const buildResolvedImportData =
 
     const importStrategy:
       ScheduleImportStrategy =
-      preview.periodType ===
-        'historical'
-        ? 'historical_archive'
-        : currentMonthImportStrategy;
+      currentMonthImportStrategy;
 
     return {
       dispatcherShifts,
@@ -1963,16 +1985,18 @@ const handlePreviewImport =
           </header>
 
           {preview.periodType ===
-          'current' ? (
+            'current' ||
+          preview.periodType ===
+            'historical' ? (
             <div className="schedule-import-strategy-options">
               <span className="schedule-import-strategy-heading">
-                אופן עדכון החודש
+                אופן הייבוא והעדכון
               </span>
 
               <label className="schedule-import-strategy-option">
                 <input
                   type="radio"
-                  name="current-month-import-strategy"
+                  name="schedule-import-strategy"
                   value="missing_only"
                   checked={
                     currentMonthImportStrategy ===
@@ -2008,7 +2032,7 @@ const handlePreviewImport =
               <label className="schedule-import-strategy-option">
                 <input
                   type="radio"
-                  name="current-month-import-strategy"
+                  name="schedule-import-strategy"
                   value="replace"
                   checked={
                     currentMonthImportStrategy ===
@@ -2043,7 +2067,7 @@ const handlePreviewImport =
               <label className="schedule-import-strategy-option">
                 <input
                   type="radio"
-                  name="current-month-import-strategy"
+                  name="schedule-import-strategy"
                   value="rebuild"
                   checked={
                     currentMonthImportStrategy ===
@@ -2082,13 +2106,15 @@ const handlePreviewImport =
           'historical' ? (
             <div className="schedule-import-historical-summary">
               <strong>
-                ייבוא היסטורי וארכוב
+                חודש היסטורי
               </strong>
 
               <span>
-                החודש יישמר כתקופה שהסתיימה,
-                יינעל לעריכה רגילה וייכלל
-                בחישובי הסטטיסטיקות.
+                החודש יישאר בארכיון גם לאחר העדכון
+                וימשיך להיכלל בחישובי הסטטיסטיקות.
+                ניתן לבחור אם להשלים נתונים חסרים,
+                להחליף את הנתונים הקיימים או לבצע
+                מחיקה וייבוא מחדש.
               </span>
             </div>
           ) : null}
@@ -2384,7 +2410,7 @@ const handlePreviewImport =
                           )}
                         </td>
 
-                          <td dir="ltr">
+                          <td>
                             {formatShiftTime(
                               shift.startTime,
                               shift.endTime,
@@ -2592,7 +2618,7 @@ const handlePreviewImport =
                           )}
                         </td>
 
-                        <td dir="ltr">
+                        <td>
                           {formatShiftTime(
                             shift.startTime,
                             shift.endTime,

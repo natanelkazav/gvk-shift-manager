@@ -258,16 +258,6 @@ function validateExecutionRequest(
     );
   }
 
-  if (
-    request.periodType ===
-      'historical' &&
-    request.importStrategy !==
-      'historical_archive'
-  ) {
-    throw new Error(
-      'ייבוא היסטורי חייב להשתמש באסטרטגיית ארכוב.',
-    );
-  }
 }
 
 class ScheduleImportExecutionService {
