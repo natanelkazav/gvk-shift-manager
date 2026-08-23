@@ -33,6 +33,9 @@ import {
 import NotificationBell
   from '../features/notifications/components/NotificationBell';
 
+import HelpCenter
+  from '../components/help/HelpCenter';
+
   import {
   PushStatusProvider,
 } from '../features/push/context/PushStatusProvider';
@@ -674,6 +677,8 @@ return (
             </span>
           </div>
 <div className="app-header-actions">
+  <HelpCenter />
+
   <NotificationBell />
 
   <div className="app-user">
