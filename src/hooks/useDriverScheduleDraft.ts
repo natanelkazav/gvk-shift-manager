@@ -328,10 +328,13 @@ function normalizeDriverScheduleDraftError(
 
     if (
       normalizedMessage.includes(
+        'drivers can change duties only in the current or next month',
+      ) ||
+      normalizedMessage.includes(
         'drivers can change duties only in the current month',
       )
     ) {
-      return 'ניתן לשנות כוננות רק בחודש הנוכחי.';
+      return 'ניתן לשנות כוננות רק בחודש הנוכחי או בחודש הבא לאחר פרסום הלוח.';
     }
 
     if (

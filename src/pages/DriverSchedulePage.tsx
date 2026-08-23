@@ -294,10 +294,7 @@ const [
   setActiveWorkspaceTab,
 ] =
   useState<DriverScheduleWorkspaceTab>(
-    canSubmitAvailability &&
-    !canManageAvailability
-      ? 'my-availability'
-      : 'schedule',
+    'schedule',
   );
   const now =
   new Date();
@@ -788,7 +785,7 @@ const effectiveWorkspaceTab =
     : visibleWorkspaceTabs[0]?.id ??
       'schedule';
 
-const isCurrentScheduleMonth =
+const isTransferableScheduleMonth =
   (() => {
     const period =
       scheduleDraftState
@@ -803,11 +800,20 @@ const isCurrentScheduleMonth =
     const currentDate =
       new Date();
 
+    const currentPeriodValue =
+      currentDate.getFullYear() *
+        12 +
+      currentDate.getMonth();
+
+    const schedulePeriodValue =
+      period.year * 12 +
+      period.month - 1;
+
     return (
-      period.year ===
-        currentDate.getFullYear() &&
-      period.month ===
-        currentDate.getMonth() + 1
+      schedulePeriodValue ===
+        currentPeriodValue ||
+      schedulePeriodValue ===
+        currentPeriodValue + 1
     );
   })();
 
@@ -822,7 +828,7 @@ const transferableDutyDays =
       if (
         !canTransferMyDuties ||
         !authenticatedUser?.id ||
-        !isCurrentScheduleMonth ||
+        !isTransferableScheduleMonth ||
         scheduleDraftState
           .data
           ?.period
