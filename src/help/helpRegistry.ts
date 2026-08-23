@@ -43,14 +43,11 @@ export const helpTopics:
         tab: 'calendar',
       },
       requiredAnyPermissions: [
-        'schedule.view',
         'schedule.view_team',
         'schedule.edit',
-        'driver_schedule.view',
         'driver_schedule.view_team',
         'driver_schedule.edit',
         'driver_schedule.edit_any',
-        'morning_driver_schedule.view',
         'morning_driver_schedule.view_team',
         'morning_driver_schedule.edit',
         'morning_driver_schedule.edit_any',
@@ -72,6 +69,40 @@ export const helpTopics:
         'מוקדנים',
         'כוננים',
         'כונני בוקר',
+      ],
+    },
+
+    {
+      id: 'dispatcher-my-schedule',
+      group: 'scheduling',
+      title: 'המשמרות שלי',
+      summary:
+        'צפייה במשמרות האישיות שלך בחודש הנוכחי ובחודשים קודמים.',
+      route: '/schedule',
+      routePrefixes: [
+        '/schedule',
+      ],
+      requiredAnyPermissions: [
+        'schedule.view',
+      ],
+      steps: [
+        'פתח את מסך המשמרות שלי.',
+        'החודש הנוכחי נפתח עם המשמרות שאליהן שובצת.',
+        'השתמש בחודש קודם כדי לעבור ללוחות מחודשים קודמים.',
+        'אפשר להמשיך לעבור בין חודשים ולראות את המשמרות האישיות שנשמרו בכל חודש.',
+        'לחץ היום כדי לחזור במהירות לחודש הנוכחי.',
+        'אפשר לעבור בין תצוגת לוח שנה לבין רשימת המשמרות לפי הצורך.',
+      ],
+      notes: [
+        'למוקדן עם הרשאת צפייה אישית מוצגות המשמרות שלו ולא לוח הצוות המלא.',
+        'חודשים קודמים מיועדים לצפייה בהיסטוריית המשמרות האישית שלך.',
+      ],
+      keywords: [
+        'המשמרות שלי',
+        'משמרות אישיות',
+        'חודש קודם',
+        'חודשים קודמים',
+        'היסטוריית משמרות',
       ],
     },
 
