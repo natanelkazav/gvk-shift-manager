@@ -10,8 +10,13 @@ import {
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
+
+import {
+  createPortal,
+} from 'react-dom';
 
 import {
   useLocation,
@@ -214,6 +219,11 @@ function HelpCenter() {
       null,
     );
 
+  const contentRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    );
+
   const visibleTopics =
     useMemo(
       () =>
@@ -370,6 +380,45 @@ function HelpCenter() {
     },
     [
       isOpen,
+    ],
+  );
+
+  useEffect(
+    () => {
+      if (!isOpen) {
+        return;
+      }
+
+      const previousOverflow =
+        document.body.style.overflow;
+
+      document.body.style.overflow =
+        'hidden';
+
+      return () => {
+        document.body.style.overflow =
+          previousOverflow;
+      };
+    },
+    [
+      isOpen,
+    ],
+  );
+
+  useEffect(
+    () => {
+      if (!isOpen) {
+        return;
+      }
+
+      contentRef.current?.scrollTo({
+        top: 0,
+        behavior: 'auto',
+      });
+    },
+    [
+      isOpen,
+      normalizedSearch,
     ],
   );
 
@@ -549,9 +598,10 @@ function HelpCenter() {
         />
       </button>
 
-      {isOpen ? (
-        <>
-          <button
+      {isOpen
+        ? createPortal(
+            <>
+              <button
             type="button"
             className="help-center-backdrop"
             aria-label="סגירת מרכז העזרה"
@@ -628,7 +678,10 @@ function HelpCenter() {
               />
             </div>
 
-            <div className="help-center-content">
+            <div
+              ref={contentRef}
+              className="help-center-content"
+            >
               {!normalizedSearch &&
               visibleWhatsNewItems.length >
                 0 ? (
@@ -763,9 +816,11 @@ function HelpCenter() {
                 )}
               </section>
             </div>
-          </aside>
-        </>
-      ) : null}
+              </aside>
+            </>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

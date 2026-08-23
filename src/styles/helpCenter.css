@@ -46,13 +46,18 @@
 
 .help-center-panel {
   position: fixed;
-  top: 0;
-  bottom: 0;
+  inset-block: 0;
   left: 0;
   z-index: 1100;
   display: flex;
   width: min(460px, calc(100vw - 24px));
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: contain;
   border-inline-end: 1px solid #dbe3ef;
   background: #ffffff;
   box-shadow:
@@ -62,6 +67,7 @@
 
 .help-center-header {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -127,6 +133,7 @@
 
 .help-center-search {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 10px;
   margin: 16px 20px 0;
@@ -156,9 +163,14 @@
 }
 
 .help-center-content {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 18px 20px 28px;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .help-center-context-section {
@@ -330,12 +342,19 @@
   .help-center-panel {
     right: 0;
     width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     max-width: none;
+    max-height: 100dvh;
     border-inline-end: 0;
   }
 
   .help-center-header {
-    padding: 16px;
+    padding:
+      max(16px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      16px
+      max(16px, env(safe-area-inset-left));
   }
 
   .help-center-search {
@@ -343,7 +362,11 @@
   }
 
   .help-center-content {
-    padding-inline: 16px;
+    padding-inline:
+      max(16px, env(safe-area-inset-left))
+      max(16px, env(safe-area-inset-right));
+    padding-bottom:
+      max(28px, env(safe-area-inset-bottom));
   }
 }
 
