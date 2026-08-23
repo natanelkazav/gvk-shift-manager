@@ -863,6 +863,54 @@ const handleCloseSubmissionsTracking =
     }, 0);
   };
 
+  useEffect(
+    () => {
+      if (
+        requestedTab !==
+          'schedule-preparation' ||
+        !requestedPeriodId ||
+        !canPrepareSchedule
+      ) {
+        return;
+      }
+
+      resetAutoSchedulingDraft();
+      clearEditableSchedulingDraft();
+      resetScheduleState();
+
+      setActiveWorkspaceTab(
+        'schedule-preparation',
+      );
+
+      void loadCandidates(
+        requestedPeriodId,
+      );
+
+      window.setTimeout(
+        () => {
+          assignmentCandidatesPanelRef
+            .current
+            ?.scrollIntoView({
+              behavior:
+                'smooth',
+              block:
+                'start',
+            });
+        },
+        0,
+      );
+    },
+    [
+      canPrepareSchedule,
+      clearEditableSchedulingDraft,
+      loadCandidates,
+      requestedPeriodId,
+      requestedTab,
+      resetAutoSchedulingDraft,
+      resetScheduleState,
+    ],
+  );
+
   const handleRefreshAssignmentCandidates =
     async (): Promise<void> => {
       if (

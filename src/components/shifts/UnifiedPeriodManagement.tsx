@@ -312,6 +312,12 @@ function UnifiedPeriodManagement({
       initialDispatcherScheduleState,
     );
 
+  const [
+    isDispatcherPublishing,
+    setIsDispatcherPublishing,
+  ] =
+    useState(false);
+
   const {
     state:
       dispatcherAvailabilityState,
@@ -345,6 +351,12 @@ function UnifiedPeriodManagement({
 
     loadScheduleByMonth:
       loadDriverScheduleByMonth,
+
+    createDraft:
+      createDriverScheduleDraft,
+
+    publishSchedule:
+      publishDriverSchedule,
   } =
     useDriverScheduleDraft();
 
@@ -354,6 +366,12 @@ function UnifiedPeriodManagement({
 
     loadSchedule:
       loadMorningDriverSchedule,
+
+    createDraft:
+      createMorningDriverScheduleDraft,
+
+    publishSchedule:
+      publishMorningDriverSchedule,
   } =
     useMorningDriverSchedule();
 
@@ -386,6 +404,21 @@ function UnifiedPeriodManagement({
     hasPermission(
       'driver_schedule.view_team',
     ) ||
+    hasPermission(
+      'driver_schedule.edit',
+    );
+
+  const canEditDispatcherSchedule =
+    hasPermission(
+      'schedule.edit',
+    );
+
+  const canEditMorningDriverSchedule =
+    hasPermission(
+      'morning_driver_schedule.edit',
+    );
+
+  const canEditDriverSchedule =
     hasPermission(
       'driver_schedule.edit',
     );
@@ -852,13 +885,519 @@ function UnifiedPeriodManagement({
       );
     };
 
-  const handlePendingAction =
+  const handleCreateSchedule =
+    async (
+      category:
+        PeriodCategoryViewModel,
+    ): Promise<void> => {
+      if (
+        !category.workflow
+          .canCreateSchedule
+      ) {
+        window.alert(
+          category.workflow
+            .blockingReason ??
+          'לא ניתן ליצור שיבוץ במצב התקופה הנוכחי.',
+        );
+
+        return;
+      }
+
+      if (
+        category.id ===
+          'dispatchers'
+      ) {
+        if (
+          !canEditDispatcherSchedule
+        ) {
+          window.alert(
+            'אין לך הרשאה ליצור שיבוץ מוקדנים.',
+          );
+
+          return;
+        }
+
+        if (
+          !dispatcherAvailabilityPeriod
+        ) {
+          window.alert(
+            'לא נמצאה תקופת אילוצים למוקדנים בחודש שנבחר.',
+          );
+
+          return;
+        }
+
+        navigate(
+          `/availability?tab=schedule-preparation&periodId=${encodeURIComponent(
+            dispatcherAvailabilityPeriod.id,
+          )}&returnTo=${encodeURIComponent('/shifts')}`,
+        );
+
+        return;
+      }
+
+      if (
+        category.id ===
+          'morning-drivers'
+      ) {
+        if (
+          !canEditMorningDriverSchedule
+        ) {
+          window.alert(
+            'אין לך הרשאה ליצור שיבוץ כונני בוקר.',
+          );
+
+          return;
+        }
+
+        if (
+          !morningDriverAvailabilityPeriod
+        ) {
+          window.alert(
+            'לא נמצאה תקופת אילוצים לכונני בוקר בחודש שנבחר.',
+          );
+
+          return;
+        }
+
+        const confirmed =
+          window.confirm(
+            'ליצור טיוטת שיבוץ לכונני הבוקר עבור החודש שנבחר?',
+          );
+
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          await createMorningDriverScheduleDraft(
+            morningDriverAvailabilityPeriod.id,
+          );
+
+          await loadMorningDriverSchedule(
+            year,
+            month,
+          );
+        } catch {
+          /*
+           * הודעת השגיאה נשמרת בתוך
+           * useMorningDriverSchedule ומוצגת בכרטיס.
+           */
+        }
+
+        return;
+      }
+
+      if (
+        !canEditDriverSchedule
+      ) {
+        window.alert(
+          'אין לך הרשאה ליצור שיבוץ כוננים.',
+        );
+
+        return;
+      }
+
+      if (
+        !driverAvailabilityPeriod
+      ) {
+        window.alert(
+          'לא נמצאה תקופת אילוצים לכוננים בחודש שנבחר.',
+        );
+
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          'ליצור טיוטת לוח כוננים לפי מנגנון הרוטציה והאילוצים?',
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await createDriverScheduleDraft(
+          driverAvailabilityPeriod.id,
+        );
+
+        await loadDriverScheduleByMonth(
+          year,
+          month,
+        );
+      } catch {
+        /*
+         * הודעת השגיאה נשמרת בתוך
+         * useDriverScheduleDraft ומוצגת בכרטיס.
+         */
+      }
+    };
+
+  const handlePublishSchedule =
+    async (
+      category:
+        PeriodCategoryViewModel,
+    ): Promise<void> => {
+      if (
+        category.id ===
+          'dispatchers'
+      ) {
+        if (
+          !canEditDispatcherSchedule
+        ) {
+          window.alert(
+            'אין לך הרשאה לפרסם שיבוץ מוקדנים.',
+          );
+
+          return;
+        }
+
+        const period =
+          dispatcherScheduleState
+            .data
+            ?.period ??
+          null;
+
+        if (
+          !period ||
+          period.status !==
+            'draft'
+        ) {
+          window.alert(
+            period?.status ===
+              'published'
+              ? 'שיבוץ המוקדנים כבר פורסם.'
+              : 'ניתן לפרסם רק טיוטת שיבוץ מוקדנים.',
+          );
+
+          return;
+        }
+
+        const hasUnassignedShifts =
+          dispatcherScheduleState
+            .data
+            ?.shifts
+            .some(
+              (
+                shift,
+              ) =>
+                !shift
+                  .assignedUserId,
+            ) ??
+          false;
+
+        if (
+          hasUnassignedShifts
+        ) {
+          window.alert(
+            'יש להשלים את כל משמרות המוקדנים לפני הפרסום.',
+          );
+
+          return;
+        }
+
+        const confirmed =
+          window.confirm(
+            `האם לפרסם את שיבוץ המוקדנים לחודש ${month}/${year}?\n\nלאחר הפרסום המוקדנים יוכלו לראות את המשמרות שלהם.`,
+          );
+
+        if (!confirmed) {
+          return;
+        }
+
+        setIsDispatcherPublishing(
+          true,
+        );
+
+        try {
+          await scheduleService
+            .publishSchedulePeriod(
+              period.id,
+            );
+
+          const data =
+            await scheduleService
+              .getScheduleByMonth(
+                year,
+                month,
+              );
+
+          setDispatcherScheduleState({
+            data,
+            isLoading:
+              false,
+            error:
+              null,
+          });
+        } catch (error) {
+          setDispatcherScheduleState(
+            (
+              current,
+            ) => ({
+              ...current,
+              error:
+                getErrorMessage(
+                  error,
+                ),
+            }),
+          );
+        } finally {
+          setIsDispatcherPublishing(
+            false,
+          );
+        }
+
+        return;
+      }
+
+      if (
+        category.id ===
+          'morning-drivers'
+      ) {
+        if (
+          !canEditMorningDriverSchedule
+        ) {
+          window.alert(
+            'אין לך הרשאה לפרסם שיבוץ כונני בוקר.',
+          );
+
+          return;
+        }
+
+        const scheduleData =
+          morningDriverScheduleState
+            .data;
+
+        if (
+          !scheduleData ||
+          scheduleData.period
+            .status !==
+            'draft'
+        ) {
+          window.alert(
+            scheduleData?.period
+              .status ===
+              'published'
+              ? 'לוח כונני הבוקר כבר פורסם.'
+              : 'ניתן לפרסם רק טיוטת לוח כונני בוקר.',
+          );
+
+          return;
+        }
+
+        if (
+          scheduleData.statistics
+            .minimumUnfilled >
+          0
+        ) {
+          window.alert(
+            'לא ניתן לפרסם עד שיוקצה לפחות כונן בוקר אחד לכל משמרת.',
+          );
+
+          return;
+        }
+
+        const recommendationWarnings =
+          scheduleData.statistics
+            .recommendationUnfilled;
+
+        const confirmed =
+          window.confirm(
+            recommendationWarnings >
+              0
+              ? `עדיין חסרים ${recommendationWarnings} כוננים להשלמת ההמלצה במשמרות הבוקר.\n\nהמינימום הושלם ולכן ניתן לפרסם. להמשיך?`
+              : 'האם לפרסם את לוח כונני הבוקר?',
+          );
+
+        if (!confirmed) {
+          return;
+        }
+
+        try {
+          await publishMorningDriverSchedule();
+        } catch {
+          /*
+           * הודעת השגיאה נשמרת בתוך
+           * useMorningDriverSchedule ומוצגת בכרטיס.
+           */
+        }
+
+        return;
+      }
+
+      if (
+        !canEditDriverSchedule
+      ) {
+        window.alert(
+          'אין לך הרשאה לפרסם את לוח הכוננים.',
+        );
+
+        return;
+      }
+
+      const scheduleData =
+        driverScheduleState
+          .data;
+
+      if (
+        !scheduleData ||
+        scheduleData.period
+          ?.status !==
+          'draft'
+      ) {
+        window.alert(
+          scheduleData?.period
+            ?.status ===
+            'published'
+            ? 'לוח הכוננים כבר פורסם.'
+            : 'ניתן לפרסם רק טיוטת לוח כוננים.',
+        );
+
+        return;
+      }
+
+      if (
+        scheduleData.statistics
+          .unassignedDays >
+        0
+      ) {
+        window.alert(
+          'יש לשבץ כונן בכל ימי החודש לפני הפרסום.',
+        );
+
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          'האם לפרסם את לוח הכוננים?\n\nלאחר הפרסום הכוננים יוכלו לראות את הלוח שלהם.',
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await publishDriverSchedule();
+      } catch {
+        /*
+         * הודעת השגיאה נשמרת בתוך
+         * useDriverScheduleDraft ומוצגת בכרטיס.
+         */
+      }
+    };
+
+  const canCreateCategorySchedule =
     (
-      actionLabel: string,
-    ): void => {
-      window.alert(
-        `${actionLabel} יחובר בשלב הבא למנגנון הקיים.`,
-      );
+      category:
+        PeriodCategoryViewModel,
+    ): boolean => {
+      if (
+        !category.workflow
+          .canCreateSchedule
+      ) {
+        return false;
+      }
+
+      switch (
+        category.id
+      ) {
+        case 'dispatchers':
+          return canEditDispatcherSchedule;
+
+        case 'morning-drivers':
+          return (
+            canEditMorningDriverSchedule &&
+            !morningDriverScheduleState
+              .isCreating
+          );
+
+        case 'drivers':
+          return (
+            canEditDriverSchedule &&
+            !driverScheduleState
+              .isCreating
+          );
+
+        default:
+          return false;
+      }
+    };
+
+  const canPublishCategorySchedule =
+    (
+      category:
+        PeriodCategoryViewModel,
+    ): boolean => {
+      switch (
+        category.id
+      ) {
+        case 'dispatchers':
+          return (
+            canEditDispatcherSchedule &&
+            category.workflow
+              .scheduleStatus ===
+              'draft' &&
+            !isDispatcherPublishing &&
+            !(
+              dispatcherScheduleState
+                .data
+                ?.shifts
+                .some(
+                  (
+                    shift,
+                  ) =>
+                    !shift
+                      .assignedUserId,
+                ) ??
+              false
+            )
+          );
+
+        case 'morning-drivers':
+          return (
+            canEditMorningDriverSchedule &&
+            morningDriverScheduleState
+              .data
+              ?.period
+              .status ===
+              'draft' &&
+            (
+              morningDriverScheduleState
+                .data
+                ?.statistics
+                .minimumUnfilled ??
+              1
+            ) ===
+              0 &&
+            !morningDriverScheduleState
+              .isPublishing
+          );
+
+        case 'drivers':
+          return (
+            canEditDriverSchedule &&
+            driverScheduleState
+              .data
+              ?.period
+              ?.status ===
+              'draft' &&
+            (
+              driverScheduleState
+                .data
+                ?.statistics
+                .unassignedDays ??
+              1
+            ) ===
+              0 &&
+            !driverScheduleState
+              .isPublishing
+          );
+
+        default:
+          return false;
+      }
     };
 
   return (
@@ -1071,13 +1610,16 @@ function UnifiedPeriodManagement({
                         type="button"
                         variant="primary"
                         disabled={
-                          category.isLoading
-                        }
-                        onClick={() =>
-                          handlePendingAction(
-                            category.createLabel,
+                          category.isLoading ||
+                          !canCreateCategorySchedule(
+                            category,
                           )
                         }
+                        onClick={() => {
+                          void handleCreateSchedule(
+                            category,
+                          );
+                        }}
                       >
                         <CalendarCheck2
                           size={
@@ -1095,13 +1637,16 @@ function UnifiedPeriodManagement({
                         type="button"
                         variant="secondary"
                         disabled={
-                          category.isLoading
-                        }
-                        onClick={() =>
-                          handlePendingAction(
-                            category.publishLabel,
+                          category.isLoading ||
+                          !canPublishCategorySchedule(
+                            category,
                           )
                         }
+                        onClick={() => {
+                          void handlePublishSchedule(
+                            category,
+                          );
+                        }}
                       >
                         <Send
                           size={
