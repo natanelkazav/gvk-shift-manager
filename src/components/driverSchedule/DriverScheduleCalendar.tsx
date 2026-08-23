@@ -360,16 +360,28 @@ const scheduleDaysByDate =
     };
 
 
-  const isCurrentMonth =
+  const isTransferableMonth =
     (() => {
       const now =
         new Date();
 
+      const currentPeriodValue =
+        now.getFullYear() *
+          12 +
+        now.getMonth();
+
+      const displayedPeriodValue =
+        displayedYear *
+          12 +
+        displayedMonth -
+          1;
+
       return (
-        displayedYear ===
-          now.getFullYear() &&
-        displayedMonth ===
-          now.getMonth() + 1
+        displayedPeriodValue ===
+          currentPeriodValue ||
+        displayedPeriodValue ===
+          currentPeriodValue +
+            1
       );
     })();
 
@@ -381,7 +393,7 @@ const scheduleDaysByDate =
       if (
         !canTransferMyDuties ||
         !currentUserId ||
-        !isCurrentMonth ||
+        !isTransferableMonth ||
         period?.status !==
           'published' ||
         day.assignedUserId !==
