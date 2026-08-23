@@ -766,12 +766,12 @@ const handleWorkspaceTabChange =
 
         case 'on_call':
           return hasPermission(
-            'driver_schedule.edit',
+            'driver_schedule.edit_any',
           );
 
         case 'morning_driver':
           return hasPermission(
-            'morning_driver_schedule.edit',
+            'morning_driver_schedule.edit_any',
           );
 
         default:

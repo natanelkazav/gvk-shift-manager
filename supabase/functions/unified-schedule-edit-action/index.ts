@@ -560,8 +560,8 @@ Deno.serve(
       const permissionKey =
         category ===
           'on_call'
-          ? 'driver_schedule.edit'
-          : 'morning_driver_schedule.edit';
+          ? 'driver_schedule.edit_any'
+          : 'morning_driver_schedule.edit_any';
 
       if (
         !await hasPermission(
