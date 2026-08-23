@@ -483,7 +483,8 @@ const handleClosePeriod =
     const confirmed =
       window.confirm(
         `האם לסגור את "${periodTitle}" להגשת אילוצים?\n\n` +
-        'לאחר הסגירה הכוננים לא יוכלו לערוך או להגיש אילוצים.',
+        'אצל כוננים שלא הגישו בזמן, כל יום שלא סומן יוגדר אוטומטית כזמין עם הערה על אי־הגשה בזמן.\n\n' +
+        'סימונים שכבר נשמרו לא ישתנו.',
       );
 
     if (!confirmed) {
@@ -505,50 +506,10 @@ const handleClosePeriod =
       await loadManagementData(
         periodId,
       );
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-              .trim()
-              .toLowerCase()
-          : '';
-
-      if (
-        !errorMessage.includes(
-          'not all active drivers submitted availability',
-        )
-      ) {
-        return;
-      }
-
-      const forceConfirmed =
-        window.confirm(
-          'לא כל הכוננים הפעילים הגישו אילוצים.\n\n' +
-          'האם לסגור את החודש בכל זאת?',
-        );
-
-      if (!forceConfirmed) {
-        return;
-      }
-
-      try {
-        await closePeriod(
-          periodId,
-          true,
-        );
-
-        setSelectedManagementPeriodId(
-          periodId,
-        );
-
-        await loadManagementData(
-          periodId,
-        );
-      } catch {
-        /*
-         * הודעת השגיאה נשמרת בתוך ה-Hook.
-         */
-      }
+    } catch {
+      /*
+       * הודעת השגיאה נשמרת בתוך ה-Hook.
+       */
     }
   };
 

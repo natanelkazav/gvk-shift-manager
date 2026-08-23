@@ -686,9 +686,7 @@ const handleCloseSubmissionsTracking =
 
       if (
         summary.totalDispatchers ===
-          0 ||
-        summary.submittedDispatchers !==
-          summary.totalDispatchers
+          0
       ) {
         return;
       }
@@ -699,10 +697,22 @@ const handleCloseSubmissionsTracking =
           period.month - 1
         ]} ${period.year}`;
 
+      const missingSubmissions =
+        Math.max(
+          summary.totalDispatchers -
+            summary.submittedDispatchers,
+          0,
+        );
+
       const confirmed =
         window.confirm(
-          `האם לסגור את תקופת האילוצים "${periodTitle}"?\n\n` +
-          'לאחר הסגירה המוקדנים לא יוכלו עוד לשנות או להגיש אילוצים.',
+          missingSubmissions > 0
+            ? `האם לסגור את תקופת האילוצים "${periodTitle}"?\n\n` +
+              `יש ${missingSubmissions} מוקדנים שלא הגישו בזמן. ` +
+              'כל משמרת שלא סומנה אצלם תסומן אוטומטית כזמין עם הערה על אי־הגשה בזמן.\n\n' +
+              'לאחר הסגירה לא ניתן יהיה לערוך או להגיש אילוצים.'
+            : `האם לסגור את תקופת האילוצים "${periodTitle}"?\n\n` +
+              'לאחר הסגירה המוקדנים לא יוכלו עוד לשנות או להגיש אילוצים.',
         );
 
       if (!confirmed) {
@@ -799,11 +809,7 @@ const handleCloseSubmissionsTracking =
       submissionsState.data.period
         .status === 'open' &&
       submissionsState.data.summary
-        .totalDispatchers > 0 &&
-      submissionsState.data.summary
-        .submittedDispatchers ===
-        submissionsState.data.summary
-          .totalDispatchers,
+        .totalDispatchers > 0,
     );
 
   const handleOpenAvailabilityMatrix =
@@ -1174,14 +1180,11 @@ const handleCloseSubmissionsTracking =
             </strong>
 
             <span>
-              כל{' '}
-              {
-                state
-                  .lastClosedResult
-                  .submittedDispatchers
-              }{' '}
-              המוקדנים הגישו את
-              האילוצים והתקופה נעולה.
+              התקופה נעולה. חוסרים של
+              מוקדנים שלא הגישו בזמן
+              הושלמו אוטומטית כזמין,
+              בלי לדרוס סימונים שכבר
+              נשמרו.
             </span>
           </div>
         </div>

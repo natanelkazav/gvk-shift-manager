@@ -284,15 +284,6 @@ function MorningDriverAvailabilityManagementPanel({
     return null;
   }
 
-  const canCloseNormally =
-    data.statistics
-      .totalDrivers >
-      0 &&
-    data.statistics
-      .submittedDrivers ===
-      data.statistics
-        .totalDrivers;
-
   return (
     <section className="morning-driver-management-panel">
       <AvailabilityManagementHeader
@@ -331,38 +322,25 @@ function MorningDriverAvailabilityManagementPanel({
                 isClosing
               }
               onClick={() => {
-                if (
-                  canCloseNormally
-                ) {
-                  const confirmed =
-                    window.confirm(
-                      'לסגור את חודש אילוצי כונני הבוקר?\n\nלאחר הסגירה לא ניתן יהיה לערוך הגשות.',
-                    );
-
-                  if (
-                    confirmed
-                  ) {
-                    onClosePeriod(
-                      false,
-                    );
-                  }
-
-                  return;
-                }
+                const missingDrivers =
+                  Math.max(
+                    data.statistics.totalDrivers -
+                      data.statistics.submittedDrivers,
+                    0,
+                  );
 
                 const confirmed =
                   window.confirm(
-                    `עדיין חסרות ${
-                      data.statistics.totalDrivers -
-                      data.statistics.submittedDrivers
-                    } הגשות.\n\nלסגור את החודש בכוח?`,
+                    missingDrivers > 0
+                      ? `לסגור את חודש אילוצי כונני הבוקר?\n\nיש ${missingDrivers} כונני בוקר שלא הגישו בזמן. כל משמרת שלא סומנה אצלם תסומן אוטומטית כזמין עם הערה על אי־הגשה בזמן.\n\nסימונים שכבר נשמרו לא ישתנו.`
+                      : 'לסגור את חודש אילוצי כונני הבוקר?\n\nלאחר הסגירה לא ניתן יהיה לערוך הגשות.',
                   );
 
                 if (
                   confirmed
                 ) {
                   onClosePeriod(
-                    true,
+                    false,
                   );
                 }
               }}
@@ -374,9 +352,7 @@ function MorningDriverAvailabilityManagementPanel({
 
               {isClosing
                 ? 'סוגר...'
-                : canCloseNormally
-                  ? 'סגירת תקופה'
-                  : 'סגירה כפויה'}
+                : 'סגירת תקופה'}
             </Button>
           ) : null
         }
@@ -394,7 +370,7 @@ function MorningDriverAvailabilityManagementPanel({
           data.period.status === 'open'
             ? () => {
                 onClosePeriod(
-                  !canCloseNormally,
+                  false,
                 );
               }
             : null
