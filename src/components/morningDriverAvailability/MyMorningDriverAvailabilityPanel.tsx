@@ -322,18 +322,43 @@ function MyMorningDriverAvailabilityPanel() {
   return (
     <section className="my-morning-driver-panel">
       <header className="my-morning-driver-header">
-        <div>
+        <div className="my-morning-driver-header-main">
           <span className="my-morning-driver-eyebrow">
-            האילוצים שלי
+            אילוצי כוננות בוקר
           </span>
 
-          <h2>
+          <h1>
             {periodTitle}
-          </h2>
+          </h1>
 
           <p>
-            יש לסמן זמינות לכל משמרת בנפרד.
+            יש לסמן זמינות לכל משמרת בנפרד ולשמור לפני ההגשה.
           </p>
+
+          <div className="my-morning-driver-header-meta">
+            <span className="my-morning-driver-deadline-chip">
+              <Clock3
+                size={16}
+                aria-hidden="true"
+              />
+              מועד אחרון: {formatDateTime(
+                period.submissionDeadline,
+              )}
+            </span>
+
+            <span
+              className={[
+                'my-morning-driver-submission-status',
+                `my-morning-driver-submission-status-${submission.status}`,
+              ].join(' ')}
+            >
+              {submission.status === 'submitted'
+                ? 'הוגש'
+                : submission.status === 'reopened'
+                  ? 'נפתח מחדש'
+                  : 'טיוטה'}
+            </span>
+          </div>
         </div>
 
         <div className="my-morning-driver-header-actions">
@@ -386,40 +411,6 @@ function MyMorningDriverAvailabilityPanel() {
           </Button>
         </div>
       </header>
-
-      <div className="my-morning-driver-period-info">
-        <div>
-          <Clock3
-            size={18}
-            aria-hidden="true"
-          />
-
-          <span>
-            מועד אחרון:
-          </span>
-
-          <strong>
-            {formatDateTime(
-              period.submissionDeadline,
-            )}
-          </strong>
-        </div>
-
-        <span
-          className={[
-            'my-morning-driver-submission-status',
-            `my-morning-driver-submission-status-${submission.status}`,
-          ].join(' ')}
-        >
-          {submission.status ===
-          'submitted'
-            ? 'הוגש'
-            : submission.status ===
-                'reopened'
-              ? 'נפתח מחדש'
-              : 'טיוטה'}
-        </span>
-      </div>
 
       {period.instructions ? (
         <div className="my-morning-driver-instructions">
@@ -526,6 +517,28 @@ function MyMorningDriverAvailabilityPanel() {
             הושלם
           </span>
         </article>
+      </div>
+
+      <div className="my-morning-driver-completion">
+        <div>
+          <span>
+            התקדמות סימון האילוצים
+          </span>
+          <strong>
+            {statistics.completionPercentage}%
+          </strong>
+        </div>
+
+        <div
+          className="my-morning-driver-completion-track"
+          aria-label={`הושלמו ${statistics.completionPercentage}% מהאילוצים`}
+        >
+          <span
+            style={{
+              width: `${statistics.completionPercentage}%`,
+            }}
+          />
+        </div>
       </div>
 
       <div className="my-morning-driver-days">

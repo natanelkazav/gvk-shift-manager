@@ -20,6 +20,9 @@ import DriverDashboard
 import ManagerDashboard
   from '../components/dashboard/ManagerDashboard';
 
+import MorningDriverDashboard
+  from '../components/dashboard/MorningDriverDashboard';
+
 import '../styles/dashboard.css';
 
 interface DashboardLocationState {
@@ -139,6 +142,18 @@ function DashboardPage() {
               <DriverDashboard
                 data={
                   dashboard.driver
+                }
+              />
+            );
+          }
+
+          if (
+            dashboard.morningDriver
+          ) {
+            return (
+              <MorningDriverDashboard
+                data={
+                  dashboard.morningDriver
                 }
               />
             );

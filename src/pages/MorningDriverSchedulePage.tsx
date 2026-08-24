@@ -1,7 +1,5 @@
 import {
   CalendarDays,
-  ChevronLeft,
-  ChevronRight,
   LoaderCircle,
   RefreshCw,
   Sparkles,
@@ -251,29 +249,6 @@ function MorningDriverSchedulePage() {
       ],
     );
 
-  const availableYears =
-    useMemo(
-      () => {
-        const currentYear =
-          new Date()
-            .getFullYear();
-
-        return Array.from(
-          {
-            length: 8,
-          },
-          (
-            _,
-            index,
-          ) =>
-            currentYear -
-            5 +
-            index,
-        );
-      },
-      [],
-    );
-
   const loadViewedMonth =
     async (
       targetMonth:
@@ -361,7 +336,7 @@ function MorningDriverSchedulePage() {
           </span>
 
           <h1>
-            לוח כונני בוקר
+            לוח כוננויות בוקר
           </h1>
 
           <p>
@@ -396,185 +371,7 @@ function MorningDriverSchedulePage() {
         </button>
       </header>
 
-      <section className="morning-driver-schedule-month-toolbar">
-        <div className="morning-driver-schedule-month-navigation">
-          <button
-            type="button"
-            className="morning-driver-schedule-month-button"
-            disabled={
-              state.isLoading
-            }
-            aria-label="החודש הקודם"
-            onClick={
-              handlePreviousMonth
-            }
-          >
-            <ChevronRight
-              size={19}
-              aria-hidden="true"
-            />
 
-            הקודם
-          </button>
-
-          <div className="morning-driver-schedule-month-title">
-            <span>
-              חודש מוצג
-            </span>
-
-            <strong>
-              {
-                HEBREW_MONTHS[
-                  viewedScheduleMonth.month -
-                    1
-                ]
-              }{' '}
-              {
-                viewedScheduleMonth.year
-              }
-            </strong>
-
-            <small>
-              {state.data
-                ? state.data.period.status ===
-                  'published'
-                  ? 'לוח פורסם'
-                  : state.data.period.status ===
-                      'archived'
-                    ? 'לוח בארכיון'
-                    : 'לוח בטיוטה'
-                : 'לא קיים לוח בחודש זה'}
-            </small>
-          </div>
-
-          <button
-            type="button"
-            className="morning-driver-schedule-month-button"
-            disabled={
-              state.isLoading
-            }
-            aria-label="החודש הבא"
-            onClick={
-              handleNextMonth
-            }
-          >
-            הבא
-
-            <ChevronLeft
-              size={19}
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-
-        <div className="morning-driver-schedule-month-selectors">
-          <label>
-            <span>
-              חודש
-            </span>
-
-            <select
-              value={
-                viewedScheduleMonth.month
-              }
-              disabled={
-                state.isLoading
-              }
-              onChange={(
-                event,
-              ) => {
-                void loadViewedMonth({
-                  year:
-                    viewedScheduleMonth.year,
-
-                  month:
-                    Number(
-                      event.target.value,
-                    ),
-                });
-              }}
-            >
-              {HEBREW_MONTHS.map(
-                (
-                  monthName,
-                  monthIndex,
-                ) => (
-                  <option
-                    key={
-                      monthName
-                    }
-                    value={
-                      monthIndex + 1
-                    }
-                  >
-                    {
-                      monthName
-                    }
-                  </option>
-                ),
-              )}
-            </select>
-          </label>
-
-          <label>
-            <span>
-              שנה
-            </span>
-
-            <select
-              value={
-                viewedScheduleMonth.year
-              }
-              disabled={
-                state.isLoading
-              }
-              onChange={(
-                event,
-              ) => {
-                void loadViewedMonth({
-                  year:
-                    Number(
-                      event.target.value,
-                    ),
-
-                  month:
-                    viewedScheduleMonth.month,
-                });
-              }}
-            >
-              {availableYears.map(
-                (
-                  year,
-                ) => (
-                  <option
-                    key={
-                      year
-                    }
-                    value={
-                      year
-                    }
-                  >
-                    {year}
-                  </option>
-                ),
-              )}
-            </select>
-          </label>
-
-          <button
-            type="button"
-            className="morning-driver-schedule-current-month-button"
-            disabled={
-              state.isLoading
-            }
-            onClick={
-              handleCurrentMonth
-            }
-          >
-            החודש הנוכחי
-          </button>
-        </div>
-      </section>
 
       {canEdit ? (
         <section className="morning-driver-schedule-create-card">
@@ -699,6 +496,21 @@ function MorningDriverSchedulePage() {
         }
         isPublishing={
           state.isPublishing
+        }
+        viewedYear={
+          viewedScheduleMonth.year
+        }
+        viewedMonth={
+          viewedScheduleMonth.month
+        }
+        onPreviousMonth={
+          handlePreviousMonth
+        }
+        onNextMonth={
+          handleNextMonth
+        }
+        onCurrentMonth={
+          handleCurrentMonth
         }
         canEdit={
           canEdit

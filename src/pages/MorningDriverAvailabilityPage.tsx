@@ -303,28 +303,7 @@ function MorningDriverAvailabilityPage() {
     !canManage
   ) {
     return (
-      <section className="morning-driver-availability-page">
-        <header className="morning-driver-page-header">
-          <div>
-            <span className="morning-driver-page-eyebrow">
-              <SunMedium
-                size={18}
-                aria-hidden="true"
-              />
-
-              מערכת כונני בוקר
-            </span>
-
-            <h1>
-              האילוצים שלי
-            </h1>
-
-            <p>
-              סימון, שמירה והגשת זמינות למשמרות כונני הבוקר.
-            </p>
-          </div>
-        </header>
-
+      <section className="morning-driver-availability-page morning-driver-availability-page-personal">
         <MyMorningDriverAvailabilityPanel />
       </section>
     );

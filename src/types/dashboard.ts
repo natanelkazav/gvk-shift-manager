@@ -57,6 +57,23 @@ export interface DriverDashboardData {
   monthlyProgress: DashboardMonthlyProgress;
 }
 
+
+export interface DashboardMorningDriverShift {
+  assignmentId: string;
+  shiftDate: string;
+  weekdayName: string;
+  startTime: string;
+  endTime: string;
+  shiftType: string;
+  parallelDrivers: DashboardPerson[];
+}
+
+export interface MorningDriverDashboardData {
+  currentShift: DashboardMorningDriverShift | null;
+  nextShift: DashboardMorningDriverShift | null;
+  monthlyProgress: DashboardMonthlyProgress;
+}
+
 export interface ManagerCurrentDispatcher {
   shiftId: string;
   startsAt: string;
@@ -99,6 +116,7 @@ export interface DashboardResponse {
   };
   dispatcher: DispatcherDashboardData | null;
   driver: DriverDashboardData | null;
+  morningDriver: MorningDriverDashboardData | null;
   manager: ManagerDashboardData | null;
   generatedAt: string;
 }

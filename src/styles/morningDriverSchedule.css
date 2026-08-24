@@ -971,3 +971,100 @@
     width: 100%;
   }
 }
+/* Unified month navigation inside the schedule board */
+.morning-driver-schedule-board-header {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.morning-driver-schedule-board-context {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.morning-driver-schedule-board-context > span {
+  color: #0284c7;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.morning-driver-schedule-board-context > strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
+.morning-driver-schedule-board-context > small {
+  color: #64748b;
+}
+
+.morning-driver-schedule-inline-month-navigation {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.morning-driver-schedule-inline-month-title {
+  display: flex;
+  min-width: 150px;
+  align-items: center;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px;
+  text-align: center;
+}
+
+.morning-driver-schedule-inline-month-title strong {
+  color: #0f172a;
+  font-size: 0.86rem;
+}
+
+.morning-driver-schedule-inline-month-title button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.morning-driver-schedule-inline-month-title button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 980px) {
+  .morning-driver-schedule-board-header {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .morning-driver-schedule-inline-month-navigation {
+    justify-content: space-between;
+  }
+
+  .morning-driver-schedule-board-actions {
+    justify-content: stretch;
+  }
+}
+
+@media (max-width: 620px) {
+  .morning-driver-schedule-inline-month-navigation {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .morning-driver-schedule-inline-month-title {
+    order: -1;
+    width: 100%;
+  }
+}

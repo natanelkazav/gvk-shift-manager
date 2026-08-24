@@ -4,6 +4,7 @@ import {
 
 import type {
   DashboardResponse,
+  MorningDriverDashboardData,
 } from '../types/dashboard';
 
 interface SupabaseErrorShape {
@@ -110,7 +111,37 @@ class DashboardService {
       );
     }
 
-    return data;
+    if (
+      data.user.role ===
+      'morning_driver'
+    ) {
+      const {
+        data:
+          morningDriverData,
+        error:
+          morningDriverError,
+      } = await supabase.rpc(
+        'get_my_morning_driver_dashboard',
+      );
+
+      if (morningDriverError) {
+        throw normalizeDashboardError(
+          morningDriverError,
+        );
+      }
+
+      return {
+        ...data,
+        morningDriver:
+          morningDriverData as MorningDriverDashboardData,
+      };
+    }
+
+    return {
+      ...data,
+      morningDriver:
+        null,
+    };
   }
 }
 

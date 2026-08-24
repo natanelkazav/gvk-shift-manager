@@ -1,6 +1,8 @@
 import {
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
   LayoutList,
   LoaderCircle,
@@ -37,6 +39,19 @@ interface MorningDriverScheduleBoardProps {
     string | null;
 
   isPublishing: boolean;
+
+  viewedYear: number;
+
+  viewedMonth: number;
+
+  onPreviousMonth:
+    () => void;
+
+  onNextMonth:
+    () => void;
+
+  onCurrentMonth:
+    () => void;
 
   canEdit: boolean;
 
@@ -170,6 +185,11 @@ function MorningDriverScheduleBoard({
   isLoading,
   updatingAssignmentId,
   isPublishing,
+  viewedYear,
+  viewedMonth,
+  onPreviousMonth,
+  onNextMonth,
+  onCurrentMonth,
   canEdit,
   canEditPublishedAssignments,
   onRefresh,
@@ -392,12 +412,88 @@ function MorningDriverScheduleBoard({
     ],
   );
 
+  const displayedMonthLabel =
+    new Intl.DateTimeFormat(
+      'he-IL',
+      {
+        month: 'long',
+        year: 'numeric',
+        timeZone:
+          'Asia/Jerusalem',
+      },
+    ).format(
+      new Date(
+        viewedYear,
+        viewedMonth - 1,
+        1,
+      ),
+    );
+
+  const renderMonthNavigation =
+    () => (
+      <div className="morning-driver-schedule-inline-month-navigation">
+        <button
+          type="button"
+          className="morning-driver-schedule-month-button"
+          disabled={
+            isLoading
+          }
+          onClick={
+            onPreviousMonth
+          }
+        >
+          <ChevronRight
+            size={18}
+            aria-hidden="true"
+          />
+          חודש קודם
+        </button>
+
+        <div className="morning-driver-schedule-inline-month-title">
+          <strong>
+            {displayedMonthLabel}
+          </strong>
+
+          <button
+            type="button"
+            onClick={
+              onCurrentMonth
+            }
+            disabled={
+              isLoading
+            }
+          >
+            החודש הנוכחי
+          </button>
+        </div>
+
+        <button
+          type="button"
+          className="morning-driver-schedule-month-button"
+          disabled={
+            isLoading
+          }
+          onClick={
+            onNextMonth
+          }
+        >
+          חודש הבא
+          <ChevronLeft
+            size={18}
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+    );
+
   if (
     isLoading &&
     !data
   ) {
     return (
-      <section className="morning-driver-schedule-board-state">
+      <section className="morning-driver-schedule-board">
+        {renderMonthNavigation()}
+        <div className="morning-driver-schedule-board-state">
         <LoaderCircle
           size={34}
           className="morning-driver-schedule-spin"
@@ -407,6 +503,7 @@ function MorningDriverScheduleBoard({
         <strong>
           טוען את לוח כונני הבוקר
         </strong>
+        </div>
       </section>
     );
   }
@@ -415,7 +512,9 @@ function MorningDriverScheduleBoard({
     !data
   ) {
     return (
-      <section className="morning-driver-schedule-board-state">
+      <section className="morning-driver-schedule-board">
+        {renderMonthNavigation()}
+        <div className="morning-driver-schedule-board-state">
         <CalendarDays
           size={36}
           aria-hidden="true"
@@ -428,6 +527,7 @@ function MorningDriverScheduleBoard({
         <span>
           מנהל יכול לבחור חודש אילוצים סגור וליצור טיוטה אוטומטית.
         </span>
+        </div>
       </section>
     );
   }
@@ -714,20 +814,25 @@ function MorningDriverScheduleBoard({
   return (
     <section className="morning-driver-schedule-board">
       <header className="morning-driver-schedule-board-header">
-        <div>
+        <div className="morning-driver-schedule-board-context">
           <span>
-            לוח שיבוץ
+            {data.period.status === 'published'
+              ? 'לוח פורסם'
+              : data.period.status === 'archived'
+                ? 'לוח בארכיון'
+                : 'טיוטת לוח'}
           </span>
 
-          <h2>
-            {data.period.title ??
-              `${data.period.month}/${data.period.year}`}
-          </h2>
+          <strong>
+            {displayedMonthLabel}
+          </strong>
 
-          <p>
-            מינימום כונן אחד בכל משמרת; במשמרת בוקר מומלץ לשבץ שניים.
-          </p>
+          <small>
+            מינימום כונן אחד בכל משמרת; בבוקר מומלץ לשבץ שניים.
+          </small>
         </div>
+
+        {renderMonthNavigation()}
 
         <div className="morning-driver-schedule-board-actions">
           <button

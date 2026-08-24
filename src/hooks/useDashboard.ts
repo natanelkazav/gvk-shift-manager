@@ -61,6 +61,9 @@ function hasActiveAssignment(
       ?.driver
       ?.currentDuty ||
     dashboard
+      ?.morningDriver
+      ?.currentShift ||
+    dashboard
       ?.manager
       ?.currentDispatcher ||
     dashboard
