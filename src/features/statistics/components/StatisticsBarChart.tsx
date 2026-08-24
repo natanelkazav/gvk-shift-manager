@@ -55,7 +55,7 @@ function StatisticsBarChart({
           {emptyMessage}
         </div>
       ) : (
-        <div className="statistics-bars">
+        <div className="statistics-bars statistics-bars-vertical">
           {items.map(
             (
               item,
@@ -64,7 +64,9 @@ function StatisticsBarChart({
                 maximumValue >
                 0
                   ? Math.max(
-                      4,
+                      item.value > 0
+                        ? 4
+                        : 0,
                       Math.round(
                         (
                           item.value /
@@ -80,28 +82,28 @@ function StatisticsBarChart({
                   key={
                     item.label
                   }
-                  className="statistics-bar-row"
+                  className="statistics-bar-column"
                 >
-                  <span>
-                    {
-                      item.label
-                    }
-                  </span>
-
-                  <div className="statistics-bar-track">
-                    <i
-                      style={{
-                        width:
-                          `${percentage}%`,
-                      }}
-                    />
-                  </div>
-
                   <strong>
                     {
                       item.value
                     }
                   </strong>
+
+                  <div className="statistics-bar-track statistics-bar-track-vertical">
+                    <i
+                      style={{
+                        height:
+                          `${percentage}%`,
+                      }}
+                    />
+                  </div>
+
+                  <span title={item.label}>
+                    {
+                      item.label
+                    }
+                  </span>
                 </div>
               );
             },

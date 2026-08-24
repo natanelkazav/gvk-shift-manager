@@ -1663,8 +1663,44 @@ const canEditDisplayedSchedule =
       return null;
     }
 
-    return `${context.availableCount} מתוך ${context.totalDispatchers} מוקדנים סימנו זמינות למשמרת. ניתן לבצע שיבוץ ידני גם לאחר בדיקת הנתונים.`;
+    return `${context.availableCount} מתוך ${context.totalDispatchers} מוקדנים סימנו זמינות בעצמם למשמרת. הרשימה מסמנת גם מי אינו זמין ומי הושלם אוטומטית עקב אי־הגשה.`;
   };
+
+  const getEditingDispatchers =
+    (): ScheduleEditDispatcher[] => {
+      if (
+        !editingShift ||
+        !isDraftDisplayedPeriod ||
+        !draftEditContext
+      ) {
+        return editDispatchers;
+      }
+
+      const context =
+        draftEditContext.shifts.find(
+          (item) =>
+            item.scheduleShiftId ===
+            editingShift.id,
+        );
+
+      if (!context) {
+        return editDispatchers;
+      }
+
+      return context.candidates.map(
+        (candidate) => ({
+          id: candidate.userId,
+          displayName:
+            candidate.displayName,
+          scheduleName:
+            candidate.scheduleName,
+          availabilityStatus:
+            candidate.availabilityStatus,
+          isAutoCompleted:
+            candidate.isAutoCompleted,
+        }),
+      );
+    };
 
 
   const isDispatcher =
@@ -3135,7 +3171,7 @@ const canPublishSchedule =
           'closed'
         }
         shift={editingShift}
-        dispatchers={editDispatchers}
+        dispatchers={getEditingDispatchers()}
         isLoadingOptions={
           isLoadingEditOptions
         }

@@ -96,14 +96,74 @@ function ScheduleShiftEditModal({
 
   const dispatcherOptions = useMemo(
     () =>
-      dispatchers.map(
-        (dispatcher) => ({
-          value: dispatcher.id,
-          label:
-            dispatcher.scheduleName ??
-            dispatcher.displayName,
-        }),
-      ),
+      [...dispatchers]
+        .sort((first, second) => {
+          const priority = (
+            dispatcher:
+              ScheduleEditDispatcher,
+          ): number => {
+            if (
+              dispatcher.availabilityStatus ===
+                'available' &&
+              !dispatcher.isAutoCompleted
+            ) {
+              return 0;
+            }
+
+            if (
+              dispatcher.availabilityStatus ===
+              'unavailable'
+            ) {
+              return 1;
+            }
+
+            return 2;
+          };
+
+          const priorityDifference =
+            priority(first) -
+            priority(second);
+
+          if (priorityDifference !== 0) {
+            return priorityDifference;
+          }
+
+          return (
+            first.scheduleName ??
+            first.displayName
+          ).localeCompare(
+            second.scheduleName ??
+            second.displayName,
+            'he',
+          );
+        })
+        .map(
+          (dispatcher) => {
+            const name =
+              dispatcher.scheduleName ??
+              dispatcher.displayName;
+
+            const statusLabel =
+              dispatcher.availabilityStatus ===
+                  'available' &&
+                !dispatcher.isAutoCompleted
+                ? 'זמין'
+                : dispatcher.availabilityStatus ===
+                    'unavailable'
+                  ? 'סימן כלא זמין'
+                  : dispatcher.availabilityStatus ===
+                        'available' &&
+                      dispatcher.isAutoCompleted
+                    ? 'לא הגיש — הושלם אוטומטית כזמין'
+                    : 'לא סימן אילוץ';
+
+            return {
+              value: dispatcher.id,
+              label:
+                `${name} — ${statusLabel}`,
+            };
+          },
+        ),
     [dispatchers],
   );
 

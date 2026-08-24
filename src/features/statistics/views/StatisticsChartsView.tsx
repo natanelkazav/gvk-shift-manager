@@ -11,6 +11,9 @@ import StatisticsPieChart
 import StatisticsTrendChart
   from '../components/StatisticsTrendChart';
 
+import StatisticsGroupedBarChart
+  from '../components/StatisticsGroupedBarChart';
+
 import DispatcherAvailabilityInsights
   from './DispatcherAvailabilityInsights';
 
@@ -72,30 +75,7 @@ function StatisticsChartsView({
       }),
     );
 
-  const driverWeekendTrend =
-    data.monthlyStatistics.map(
-      (monthRow) => ({
-        label: monthLabel(
-          monthRow.year,
-          monthRow.month,
-        ),
-        value:
-          data.driverMonthlyBreakdown
-            .filter(
-              (row) =>
-                row.year ===
-                  monthRow.year &&
-                row.month ===
-                  monthRow.month,
-            )
-            .reduce(
-              (sum, row) =>
-                sum +
-                row.weekendDuties,
-              0,
-            ),
-      }),
-    );
+
 
   return (
     <section className="statistics-charts-grid">
@@ -301,33 +281,43 @@ function StatisticsChartsView({
             ]}
           />
 
-          <StatisticsTrendChart
-            title="מגמת כוננויות לאורך זמן"
-            description="מספר הכוננויות בכל חודש בתקופה שנבחרה."
-            points={
-              data.monthlyStatistics.map(
-                (row) => ({
-                  label: monthLabel(
-                    row.year,
-                    row.month,
-                  ),
-                  value:
-                    row.driverDutyCount,
+          <StatisticsGroupedBarChart
+            title="התפלגות שישי, שבת וחגים לפי כונן"
+            description="השוואת חלוקת הכוננויות המיוחדות בין הכוננים שנבחרו."
+            series={[
+              {
+                key: 'friday',
+                label: 'שישי',
+              },
+              {
+                key: 'saturday',
+                label: 'שבת',
+              },
+              {
+                key: 'holiday',
+                label: 'חגים',
+              },
+            ]}
+            items={
+              data.driverStatistics.map(
+                (driver) => ({
+                  label:
+                    getDisplayName(
+                      driver.displayName,
+                      driver.scheduleName,
+                    ),
+                  values: {
+                    friday:
+                      driver.fridayDuties,
+                    saturday:
+                      driver.saturdayDuties,
+                    holiday:
+                      driver.holidayDuties,
+                  },
                 }),
               )
             }
           />
-
-          {data.monthlyStatistics.length >
-          1 ? (
-            <StatisticsTrendChart
-              title="מגמת כוננויות סופ״ש לפי חודש"
-              description="כמות כוננויות סוף השבוע בכל חודש עבור הכוננים שנבחרו."
-              points={
-                driverWeekendTrend
-              }
-            />
-          ) : null}
 
           <StatisticsBarChart
             title="כוננויות סופ״ש לפי כונן"

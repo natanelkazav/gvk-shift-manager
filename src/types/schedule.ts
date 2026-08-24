@@ -250,6 +250,14 @@ export interface ScheduleEditDispatcher {
 
   scheduleName:
     string | null;
+
+  availabilityStatus?:
+    'available'
+    | 'unavailable'
+    | null;
+
+  isAutoCompleted?:
+    boolean;
 }
 
 export interface CurrentScheduleEditOptions {
@@ -295,6 +303,11 @@ export interface ScheduleDraftEditCandidate {
   displayName: string;
   scheduleName: string | null;
   isAvailable: boolean;
+  availabilityStatus:
+    'available'
+    | 'unavailable'
+    | null;
+  isAutoCompleted: boolean;
 }
 
 export interface ScheduleDraftEditShiftContext {
