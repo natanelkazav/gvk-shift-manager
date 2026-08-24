@@ -491,14 +491,22 @@ Deno.serve(
       const currentMonth =
         getJerusalemCurrentMonth();
 
+      const currentPeriodValue =
+        currentMonth.year * 12 +
+        currentMonth.month - 1;
+
+      const requestedPeriodValue =
+        year * 12 +
+        month - 1;
+
       if (
-        currentMonth.year !==
-          year ||
-        currentMonth.month !==
-          month
+        requestedPeriodValue !==
+          currentPeriodValue &&
+        requestedPeriodValue !==
+          currentPeriodValue + 1
       ) {
         throw new Error(
-          'ניתן לערוך במסך זה רק את החודש הנוכחי.',
+          'ניתן לערוך כוננים וכונני בוקר רק בחודש הנוכחי או בחודש הבא.',
         );
       }
 

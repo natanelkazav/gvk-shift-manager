@@ -293,6 +293,9 @@ export function useUnifiedSchedule():
 
                     notes:
                       shift.notes,
+
+                    scheduleStatus:
+                      period.status,
                   },
                 );
               },
@@ -309,8 +312,11 @@ export function useUnifiedSchedule():
           morningDriverResult.status ===
           'fulfilled'
         ) {
+          const morningSchedule =
+            morningDriverResult.value;
+
           const assignments =
-            morningDriverResult.value
+            morningSchedule
               ?.assignments ??
             [];
 
@@ -353,6 +359,12 @@ export function useUnifiedSchedule():
 
                   notes:
                     assignment.notes,
+
+                  scheduleStatus:
+                    morningSchedule
+                      ?.period
+                      ?.status ??
+                    null,
                 },
               );
             },
@@ -368,8 +380,11 @@ export function useUnifiedSchedule():
           onCallResult.status ===
           'fulfilled'
         ) {
+          const onCallSchedule =
+            onCallResult.value;
+
           const days =
-            onCallResult.value
+            onCallSchedule
               ?.days ??
             [];
 
@@ -408,6 +423,12 @@ export function useUnifiedSchedule():
 
                   notes:
                     day.notes,
+
+                  scheduleStatus:
+                    onCallSchedule
+                      ?.period
+                      ?.status ??
+                    null,
                 },
               );
             },

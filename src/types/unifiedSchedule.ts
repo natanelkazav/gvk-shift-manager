@@ -29,6 +29,9 @@ export interface UnifiedScheduleEntry {
 
   notes:
     string | null;
+
+  scheduleStatus:
+    string | null;
 }
 
 export interface UnifiedScheduleFilters {

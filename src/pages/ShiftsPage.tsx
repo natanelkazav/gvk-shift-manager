@@ -739,39 +739,63 @@ const handleWorkspaceTabChange =
       );
     };
 
+  const currentPeriodValue =
+    initialMonth.year * 12 +
+    initialMonth.month - 1;
+
+  const displayedPeriodValue =
+    displayedYear * 12 +
+    displayedMonth - 1;
+
   const isDisplayedCurrentMonth =
-    displayedYear ===
-      initialMonth.year &&
-    displayedMonth ===
-      initialMonth.month;
+    displayedPeriodValue ===
+      currentPeriodValue;
+
+  const isDisplayedCurrentOrNextMonth =
+    displayedPeriodValue ===
+      currentPeriodValue ||
+    displayedPeriodValue ===
+      currentPeriodValue + 1;
 
   const canEditEntry =
     (
       entry:
         UnifiedScheduleEntry,
     ): boolean => {
-      if (
-        !isDisplayedCurrentMonth
-      ) {
-        return false;
-      }
-
       switch (
         entry.category
       ) {
         case 'dispatcher':
-          return hasPermission(
-            'schedule.edit',
+          /*
+           * Dispatcher behavior stays unchanged.
+           * Dispatcher shift changes continue through
+           * the existing dispatcher flow / swap system.
+           */
+          return (
+            isDisplayedCurrentMonth &&
+            hasPermission(
+              'schedule.edit',
+            )
           );
 
         case 'on_call':
-          return hasPermission(
-            'driver_schedule.edit_any',
+          return (
+            isDisplayedCurrentOrNextMonth &&
+            entry.scheduleStatus ===
+              'published' &&
+            hasPermission(
+              'driver_schedule.edit_any',
+            )
           );
 
         case 'morning_driver':
-          return hasPermission(
-            'morning_driver_schedule.edit_any',
+          return (
+            isDisplayedCurrentOrNextMonth &&
+            entry.scheduleStatus ===
+              'published' &&
+            hasPermission(
+              'morning_driver_schedule.edit_any',
+            )
           );
 
         default:

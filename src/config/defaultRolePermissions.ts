@@ -110,11 +110,8 @@ export const DEFAULT_ROLE_PERMISSIONS:
 
       'notifications.view',
 
-      'statistics.view',
-
       'shift_swaps.view',
 
-      'archive.view',
     ],
 
     on_call: [
@@ -123,6 +120,7 @@ export const DEFAULT_ROLE_PERMISSIONS:
       'driver_availability.view',
 
       'driver_schedule.view',
+      'driver_schedule.edit_any',
 
       'notifications.view',
 
@@ -134,6 +132,7 @@ export const DEFAULT_ROLE_PERMISSIONS:
       'morning_driver_availability.view',
 
       'morning_driver_schedule.view',
+      'morning_driver_schedule.edit_any',
 
       'notifications.view',
 
@@ -152,13 +151,13 @@ export const ROLE_LABELS:
     >
   > = {
     admin:
-      'מנהל מערכת',
+      'מנהל/ת מערכת',
 
     manager:
-      'מנהלת',
+      'מנהל/ת',
 
     dispatcher:
-      'מוקדן',
+      'מוקדן/נית',
 
     on_call:
       'כונן',
