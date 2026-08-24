@@ -45,6 +45,19 @@ function SettingsPage() {
       'notifications.manage',
     );
 
+  const canUseShiftReminders =
+    hasPermission(
+      'schedule.view',
+    ) ||
+    hasPermission(
+      'morning_driver_schedule.view',
+    );
+
+  const canUseDriverDutyReminders =
+    hasPermission(
+      'driver_schedule.view',
+    );
+
   const canImportSchedules =
     hasPermission(
       'schedule_import.manage',
@@ -91,12 +104,19 @@ function SettingsPage() {
               <h2>העדפות אישיות</h2>
 
               <p>
-                הגדרות ששייכות למשתמש שלך, כולל Push וזמן התראה לפני משמרת.
+                הגדרות ששייכות למשתמש שלך, כולל Push ותזכורות המותאמות ללוחות שאליהם יש לך גישה.
               </p>
             </div>
           </div>
 
-          <PushNotificationSettings />
+          <PushNotificationSettings
+            showShiftReminderPreferences={
+              canUseShiftReminders
+            }
+            showDriverDutyReminderPreferences={
+              canUseDriverDutyReminders
+            }
+          />
         </section>
 
         {canUseFileTools ? (

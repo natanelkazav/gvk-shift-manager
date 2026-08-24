@@ -313,6 +313,28 @@ const [
     viewer: true,
   });
 
+  const [
+    isInactiveCollapsed,
+    setIsInactiveCollapsed,
+  ] =
+    useState(
+      true,
+    );
+
+  const inactiveUsers =
+    useMemo(
+      () =>
+        users.filter(
+          (
+            profile,
+          ) =>
+            !profile.isActive,
+        ),
+      [
+        users,
+      ],
+    );
+
   const roleGroups =
     useMemo<
       UserRoleGroup[]
@@ -329,7 +351,8 @@ const [
                     profile,
                   ) =>
                     profile.role ===
-                    definition.role,
+                      definition.role &&
+                    profile.isActive,
                 );
 
               return {
@@ -872,6 +895,228 @@ const [
         },
       )}
 
+      {inactiveUsers.length > 0 ? (
+        <section
+          className={[
+            'users-role-group',
+            'users-inactive-group',
+            isInactiveCollapsed
+              ? 'users-role-group-collapsed'
+              : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <button
+            type="button"
+            className="users-role-group-header users-inactive-group-header"
+            aria-expanded={
+              !isInactiveCollapsed
+            }
+            aria-controls="users-inactive-content"
+            onClick={() => {
+              setIsInactiveCollapsed(
+                (
+                  currentValue,
+                ) =>
+                  !currentValue,
+              );
+            }}
+          >
+            <span className="users-role-group-icon users-inactive-group-icon">
+              <Power
+                size={22}
+                aria-hidden="true"
+              />
+            </span>
+
+            <span className="users-role-group-heading">
+              <span className="users-role-group-title-row">
+                <strong>
+                  משתמשים מושבתים
+                </strong>
+
+                <span className="users-role-group-count users-inactive-group-count">
+                  {inactiveUsers.length}
+                </span>
+              </span>
+
+              <small>
+                משתמשים שאינם יכולים להתחבר למערכת. ניתן להפעיל אותם מחדש בכל עת.
+              </small>
+            </span>
+
+            <span className="users-role-group-summary">
+              <span className="users-role-group-inactive-count">
+                {inactiveUsers.length}{' '}
+                מושבתים
+              </span>
+            </span>
+
+            <span className="users-role-group-toggle">
+              {isInactiveCollapsed ? (
+                <ChevronLeft
+                  size={20}
+                  aria-hidden="true"
+                />
+              ) : (
+                <ChevronDown
+                  size={20}
+                  aria-hidden="true"
+                />
+              )}
+            </span>
+          </button>
+
+          {!isInactiveCollapsed ? (
+            <div
+              id="users-inactive-content"
+              className="users-role-group-content users-inactive-content"
+            >
+              <div className="users-inactive-list">
+                {inactiveUsers.map(
+                  (
+                    profile,
+                  ) => {
+                    const isUpdating =
+                      updatingUserId ===
+                      profile.id;
+
+                    const isDeleting =
+                      deletingUserId ===
+                      profile.id;
+
+                    const isBusy =
+                      isUpdating ||
+                      isDeleting;
+
+                    return (
+                      <article
+                        key={
+                          profile.id
+                        }
+                        className="users-inactive-card"
+                      >
+                        <div className="users-inactive-card-main">
+                          <div className="users-avatar users-avatar-inactive">
+                            {getInitials(
+                              profile,
+                            )}
+                          </div>
+
+                          <div className="users-inactive-card-details">
+                            <strong>
+                              {profile.displayName}
+                            </strong>
+                            <span>
+                              {profile.email}
+                            </span>
+                            <div className="users-inactive-card-meta">
+                              <span
+                                className={[
+                                  'users-role-badge',
+                                  `users-role-badge-${profile.role}`,
+                                ].join(' ')}
+                              >
+                                {roleLabels[
+                                  profile.role
+                                ]}
+                              </span>
+
+                              <span className="users-status users-status-inactive">
+                                <Power
+                                  size={14}
+                                  aria-hidden="true"
+                                />
+                                מושבת
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="users-inactive-card-actions">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            disabled={
+                              isBusy
+                            }
+                            onClick={() => {
+                              onEditUser(
+                                profile,
+                              );
+                            }}
+                          >
+                            <Pencil
+                              size={16}
+                              aria-hidden="true"
+                            />
+                            עריכה
+                          </Button>
+
+                          <Button
+                            type="button"
+                            disabled={
+                              isBusy
+                            }
+                            onClick={() => {
+                              void onToggleActiveStatus(
+                                profile,
+                              );
+                            }}
+                          >
+                            {isUpdating ? (
+                              <RefreshCw
+                                size={16}
+                                className="users-action-loading-icon"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <CheckCircle2
+                                size={16}
+                                aria-hidden="true"
+                              />
+                            )}
+                            הפעלה מחדש
+                          </Button>
+
+                          <Button
+                            type="button"
+                            variant="danger"
+                            disabled={
+                              isBusy
+                            }
+                            onClick={() => {
+                              onDeleteUser(
+                                profile,
+                              );
+                            }}
+                          >
+                            {isDeleting ? (
+                              <RefreshCw
+                                size={16}
+                                className="users-action-loading-icon"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Trash2
+                                size={16}
+                                aria-hidden="true"
+                              />
+                            )}
+                            מחיקה
+                          </Button>
+                        </div>
+                      </article>
+                    );
+                  },
+                )}
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <div className="users-role-groups-footer">
         <ShieldCheck
           size={18}
@@ -885,7 +1130,7 @@ const [
               users.length
             }
           </strong>{' '}
-          משתמשים לפי תפקיד.
+          משתמשים. פעילים מוצגים לפי תפקיד, ומושבתים מרוכזים בכרטיס נפרד.
         </span>
       </div>
     </div>

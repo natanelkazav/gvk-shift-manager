@@ -153,7 +153,7 @@ const navigationItems:
     },
 
 {
-  label: 'כונני בוקר',
+  label: 'אילוצי כוננות בוקר',
   path: '/morning-driver-availability',
   icon: SunMedium,
 
@@ -163,7 +163,7 @@ const navigationItems:
   ],
 },
     {
-      label: 'לוח כונני בוקר',
+      label: 'לוח כוננויות בוקר',
       path: '/morning-driver-schedule',
       icon: CalendarDays,
 
@@ -333,7 +333,7 @@ function getNavigationLabel(
       'morning_driver_schedule.view',
     )
   ) {
-    return 'כוננויות הבוקר שלי';
+    return 'לוח כוננויות בוקר';
   }
 
   return item.label;

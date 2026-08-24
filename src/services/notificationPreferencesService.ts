@@ -11,6 +11,10 @@ export interface NotificationPreferences {
 
   shiftReminderMinutesBefore: number;
 
+  driverDutyRemindersEnabled: boolean;
+
+  driverDutyReminderTime: string;
+
   createdAt: string;
 
   updatedAt: string;
@@ -22,6 +26,10 @@ export interface UpdateNotificationPreferencesRequest {
   shiftRemindersEnabled: boolean;
 
   shiftReminderMinutesBefore: number;
+
+  driverDutyRemindersEnabled: boolean;
+
+  driverDutyReminderTime: string;
 }
 
 interface NotificationPreferencesRow {
@@ -32,6 +40,10 @@ interface NotificationPreferencesRow {
   shift_reminders_enabled: boolean;
 
   shift_reminder_minutes_before: number;
+
+  driver_duty_reminders_enabled: boolean;
+
+  driver_duty_reminder_time: string;
 
   created_at: string;
 
@@ -55,6 +67,16 @@ function mapNotificationPreferences(
     shiftReminderMinutesBefore:
       row.shift_reminder_minutes_before,
 
+    driverDutyRemindersEnabled:
+      row.driver_duty_reminders_enabled,
+
+    driverDutyReminderTime:
+      row.driver_duty_reminder_time
+        .slice(
+          0,
+          5,
+        ),
+
     createdAt:
       row.created_at,
 
@@ -62,6 +84,7 @@ function mapNotificationPreferences(
       row.updated_at,
   };
 }
+
 function parseNotificationPreferencesRow(
   value: unknown,
 ): NotificationPreferencesRow {
@@ -89,6 +112,10 @@ function parseNotificationPreferencesRow(
       'boolean' ||
     typeof row.shift_reminder_minutes_before !==
       'number' ||
+    typeof row.driver_duty_reminders_enabled !==
+      'boolean' ||
+    typeof row.driver_duty_reminder_time !==
+      'string' ||
     typeof row.created_at !==
       'string' ||
     typeof row.updated_at !==
@@ -112,6 +139,12 @@ function parseNotificationPreferencesRow(
     shift_reminder_minutes_before:
       row.shift_reminder_minutes_before,
 
+    driver_duty_reminders_enabled:
+      row.driver_duty_reminders_enabled,
+
+    driver_duty_reminder_time:
+      row.driver_duty_reminder_time,
+
     created_at:
       row.created_at,
 
@@ -119,6 +152,7 @@ function parseNotificationPreferencesRow(
       row.updated_at,
   };
 }
+
 function validateReminderMinutes(
   value: number,
 ): void {
@@ -133,6 +167,25 @@ function validateReminderMinutes(
       'מספר הדקות לפני המשמרת חייב להיות מספר שלם בין 0 ל־1440.',
     );
   }
+}
+
+function normalizeReminderTime(
+  value: string,
+): string {
+  const normalizedValue =
+    value.trim();
+
+  if (
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(
+      normalizedValue,
+    )
+  ) {
+    throw new Error(
+      'יש לבחור שעה תקינה לתזכורת הכוננות.',
+    );
+  }
+
+  return normalizedValue;
 }
 
 async function getAuthenticatedUserId():
@@ -157,6 +210,19 @@ async function getAuthenticatedUserId():
   return data.user.id;
 }
 
+const preferenceSelectColumns = [
+  'user_id',
+  'push_enabled',
+  'shift_reminders_enabled',
+  'shift_reminder_minutes_before',
+  'driver_duty_reminders_enabled',
+  'driver_duty_reminder_time',
+  'created_at',
+  'updated_at',
+].join(
+  ',',
+);
+
 class NotificationPreferencesService {
   async getMyPreferences():
     Promise<NotificationPreferences> {
@@ -172,16 +238,7 @@ class NotificationPreferencesService {
           'notification_preferences',
         )
         .select(
-          [
-            'user_id',
-            'push_enabled',
-            'shift_reminders_enabled',
-            'shift_reminder_minutes_before',
-            'created_at',
-            'updated_at',
-          ].join(
-            ',',
-          ),
+          preferenceSelectColumns,
         )
         .eq(
           'user_id',
@@ -194,7 +251,11 @@ class NotificationPreferencesService {
     }
 
     if (data) {
-return mapNotificationPreferences(parseNotificationPreferencesRow(data,),);
+      return mapNotificationPreferences(
+        parseNotificationPreferencesRow(
+          data,
+        ),
+      );
     }
 
     const {
@@ -220,18 +281,15 @@ return mapNotificationPreferences(parseNotificationPreferencesRow(data,),);
 
           shift_reminder_minutes_before:
             10,
+
+          driver_duty_reminders_enabled:
+            false,
+
+          driver_duty_reminder_time:
+            '09:00',
         })
         .select(
-          [
-            'user_id',
-            'push_enabled',
-            'shift_reminders_enabled',
-            'shift_reminder_minutes_before',
-            'created_at',
-            'updated_at',
-          ].join(
-            ',',
-          ),
+          preferenceSelectColumns,
         )
         .single();
 
@@ -239,7 +297,11 @@ return mapNotificationPreferences(parseNotificationPreferencesRow(data,),);
       throw createError;
     }
 
-return mapNotificationPreferences(parseNotificationPreferencesRow(createdData,),);
+    return mapNotificationPreferences(
+      parseNotificationPreferencesRow(
+        createdData,
+      ),
+    );
   }
 
   async updateMyPreferences(
@@ -250,6 +312,11 @@ return mapNotificationPreferences(parseNotificationPreferencesRow(createdData,),
       request
         .shiftReminderMinutesBefore,
     );
+
+    const normalizedDutyReminderTime =
+      normalizeReminderTime(
+        request.driverDutyReminderTime,
+      );
 
     const userId =
       await getAuthenticatedUserId();
@@ -277,6 +344,13 @@ return mapNotificationPreferences(parseNotificationPreferencesRow(createdData,),
             shift_reminder_minutes_before:
               request
                 .shiftReminderMinutesBefore,
+
+            driver_duty_reminders_enabled:
+              request
+                .driverDutyRemindersEnabled,
+
+            driver_duty_reminder_time:
+              normalizedDutyReminderTime,
           },
           {
             onConflict:
@@ -284,16 +358,7 @@ return mapNotificationPreferences(parseNotificationPreferencesRow(createdData,),
           },
         )
         .select(
-          [
-            'user_id',
-            'push_enabled',
-            'shift_reminders_enabled',
-            'shift_reminder_minutes_before',
-            'created_at',
-            'updated_at',
-          ].join(
-            ',',
-          ),
+          preferenceSelectColumns,
         )
         .single();
 
@@ -301,7 +366,11 @@ return mapNotificationPreferences(parseNotificationPreferencesRow(createdData,),
       throw error;
     }
 
-return mapNotificationPreferences(parseNotificationPreferencesRow(data,),);
+    return mapNotificationPreferences(
+      parseNotificationPreferencesRow(
+        data,
+      ),
+    );
   }
 }
 

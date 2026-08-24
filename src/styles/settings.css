@@ -530,3 +530,128 @@
     width: 100%;
   }
 }
+
+.push-settings-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.push-settings-layout-single .push-device-section {
+  padding-inline-end: 0;
+  border-inline-end: 0;
+}
+
+.settings-reminder-card {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 15px;
+  border: 1px solid #dbeafe;
+  border-radius: 13px;
+  background: #f8fbff;
+}
+
+.settings-reminder-card-duty {
+  border-color: #fde68a;
+  background: #fffdf5;
+}
+
+.settings-reminder-card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #2563eb;
+}
+
+.settings-reminder-card-duty .settings-reminder-card-heading {
+  color: #b45309;
+}
+
+.settings-reminder-card-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-reminder-card-heading strong {
+  color: #0f172a;
+  font-size: 0.82rem;
+}
+
+.settings-reminder-card-heading span {
+  color: #64748b;
+  font-size: 0.69rem;
+  line-height: 1.5;
+}
+
+.settings-checkbox-row-compact {
+  padding: 10px 11px;
+  background: #ffffff;
+}
+
+.settings-time-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 128px;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.settings-time-field > span {
+  color: #334155;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.settings-time-field input[type='time'] {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.settings-time-field input[type='time']:focus-visible {
+  border-color: #2563eb;
+  outline: 3px solid rgb(37 99 235 / 13%);
+}
+
+.settings-time-field input[type='time']:disabled {
+  cursor: not-allowed;
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.settings-time-field small {
+  grid-column: 1 / -1;
+  color: #64748b;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.settings-reminder-preview {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 560px) {
+  .settings-time-field {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-time-field small {
+    grid-column: auto;
+  }
+}

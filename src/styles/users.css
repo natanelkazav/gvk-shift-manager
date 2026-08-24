@@ -1026,3 +1026,127 @@
     white-space: normal;
   }
 }
+.users-inactive-group {
+  border-color: #fed7aa;
+  background: #fffdf8;
+}
+
+.users-inactive-group-header {
+  background: linear-gradient(135deg, #fff7ed, #fffbeb);
+}
+
+.users-inactive-group-header:hover {
+  background: #fff7ed;
+}
+
+.users-inactive-group-icon {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.users-inactive-group-count {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.users-inactive-content {
+  background: #fffcf7;
+}
+
+.users-inactive-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.users-inactive-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.users-inactive-card-main {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+}
+
+.users-avatar-inactive {
+  background: #f1f5f9;
+  color: #64748b;
+  filter: grayscale(0.45);
+}
+
+.users-inactive-card-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 4px;
+}
+
+.users-inactive-card-details > strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.users-inactive-card-details > span {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.users-inactive-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 3px;
+}
+
+.users-inactive-card-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+@media (max-width: 1050px) {
+  .users-inactive-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .users-inactive-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .users-inactive-card-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .users-inactive-card-actions .button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .users-inactive-card-actions {
+    grid-template-columns: 1fr;
+  }
+}

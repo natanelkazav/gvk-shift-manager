@@ -1,6 +1,7 @@
 import {
   Bell,
   BellOff,
+  CalendarClock,
   CheckCircle2,
   Clock3,
   RefreshCw,
@@ -30,7 +31,6 @@ import {
   CardHeader,
   CardTitle,
 } from '../ui';
-
 
 type ReminderUnit =
   | 'minutes'
@@ -63,23 +63,18 @@ const reminderHourOptions =
   );
 
 function getReminderPickerValue(
-  totalMinutes:
-    number,
+  totalMinutes: number,
 ): {
   value: number;
   unit: ReminderUnit;
 } {
   if (
-    totalMinutes >=
-      60 &&
-    totalMinutes %
-      60 ===
-      0
+    totalMinutes >= 60 &&
+    totalMinutes % 60 === 0
   ) {
     return {
       value:
-        totalMinutes /
-        60,
+        totalMinutes / 60,
       unit:
         'hours',
     };
@@ -101,12 +96,9 @@ function getReminderPickerValue(
 
 interface ReminderWheelPickerProps {
   minutes: number;
-
   disabled: boolean;
-
   onChange: (
-    minutes:
-      number,
+    minutes: number,
   ) => void;
 }
 
@@ -156,32 +148,27 @@ function ReminderWheelPicker({
             onChange(
               pickerValue.unit ===
                 'hours'
-                ? value *
-                  60
+                ? value * 60
                 : value,
             );
           }}
         >
-          {
-            options.map(
-              (
-                value,
-              ) => (
-                <option
-                  key={
-                    value
-                  }
-                  value={
-                    value
-                  }
-                >
-                  {
-                    value
-                  }
-                </option>
-              ),
-            )
-          }
+          {options.map(
+            (
+              value,
+            ) => (
+              <option
+                key={
+                  value
+                }
+                value={
+                  value
+                }
+              >
+                {value}
+              </option>
+            ),
+          )}
         </select>
 
         <select
@@ -206,38 +193,33 @@ function ReminderWheelPicker({
                 'hours'
             ) {
               const hours =
-                minutes ===
-                  0
+                minutes === 0
                   ? 0
                   : Math.min(
                       24,
                       Math.max(
                         1,
                         Math.round(
-                          minutes /
-                          60,
+                          minutes / 60,
                         ),
                       ),
                     );
 
               onChange(
-                hours *
-                  60,
+                hours * 60,
               );
 
               return;
             }
 
             onChange(
-              minutes >=
-                60
+              minutes >= 60
                 ? Math.min(
                     59,
                     Math.max(
                       1,
                       Math.round(
-                        minutes /
-                        60,
+                        minutes / 60,
                       ),
                     ),
                   )
@@ -256,7 +238,7 @@ function ReminderWheelPicker({
       </div>
 
       <span className="reminder-wheel-helper">
-        גלול במספר ובחר דקות או שעות. ניתן לבחור עד 24 שעות לפני המשמרת.
+        ניתן לבחור עד 24 שעות לפני תחילת המשמרת.
       </span>
     </div>
   );
@@ -264,37 +246,25 @@ function ReminderWheelPicker({
 
 interface PushDeviceState {
   isSupported: boolean;
-
-  permission:
-    PushPermissionState;
-
+  permission: PushPermissionState;
   isSubscribed: boolean;
-
   isLoading: boolean;
-
   isChanging: boolean;
-
-  error:
-    string | null;
+  error: string | null;
 }
 
 const initialDeviceState:
   PushDeviceState = {
     isSupported:
       false,
-
     permission:
       'unsupported',
-
     isSubscribed:
       false,
-
     isLoading:
       true,
-
     isChanging:
       false,
-
     error:
       null,
   };
@@ -333,15 +303,20 @@ function getErrorMessage(
   return 'אירעה שגיאה בניהול התראות ה־Push.';
 }
 
-function PushNotificationSettings() {
+interface PushNotificationSettingsProps {
+  showShiftReminderPreferences: boolean;
+  showDriverDutyReminderPreferences: boolean;
+}
+
+function PushNotificationSettings({
+  showShiftReminderPreferences,
+  showDriverDutyReminderPreferences,
+}: PushNotificationSettingsProps) {
   const {
     state:
       preferencesState,
-
     loadPreferences,
-
     updatePreferences,
-
     clearError,
   } =
     useNotificationPreferences();
@@ -379,6 +354,22 @@ function PushNotificationSettings() {
     );
 
   const [
+    driverDutyRemindersEnabled,
+    setDriverDutyRemindersEnabled,
+  ] =
+    useState(
+      false,
+    );
+
+  const [
+    driverDutyReminderTime,
+    setDriverDutyReminderTime,
+  ] =
+    useState(
+      '09:00',
+    );
+
+  const [
     hasLoadedForm,
     setHasLoadedForm,
   ] =
@@ -394,10 +385,8 @@ function PushNotificationSettings() {
             currentState,
           ) => ({
             ...currentState,
-
             isLoading:
               true,
-
             error:
               null,
           }),
@@ -411,19 +400,14 @@ function PushNotificationSettings() {
           setDeviceState({
             isSupported:
               status.isSupported,
-
             permission:
               status.permission,
-
             isSubscribed:
               status.isSubscribed,
-
             isLoading:
               false,
-
             isChanging:
               false,
-
             error:
               null,
           });
@@ -435,10 +419,8 @@ function PushNotificationSettings() {
               currentState,
             ) => ({
               ...currentState,
-
               isLoading:
                 false,
-
               error:
                 getErrorMessage(
                   error,
@@ -461,25 +443,23 @@ function PushNotificationSettings() {
             setPushEnabled(
               preferences.pushEnabled,
             );
-
             setShiftRemindersEnabled(
-              preferences
-                .shiftRemindersEnabled,
+              preferences.shiftRemindersEnabled,
             );
-
             setReminderMinutes(
-              preferences
-                .shiftReminderMinutesBefore,
+              preferences.shiftReminderMinutesBefore,
             );
-
+            setDriverDutyRemindersEnabled(
+              preferences.driverDutyRemindersEnabled,
+            );
+            setDriverDutyReminderTime(
+              preferences.driverDutyReminderTime,
+            );
             setHasLoadedForm(
               true,
             );
           } catch {
-            /*
-             * הודעת השגיאה מוצגת
-             * מתוך ה־Hook.
-             */
+            // השגיאה מוצגת דרך ה-Hook.
           }
 
           await loadDeviceStatus();
@@ -493,6 +473,30 @@ function PushNotificationSettings() {
     ],
   );
 
+  const persistPreferences =
+    useCallback(
+      async (
+        nextPushEnabled: boolean,
+      ): Promise<void> => {
+        await updatePreferences({
+          pushEnabled:
+            nextPushEnabled,
+          shiftRemindersEnabled,
+          shiftReminderMinutesBefore:
+            reminderMinutes,
+          driverDutyRemindersEnabled,
+          driverDutyReminderTime,
+        });
+      },
+      [
+        driverDutyReminderTime,
+        driverDutyRemindersEnabled,
+        reminderMinutes,
+        shiftRemindersEnabled,
+        updatePreferences,
+      ],
+    );
+
   const handleEnablePush =
     async (): Promise<void> => {
       setDeviceState(
@@ -500,10 +504,8 @@ function PushNotificationSettings() {
           currentState,
         ) => ({
           ...currentState,
-
           isChanging:
             true,
-
           error:
             null,
         }),
@@ -516,17 +518,9 @@ function PushNotificationSettings() {
         setPushEnabled(
           true,
         );
-
-        await updatePreferences({
-          pushEnabled:
-            true,
-
-          shiftRemindersEnabled,
-
-          shiftReminderMinutesBefore:
-            reminderMinutes,
-        });
-
+        await persistPreferences(
+          true,
+        );
         await loadDeviceStatus();
       } catch (
         error
@@ -536,10 +530,8 @@ function PushNotificationSettings() {
             currentState,
           ) => ({
             ...currentState,
-
             isChanging:
               false,
-
             error:
               getErrorMessage(
                 error,
@@ -556,9 +548,7 @@ function PushNotificationSettings() {
           'האם לבטל את התראות ה־Push במכשיר הזה?',
         );
 
-      if (
-        !confirmed
-      ) {
+      if (!confirmed) {
         return;
       }
 
@@ -567,10 +557,8 @@ function PushNotificationSettings() {
           currentState,
         ) => ({
           ...currentState,
-
           isChanging:
             true,
-
           error:
             null,
         }),
@@ -579,7 +567,6 @@ function PushNotificationSettings() {
       try {
         await pushNotificationService
           .disablePush();
-
         await loadDeviceStatus();
       } catch (
         error
@@ -589,10 +576,8 @@ function PushNotificationSettings() {
             currentState,
           ) => ({
             ...currentState,
-
             isChanging:
               false,
-
             error:
               getErrorMessage(
                 error,
@@ -608,23 +593,14 @@ function PushNotificationSettings() {
         FormEvent<HTMLFormElement>,
     ): Promise<void> => {
       event.preventDefault();
-
       clearError();
 
       try {
-        await updatePreferences({
+        await persistPreferences(
           pushEnabled,
-
-          shiftRemindersEnabled,
-
-          shiftReminderMinutesBefore:
-            reminderMinutes,
-        });
+        );
       } catch {
-        /*
-         * הודעת השגיאה מוצגת
-         * מתוך ה־Hook.
-         */
+        // השגיאה מוצגת דרך ה-Hook.
       }
     };
 
@@ -634,31 +610,36 @@ function PushNotificationSettings() {
     deviceState.isLoading ||
     deviceState.isChanging;
 
+  const hasReminderPreferences =
+    showShiftReminderPreferences ||
+    showDriverDutyReminderPreferences;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>
           <span className="settings-card-title-with-icon">
             <Bell
-              size={
-                20
-              }
+              size={20}
               aria-hidden="true"
             />
-
             התראות ותזכורות
           </span>
         </CardTitle>
       </CardHeader>
 
       <CardBody>
-        <div className="push-settings-layout">
+        <div
+          className={
+            hasReminderPreferences
+              ? 'push-settings-layout'
+              : 'push-settings-layout push-settings-layout-single'
+          }
+        >
           <section className="push-device-section">
             <div className="push-settings-section-heading">
               <Smartphone
-                size={
-                  21
-                }
+                size={21}
                 aria-hidden="true"
               />
 
@@ -666,7 +647,6 @@ function PushNotificationSettings() {
                 <h3>
                   התראות Push במכשיר הזה
                 </h3>
-
                 <p>
                   הפעלת ההתראות מתבצעת בנפרד בכל טלפון או מחשב.
                 </p>
@@ -675,50 +655,35 @@ function PushNotificationSettings() {
 
             <dl className="push-device-status-list">
               <div>
-                <dt>
-                  תמיכה במכשיר
-                </dt>
-
+                <dt>תמיכה במכשיר</dt>
                 <dd>
-                  {
-                    deviceState.isLoading
-                      ? 'בודק...'
-                      : deviceState.isSupported
-                        ? 'נתמך'
-                        : 'לא נתמך'
-                  }
+                  {deviceState.isLoading
+                    ? 'בודק...'
+                    : deviceState.isSupported
+                      ? 'נתמך'
+                      : 'לא נתמך'}
                 </dd>
               </div>
 
               <div>
-                <dt>
-                  הרשאת דפדפן
-                </dt>
-
+                <dt>הרשאת דפדפן</dt>
                 <dd>
-                  {
-                    deviceState.isLoading
-                      ? 'בודק...'
-                      : getPermissionLabel(
-                          deviceState.permission,
-                        )
-                  }
+                  {deviceState.isLoading
+                    ? 'בודק...'
+                    : getPermissionLabel(
+                        deviceState.permission,
+                      )}
                 </dd>
               </div>
 
               <div>
-                <dt>
-                  רישום המכשיר
-                </dt>
-
+                <dt>רישום המכשיר</dt>
                 <dd>
-                  {
-                    deviceState.isLoading
-                      ? 'בודק...'
-                      : deviceState.isSubscribed
-                        ? 'המכשיר רשום'
-                        : 'המכשיר אינו רשום'
-                  }
+                  {deviceState.isLoading
+                    ? 'בודק...'
+                    : deviceState.isSubscribed
+                      ? 'המכשיר רשום'
+                      : 'המכשיר אינו רשום'}
                 </dd>
               </div>
             </dl>
@@ -728,9 +693,7 @@ function PushNotificationSettings() {
                 className="settings-message settings-message-error"
                 role="alert"
               >
-                {
-                  deviceState.error
-                }
+                {deviceState.error}
               </div>
             ) : null}
 
@@ -749,17 +712,12 @@ function PushNotificationSettings() {
                   }}
                 >
                   <Bell
-                    size={
-                      17
-                    }
+                    size={17}
                     aria-hidden="true"
                   />
-
-                  {
-                    deviceState.isChanging
-                      ? 'מפעיל התראות...'
-                      : 'הפעלת התראות במכשיר הזה'
-                  }
+                  {deviceState.isChanging
+                    ? 'מפעיל התראות...'
+                    : 'הפעלת התראות במכשיר הזה'}
                 </Button>
               ) : (
                 <Button
@@ -773,17 +731,12 @@ function PushNotificationSettings() {
                   }}
                 >
                   <BellOff
-                    size={
-                      17
-                    }
+                    size={17}
                     aria-hidden="true"
                   />
-
-                  {
-                    deviceState.isChanging
-                      ? 'מבטל התראות...'
-                      : 'ביטול התראות במכשיר הזה'
-                  }
+                  {deviceState.isChanging
+                    ? 'מבטל התראות...'
+                    : 'ביטול התראות במכשיר הזה'}
                 </Button>
               )}
 
@@ -798,12 +751,9 @@ function PushNotificationSettings() {
                 }}
               >
                 <RefreshCw
-                  size={
-                    17
-                  }
+                  size={17}
                   aria-hidden="true"
                 />
-
                 רענון מצב
               </Button>
             </div>
@@ -816,138 +766,226 @@ function PushNotificationSettings() {
             ) : null}
           </section>
 
-          <form
-            className="push-preferences-form"
-            onSubmit={
-              handleSavePreferences
-            }
-          >
-            <div className="push-settings-section-heading">
-              <Clock3
-                size={
-                  21
-                }
-                aria-hidden="true"
-              />
-
-              <div>
-                <h3>
-                  תזכורת לפני משמרת
-                </h3>
-
-                <p>
-                  הגדר מתי תישלח אליך תזכורת לפני תחילת המשמרת.
-                </p>
-              </div>
-            </div>
-
-            <label className="settings-checkbox-row">
-              <input
-                type="checkbox"
-                checked={
-                  pushEnabled
-                }
-                disabled={
-                  !hasLoadedForm ||
-                  preferencesState.isSaving
-                }
-                onChange={(
-                  event,
-                ) => {
-                  setPushEnabled(
-                    event.target.checked,
-                  );
-                }}
-              />
-
-              <span>
-                לאפשר שליחת התראות Push לחשבון שלי
-              </span>
-            </label>
-
-            <label className="settings-checkbox-row">
-              <input
-                type="checkbox"
-                checked={
-                  shiftRemindersEnabled
-                }
-                disabled={
-                  !hasLoadedForm ||
-                  preferencesState.isSaving ||
-                  !pushEnabled
-                }
-                onChange={(
-                  event,
-                ) => {
-                  setShiftRemindersEnabled(
-                    event.target.checked,
-                  );
-                }}
-              />
-
-              <span>
-                לשלוח לי תזכורת לפני תחילת משמרת
-              </span>
-            </label>
-
-            <ReminderWheelPicker
-              minutes={
-                reminderMinutes
+          {hasReminderPreferences ? (
+            <form
+              className="push-preferences-form"
+              onSubmit={
+                handleSavePreferences
               }
-              disabled={
-                !hasLoadedForm ||
-                preferencesState.isSaving ||
-                !pushEnabled ||
-                !shiftRemindersEnabled
-              }
-              onChange={
-                setReminderMinutes
-              }
-            />
-
-            {preferencesState.error ? (
-              <div
-                className="settings-message settings-message-error"
-                role="alert"
-              >
-                {
-                  preferencesState.error
-                }
-              </div>
-            ) : null}
-
-            {preferencesState.isSaved ? (
-              <div
-                className="settings-message settings-message-success"
-                role="status"
-              >
-                <CheckCircle2
-                  size={
-                    18
-                  }
+            >
+              <div className="push-settings-section-heading">
+                <Clock3
+                  size={21}
                   aria-hidden="true"
                 />
-
-                הגדרות ההתראות נשמרו בהצלחה.
+                <div>
+                  <h3>התזכורות שלי</h3>
+                  <p>
+                    מוצגות רק תזכורות שמתאימות ללוחות שאליהם יש לך גישה.
+                  </p>
+                </div>
               </div>
-            ) : null}
 
-            <div className="form-actions">
-              <Button
-                type="submit"
-                disabled={
-                  !hasLoadedForm ||
-                  preferencesState.isSaving
-                }
-              >
-                {
-                  preferencesState.isSaving
+              <label className="settings-checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={
+                    pushEnabled
+                  }
+                  disabled={
+                    !hasLoadedForm ||
+                    preferencesState.isSaving
+                  }
+                  onChange={(
+                    event,
+                  ) => {
+                    setPushEnabled(
+                      event.target.checked,
+                    );
+                  }}
+                />
+                <span>
+                  לאפשר שליחת התראות Push לחשבון שלי
+                </span>
+              </label>
+
+              {showShiftReminderPreferences ? (
+                <section className="settings-reminder-card">
+                  <div className="settings-reminder-card-heading">
+                    <Clock3
+                      size={19}
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <strong>
+                        תזכורת לפני משמרת
+                      </strong>
+                      <span>
+                        למוקדנים ולכונני בוקר — לפי המשמרות שאליהן שובצת.
+                      </span>
+                    </div>
+                  </div>
+
+                  <label className="settings-checkbox-row settings-checkbox-row-compact">
+                    <input
+                      type="checkbox"
+                      checked={
+                        shiftRemindersEnabled
+                      }
+                      disabled={
+                        !hasLoadedForm ||
+                        preferencesState.isSaving ||
+                        !pushEnabled
+                      }
+                      onChange={(
+                        event,
+                      ) => {
+                        setShiftRemindersEnabled(
+                          event.target.checked,
+                        );
+                      }}
+                    />
+                    <span>
+                      לשלוח לי תזכורת לפני תחילת משמרת
+                    </span>
+                  </label>
+
+                  <ReminderWheelPicker
+                    minutes={
+                      reminderMinutes
+                    }
+                    disabled={
+                      !hasLoadedForm ||
+                      preferencesState.isSaving ||
+                      !pushEnabled ||
+                      !shiftRemindersEnabled
+                    }
+                    onChange={
+                      setReminderMinutes
+                    }
+                  />
+                </section>
+              ) : null}
+
+              {showDriverDutyReminderPreferences ? (
+                <section className="settings-reminder-card settings-reminder-card-duty">
+                  <div className="settings-reminder-card-heading">
+                    <CalendarClock
+                      size={19}
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <strong>
+                        תזכורת ביום הכוננות
+                      </strong>
+                      <span>
+                        ביום שבו אתה משובץ ככונן תישלח אליך תזכורת בשעה שתבחר.
+                      </span>
+                    </div>
+                  </div>
+
+                  <label className="settings-checkbox-row settings-checkbox-row-compact">
+                    <input
+                      type="checkbox"
+                      checked={
+                        driverDutyRemindersEnabled
+                      }
+                      disabled={
+                        !hasLoadedForm ||
+                        preferencesState.isSaving ||
+                        !pushEnabled
+                      }
+                      onChange={(
+                        event,
+                      ) => {
+                        setDriverDutyRemindersEnabled(
+                          event.target.checked,
+                        );
+                      }}
+                    />
+                    <span>
+                      להזכיר לי ביום שבו אני בכוננות
+                    </span>
+                  </label>
+
+                  <label className="settings-time-field">
+                    <span>
+                      שעת התזכורת
+                    </span>
+                    <input
+                      type="time"
+                      value={
+                        driverDutyReminderTime
+                      }
+                      disabled={
+                        !hasLoadedForm ||
+                        preferencesState.isSaving ||
+                        !pushEnabled ||
+                        !driverDutyRemindersEnabled
+                      }
+                      onChange={(
+                        event,
+                      ) => {
+                        setDriverDutyReminderTime(
+                          event.target.value,
+                        );
+                      }}
+                    />
+                    <small>
+                      לפי שעון ישראל. ברירת המחדל היא כבויה, ורק לאחר הפעלה תישלח תזכורת.
+                    </small>
+                  </label>
+
+                  {driverDutyRemindersEnabled &&
+                  pushEnabled ? (
+                    <div className="settings-reminder-preview">
+                      ביום כוננות תקבל תזכורת בשעה{' '}
+                      <strong>
+                        {driverDutyReminderTime}
+                      </strong>
+                      .
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {preferencesState.error ? (
+                <div
+                  className="settings-message settings-message-error"
+                  role="alert"
+                >
+                  {preferencesState.error}
+                </div>
+              ) : null}
+
+              {preferencesState.isSaved ? (
+                <div
+                  className="settings-message settings-message-success"
+                  role="status"
+                >
+                  <CheckCircle2
+                    size={18}
+                    aria-hidden="true"
+                  />
+                  הגדרות ההתראות נשמרו בהצלחה.
+                </div>
+              ) : null}
+
+              <div className="form-actions">
+                <Button
+                  type="submit"
+                  disabled={
+                    !hasLoadedForm ||
+                    preferencesState.isSaving
+                  }
+                >
+                  {preferencesState.isSaving
                     ? 'שומר הגדרות...'
-                    : 'שמירת הגדרות'
-                }
-              </Button>
-            </div>
-          </form>
+                    : 'שמירת הגדרות'}
+                </Button>
+              </div>
+            </form>
+          ) : null}
         </div>
       </CardBody>
     </Card>
