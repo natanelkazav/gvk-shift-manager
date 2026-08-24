@@ -1,7 +1,10 @@
 import {
   CalendarDays,
   CheckCircle2,
+  Gauge,
+  Scale,
   UserCheck,
+  UsersRound,
   XCircle,
 } from 'lucide-react';
 
@@ -32,7 +35,16 @@ interface DispatcherBalanceRow {
   total: number;
 }
 
-type BalanceMetric = Exclude<keyof DispatcherBalanceRow, 'userId' | 'displayName' | 'scheduleName'>;
+type BalanceMetric = Exclude<
+  keyof DispatcherBalanceRow,
+  'userId' | 'displayName' | 'scheduleName'
+>;
+
+type CoreShiftGroup =
+  | 'weekday'
+  | 'fridayLike'
+  | 'saturdayLike'
+  | 'holidayOnly';
 
 function getLocalStartHour(shift: ScheduleShift): number {
   const date = new Date(shift.startsAt);
@@ -47,6 +59,40 @@ function getLocalStartHour(shift: ScheduleShift): number {
       hour12: false,
     }).format(date),
   );
+}
+
+function getActualWeekday(shift: ScheduleShift): number {
+  const [year, month, day] = shift.shiftDate
+    .split('-')
+    .map(Number);
+
+  if (!year || !month || !day) {
+    return -1;
+  }
+
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+}
+
+function getCoreShiftGroup(shift: ScheduleShift): CoreShiftGroup {
+  if (shift.scheduleType === 'friday' || shift.scheduleType === 'holiday_eve') {
+    return 'fridayLike';
+  }
+
+  if (shift.scheduleType === 'saturday' || shift.scheduleType === 'holiday_end') {
+    return 'saturdayLike';
+  }
+
+  if (shift.scheduleType === 'holiday_full') {
+    return 'holidayOnly';
+  }
+
+  if (shift.scheduleType === 'chol_hamoed') {
+    const weekday = getActualWeekday(shift);
+    if (weekday === 5) return 'fridayLike';
+    if (weekday === 6) return 'saturdayLike';
+  }
+
+  return 'weekday';
 }
 
 function getMetricClass(
@@ -112,13 +158,13 @@ function buildBalanceRows(
 
     const row = rows.get(userId);
     if (!row) {
-      // The draft context is intentionally limited to profiles whose role is
-      // dispatcher. Do not re-introduce managers/on-call users merely because
-      // an older draft happens to contain their user id.
       continue;
     }
 
     row.total += 1;
+
+    // Premium and holiday are cross-cutting indicators. They intentionally
+    // overlap the day/time columns and therefore are not meant to sum to total.
     if (shift.isPremium) {
       row.premium += 1;
     }
@@ -134,15 +180,20 @@ function buildBalanceRows(
     }
 
     const hour = getLocalStartHour(shift);
+    const group = getCoreShiftGroup(shift);
 
-    if (shift.scheduleType === 'friday') {
+    if (group === 'holidayOnly') {
+      continue;
+    }
+
+    if (group === 'fridayLike') {
       if (hour >= 21 || hour < 6) row.fridayNight += 1;
       else if (hour < 12) row.fridayMorning += 1;
       else row.fridayAfternoon += 1;
       continue;
     }
 
-    if (shift.scheduleType === 'saturday') {
+    if (group === 'saturdayLike') {
       if (hour >= 21 || hour < 6) row.saturdayNight += 1;
       else if (hour < 12) row.saturdayMorning += 1;
       else row.saturdayAfternoon += 1;
@@ -161,6 +212,13 @@ function buildBalanceRows(
   );
 }
 
+function getBalanceLabel(gap: number): string {
+  if (gap === 0) return 'מאוזן לחלוטין';
+  if (gap === 1) return 'איזון מצוין';
+  if (gap === 2) return 'איזון טוב';
+  return 'כדאי לבדוק את הפער';
+}
+
 export default function ScheduleDraftOverview({
   shifts,
   context,
@@ -174,10 +232,21 @@ export default function ScheduleDraftOverview({
   const singleAvailable = context.shifts.filter((item) => item.availableCount === 1).length;
   const multipleAvailable = context.shifts.filter((item) => item.availableCount > 1).length;
   const balanceRows = buildBalanceRows(shifts, context);
+  const assignedShifts = balanceRows.reduce((sum, row) => sum + row.total, 0);
+  const intentionallyUnassigned = shifts.filter(
+    (shift) => shift.isIntentionallyUnassigned,
+  ).length;
+  const totals = balanceRows.map((row) => row.total);
+  const minimumAssignments = totals.length > 0 ? Math.min(...totals) : 0;
+  const maximumAssignments = totals.length > 0 ? Math.max(...totals) : 0;
+  const assignmentGap = maximumAssignments - minimumAssignments;
+  const averageAssignments = balanceRows.length > 0
+    ? assignedShifts / balanceRows.length
+    : 0;
 
   const renderCell = (row: DispatcherBalanceRow, metric: BalanceMetric) => (
     <td className={getMetricClass(balanceRows, metric, row[metric])}>
-      {row[metric]}
+      <span className="schedule-draft-balance-value">{row[metric]}</span>
     </td>
   );
 
@@ -188,7 +257,7 @@ export default function ScheduleDraftOverview({
           <span>טיוטת שיבוץ</span>
           <h2>ניתוח מועמדים ואיזון</h2>
           <p>
-            תמונת מצב לפני פרסום: זמינות לכל משמרת וחלוקת סוגי המשמרות בין המוקדנים.
+            הנתונים מתעדכנים לאחר כל שינוי שנשמר בטיוטה ומחושבים מהשיבוץ המוצג כרגע.
           </p>
         </div>
       </header>
@@ -212,11 +281,43 @@ export default function ScheduleDraftOverview({
         </article>
       </div>
 
+      <div className="schedule-draft-balance-insights">
+        <article>
+          <UsersRound size={20} aria-hidden="true" />
+          <div>
+            <strong>{assignedShifts}</strong>
+            <span>משמרות מאוישות בטיוטה</span>
+          </div>
+          {intentionallyUnassigned > 0 ? (
+            <small>{intentionallyUnassigned} לא מאוישות במכוון</small>
+          ) : null}
+        </article>
+
+        <article>
+          <Scale size={20} aria-hidden="true" />
+          <div>
+            <strong>{assignmentGap}</strong>
+            <span>פער בין הכי מעט להכי הרבה</span>
+          </div>
+          <small>{minimumAssignments}–{maximumAssignments} משמרות למוקדן</small>
+        </article>
+
+        <article className={assignmentGap <= 2 ? 'is-balanced' : 'needs-attention'}>
+          <Gauge size={20} aria-hidden="true" />
+          <div>
+            <strong>{getBalanceLabel(assignmentGap)}</strong>
+            <span>ממוצע {averageAssignments.toFixed(1)} משמרות למוקדן</span>
+          </div>
+        </article>
+      </div>
+
       <div className="schedule-draft-balance-section">
         <div className="schedule-draft-balance-heading">
           <div>
-            <h3>טבלת איזון מוקדנים</h3>
-            <p>הצבעים מדגישים פערים בין המוקדנים בכל סוג משמרת.</p>
+            <h3>איזון השיבוץ בפועל</h3>
+            <p>
+              כל שורה מחושבת מהטיוטה השמורה כרגע. צבעים משווים בין המוקדנים באותה עמודה.
+            </p>
           </div>
           <div className="schedule-draft-balance-legend" aria-label="מקרא צבעים">
             <span className="schedule-draft-legend-low">נמוך יחסית</span>
@@ -230,13 +331,13 @@ export default function ScheduleDraftOverview({
           <table className="schedule-draft-balance-table">
             <thead>
               <tr>
-                <th rowSpan={2}>מוקדן</th>
+                <th rowSpan={2} className="schedule-draft-person-column">מוקדן</th>
                 <th colSpan={2} className="schedule-draft-group-weekday">יום חול</th>
-                <th colSpan={3} className="schedule-draft-group-friday">שישי</th>
-                <th colSpan={3} className="schedule-draft-group-saturday">שבת</th>
+                <th colSpan={3} className="schedule-draft-group-friday">שישי / ערב חג</th>
+                <th colSpan={3} className="schedule-draft-group-saturday">שבת / מוצאי חג</th>
                 <th rowSpan={2} className="schedule-draft-group-premium">200%</th>
                 <th rowSpan={2} className="schedule-draft-group-holiday">חג</th>
-                <th rowSpan={2}>סה״כ</th>
+                <th rowSpan={2} className="schedule-draft-total-column">סה״כ שיבוצים</th>
               </tr>
               <tr>
                 <th>ערב<small>16–23</small></th>
@@ -250,28 +351,44 @@ export default function ScheduleDraftOverview({
               </tr>
             </thead>
             <tbody>
-              {balanceRows.map((row) => (
-                <tr key={row.userId}>
-                  <td className="schedule-draft-balance-person">
-                    <strong>{row.scheduleName ?? row.displayName}</strong>
-                    {row.scheduleName ? <small>{row.displayName}</small> : null}
-                  </td>
-                  {renderCell(row, 'weekdayEvening')}
-                  {renderCell(row, 'weekdayNight')}
-                  {renderCell(row, 'fridayMorning')}
-                  {renderCell(row, 'fridayAfternoon')}
-                  {renderCell(row, 'fridayNight')}
-                  {renderCell(row, 'saturdayMorning')}
-                  {renderCell(row, 'saturdayAfternoon')}
-                  {renderCell(row, 'saturdayNight')}
-                  {renderCell(row, 'premium')}
-                  {renderCell(row, 'holiday')}
-                  {renderCell(row, 'total')}
-                </tr>
-              ))}
+              {balanceRows.map((row) => {
+                const totalClass = getMetricClass(balanceRows, 'total', row.total);
+                const progress = maximumAssignments > 0
+                  ? Math.max(8, (row.total / maximumAssignments) * 100)
+                  : 0;
+
+                return (
+                  <tr key={row.userId}>
+                    <td className="schedule-draft-balance-person">
+                      <strong>{row.scheduleName ?? row.displayName}</strong>
+                      {row.scheduleName ? <small>{row.displayName}</small> : null}
+                    </td>
+                    {renderCell(row, 'weekdayEvening')}
+                    {renderCell(row, 'weekdayNight')}
+                    {renderCell(row, 'fridayMorning')}
+                    {renderCell(row, 'fridayAfternoon')}
+                    {renderCell(row, 'fridayNight')}
+                    {renderCell(row, 'saturdayMorning')}
+                    {renderCell(row, 'saturdayAfternoon')}
+                    {renderCell(row, 'saturdayNight')}
+                    {renderCell(row, 'premium')}
+                    {renderCell(row, 'holiday')}
+                    <td className={`schedule-draft-total-cell ${totalClass}`}>
+                      <strong>{row.total}</strong>
+                      <span className="schedule-draft-total-track" aria-hidden="true">
+                        <span style={{ width: `${progress}%` }} />
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
+
+        <p className="schedule-draft-balance-note">
+          חג ו־200% הם מדדים חופפים: משמרת יכולה להיספר גם בעמודת הזמן שלה וגם בחג/200%, ולכן אין לחבר את כל עמודות הטבלה כדי לקבל את הסה״כ. הסה״כ מציג כל משמרת פעם אחת בלבד.
+        </p>
       </div>
     </section>
   );

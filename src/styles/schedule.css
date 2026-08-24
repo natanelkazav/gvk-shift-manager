@@ -1149,3 +1149,165 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Refined draft balance experience */
+.schedule-draft-balance-insights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.schedule-draft-balance-insights article {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px 12px;
+  min-height: 92px;
+  padding: 16px 18px;
+  border: 1px solid #dbe5f3;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.schedule-draft-balance-insights article > svg {
+  grid-row: 1 / span 2;
+  padding: 9px;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.schedule-draft-balance-insights article > div {
+  display: grid;
+  gap: 2px;
+}
+
+.schedule-draft-balance-insights strong {
+  font-size: 1.15rem;
+  color: #0f172a;
+}
+
+.schedule-draft-balance-insights span,
+.schedule-draft-balance-insights small {
+  color: #64748b;
+}
+
+.schedule-draft-balance-insights small {
+  grid-column: 2;
+  font-size: 0.78rem;
+}
+
+.schedule-draft-balance-insights article.is-balanced {
+  border-color: #bbf7d0;
+  background: linear-gradient(145deg, #ffffff, #f0fdf4);
+}
+
+.schedule-draft-balance-insights article.is-balanced > svg {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.schedule-draft-balance-insights article.needs-attention {
+  border-color: #fed7aa;
+  background: linear-gradient(145deg, #ffffff, #fff7ed);
+}
+
+.schedule-draft-balance-insights article.needs-attention > svg {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.schedule-draft-balance-table-wrapper {
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.schedule-draft-balance-table {
+  overflow: hidden;
+}
+
+.schedule-draft-balance-table tbody tr {
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.schedule-draft-balance-table tbody tr:hover td {
+  filter: brightness(0.985);
+}
+
+.schedule-draft-balance-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: 9px;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+.schedule-draft-person-column,
+.schedule-draft-balance-person {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  box-shadow: -8px 0 18px -18px rgba(15, 23, 42, 0.5);
+}
+
+.schedule-draft-person-column {
+  z-index: 4;
+}
+
+.schedule-draft-total-column,
+.schedule-draft-total-cell {
+  min-width: 116px;
+  background: #f8fafc !important;
+}
+
+.schedule-draft-total-cell {
+  position: relative;
+}
+
+.schedule-draft-total-cell strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.schedule-draft-total-track {
+  display: block;
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.schedule-draft-total-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0.42;
+  transition: width 220ms ease;
+}
+
+.schedule-draft-balance-note {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #f8fbff;
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .schedule-draft-balance-insights {
+    grid-template-columns: 1fr;
+  }
+}
