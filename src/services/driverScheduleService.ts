@@ -337,6 +337,66 @@ class DriverScheduleService {
   return data as
     UpdateDriverScheduleDayResponse;
 }
+  async updatePublishedScheduleDay(
+    request:
+      UpdateDriverScheduleDayRequest,
+  ): Promise<UpdateDriverScheduleDayResponse> {
+    const normalizedScheduleDayId =
+      request.scheduleDayId.trim();
+
+    if (!normalizedScheduleDayId) {
+      throw new Error(
+        'Driver schedule day id is required.',
+      );
+    }
+
+    const normalizedAssignedUserId =
+      request.assignedUserId
+        ?.trim() ||
+      null;
+
+    const normalizedNote =
+      request.note
+        ?.trim() ||
+      null;
+
+    const {
+      data,
+      error,
+    } =
+      await supabase.rpc(
+        'update_current_driver_schedule_day',
+        {
+          requested_schedule_day_id:
+            normalizedScheduleDayId,
+
+          requested_assigned_user_id:
+            normalizedAssignedUserId,
+
+          requested_is_locked:
+            request.isLocked,
+
+          requested_note:
+            normalizedNote,
+        },
+      );
+
+    if (error) {
+      throw normalizeDriverScheduleError(
+        error,
+      );
+    }
+
+    if (!data) {
+      throw new Error(
+        'לא התקבלה תשובה בעת עדכון יום בלוח הכוננים.',
+      );
+    }
+
+    return data as
+      UpdateDriverScheduleDayResponse;
+  }
+
   async transferMyDuty(
     request:
       TransferMyDriverDutyRequest,

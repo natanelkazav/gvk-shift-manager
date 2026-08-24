@@ -296,6 +296,22 @@ function normalizeDriverScheduleDraftError(
     }
     if (
       normalizedMessage.includes(
+        'only published current or next month driver schedules can be edited',
+      )
+    ) {
+      return 'ניתן לערוך כל כוננות רק בלוח שפורסם של החודש הנוכחי או החודש הבא.';
+    }
+
+    if (
+      normalizedMessage.includes(
+        'only current or next month driver schedule can be edited',
+      )
+    ) {
+      return 'ניתן לערוך כל כוננות רק בחודש הנוכחי או בחודש הבא.';
+    }
+
+    if (
+      normalizedMessage.includes(
         'active on-call driver profile not found',
       )
     ) {
@@ -886,6 +902,14 @@ const publishSchedule =
       [],
     );
 
+  const currentSchedulePeriodId =
+    state.data?.period?.id ??
+    null;
+
+  const currentSchedulePeriodStatus =
+    state.data?.period?.status ??
+    null;
+
   const updateScheduleDay =
     useCallback(
       async (
@@ -917,11 +941,7 @@ const publishSchedule =
           throw missingDayError;
         }
 
-        const schedulePeriodId =
-          state.data?.period?.id ??
-          null;
-
-        if (!schedulePeriodId) {
+        if (!currentSchedulePeriodId) {
           const missingPeriodError =
             new Error(
               'Driver schedule period id is required.',
@@ -957,19 +977,29 @@ const publishSchedule =
         );
 
         try {
-          const result =
-            await driverScheduleService
-              .updateScheduleDay({
-                ...request,
+          const updateRequest = {
+            ...request,
 
-                scheduleDayId:
-                  normalizedScheduleDayId,
-              });
+            scheduleDayId:
+              normalizedScheduleDayId,
+          };
+
+          const result =
+            currentSchedulePeriodStatus ===
+              'published'
+              ? await driverScheduleService
+                  .updatePublishedScheduleDay(
+                    updateRequest,
+                  )
+              : await driverScheduleService
+                  .updateScheduleDay(
+                    updateRequest,
+                  );
 
           const refreshedData =
             await driverScheduleService
               .getScheduleById(
-                schedulePeriodId,
+                currentSchedulePeriodId,
               );
 
           setState(
@@ -1016,7 +1046,8 @@ const publishSchedule =
         }
       },
       [
-        state.data?.period?.id,
+        currentSchedulePeriodId,
+        currentSchedulePeriodStatus,
       ],
     );
 

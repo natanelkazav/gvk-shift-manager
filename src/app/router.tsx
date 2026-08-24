@@ -144,6 +144,7 @@ export const router =
                     'morning_driver_schedule.view',
                     'morning_driver_schedule.view_team',
                     'morning_driver_schedule.edit',
+                    'morning_driver_schedule.edit_any',
                   ]}
                 />
               ),
@@ -214,6 +215,7 @@ export const router =
                     'driver_schedule.view',
                     'driver_schedule.view_team',
                     'driver_schedule.edit',
+                    'driver_schedule.edit_any',
                   ]}
                 />
               ),

@@ -202,6 +202,11 @@ function DriverSchedulePage() {
       'driver_schedule.edit',
     );
 
+  const canEditPublishedSchedule =
+    hasPermission(
+      'driver_schedule.edit_any',
+    );
+
   const canTransferMyDuties =
     profile?.role ===
       'on_call' &&
@@ -356,7 +361,8 @@ useEffect(() => {
 if (
   canViewPersonalSchedule ||
   canViewTeamSchedule ||
-  canEditSchedule
+  canEditSchedule ||
+  canEditPublishedSchedule
 ) {
   const currentDate =
     new Date();
@@ -372,6 +378,7 @@ if (
   canViewPersonalSchedule,
   canViewTeamSchedule,
   canEditSchedule,
+  canEditPublishedSchedule,
   loadPeriods,
   loadMyAvailability,
   loadScheduleByMonth,
@@ -682,7 +689,8 @@ const handleClosePeriod =
   const hasAnyScheduleAccess =
     canViewPersonalSchedule ||
     canViewTeamSchedule ||
-    canEditSchedule;
+    canEditSchedule ||
+    canEditPublishedSchedule;
 type DriverScheduleViewMode =
   | 'calendar'
   | 'list';
@@ -924,6 +932,12 @@ const isBusy =
           {canEditSchedule ? (
             <span>
               עריכת לוח
+            </span>
+          ) : null}
+
+          {canEditPublishedSchedule ? (
+            <span>
+              עריכת כוננויות שפורסמו
             </span>
           ) : null}
         </div>
@@ -2029,6 +2043,7 @@ effectiveWorkspaceTab ===
         </button>
 
         {canEditSchedule ||
+        canEditPublishedSchedule ||
         canTransferMyDuties ? (
           <button
             type="button"
@@ -2057,7 +2072,8 @@ effectiveWorkspaceTab ===
               aria-hidden="true"
             />
 
-            {canEditSchedule
+            {canEditSchedule ||
+            canEditPublishedSchedule
               ? 'רשימת עריכה'
               : 'רשימת הכוננויות שלי'}
           </button>
@@ -2085,7 +2101,8 @@ effectiveWorkspaceTab ===
             canViewTeamSchedule
           }
           canEditSchedule={
-            canEditSchedule
+            canEditSchedule ||
+            canEditPublishedSchedule
           }
           showManagementDetails={
             canManageAvailability
@@ -2137,102 +2154,16 @@ effectiveWorkspaceTab ===
           </span>
         </div>
       </section>
-    ) : canTransferMyDuties ? (
-      <section className="driver-schedule-draft-preview">
-        <header className="driver-schedule-section-header">
-          <span className="driver-schedule-section-icon">
-            <List
-              size={22}
-              aria-hidden="true"
-            />
-          </span>
-
-          <div>
-            <h2>
-              הכוננויות שלי בחודש הנוכחי
-            </h2>
-
-            <p>
-              ניתן להעביר כוננות עתידית לכונן פעיל אחר.
-            </p>
-          </div>
-        </header>
-
-        {transferableDutyDays.length >
-        0 ? (
-          <div className="driver-duty-transfer-list">
-            {transferableDutyDays.map(
-              (day) => (
-                <article
-                  key={
-                    day.id
-                  }
-                  className="driver-duty-transfer-list-item"
-                >
-                  <div>
-                    <strong>
-                      {day.weekdayName}
-                    </strong>
-
-                    <span>
-                      {new Intl.DateTimeFormat(
-                        'he-IL',
-                        {
-                          day:
-                            '2-digit',
-                          month:
-                            '2-digit',
-                          year:
-                            'numeric',
-                        },
-                      ).format(
-                        new Date(
-                          `${day.dutyDate}T12:00:00`,
-                        ),
-                      )}
-                    </span>
-                  </div>
-
-                  <Button
-                    type="button"
-                    disabled={
-                      scheduleDraftState
-                        .transferringDayId !==
-                      null
-                    }
-                    onClick={() => {
-                      setSelectedTransferDay(
-                        day,
-                      );
-                    }}
-                  >
-                    שינוי כונן
-                  </Button>
-                </article>
-              ),
-            )}
-          </div>
-        ) : (
-          <section className="driver-schedule-placeholder-card">
-            <CalendarDays
-              size={31}
-              aria-hidden="true"
-            />
-
-            <div>
-              <strong>
-                אין כוננויות זמינות להעברה
-              </strong>
-
-              <span>
-                יוצגו כאן רק כוננויות שלך בחודש הנוכחי, מהיום והלאה.
-              </span>
-            </div>
-          </section>
-        )}
-      </section>
     ) : scheduleDraftState.data?.period &&
-      canEditSchedule ? (
+      (
+        canEditSchedule ||
+        (
+          canEditPublishedSchedule &&
+          isTransferableScheduleMonth &&
+          scheduleDraftState.data.period.status ===
+            'published'
+        )
+      ) ? (
       <section className="driver-schedule-draft-preview">
         <header className="driver-schedule-section-header">
           <span className="driver-schedule-section-icon">
@@ -2274,7 +2205,8 @@ effectiveWorkspaceTab ===
             </p>
           </div>
 
-          {scheduleDraftState
+          {canEditSchedule &&
+          scheduleDraftState
             .data
             .period
             .status ===
@@ -2398,12 +2330,23 @@ effectiveWorkspaceTab ===
                     []
                   }
                   isEditable={
-                    canEditSchedule &&
-                    scheduleDraftState
-                      .data
-                      ?.period
-                      ?.status ===
-                      'draft'
+                    (
+                      canEditSchedule &&
+                      scheduleDraftState
+                        .data
+                        ?.period
+                        ?.status ===
+                        'draft'
+                    ) ||
+                    (
+                      canEditPublishedSchedule &&
+                      isTransferableScheduleMonth &&
+                      scheduleDraftState
+                        .data
+                        ?.period
+                        ?.status ===
+                        'published'
+                    )
                   }
                   isSaving={
                     scheduleDraftState
@@ -2428,6 +2371,100 @@ effectiveWorkspaceTab ===
               ),
             )}
         </div>
+      </section>
+    ) : canTransferMyDuties ? (
+      <section className="driver-schedule-draft-preview">
+        <header className="driver-schedule-section-header">
+          <span className="driver-schedule-section-icon">
+            <List
+              size={22}
+              aria-hidden="true"
+            />
+          </span>
+
+          <div>
+            <h2>
+              הכוננויות שלי בחודש הנוכחי
+            </h2>
+
+            <p>
+              ניתן להעביר כוננות עתידית לכונן פעיל אחר.
+            </p>
+          </div>
+        </header>
+
+        {transferableDutyDays.length >
+        0 ? (
+          <div className="driver-duty-transfer-list">
+            {transferableDutyDays.map(
+              (day) => (
+                <article
+                  key={
+                    day.id
+                  }
+                  className="driver-duty-transfer-list-item"
+                >
+                  <div>
+                    <strong>
+                      {day.weekdayName}
+                    </strong>
+
+                    <span>
+                      {new Intl.DateTimeFormat(
+                        'he-IL',
+                        {
+                          day:
+                            '2-digit',
+                          month:
+                            '2-digit',
+                          year:
+                            'numeric',
+                        },
+                      ).format(
+                        new Date(
+                          `${day.dutyDate}T12:00:00`,
+                        ),
+                      )}
+                    </span>
+                  </div>
+
+                  <Button
+                    type="button"
+                    disabled={
+                      scheduleDraftState
+                        .transferringDayId !==
+                      null
+                    }
+                    onClick={() => {
+                      setSelectedTransferDay(
+                        day,
+                      );
+                    }}
+                  >
+                    שינוי כונן
+                  </Button>
+                </article>
+              ),
+            )}
+          </div>
+        ) : (
+          <section className="driver-schedule-placeholder-card">
+            <CalendarDays
+              size={31}
+              aria-hidden="true"
+            />
+
+            <div>
+              <strong>
+                אין כוננויות זמינות להעברה
+              </strong>
+
+              <span>
+                יוצגו כאן רק כוננויות שלך בחודש הנוכחי, מהיום והלאה.
+              </span>
+            </div>
+          </section>
+        )}
       </section>
     ) : (
       <section className="driver-schedule-placeholder-card">

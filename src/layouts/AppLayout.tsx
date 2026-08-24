@@ -148,6 +148,7 @@ const navigationItems:
     'driver_schedule.view',
     'driver_schedule.view_team',
     'driver_schedule.edit',
+    'driver_schedule.edit_any',
   ],
     },
 
@@ -170,6 +171,7 @@ const navigationItems:
         'morning_driver_schedule.view',
         'morning_driver_schedule.view_team',
         'morning_driver_schedule.edit',
+        'morning_driver_schedule.edit_any',
       ],
       },
     {

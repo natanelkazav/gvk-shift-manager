@@ -40,6 +40,8 @@ interface MorningDriverScheduleBoardProps {
 
   canEdit: boolean;
 
+  canEditPublishedAssignments: boolean;
+
   onRefresh:
     () => void;
 
@@ -169,6 +171,7 @@ function MorningDriverScheduleBoard({
   updatingAssignmentId,
   isPublishing,
   canEdit,
+  canEditPublishedAssignments,
   onRefresh,
   onUpdateAssignment,
   currentUserId,
@@ -433,6 +436,10 @@ function MorningDriverScheduleBoard({
     data.period.status ===
     'draft';
 
+  const isPublished =
+    data.period.status ===
+    'published';
+
   const renderAssignmentSlot =
     (
       assignment:
@@ -443,8 +450,16 @@ function MorningDriverScheduleBoard({
         assignment.id;
 
       const isEditable =
-        canEdit &&
-        isDraft &&
+        (
+          (
+            canEdit &&
+            isDraft
+          ) ||
+          (
+            canEditPublishedAssignments &&
+            isPublished
+          )
+        ) &&
         !isUpdating;
 
       return (

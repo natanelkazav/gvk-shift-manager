@@ -173,6 +173,33 @@ function MorningDriverSchedulePage() {
       'morning_driver_schedule.edit',
     );
 
+  const canEditPublishedAssignments =
+    hasPermission(
+      'morning_driver_schedule.edit_any',
+    );
+
+  const currentMonth =
+    getCurrentMonth();
+
+  const currentPeriodValue =
+    currentMonth.year * 12 +
+    currentMonth.month - 1;
+
+  const viewedPeriodValue =
+    viewedScheduleMonth.year * 12 +
+    viewedScheduleMonth.month - 1;
+
+  const canEditViewedPublishedAssignments =
+    canEditPublishedAssignments &&
+    (
+      viewedPeriodValue ===
+        currentPeriodValue ||
+      viewedPeriodValue ===
+        currentPeriodValue + 1
+    ) &&
+    state.data?.period.status ===
+      'published';
+
   const canTransferMyAssignments =
     profile?.role ===
       'morning_driver' &&
@@ -675,6 +702,9 @@ function MorningDriverSchedulePage() {
         }
         canEdit={
           canEdit
+        }
+        canEditPublishedAssignments={
+          canEditViewedPublishedAssignments
         }
         onRefresh={() => {
           void loadSchedule(
