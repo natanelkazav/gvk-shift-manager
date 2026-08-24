@@ -1062,13 +1062,15 @@ function UnifiedPeriodManagement({
         if (
           !period ||
           period.status !==
-            'draft'
+            'draft' &&
+          period.status !==
+            'scheduling'
         ) {
           window.alert(
             period?.status ===
               'published'
               ? 'שיבוץ המוקדנים כבר פורסם.'
-              : 'ניתן לפרסם רק טיוטת שיבוץ מוקדנים.',
+              : 'ניתן לפרסם רק טיוטת שיבוץ מוקדנים שנשמרה.',
           );
 
           return;
@@ -1083,7 +1085,9 @@ function UnifiedPeriodManagement({
                 shift,
               ) =>
                 !shift
-                  .assignedUserId,
+                  .assignedUserId &&
+                !shift
+                  .isIntentionallyUnassigned,
             ) ??
           false;
 
@@ -1091,7 +1095,7 @@ function UnifiedPeriodManagement({
           hasUnassignedShifts
         ) {
           window.alert(
-            'יש להשלים את כל משמרות המוקדנים לפני הפרסום.',
+            'יש לשבץ כל משמרת או לסמן אותה במפורש כמשמרת לא מאוישת לפני הפרסום.',
           );
 
           return;

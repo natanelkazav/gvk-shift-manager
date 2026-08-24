@@ -109,6 +109,8 @@ export interface DispatcherScheduleMonthShift {
   assignedUserName:
     string | null;
 
+  isIntentionallyUnassigned: boolean;
+
   isLocked: boolean;
 
   notes:

@@ -2984,3 +2984,14 @@
     width: 100%;
   }
 }
+.editable-scheduling-row-intentionally-unassigned {
+  border-color: #fca5a5;
+  background: #fff1f2;
+  box-shadow: inset 4px 0 0 #dc2626;
+}
+
+.editable-scheduling-intentionally-unassigned-label {
+  color: #b91c1c;
+  font-size: 0.65rem;
+  font-weight: 700;
+}

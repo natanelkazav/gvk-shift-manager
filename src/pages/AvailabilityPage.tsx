@@ -320,6 +320,9 @@ const {
   validation:
     editableSchedulingValidation,
 
+  intentionallyUnassignedShiftIds:
+    intentionallyUnassignedShiftIds,
+
   loadDraft:
     loadEditableSchedulingDraft,
 
@@ -328,6 +331,9 @@ const {
 
   removeAssignment:
     removeEditableAssignment,
+
+  markShiftIntentionallyUnassigned:
+    markEditableShiftIntentionallyUnassigned,
 
   resetShiftAssignment:
     resetEditableShiftAssignment,
@@ -965,12 +971,14 @@ const handleCloseSubmissionsTracking =
 
     if (
       editableSchedulingAssignments
-        .length !==
+        .length +
+        intentionallyUnassignedShiftIds
+          .length !==
       assignmentCandidatesState
         .data?.shifts.length
     ) {
       window.alert(
-        'לא ניתן לשמור שיבוץ חלקי. יש לשבץ את כל המשמרות.',
+        'לא ניתן לשמור שיבוץ חלקי. יש לשבץ כל משמרת או לסמן אותה במפורש כמשמרת לא מאוישת.',
       );
 
       return;
@@ -1000,7 +1008,10 @@ const handleCloseSubmissionsTracking =
       const confirmed =
         window.confirm(
           `האם לשמור את השיבוץ?\n\n` +
-          `יישמרו ${editableSchedulingAssignments.length} משמרות במסד הנתונים.`,
+          `יישמרו ${editableSchedulingAssignments.length} משמרות מאוישות` +
+          (intentionallyUnassignedShiftIds.length > 0
+            ? ` ו־${intentionallyUnassignedShiftIds.length} משמרות שסומנו במפורש כלא מאוישות.`
+            : '.'),
         );
 
       if (!confirmed) {
@@ -1017,6 +1028,8 @@ const handleCloseSubmissionsTracking =
 
         assignments:
           editableSchedulingAssignments,
+
+        intentionallyUnassignedShiftIds,
 
         confirmWarnings,
       });
@@ -2255,6 +2268,9 @@ const handleCloseSubmissionsTracking =
             validation={
               editableSchedulingValidation
             }
+            intentionallyUnassignedShiftIds={
+              intentionallyUnassignedShiftIds
+            }
             isDraftDirty={
               editableSchedulingDraftState
                 .isDirty
@@ -2264,6 +2280,9 @@ const handleCloseSubmissionsTracking =
             }
             onRemoveAssignment={
               removeEditableAssignment
+            }
+            onMarkShiftIntentionallyUnassigned={
+              markEditableShiftIntentionallyUnassigned
             }
             onResetShiftAssignment={
               resetEditableShiftAssignment

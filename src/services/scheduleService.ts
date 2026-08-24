@@ -25,6 +25,9 @@ export interface SaveScheduleDraftRequest {
   assignments:
     SchedulingAssignment[];
 
+  intentionallyUnassignedShiftIds:
+    string[];
+
   confirmWarnings: boolean;
 }
 
@@ -44,6 +47,8 @@ export interface SaveScheduleDraftResponse {
   automaticAssignments: number;
 
   manualAssignments: number;
+
+  intentionallyUnassignedShifts: number;
 
   warningCount: number;
 
@@ -67,6 +72,9 @@ export interface PublishSchedulePeriodResponse {
     string | null;
 
   publishedShifts:
+    number | null;
+
+  intentionallyUnassignedShifts?:
     number | null;
 
   alreadyPublished: boolean;
@@ -115,8 +123,24 @@ class ScheduleService {
         requested_availability_period_id:
           request.availabilityPeriodId,
 
-        requested_assignments:
-          request.assignments,
+        requested_assignments: [
+          ...request.assignments,
+          ...request
+            .intentionallyUnassignedShiftIds
+            .map(
+              (shiftId) => ({
+                shiftId,
+                userId: null,
+                source: 'manual',
+                score: null,
+                reasons: [
+                  'המשמרת סומנה במפורש לפרסום ללא מוקדן.',
+                ],
+                isIntentionallyUnassigned:
+                  true,
+              }),
+            ),
+        ],
 
         requested_confirm_warnings:
           request.confirmWarnings,

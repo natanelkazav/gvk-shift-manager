@@ -4,6 +4,7 @@ import {
   RotateCcw,
   Trash2,
   UserRoundCog,
+  UserX,
 } from 'lucide-react';
 
 import type {
@@ -38,12 +39,19 @@ interface EditableSchedulingAssignmentsProps {
   validation:
     EditableSchedulingValidationResult;
 
+  intentionallyUnassignedShiftIds:
+    string[];
+
   onAssignDispatcher: (
     shiftId: string,
     userId: string,
   ) => void;
 
   onRemoveAssignment: (
+    shiftId: string,
+  ) => void;
+
+  onMarkShiftIntentionallyUnassigned: (
     shiftId: string,
   ) => void;
 
@@ -113,8 +121,10 @@ function EditableSchedulingAssignments({
   assignments,
   dispatchers,
   validation,
+  intentionallyUnassignedShiftIds,
   onAssignDispatcher,
   onRemoveAssignment,
+  onMarkShiftIntentionallyUnassigned,
   onResetShiftAssignment,
 }: EditableSchedulingAssignmentsProps) {
   const assignmentsByShiftId =
@@ -137,6 +147,39 @@ function EditableSchedulingAssignments({
       ),
     );
 
+  const intentionallyUnassignedSet =
+    new Set(
+      intentionallyUnassignedShiftIds,
+    );
+
+  const sortedShifts =
+    [...data.shifts].sort(
+      (firstShift, secondShift) => {
+        const dateCompare =
+          firstShift.date.localeCompare(
+            secondShift.date,
+          );
+
+        if (dateCompare !== 0) {
+          return dateCompare;
+        }
+
+        const timeCompare =
+          firstShift.startTime.localeCompare(
+            secondShift.startTime,
+          );
+
+        if (timeCompare !== 0) {
+          return timeCompare;
+        }
+
+        return (
+          firstShift.sortOrder -
+          secondShift.sortOrder
+        );
+      },
+    );
+
   return (
     <details className="assignment-draft-details">
       <summary>
@@ -145,7 +188,7 @@ function EditableSchedulingAssignments({
       </summary>
 
       <div className="editable-scheduling-list">
-        {data.shifts.map(
+        {sortedShifts.map(
           (shift) => {
             const currentAssignment =
               assignmentsByShiftId.get(
@@ -172,6 +215,11 @@ function EditableSchedulingAssignments({
               currentAssignment?.userId ??
               '';
 
+            const isIntentionallyUnassigned =
+              intentionallyUnassignedSet.has(
+                shift.id,
+              );
+
             const isManuallyChanged =
               currentAssignment?.source ===
                 'manual' ||
@@ -194,8 +242,13 @@ function EditableSchedulingAssignments({
                 className={[
                   'editable-scheduling-row',
 
-                  !currentAssignment
+                  !currentAssignment &&
+                  !isIntentionallyUnassigned
                     ? 'editable-scheduling-row-unassigned'
+                    : '',
+
+                  isIntentionallyUnassigned
+                    ? 'editable-scheduling-row-intentionally-unassigned'
                     : '',
 
                   isManuallyChanged
@@ -284,7 +337,9 @@ function EditableSchedulingAssignments({
                     }}
                   >
                     <option value="">
-                      ללא שיבוץ
+                      {isIntentionallyUnassigned
+                        ? 'משמרת לא מאוישת (מאושר)'
+                        : 'ללא שיבוץ'}
                     </option>
 
                     {dispatchers.map(
@@ -332,9 +387,11 @@ function EditableSchedulingAssignments({
                   </span>
 
                   <strong>
-                    {getAssignmentSourceLabel(
-                      currentAssignment,
-                    )}
+                    {isIntentionallyUnassigned
+                      ? 'לא מאוישת במכוון'
+                      : getAssignmentSourceLabel(
+                          currentAssignment,
+                        )}
                   </strong>
 
                   {!isSelectedUserAvailable ? (
@@ -345,7 +402,11 @@ function EditableSchedulingAssignments({
                     </small>
                   ) : null}
 
-                  {isManuallyChanged ? (
+                  {isIntentionallyUnassigned ? (
+                    <small className="editable-scheduling-intentionally-unassigned-label">
+                      אושר לפרסום ללא מוקדן
+                    </small>
+                  ) : isManuallyChanged ? (
                     <small className="editable-scheduling-modified-label">
                       שונה ידנית
                     </small>
@@ -353,6 +414,46 @@ function EditableSchedulingAssignments({
                 </div>
 
                 <div className="editable-scheduling-actions">
+                  <Button
+                    type="button"
+                    variant={
+                      isIntentionallyUnassigned
+                        ? 'primary'
+                        : 'secondary'
+                    }
+                    onClick={() => {
+                      if (isIntentionallyUnassigned) {
+                        onResetShiftAssignment(
+                          shift.id,
+                        );
+
+                        return;
+                      }
+
+                      const confirmed =
+                        window.confirm(
+                          'המשמרת תישאר ללא מוקדן ותוכל להתפרסם כך. האם להמשיך?',
+                        );
+
+                      if (!confirmed) {
+                        return;
+                      }
+
+                      onMarkShiftIntentionallyUnassigned(
+                        shift.id,
+                      );
+                    }}
+                  >
+                    <UserX
+                      size={16}
+                      aria-hidden="true"
+                    />
+
+                    {isIntentionallyUnassigned
+                      ? 'בטל השארה לא מאוישת'
+                      : 'השאר משמרת לא מאוישת'}
+                  </Button>
+
                   <Button
                     type="button"
                     variant="secondary"
@@ -432,7 +533,8 @@ function EditableSchedulingAssignments({
                       ),
                     )}
                   </div>
-                ) : currentAssignment ? (
+                ) : currentAssignment ||
+                  isIntentionallyUnassigned ? (
                   <div className="editable-scheduling-validation editable-scheduling-validation-valid">
                     <CheckCircle2
                       size={16}
@@ -440,8 +542,9 @@ function EditableSchedulingAssignments({
                     />
 
                     <span>
-                      לא נמצאה בעיה
-                      בשיבוץ זה.
+                      {isIntentionallyUnassigned
+                        ? 'המשמרת אושרה לפרסום ללא מוקדן.'
+                        : 'לא נמצאה בעיה בשיבוץ זה.'}
                     </span>
                   </div>
                 ) : null}

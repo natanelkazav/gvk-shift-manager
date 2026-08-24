@@ -426,6 +426,9 @@ function validateUnassignedShifts(
       string,
       SchedulingAssignment
     >,
+
+  intentionallyUnassignedShiftIds:
+    Set<string>,
 ): EditableSchedulingValidationIssue[] {
   const issues:
     EditableSchedulingValidationIssue[] =
@@ -437,6 +440,9 @@ function validateUnassignedShifts(
   ) {
     if (
       assignmentsByShiftId.has(
+        shift.id,
+      ) ||
+      intentionallyUnassignedShiftIds.has(
         shift.id,
       )
     ) {
@@ -759,6 +765,9 @@ export function validateEditableSchedulingDraft(
 
   assignments:
     SchedulingAssignment[],
+
+  intentionallyUnassignedShiftIds:
+    string[] = [],
 ): EditableSchedulingValidationResult {
   if (!data) {
     return {
@@ -798,6 +807,9 @@ export function validateEditableSchedulingDraft(
     validateUnassignedShifts(
       data,
       assignmentsByShiftId,
+      new Set(
+        intentionallyUnassignedShiftIds,
+      ),
     );
 
   const assignmentValidation =

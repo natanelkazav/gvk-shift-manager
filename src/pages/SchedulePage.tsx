@@ -858,6 +858,10 @@ function ScheduleShiftCard({
         shift.isPremium
           ? 'schedule-shift-card-premium'
           : '',
+
+        !shift.assignedUser
+          ? 'schedule-shift-card-unassigned'
+          : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -915,7 +919,16 @@ function ScheduleShiftCard({
       </div>
 
       {showAssignedUser ? (
-        <div className="schedule-shift-assigned-user">
+        <div
+          className={[
+            'schedule-shift-assigned-user',
+            !shift.assignedUser
+              ? 'schedule-shift-assigned-user-unassigned'
+              : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
           <UserRound
             size={17}
             aria-hidden="true"
@@ -933,7 +946,7 @@ function ScheduleShiftCard({
                 shift
                   .assignedUser
                   ?.displayName ??
-                'ללא שיבוץ'}
+                'משמרת לא מאוישת'}
             </strong>
           </div>
         </div>
@@ -2611,7 +2624,7 @@ const canPublishSchedule =
                                 shift
                                   .assignedUser
                                   ?.displayName ??
-                                'ללא שיבוץ'}
+                                'משמרת לא מאוישת'}
                             </small>
                           ) : null}
 

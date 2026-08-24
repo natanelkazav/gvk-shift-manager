@@ -18,6 +18,7 @@ interface DispatcherSchedulePeriodLike {
 interface DispatcherScheduleShiftLike {
   assignedUserId:
     string | null;
+    isIntentionallyUnassigned?: boolean;
 }
 
 interface DriverSchedulePeriodLike {
@@ -145,7 +146,8 @@ export function createDispatcherWorkflowState({
       (
         shift,
       ) =>
-        !shift.assignedUserId,
+        !shift.assignedUserId &&
+        !shift.isIntentionallyUnassigned,
     );
 
   return calculateWorkflowState({

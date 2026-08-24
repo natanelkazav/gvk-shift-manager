@@ -961,3 +961,18 @@
 .schedule-month-feedback {
   margin-bottom: 14px;
 }
+
+.schedule-shift-card-unassigned {
+  border-color: #fca5a5;
+  background: #fff1f2;
+  box-shadow: inset 4px 0 0 #dc2626;
+}
+
+.schedule-shift-assigned-user-unassigned {
+  border-top-color: #fecaca;
+}
+
+.schedule-shift-assigned-user-unassigned span,
+.schedule-shift-assigned-user-unassigned strong {
+  color: #b91c1c;
+}

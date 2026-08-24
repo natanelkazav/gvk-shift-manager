@@ -64,6 +64,9 @@ interface AssignmentCandidatesPanelProps {
   validation:
     EditableSchedulingValidationResult;
 
+  intentionallyUnassignedShiftIds:
+    string[];
+
   isDraftDirty: boolean;
 
   onRefresh:
@@ -78,6 +81,10 @@ interface AssignmentCandidatesPanelProps {
   ) => void;
 
   onRemoveAssignment: (
+    shiftId: string,
+  ) => void;
+
+  onMarkShiftIntentionallyUnassigned: (
     shiftId: string,
   ) => void;
 
@@ -578,11 +585,13 @@ function AssignmentCandidatesPanel({
   editableAssignments,
   editableDispatcherSummaries,
   validation,
+  intentionallyUnassignedShiftIds,
   isDraftDirty,
   onRefresh,
   onGenerateDraft,
   onAssignDispatcher,
   onRemoveAssignment,
+  onMarkShiftIntentionallyUnassigned,
   onResetShiftAssignment,
   onResetAllChanges,
   onSaveSchedule,
@@ -1529,11 +1538,17 @@ function AssignmentCandidatesPanel({
             validation={
               validation
             }
+            intentionallyUnassignedShiftIds={
+              intentionallyUnassignedShiftIds
+            }
             onAssignDispatcher={
               onAssignDispatcher
             }
             onRemoveAssignment={
               onRemoveAssignment
+            }
+            onMarkShiftIntentionallyUnassigned={
+              onMarkShiftIntentionallyUnassigned
             }
             onResetShiftAssignment={
               onResetShiftAssignment
@@ -1561,7 +1576,9 @@ function AssignmentCandidatesPanel({
                 {validation.isValid
                   ? validation.warningCount > 0
                     ? `קיימות ${validation.warningCount} אזהרות שידרשו אישור לפני השמירה.`
-                    : 'כל המשמרות משובצות ולא נמצאו שגיאות חוסמות.'
+                    : intentionallyUnassignedShiftIds.length > 0
+                      ? `${intentionallyUnassignedShiftIds.length} משמרות אושרו כלא מאוישות ולא נמצאו שגיאות חוסמות.`
+                      : 'כל המשמרות משובצות ולא נמצאו שגיאות חוסמות.'
                   : `יש לפתור ${validation.errorCount} שגיאות חוסמות לפני השמירה.`}
               </span>
             </div>
@@ -1571,7 +1588,8 @@ function AssignmentCandidatesPanel({
               disabled={
                 !validation.isValid ||
                 isSavingSchedule ||
-                editableAssignments.length !==
+                editableAssignments.length +
+                  intentionallyUnassignedShiftIds.length !==
                   data.shifts.length
               }
               onClick={() => {

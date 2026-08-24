@@ -29,6 +29,9 @@ interface EditableSchedulingDraftState {
       SchedulingAssignment
     >;
 
+  intentionallyUnassignedShiftIds:
+    string[];
+
   isDirty: boolean;
 
   error:
@@ -48,6 +51,9 @@ interface EditableSchedulingDraftResult {
   validation:
     EditableSchedulingValidationResult;
 
+  intentionallyUnassignedShiftIds:
+    string[];
+
   loadDraft: (
     draft: SchedulingDraft,
   ) => void;
@@ -58,6 +64,10 @@ interface EditableSchedulingDraftResult {
   ) => void;
 
   removeAssignment: (
+    shiftId: string,
+  ) => void;
+
+  markShiftIntentionallyUnassigned: (
     shiftId: string,
   ) => void;
 
@@ -77,6 +87,8 @@ const initialState:
     originalDraft: null,
 
     assignmentsByShiftId: {},
+
+    intentionallyUnassignedShiftIds: [],
 
     isDirty: false,
 
@@ -512,10 +524,12 @@ export function useEditableSchedulingDraft(
         validateEditableSchedulingDraft(
           data,
           assignments,
+          state.intentionallyUnassignedShiftIds,
         ),
       [
         data,
         assignments,
+        state.intentionallyUnassignedShiftIds,
       ],
     );
 
@@ -533,6 +547,8 @@ export function useEditableSchedulingDraft(
             createAssignmentMap(
               draft.assignments,
             ),
+
+          intentionallyUnassignedShiftIds: [],
 
           isDirty: false,
 
@@ -610,13 +626,27 @@ const assignDispatcher =
             assignmentsByShiftId:
               nextAssignments,
 
+            intentionallyUnassignedShiftIds:
+              currentState
+                .intentionallyUnassignedShiftIds
+                .filter(
+                  (id) =>
+                    id !== normalizedShiftId,
+                ),
+
             isDirty:
               createAssignmentFingerprint(
                 nextAssignments,
               ) !==
-              createAssignmentFingerprint(
-                originalAssignments,
-              ),
+                createAssignmentFingerprint(
+                  originalAssignments,
+                ) ||
+              currentState
+                .intentionallyUnassignedShiftIds
+                .some(
+                  (id) =>
+                    id !== normalizedShiftId,
+                ),
 
             error:
               null,
@@ -664,13 +694,78 @@ const assignDispatcher =
               assignmentsByShiftId:
                 nextAssignments,
 
+              intentionallyUnassignedShiftIds:
+                currentState
+                  .intentionallyUnassignedShiftIds
+                  .filter(
+                    (id) =>
+                      id !== normalizedShiftId,
+                  ),
+
               isDirty:
                 createAssignmentFingerprint(
                   nextAssignments,
                 ) !==
-                createAssignmentFingerprint(
-                  originalAssignments,
-                ),
+                  createAssignmentFingerprint(
+                    originalAssignments,
+                  ) ||
+                currentState
+                  .intentionallyUnassignedShiftIds
+                  .some(
+                    (id) =>
+                      id !== normalizedShiftId,
+                  ),
+
+              error: null,
+            };
+          },
+        );
+      },
+      [],
+    );
+
+  const markShiftIntentionallyUnassigned =
+    useCallback(
+      (
+        shiftId: string,
+      ): void => {
+        const normalizedShiftId =
+          shiftId.trim();
+
+        if (!normalizedShiftId) {
+          return;
+        }
+
+        setState(
+          (currentState) => {
+            const nextAssignments = {
+              ...currentState
+                .assignmentsByShiftId,
+            };
+
+            delete nextAssignments[
+              normalizedShiftId
+            ];
+
+            const nextIntentionalIds =
+              Array.from(
+                new Set([
+                  ...currentState
+                    .intentionallyUnassignedShiftIds,
+                  normalizedShiftId,
+                ]),
+              );
+
+            return {
+              ...currentState,
+
+              assignmentsByShiftId:
+                nextAssignments,
+
+              intentionallyUnassignedShiftIds:
+                nextIntentionalIds,
+
+              isDirty: true,
 
               error: null,
             };
@@ -743,13 +838,27 @@ const assignDispatcher =
               assignmentsByShiftId:
                 nextAssignments,
 
+              intentionallyUnassignedShiftIds:
+                currentState
+                  .intentionallyUnassignedShiftIds
+                  .filter(
+                    (id) =>
+                      id !== normalizedShiftId,
+                  ),
+
               isDirty:
                 createAssignmentFingerprint(
                   nextAssignments,
                 ) !==
-                createAssignmentFingerprint(
-                  originalAssignments,
-                ),
+                  createAssignmentFingerprint(
+                    originalAssignments,
+                  ) ||
+                currentState
+                  .intentionallyUnassignedShiftIds
+                  .some(
+                    (id) =>
+                      id !== normalizedShiftId,
+                  ),
 
               error: null,
             };
@@ -773,6 +882,8 @@ const assignDispatcher =
                 [],
             ),
 
+          intentionallyUnassignedShiftIds: [],
+
           isDirty: false,
 
           error: null,
@@ -794,11 +905,16 @@ const assignDispatcher =
 
     validation,
 
+    intentionallyUnassignedShiftIds:
+      state.intentionallyUnassignedShiftIds,
+
     loadDraft,
 
     assignDispatcher,
 
     removeAssignment,
+
+    markShiftIntentionallyUnassigned,
 
     resetShiftAssignment,
 
