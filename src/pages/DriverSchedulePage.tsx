@@ -32,6 +32,7 @@ import {
 } from '../hooks/useDriverScheduleDraft';
 import {
   Button,
+  Modal,
   PageHeader,
 } from '../components/ui';
 
@@ -322,6 +323,18 @@ const [
   useState<DriverScheduleViewMode>(
     'calendar',
   );
+  const [
+    selectedEditDay,
+    setSelectedEditDay,
+  ] =
+    useState<
+      import('../types/driverSchedule')
+        .DriverScheduleDay |
+      null
+    >(
+      null,
+    );
+
   const [
     selectedTransferDay,
     setSelectedTransferDay,
@@ -2104,6 +2117,9 @@ effectiveWorkspaceTab ===
             canEditSchedule ||
             canEditPublishedSchedule
           }
+          canEditPublishedSchedule={
+            canEditPublishedSchedule
+          }
           showManagementDetails={
             canManageAvailability
           }
@@ -2117,6 +2133,13 @@ effectiveWorkspaceTab ===
             day,
           ) => {
             setSelectedTransferDay(
+              day,
+            );
+          }}
+          onSelectEditDay={(
+            day,
+          ) => {
+            setSelectedEditDay(
               day,
             );
           }}
@@ -2487,6 +2510,63 @@ effectiveWorkspaceTab ===
     )}
   </section>
 ) : null}
+
+      {selectedEditDay &&
+      scheduleDraftState.data ? (
+        <Modal
+          isOpen
+          title="עריכת כוננות"
+          onClose={() => {
+            if (
+              scheduleDraftState
+                .updatingDayId ===
+              null
+            ) {
+              setSelectedEditDay(
+                null,
+              );
+            }
+          }}
+        >
+          <DriverScheduleDayEditor
+            key={`${selectedEditDay.id}-${selectedEditDay.updatedAt}`}
+            day={
+              selectedEditDay
+            }
+            drivers={
+              scheduleDraftState
+                .data
+                .drivers
+            }
+            isEditable={
+              canEditPublishedSchedule
+            }
+            isSaving={
+              scheduleDraftState
+                .updatingDayId ===
+              selectedEditDay.id
+            }
+            onSave={async (
+              request,
+            ) => {
+              try {
+                await updateScheduleDay(
+                  request,
+                );
+
+                setSelectedEditDay(
+                  null,
+                );
+              } catch {
+                /*
+                 * השגיאה נשמרת
+                 * בתוך ה-Hook.
+                 */
+              }
+            }}
+          />
+        </Modal>
+      ) : null}
 
       {selectedTransferDay &&
       authenticatedUser?.id &&

@@ -44,6 +44,9 @@ interface DriverScheduleCalendarProps {
   canEditSchedule:
     boolean;
 
+  canEditPublishedSchedule:
+    boolean;
+
   showManagementDetails:
     boolean;
 
@@ -59,6 +62,11 @@ interface DriverScheduleCalendarProps {
     boolean;
 
   onSelectTransferDay: (
+    day:
+      DriverScheduleDay,
+  ) => void;
+
+  onSelectEditDay: (
     day:
       DriverScheduleDay,
   ) => void;
@@ -187,11 +195,13 @@ function DriverScheduleCalendar({
   currentUserId,
   canViewTeamSchedule,
   canEditSchedule,
+  canEditPublishedSchedule,
   showManagementDetails,
   isLoading,
   onLoadMonth,
   canTransferMyDuties,
   onSelectTransferDay,
+  onSelectEditDay,
 }: DriverScheduleCalendarProps) {
   const canViewAllDrivers =
     canViewTeamSchedule ||
@@ -384,6 +394,20 @@ const scheduleDaysByDate =
             1
       );
     })();
+
+  const canEditDay =
+    (
+      day:
+        DriverScheduleDay,
+    ): boolean => {
+      return (
+        canEditPublishedSchedule &&
+        isTransferableMonth &&
+        period?.status ===
+          'published' &&
+        Boolean(day.id)
+      );
+    };
 
   const canTransferDay =
     (
@@ -683,6 +707,7 @@ const scheduleDaysByDate =
           );
         }}
         onDayClick={
+          canEditPublishedSchedule ||
           canTransferMyDuties
             ? (
                 context,
@@ -692,8 +717,22 @@ const scheduleDaysByDate =
                     context.date,
                   );
 
+                if (!day) {
+                  return;
+                }
+
                 if (
-                  day &&
+                  canEditDay(
+                    day,
+                  )
+                ) {
+                  onSelectEditDay(
+                    day,
+                  );
+                  return;
+                }
+
+                if (
                   canTransferDay(
                     day,
                   )
@@ -762,9 +801,15 @@ const scheduleDaysByDate =
                 </span>
               ) : null}
 
-              {canTransferDay(
+              {canEditDay(
                 day,
               ) ? (
+                <span className="driver-calendar-assignment-transfer">
+                  לחיצה לעריכת כוננות
+                </span>
+              ) : canTransferDay(
+                  day,
+                ) ? (
                 <span className="driver-calendar-assignment-transfer">
                   לחיצה לשינוי כונן
                 </span>
