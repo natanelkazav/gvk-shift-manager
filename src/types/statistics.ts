@@ -1,3 +1,16 @@
+
+export type StatisticsPersonType =
+  | 'dispatchers'
+  | 'drivers'
+  | 'morning_drivers';
+
+export interface StatisticsPersonOption {
+  userId: string;
+  displayName: string;
+  scheduleName: string | null;
+  userType: StatisticsPersonType;
+}
+
 export interface StatisticsFilters {
   years: number[];
   months: number[];

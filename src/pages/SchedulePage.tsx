@@ -36,6 +36,9 @@ import MonthCalendar
 import ScheduleShiftEditModal
   from '../components/schedule/ScheduleShiftEditModal';
 
+import ScheduleDraftOverview
+  from '../components/schedule/ScheduleDraftOverview';
+
 import {
   useAuth,
 } from '../auth/AuthContext';
@@ -2324,6 +2327,14 @@ const canPublishSchedule =
           </span>
         ) : null}
       </div>
+
+
+      {isDraftDisplayedPeriod ? (
+        <ScheduleDraftOverview
+          shifts={displayedShifts}
+          context={draftEditContext}
+        />
+      ) : null}
 
       <div
         className="schedule-display-mode"

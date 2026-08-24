@@ -14,6 +14,7 @@ import type {
   StatisticsDashboardRequest,
   StatisticsDashboardResponse,
   StatisticsSinglePeriodRequest,
+  StatisticsPersonOption,
 } from '../types/statistics';
 
 interface SupabaseErrorShape {
@@ -515,6 +516,48 @@ function mergeResponses(
 }
 
 class StatisticsService {
+
+  async getStatisticsPeople(): Promise<StatisticsPersonOption[]> {
+    const { data, error } = await supabase.rpc(
+      'get_statistics_people',
+    );
+
+    if (error) {
+      throw normalizeStatisticsError(error);
+    }
+
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data.flatMap((item): StatisticsPersonOption[] => {
+      if (typeof item !== 'object' || item === null) {
+        return [];
+      }
+
+      const row = item as Record<string, unknown>;
+      const userType = row.userType;
+      if (
+        typeof row.userId !== 'string' ||
+        typeof row.displayName !== 'string' ||
+        (userType !== 'dispatchers' &&
+          userType !== 'drivers' &&
+          userType !== 'morning_drivers')
+      ) {
+        return [];
+      }
+
+      return [{
+        userId: row.userId,
+        displayName: row.displayName,
+        scheduleName: typeof row.scheduleName === 'string'
+          ? row.scheduleName
+          : null,
+        userType,
+      }];
+    });
+  }
+
   private async getSinglePeriod(
     request:
       StatisticsSinglePeriodRequest,

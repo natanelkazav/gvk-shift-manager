@@ -8,6 +8,7 @@ import {
   WalletCards,
 } from 'lucide-react';
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -29,7 +30,9 @@ import StatisticsTablesView
 import { useStatistics } from '../hooks/useStatistics';
 import type {
   StatisticsDashboardResponse,
+  StatisticsPersonOption,
 } from '../types/statistics';
+import { statisticsService } from '../services/statisticsService';
 import '../styles/statistics.css';
 
 type StatisticsUserType =
@@ -164,6 +167,43 @@ function StatisticsPage() {
   const [userType, setUserType] = useState<StatisticsUserType>('dispatchers');
   const [workspaceView, setWorkspaceView] = useState<StatisticsWorkspaceView>('availability');
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [people, setPeople] = useState<StatisticsPersonOption[]>([]);
+  const [isLoadingPeople, setIsLoadingPeople] = useState(true);
+  const [peopleError, setPeopleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPeople = async (): Promise<void> => {
+      setIsLoadingPeople(true);
+      setPeopleError(null);
+
+      try {
+        const result = await statisticsService.getStatisticsPeople();
+        if (!cancelled) {
+          setPeople(result);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setPeopleError(
+            loadError instanceof Error
+              ? loadError.message
+              : 'לא ניתן היה לטעון את רשימת המשתמשים לסטטיסטיקות.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingPeople(false);
+        }
+      }
+    };
+
+    void loadPeople();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const canViewPayroll = hasPermission('payroll.view');
 
@@ -175,34 +215,15 @@ function StatisticsPage() {
     );
   }, []);
 
-  const personOptions = useMemo(() => {
-    if (!data) return [];
-
-    if (userType === 'dispatchers') {
-      const people = new Map<string, { value: string; label: string }>();
-      for (const row of [
-        ...data.dispatcherStatistics,
-        ...data.dispatcherAvailabilityStatistics,
-      ]) {
-        people.set(row.userId, {
-          value: row.userId,
-          label: getPersonLabel(row.displayName, row.scheduleName),
-        });
-      }
-      return Array.from(people.values()).sort((a, b) =>
-        a.label.localeCompare(b.label, 'he'),
-      );
-    }
-
-    const rows = userType === 'drivers'
-      ? data.driverStatistics
-      : data.morningDriverStatistics;
-
-    return rows.map((row) => ({
-      value: row.userId,
-      label: getPersonLabel(row.displayName, row.scheduleName),
-    })).sort((a, b) => a.label.localeCompare(b.label, 'he'));
-  }, [data, userType]);
+  const personOptions = useMemo(() =>
+    people
+      .filter((person) => person.userType === userType)
+      .map((person) => ({
+        value: person.userId,
+        label: getPersonLabel(person.displayName, person.scheduleName),
+      }))
+      .sort((first, second) => first.label.localeCompare(second.label, 'he')),
+  [people, userType]);
 
   const filteredData = useMemo(
     () => data
@@ -302,13 +323,19 @@ function StatisticsPage() {
           </div>
         </header>
 
+        {peopleError ? (
+          <div className="statistics-inline-warning" role="alert">
+            {peopleError}
+          </div>
+        ) : null}
+
         <div className="statistics-filters statistics-period-filters">
           <StatisticsMultiSelect
             label={personLabel}
             allLabel={`כל ה${personLabel}`}
             selectedValues={selectedUserIds}
             options={personOptions}
-            disabled={isLoading || !data}
+            disabled={isLoadingPeople}
             onChange={(values) => {
               setSelectedUserIds(values.filter(
                 (value): value is string => typeof value === 'string',
