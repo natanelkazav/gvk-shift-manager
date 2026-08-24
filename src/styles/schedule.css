@@ -1314,58 +1314,122 @@
 
 
 .schedule-draft-balance-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin: 1rem 0;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--border-color, #dbe4f0);
-  border-radius: 14px;
-  background: rgba(248, 250, 252, 0.82);
-}
-
-.schedule-draft-balance-controls > div:first-child {
   display: grid;
-  gap: 0.2rem;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 0.9rem 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #d7e3f4;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
 }
 
-.schedule-draft-balance-controls > div:first-child span {
+.schedule-draft-balance-controls-copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.schedule-draft-balance-controls-copy strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.schedule-draft-balance-controls-copy span {
   color: #64748b;
   font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.schedule-draft-balance-controls-actions {
+  display: flex;
+  align-items: start;
+  gap: 0.45rem;
+}
+
+.schedule-draft-balance-controls-actions button {
+  border: 1px solid #dbe4f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.schedule-draft-balance-controls-actions button:hover {
+  border-color: #9fb8e9;
+  background: #f8fbff;
 }
 
 .schedule-draft-balance-toggles {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 
 .schedule-draft-balance-toggles label {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.72rem;
+  gap: 0.42rem;
+  min-height: 38px;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #dbe4f0;
   border-radius: 999px;
   background: #fff;
+  color: #475569;
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  user-select: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .schedule-draft-balance-toggles label.is-active {
-  border-color: #93b4ff;
-  background: #eef5ff;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
+  border-color: #8fb0f5;
+  background: #edf4ff;
+  color: #1749a6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.07);
 }
 
 .schedule-draft-balance-toggles input {
-  accent-color: #2563eb;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.schedule-draft-balance-toggle-check {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.schedule-draft-balance-toggles label.is-active .schedule-draft-balance-toggle-check {
+  border-color: #2563eb;
+  background: #2563eb;
 }
 
 @media (max-width: 900px) {
   .schedule-draft-balance-controls {
-    align-items: stretch;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-draft-balance-controls-actions,
+  .schedule-draft-balance-toggles {
+    grid-column: 1;
   }
 }
+

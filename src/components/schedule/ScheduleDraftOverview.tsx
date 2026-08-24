@@ -275,6 +275,16 @@ export default function ScheduleDraftOverview({
     });
   };
 
+  const resetBalanceGroups = () => {
+    setVisibleGroups(new Set(defaultBalanceGroups));
+  };
+
+  const showAllBalanceGroups = () => {
+    setVisibleGroups(
+      new Set(balanceColumnOptions.map((option) => option.key)),
+    );
+  };
+
   const totalShifts = context.shifts.length;
   const noAvailable = context.shifts.filter((item) => item.availableCount === 0).length;
   const singleAvailable = context.shifts.filter((item) => item.availableCount === 1).length;
@@ -376,11 +386,33 @@ export default function ScheduleDraftOverview({
         </div>
 
         <div className="schedule-draft-balance-controls">
-          <div>
-            <strong>מה להציג בטבלה?</strong>
-            <span>בחרו רק את המדדים שרלוונטיים לבדיקה הנוכחית.</span>
+          <div className="schedule-draft-balance-controls-copy">
+            <strong>עמודות להצגה</strong>
+            <span>
+              סמנו אילו קבוצות תרצו לראות. חג ו־200% מוסתרים כברירת מחדל כי הם מדדים חופפים.
+            </span>
           </div>
-          <div className="schedule-draft-balance-toggles">
+
+          <div className="schedule-draft-balance-controls-actions">
+            <button
+              type="button"
+              onClick={resetBalanceGroups}
+            >
+              ברירת מחדל
+            </button>
+            <button
+              type="button"
+              onClick={showAllBalanceGroups}
+            >
+              הצג הכול
+            </button>
+          </div>
+
+          <div
+            className="schedule-draft-balance-toggles"
+            role="group"
+            aria-label="בחירת עמודות לטבלת האיזון"
+          >
             {balanceColumnOptions.map((option) => (
               <label
                 key={option.key}
@@ -391,6 +423,9 @@ export default function ScheduleDraftOverview({
                   checked={visibleGroups.has(option.key)}
                   onChange={() => toggleBalanceGroup(option.key)}
                 />
+                <span className="schedule-draft-balance-toggle-check" aria-hidden="true">
+                  {visibleGroups.has(option.key) ? '✓' : ''}
+                </span>
                 <span>{option.label}</span>
               </label>
             ))}
