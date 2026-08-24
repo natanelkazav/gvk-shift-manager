@@ -1033,6 +1033,14 @@ const handleCloseSubmissionsTracking =
 
         confirmWarnings,
       });
+
+      const selectedPeriod = assignmentCandidatesState.data?.period;
+
+      if (selectedPeriod) {
+        navigate(
+          `/schedule?year=${selectedPeriod.year}&month=${selectedPeriod.month}&view=list`,
+        );
+      }
     } catch {
       /*
        * הודעת השגיאה נשמרת בתוך

@@ -26,6 +26,8 @@ interface ScheduleShiftEditModalProps {
     newUserId: string,
     reason: string | null,
   ) => Promise<void>;
+  onMarkUnassigned?: () => Promise<void>;
+  candidateHint?: string | null;
 }
 
 function formatShiftDate(
@@ -79,6 +81,8 @@ function ScheduleShiftEditModal({
   error,
   onClose,
   onSave,
+  onMarkUnassigned,
+  candidateHint,
 }: ScheduleShiftEditModalProps) {
   const [selectedUserId, setSelectedUserId] =
     useState(
@@ -129,6 +133,19 @@ function ScheduleShiftEditModal({
             ביטול
           </Button>
 
+          {onMarkUnassigned ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isSaving}
+              onClick={() => {
+                void onMarkUnassigned();
+              }}
+            >
+              השאר משמרת לא מאוישת
+            </Button>
+          ) : null}
+
           <Button
             type="button"
             disabled={!canSave}
@@ -178,7 +195,10 @@ function ScheduleShiftEditModal({
             }
             disabled={isLoadingOptions || isSaving}
             options={dispatcherOptions}
-            helperText="המערכת תבדוק חפיפה ומשמרות רצופות לפני השמירה."
+            helperText={
+              candidateHint ??
+              'המערכת תבדוק חפיפה ומשמרות רצופות לפני השמירה.'
+            }
             onChange={(event) => {
               setSelectedUserId(
                 event.target.value,

@@ -8,6 +8,8 @@ import type {
   DispatcherAvailabilityStatisticsSummary,
   DispatcherStatisticsRow,
   DriverStatisticsRow,
+  MorningDriverMonthlyBreakdownRow,
+  MorningDriverStatisticsRow,
   PayrollStatisticsResponse,
   StatisticsDashboardRequest,
   StatisticsDashboardResponse,
@@ -28,6 +30,8 @@ interface LegacyStatisticsResponse
     | 'dispatcherAvailabilitySummary'
     | 'dispatcherAvailabilityStatistics'
     | 'dispatcherAvailabilityMonthlyBreakdown'
+    | 'morningDriverStatistics'
+    | 'morningDriverMonthlyBreakdown'
   > {
   filters: {
     year: number | null;
@@ -43,10 +47,18 @@ interface DispatcherAvailabilityStatisticsResponse {
   generatedAt: string;
 }
 
+interface MorningDriverStatisticsResponse {
+  statistics: MorningDriverStatisticsRow[];
+  monthlyBreakdown: MorningDriverMonthlyBreakdownRow[];
+  generatedAt: string;
+}
+
 interface CombinedSinglePeriodResponse extends LegacyStatisticsResponse {
   dispatcherAvailabilitySummary: DispatcherAvailabilityStatisticsSummary;
   dispatcherAvailabilityStatistics: DispatcherAvailabilityStatisticsRow[];
   dispatcherAvailabilityMonthlyBreakdown: DispatcherAvailabilityMonthlyRow[];
+  morningDriverStatistics: MorningDriverStatisticsRow[];
+  morningDriverMonthlyBreakdown: MorningDriverMonthlyBreakdownRow[];
 }
 
 function normalizeStatisticsError(
@@ -401,6 +413,31 @@ function mergeResponses(
         response.driverMonthlyBreakdown,
     );
 
+  const morningRows = new Map<string, MorningDriverStatisticsRow>();
+
+  for (const response of responses) {
+    for (const row of response.morningDriverStatistics) {
+      const current = morningRows.get(row.userId);
+      if (!current) {
+        morningRows.set(row.userId, { ...row });
+        continue;
+      }
+      current.totalShifts += row.totalShifts;
+      current.morningShifts += row.morningShifts;
+      current.afternoonShifts += row.afternoonShifts;
+      current.eveningShifts += row.eveningShifts;
+      current.fridayShifts += row.fridayShifts;
+      current.weekendShifts += row.weekendShifts;
+    }
+  }
+
+  const morningDriverStatistics = Array.from(morningRows.values())
+    .sort((a, b) => b.totalShifts - a.totalShifts);
+
+  const morningDriverMonthlyBreakdown = responses.flatMap(
+    (response) => response.morningDriverMonthlyBreakdown,
+  );
+
   const total = (
     key:
       keyof LegacyStatisticsResponse['summary'],
@@ -457,9 +494,11 @@ function mergeResponses(
     },
     dispatcherStatistics,
     driverStatistics,
+    morningDriverStatistics,
     monthlyStatistics,
     dispatcherMonthlyBreakdown,
     driverMonthlyBreakdown,
+    morningDriverMonthlyBreakdown,
     dispatcherAvailabilitySummary,
     dispatcherAvailabilityStatistics,
     dispatcherAvailabilityMonthlyBreakdown,
@@ -483,6 +522,7 @@ class StatisticsService {
     const [
       scheduleResult,
       availabilityResult,
+      morningDriverResult,
     ] = await Promise.all([
       supabase.rpc(
         'get_statistics_dashboard',
@@ -498,6 +538,13 @@ class StatisticsService {
           requested_month: request.month,
         },
       ),
+      supabase.rpc(
+        'get_morning_driver_statistics',
+        {
+          requested_year: request.year,
+          requested_month: request.month,
+        },
+      ),
     ]);
 
     if (scheduleResult.error) {
@@ -506,6 +553,10 @@ class StatisticsService {
 
     if (availabilityResult.error) {
       throw normalizeStatisticsError(availabilityResult.error);
+    }
+
+    if (morningDriverResult.error) {
+      throw normalizeStatisticsError(morningDriverResult.error);
     }
 
     if (!isLegacyStatisticsResponse(scheduleResult.data)) {
@@ -524,6 +575,15 @@ class StatisticsService {
       );
     }
 
+    const morningData = morningDriverResult.data as MorningDriverStatisticsResponse | null;
+    if (
+      !morningData ||
+      !Array.isArray(morningData.statistics) ||
+      !Array.isArray(morningData.monthlyBreakdown)
+    ) {
+      throw new Error('התקבלה תשובה לא תקינה מנתוני כונני הבוקר.');
+    }
+
     return {
       ...scheduleResult.data,
       dispatcherAvailabilitySummary:
@@ -532,6 +592,8 @@ class StatisticsService {
         availabilityResult.data.dispatcherStatistics,
       dispatcherAvailabilityMonthlyBreakdown:
         availabilityResult.data.monthlyBreakdown,
+      morningDriverStatistics: morningData.statistics,
+      morningDriverMonthlyBreakdown: morningData.monthlyBreakdown,
     };
   }
 

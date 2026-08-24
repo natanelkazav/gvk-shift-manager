@@ -13,6 +13,8 @@ import type {
   CurrentScheduleEditOptions,
   UpdateCurrentScheduleShiftRequest,
   UpdateCurrentScheduleShiftResponse,
+  ScheduleDraftEditContext,
+  UpdateScheduleDraftShiftRequest,
 } from '../types/schedule';
 
 import type {
@@ -238,6 +240,43 @@ async getScheduleByMonth(
   return data as
     DispatcherScheduleMonthData;
 }
+
+  async getScheduleDraftEditContext(
+    schedulePeriodId: string,
+  ): Promise<ScheduleDraftEditContext> {
+    const { data, error } = await supabase.rpc(
+      'get_schedule_draft_edit_context',
+      { requested_schedule_period_id: schedulePeriodId },
+    );
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data || typeof data !== 'object') {
+      throw new Error('לא ניתן היה לטעון את נתוני עריכת הטיוטה.');
+    }
+
+    return data as ScheduleDraftEditContext;
+  }
+
+  async updateScheduleDraftShift(
+    request: UpdateScheduleDraftShiftRequest,
+  ): Promise<void> {
+    const { error } = await supabase.rpc(
+      'update_schedule_draft_shift',
+      {
+        requested_shift_id: request.shiftId,
+        requested_new_user_id: request.newUserId,
+        requested_intentionally_unassigned: request.intentionallyUnassigned,
+      },
+    );
+
+    if (error) {
+      throw error;
+    }
+  }
+
   async getCurrentScheduleEditOptions():
     Promise<CurrentScheduleEditOptions> {
     const {

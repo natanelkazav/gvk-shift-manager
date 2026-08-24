@@ -976,3 +976,20 @@
 .schedule-shift-assigned-user-unassigned strong {
   color: #b91c1c;
 }
+
+
+.schedule-shift-candidate-summary {
+  margin-top: 0.55rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.65rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.schedule-calendar-assignment-unassigned {
+  border-color: #ef4444 !important;
+  background: #fef2f2 !important;
+  color: #b91c1c;
+}

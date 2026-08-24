@@ -22,6 +22,7 @@ interface PayrollStatisticsViewProps {
   months: number[];
   dispatcherIds: string[];
   driverIds: string[];
+  mode: 'dispatchers' | 'drivers';
 }
 
 function formatCurrency(
@@ -46,6 +47,7 @@ function PayrollStatisticsView({
   months,
   dispatcherIds,
   driverIds,
+  mode,
 }: PayrollStatisticsViewProps) {
   const {
     hasPermission,
@@ -171,64 +173,35 @@ function PayrollStatisticsView({
   return (
     <div className="statistics-payroll-view">
       <section className="statistics-summary-grid">
-        <article>
-          <WalletCards
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <span>
-              שכר מוקדנים צפוי
-            </span>
-
-            <strong>
-              {formatCurrency(
-                projectedDispatcherPay,
-              )}
-            </strong>
-          </div>
-        </article>
-
-        <article>
-          <WalletCards
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <span>
-              עלות כוננויות צפויה
-            </span>
-
-            <strong>
-              {formatCurrency(
-                projectedDriverPay,
-              )}
-            </strong>
-          </div>
-        </article>
-
-        <article>
-          <Clock3
-            size={22}
-            aria-hidden="true"
-          />
-
-          <div>
-            <span>
-              נוכחות בפועל
-            </span>
-
-            <strong>
-              {data.attendanceAvailable
-                ? 'מחובר'
-                : 'ממתין ל-TimeWatch'}
-            </strong>
-          </div>
-        </article>
+        {mode === 'dispatchers' ? (
+          <>
+            <article>
+              <WalletCards size={22} aria-hidden="true" />
+              <div>
+                <span>שכר מוקדנים צפוי</span>
+                <strong>{formatCurrency(projectedDispatcherPay)}</strong>
+              </div>
+            </article>
+            <article>
+              <Clock3 size={22} aria-hidden="true" />
+              <div>
+                <span>נוכחות בפועל</span>
+                <strong>{data.attendanceAvailable ? 'מחובר' : 'ממתין ל-TimeWatch'}</strong>
+              </div>
+            </article>
+          </>
+        ) : (
+          <article>
+            <WalletCards size={22} aria-hidden="true" />
+            <div>
+              <span>עלות כוננויות צפויה</span>
+              <strong>{formatCurrency(projectedDriverPay)}</strong>
+            </div>
+          </article>
+        )}
       </section>
 
+      {mode === 'dispatchers' ? (
       <section className="statistics-section">
         <header>
           <h2>שכר מוקדנים צפוי</h2>
@@ -285,6 +258,9 @@ function PayrollStatisticsView({
         </div>
       </section>
 
+      ) : null}
+
+      {mode === 'drivers' ? (
       <section className="statistics-section">
         <header>
           <h2>עלות כוננויות צפויה</h2>
@@ -333,7 +309,9 @@ function PayrollStatisticsView({
         </div>
       </section>
 
-      {canViewAttendance ? (
+      ) : null}
+
+      {mode === 'dispatchers' && canViewAttendance ? (
         <section className="statistics-section statistics-attendance-placeholder">
           <header>
             <h2>כניסה, יציאה וחריגות</h2>

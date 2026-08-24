@@ -108,6 +108,8 @@ export interface ScheduleShift {
   assignmentReasons:
     string[];
 
+  isIntentionallyUnassigned?: boolean;
+
   isLocked: boolean;
 
   notes:
@@ -285,4 +287,32 @@ export interface UpdateCurrentScheduleShiftResponse {
 
   notificationIds:
     string[];
+}
+
+
+export interface ScheduleDraftEditCandidate {
+  userId: string;
+  displayName: string;
+  scheduleName: string | null;
+  isAvailable: boolean;
+}
+
+export interface ScheduleDraftEditShiftContext {
+  scheduleShiftId: string;
+  availabilityShiftSlotId: string | null;
+  availableCount: number;
+  totalDispatchers: number;
+  candidates: ScheduleDraftEditCandidate[];
+}
+
+export interface ScheduleDraftEditContext {
+  periodId: string;
+  shifts: ScheduleDraftEditShiftContext[];
+  dispatchers: ScheduleEditDispatcher[];
+}
+
+export interface UpdateScheduleDraftShiftRequest {
+  shiftId: string;
+  newUserId: string | null;
+  intentionallyUnassigned: boolean;
 }

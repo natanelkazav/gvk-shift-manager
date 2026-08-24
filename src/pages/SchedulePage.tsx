@@ -276,6 +276,9 @@ function mapHistoricalShift(
     assignmentReasons:
       [],
 
+    isIntentionallyUnassigned:
+      shift.isIntentionallyUnassigned,
+
     isLocked:
       shift.isLocked,
 
@@ -890,6 +893,7 @@ function ScheduleShiftCard({
   shift,
   showAssignedUser,
   onEdit,
+  availabilityLabel,
 }: {
   shift:
     ScheduleShift;
@@ -899,6 +903,8 @@ function ScheduleShiftCard({
 
   onEdit?:
     () => void;
+
+  availabilityLabel?: string | null;
 }) {
   return (
     <article
@@ -1004,6 +1010,12 @@ function ScheduleShiftCard({
         </div>
       ) : null}
 
+      {availabilityLabel ? (
+        <div className="schedule-shift-candidate-summary">
+          {availabilityLabel}
+        </div>
+      ) : null}
+
       {onEdit ? (
         <div className="schedule-shift-edit-actions">
           <Button
@@ -1064,8 +1076,10 @@ function SchedulePage() {
     displayMode,
     setDisplayMode,
   ] =
-    useState<ScheduleDisplayMode>(
-      'calendar',
+    useState<ScheduleDisplayMode>(() =>
+      searchParams.get('view') === 'list'
+        ? 'list'
+        : 'calendar',
     );
 
 
@@ -1133,6 +1147,11 @@ function SchedulePage() {
     useState<
       ScheduleEditDispatcher[]
     >([]);
+
+  const [
+    draftEditContext,
+    setDraftEditContext,
+  ] = useState<import('../types/schedule').ScheduleDraftEditContext | null>(null);
 
   const [
     isLoadingEditOptions,
@@ -1253,6 +1272,15 @@ function SchedulePage() {
       currentMonthSelection,
     );
 
+  const activeDisplayedPeriod =
+    isViewingCurrentMonth
+      ? currentSchedule?.period ?? null
+      : selectedMonthSchedule?.period ?? null;
+
+  const isDraftDisplayedPeriod =
+    activeDisplayedPeriod?.status === 'draft' ||
+    activeDisplayedPeriod?.status === 'scheduling';
+
   useEffect(
     () => {
       if (
@@ -1340,15 +1368,63 @@ function SchedulePage() {
     ],
   );
 
-const canEditCurrentSchedule =
+const canEditDisplayedSchedule =
   hasPermission(
     'schedule.edit',
   ) &&
-  isViewingCurrentMonth &&
-  currentSchedule
-    ?.period
-    ?.status ===
-    'published';
+  Boolean(activeDisplayedPeriod) &&
+  (
+    isDraftDisplayedPeriod ||
+    (
+      isViewingCurrentMonth &&
+      activeDisplayedPeriod?.status === 'published'
+    )
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (
+      !hasPermission('schedule.edit') ||
+      !activeDisplayedPeriod ||
+      !isDraftDisplayedPeriod
+    ) {
+      setDraftEditContext(null);
+      return;
+    }
+
+    const loadDraftContext = async (): Promise<void> => {
+      try {
+        const context = await scheduleService.getScheduleDraftEditContext(
+          activeDisplayedPeriod.id,
+        );
+
+        if (!cancelled) {
+          setDraftEditContext(context);
+          setEditDispatchers(context.dispatchers);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setShiftEditError(
+            error instanceof Error
+              ? error.message
+              : 'לא ניתן היה לטעון את נתוני עריכת הטיוטה.',
+          );
+        }
+      }
+    };
+
+    void loadDraftContext();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeDisplayedPeriod,
+    hasPermission,
+    isDraftDisplayedPeriod,
+  ]);
+
 
   const getEditErrorMessage =
     (error: unknown): string => {
@@ -1391,7 +1467,7 @@ const canEditCurrentSchedule =
             'only published current schedule',
           )
         ) {
-          return 'ניתן לערוך כאן רק שיבוץ שכבר פורסם.';
+          return 'לא ניתן לערוך את השיבוץ במצב הנוכחי.';
         }
 
         return message;
@@ -1405,7 +1481,7 @@ const canEditCurrentSchedule =
       shift: ScheduleShift,
     ): Promise<void> => {
       if (
-        !canEditCurrentSchedule
+        !canEditDisplayedSchedule
       ) {
         return;
       }
@@ -1442,6 +1518,21 @@ const canEditCurrentSchedule =
       }
     };
 
+  const refreshDisplayedSchedule =
+    async (): Promise<void> => {
+      if (isViewingCurrentMonth) {
+        await loadCurrentSchedule();
+        return;
+      }
+
+      setSelectedMonthSchedule(
+        await scheduleService.getScheduleByMonth(
+          selectedMonth.year,
+          selectedMonth.month,
+        ),
+      );
+    };
+
   const saveShiftEdit =
     async (
       newUserId: string,
@@ -1449,7 +1540,7 @@ const canEditCurrentSchedule =
     ): Promise<void> => {
       if (
         !editingShift ||
-        !canEditCurrentSchedule
+        !canEditDisplayedSchedule
       ) {
         return;
       }
@@ -1459,32 +1550,119 @@ const canEditCurrentSchedule =
       setShiftEditSuccess(null);
 
       try {
-        const result =
-          await scheduleService
-            .updateCurrentScheduleShift({
-              shiftId:
-                editingShift.id,
+        if (isDraftDisplayedPeriod) {
+          await scheduleService.updateScheduleDraftShift({
+            shiftId: editingShift.id,
+            newUserId,
+            intentionallyUnassigned: false,
+          });
+
+          setShiftEditSuccess('השיבוץ בטיוטה עודכן בהצלחה.');
+        } else {
+          const result =
+            await scheduleService.updateCurrentScheduleShift({
+              shiftId: editingShift.id,
               newUserId,
               reason,
             });
 
+          setShiftEditSuccess(
+            `השיבוץ עודכן בהצלחה ל${result.newUserName}. המוקדנים הרלוונטיים קיבלו התראה.`,
+          );
+        }
+
         setEditingShift(null);
         setSelectedCalendarDate(null);
-        setShiftEditSuccess(
-          `השיבוץ עודכן בהצלחה ל${result.newUserName}. המוקדנים הרלוונטיים קיבלו התראה.`,
-        );
-
-        await loadCurrentSchedule();
+        await refreshDisplayedSchedule();
       } catch (error) {
         setShiftEditError(
-          getEditErrorMessage(
-            error,
-          ),
+          getEditErrorMessage(error),
         );
       } finally {
         setIsSavingShiftEdit(false);
       }
     };
+
+  const markShiftIntentionallyUnassigned =
+    async (): Promise<void> => {
+      if (
+        !editingShift ||
+        !isDraftDisplayedPeriod ||
+        !canEditDisplayedSchedule
+      ) {
+        return;
+      }
+
+      const confirmed = window.confirm(
+        'להשאיר את המשמרת ללא מוקדן?\n\nהמשמרת תסומן במפורש כלא מאוישת וניתן יהיה לפרסם את הלוח.',
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setIsSavingShiftEdit(true);
+      setShiftEditError(null);
+
+      try {
+        await scheduleService.updateScheduleDraftShift({
+          shiftId: editingShift.id,
+          newUserId: null,
+          intentionallyUnassigned: true,
+        });
+
+        setEditingShift(null);
+        setSelectedCalendarDate(null);
+        setShiftEditSuccess('המשמרת סומנה כלא מאוישת במכוון.');
+        await refreshDisplayedSchedule();
+      } catch (error) {
+        setShiftEditError(getEditErrorMessage(error));
+      } finally {
+        setIsSavingShiftEdit(false);
+      }
+    };
+
+  const getDraftCandidateLabel =
+    (shift: ScheduleShift): string | null => {
+      if (!isDraftDisplayedPeriod || !draftEditContext) {
+        return null;
+      }
+
+      const context = draftEditContext.shifts.find(
+        (item) => item.scheduleShiftId === shift.id,
+      );
+
+      if (!context) {
+        return null;
+      }
+
+      if (context.availableCount === 0) {
+        return 'אין מוקדנים שסימנו זמינות למשמרת זו';
+      }
+
+      if (context.availableCount === 1) {
+        return 'מוקדן זמין יחיד';
+      }
+
+      return `${context.availableCount} מוקדנים סימנו זמינות`;
+    };
+
+  const getEditingCandidateHint = (): string | null => {
+    if (!editingShift || !draftEditContext) {
+      return null;
+    }
+
+    const context = draftEditContext.shifts.find(
+      (item) => item.scheduleShiftId === editingShift.id,
+    );
+
+    if (!context) {
+      return null;
+    }
+
+    return `${context.availableCount} מתוך ${context.totalDispatchers} מוקדנים סימנו זמינות למשמרת. ניתן לבצע שיבוץ ידני גם לאחר בדיקת הנתונים.`;
+  };
+
 
   const isDispatcher =
     profile?.role ===
@@ -1939,12 +2117,7 @@ const canEditCurrentSchedule =
             .year
         }`;
 
-  const displayedPeriod =
-    isViewingCurrentMonth
-      ? currentSchedule.period
-      : selectedMonthSchedule
-          ?.period ??
-        null;
+  const displayedPeriod = activeDisplayedPeriod;
 
   const isPersonalUserBlocked =
     !currentSchedule
@@ -2008,9 +2181,8 @@ const canPublishSchedule =
   hasPermission(
     'schedule.edit',
   ) &&
-  displayedPeriod
-    ?.status ===
-    'scheduling';
+  (displayedPeriod?.status === 'draft' ||
+   displayedPeriod?.status === 'scheduling');
 
   return (
     <section className="schedule-page">
@@ -2691,6 +2863,10 @@ const canPublishSchedule =
                             shift.isPremium
                               ? 'schedule-calendar-assignment-premium'
                               : '',
+
+                            !shift.assignedUser
+                              ? 'schedule-calendar-assignment-unassigned'
+                              : '',
                           ]
                             .filter(
                               Boolean,
@@ -2820,13 +2996,14 @@ const canPublishSchedule =
                           shift={
                             shift
                           }
+                          availabilityLabel={getDraftCandidateLabel(shift)}
                           showAssignedUser={
                             viewMode ===
                               'team' ||
-                            canEditCurrentSchedule
+                            canEditDisplayedSchedule
                           }
                           onEdit={
-                            canEditCurrentSchedule
+                            canEditDisplayedSchedule
                               ? () => {
                                   void openShiftEditor(
                                     shift,
@@ -2906,13 +3083,14 @@ const canPublishSchedule =
                       shift={
                         shift
                       }
+                      availabilityLabel={getDraftCandidateLabel(shift)}
                       showAssignedUser={
                         viewMode ===
                           'team' ||
-                        canEditCurrentSchedule
+                        canEditDisplayedSchedule
                       }
                       onEdit={
-                        canEditCurrentSchedule
+                        canEditDisplayedSchedule
                           ? () => {
                               void openShiftEditor(
                                 shift,
@@ -2965,6 +3143,12 @@ const canPublishSchedule =
           }
         }}
         onSave={saveShiftEdit}
+        onMarkUnassigned={
+          isDraftDisplayedPeriod
+            ? markShiftIntentionallyUnassigned
+            : undefined
+        }
+        candidateHint={getEditingCandidateHint()}
       />
 
       {selectedDispatcherStatistics ? (

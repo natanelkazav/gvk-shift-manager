@@ -3,7 +3,6 @@ import {
   CalendarCheck2,
   Clock3,
   Moon,
-  Sparkles,
   Sun,
   UserCheck,
   UserX,
@@ -50,27 +49,6 @@ function DispatcherAvailabilityInsights({
 
   const rows =
     data.dispatcherAvailabilityStatistics;
-
-  const fridayMorningLeader =
-    [...rows].sort(
-      (first, second) =>
-        second.fridayMorningAvailableCount -
-        first.fridayMorningAvailableCount,
-    )[0] ?? null;
-
-  const nightLeader =
-    [...rows].sort(
-      (first, second) =>
-        second.nightAvailableCount -
-        first.nightAvailableCount,
-    )[0] ?? null;
-
-  const premiumLeader =
-    [...rows].sort(
-      (first, second) =>
-        second.premiumAvailableCount -
-        first.premiumAvailableCount,
-    )[0] ?? null;
 
   const nonSubmitters =
     rows.filter(
@@ -294,59 +272,6 @@ function DispatcherAvailabilityInsights({
             </div>
           </article>
         </div>
-      </section>
-
-      <section className="statistics-leaders-grid">
-        <article>
-          <Sun size={23} aria-hidden="true" />
-          <div>
-            <span>הכי זמין לשישי בוקר</span>
-            <strong>
-              {fridayMorningLeader
-                ? getDisplayName(fridayMorningLeader)
-                : 'אין נתונים'}
-            </strong>
-            <small>
-              {fridayMorningLeader
-                ? `${fridayMorningLeader.fridayMorningAvailableCount} משמרות`
-                : ''}
-            </small>
-          </div>
-        </article>
-
-        <article>
-          <Moon size={23} aria-hidden="true" />
-          <div>
-            <span>הכי זמין ללילות</span>
-            <strong>
-              {nightLeader
-                ? getDisplayName(nightLeader)
-                : 'אין נתונים'}
-            </strong>
-            <small>
-              {nightLeader
-                ? `${nightLeader.nightAvailableCount} משמרות`
-                : ''}
-            </small>
-          </div>
-        </article>
-
-        <article>
-          <Sparkles size={23} aria-hidden="true" />
-          <div>
-            <span>הכי זמין ל־200%</span>
-            <strong>
-              {premiumLeader
-                ? getDisplayName(premiumLeader)
-                : 'אין נתונים'}
-            </strong>
-            <small>
-              {premiumLeader
-                ? `${premiumLeader.premiumAvailableCount} משמרות`
-                : ''}
-            </small>
-          </div>
-        </article>
       </section>
 
       {nonSubmitters.length > 0 ? (
