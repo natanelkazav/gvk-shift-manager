@@ -2,6 +2,9 @@ import type {
   StatisticsDashboardResponse,
 } from '../../../types/statistics';
 
+import DispatcherAvailabilityInsights
+  from './DispatcherAvailabilityInsights';
+
 interface StatisticsTablesViewProps {
   data:
     StatisticsDashboardResponse;
@@ -9,6 +12,7 @@ interface StatisticsTablesViewProps {
   sectionFilter:
     'all'
     | 'dispatchers'
+    | 'availability'
     | 'drivers';
 }
 
@@ -30,8 +34,8 @@ function StatisticsTablesView({
 }: StatisticsTablesViewProps) {
   return (
     <div className="statistics-tables-view">
-      {sectionFilter !==
-      'drivers' ? (
+      {(sectionFilter === 'all' ||
+      sectionFilter === 'dispatchers') ? (
         <section className="statistics-section">
           <header>
             <div>
@@ -176,8 +180,8 @@ function StatisticsTablesView({
         </section>
       ) : null}
 
-      {sectionFilter !==
-      'dispatchers' ? (
+      {(sectionFilter === 'all' ||
+      sectionFilter === 'drivers') ? (
         <section className="statistics-section">
           <header>
             <div>
@@ -298,6 +302,13 @@ function StatisticsTablesView({
             </table>
           </div>
         </section>
+      ) : null}
+      {(sectionFilter === 'all' ||
+        sectionFilter === 'availability') ? (
+        <DispatcherAvailabilityInsights
+          data={data}
+          mode="tables"
+        />
       ) : null}
     </div>
   );

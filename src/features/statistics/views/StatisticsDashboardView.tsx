@@ -18,6 +18,9 @@ import StatisticsBarChart
 import StatisticsPieChart
   from '../components/StatisticsPieChart';
 
+import DispatcherAvailabilityInsights
+  from './DispatcherAvailabilityInsights';
+
 interface StatisticsDashboardViewProps {
   data:
     StatisticsDashboardResponse;
@@ -25,6 +28,7 @@ interface StatisticsDashboardViewProps {
   sectionFilter:
     'all'
     | 'dispatchers'
+    | 'availability'
     | 'drivers';
 }
 
@@ -180,8 +184,8 @@ function StatisticsDashboardView({
       ) : null}
 
       <section className="statistics-leaders-grid">
-        {sectionFilter !==
-        'drivers' ? (
+        {(sectionFilter === 'all' ||
+        sectionFilter === 'dispatchers') ? (
           <article>
             <Trophy
               size={23}
@@ -213,8 +217,8 @@ function StatisticsDashboardView({
           </article>
         ) : null}
 
-        {sectionFilter !==
-        'dispatchers' ? (
+        {(sectionFilter === 'all' ||
+        sectionFilter === 'drivers') ? (
           <article>
             <Car
               size={23}
@@ -248,8 +252,8 @@ function StatisticsDashboardView({
       </section>
 
       <section className="statistics-charts-grid">
-        {sectionFilter !==
-        'drivers' ? (
+        {(sectionFilter === 'all' ||
+        sectionFilter === 'dispatchers') ? (
           <>
             <StatisticsPieChart
               title="רגילות מול 200%"
@@ -298,8 +302,8 @@ function StatisticsDashboardView({
           </>
         ) : null}
 
-        {sectionFilter !==
-        'dispatchers' ? (
+        {(sectionFilter === 'all' ||
+        sectionFilter === 'drivers') ? (
           <>
             <StatisticsPieChart
               title="חלוקת כוננויות"
@@ -348,6 +352,13 @@ function StatisticsDashboardView({
           </>
         ) : null}
       </section>
+      {(sectionFilter === 'all' ||
+        sectionFilter === 'availability') ? (
+        <DispatcherAvailabilityInsights
+          data={data}
+          mode="dashboard"
+        />
+      ) : null}
     </div>
   );
 }

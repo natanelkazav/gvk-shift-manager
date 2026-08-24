@@ -880,8 +880,16 @@ function UnifiedPeriodManagement({
     (
       route: string,
     ): void => {
+      const searchParams =
+        new URLSearchParams({
+          year:
+            String(year),
+          month:
+            String(month),
+        });
+
       navigate(
-        route,
+        `${route}?${searchParams.toString()}`,
       );
     };
 
@@ -1353,7 +1361,9 @@ function UnifiedPeriodManagement({
                     shift,
                   ) =>
                     !shift
-                      .assignedUserId,
+                      .assignedUserId &&
+                    !shift
+                      .isIntentionallyUnassigned,
                 ) ??
               false
             )

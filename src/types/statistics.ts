@@ -85,6 +85,66 @@ export interface DriverMonthlyBreakdownRow {
   holidayDuties: number;
 }
 
+
+export type DispatcherAvailabilitySubmissionSource =
+  | 'manual'
+  | 'auto_partial'
+  | 'auto_no_submission';
+
+export interface DispatcherAvailabilityStatisticsSummary {
+  periodCount: number;
+  dispatcherCount: number;
+  manualSubmissionPeriods: number;
+  autoPartialPeriods: number;
+  noSubmissionPeriods: number;
+  declaredAvailableCount: number;
+  declaredUnavailableCount: number;
+  autoCompletedAvailableCount: number;
+  fridayMorningAvailableCount: number;
+  nightAvailableCount: number;
+  premiumAvailableCount: number;
+  holidayAvailableCount: number;
+}
+
+export interface DispatcherAvailabilityStatisticsRow {
+  userId: string;
+  displayName: string;
+  scheduleName: string | null;
+  periodCount: number;
+  manualSubmissionPeriods: number;
+  autoPartialPeriods: number;
+  noSubmissionPeriods: number;
+  declaredAvailableCount: number;
+  declaredUnavailableCount: number;
+  autoCompletedAvailableCount: number;
+  declaredAvailabilityRate: number;
+  fridayMorningAvailableCount: number;
+  fridayAfternoonAvailableCount: number;
+  fridayNightAvailableCount: number;
+  saturdayMorningAvailableCount: number;
+  saturdayAfternoonAvailableCount: number;
+  saturdayNightAvailableCount: number;
+  nightAvailableCount: number;
+  premiumAvailableCount: number;
+  holidayAvailableCount: number;
+  weekendAvailableCount: number;
+}
+
+export interface DispatcherAvailabilityMonthlyRow {
+  userId: string;
+  displayName: string;
+  scheduleName: string | null;
+  year: number;
+  month: number;
+  submissionSource: DispatcherAvailabilitySubmissionSource;
+  declaredAvailableCount: number;
+  declaredUnavailableCount: number;
+  autoCompletedAvailableCount: number;
+  fridayMorningAvailableCount: number;
+  nightAvailableCount: number;
+  premiumAvailableCount: number;
+}
+
 export interface StatisticsDashboardResponse {
   filters: StatisticsFilters;
   summary: StatisticsSummary;
@@ -93,6 +153,9 @@ export interface StatisticsDashboardResponse {
   monthlyStatistics: MonthlyStatisticsRow[];
   dispatcherMonthlyBreakdown: DispatcherMonthlyBreakdownRow[];
   driverMonthlyBreakdown: DriverMonthlyBreakdownRow[];
+  dispatcherAvailabilitySummary: DispatcherAvailabilityStatisticsSummary;
+  dispatcherAvailabilityStatistics: DispatcherAvailabilityStatisticsRow[];
+  dispatcherAvailabilityMonthlyBreakdown: DispatcherAvailabilityMonthlyRow[];
   generatedAt: string;
 }
 

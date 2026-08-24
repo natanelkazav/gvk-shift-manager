@@ -770,3 +770,56 @@
     flex: 1 0 auto;
   }
 }
+
+/* Dispatcher availability statistics */
+.statistics-availability-dashboard {
+  display: grid;
+  gap: 18px;
+}
+
+.statistics-availability-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid #f3c7c7;
+  border-radius: 16px;
+  background: #fff8f8;
+}
+
+.statistics-availability-warning > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.statistics-availability-warning > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.statistics-availability-warning p {
+  margin: 0;
+  color: #5f6470;
+  line-height: 1.6;
+}
+
+.statistics-availability-warning-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.statistics-availability-warning-list span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #efd1d1;
+  font-size: 0.85rem;
+}
+
+.statistics-availability-table th,
+.statistics-availability-table td {
+  white-space: nowrap;
+}

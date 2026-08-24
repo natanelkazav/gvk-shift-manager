@@ -22,6 +22,10 @@ import {
 } from 'react';
 
 import {
+  useSearchParams,
+} from 'react-router-dom';
+
+import {
   Button,
   PageHeader,
 } from '../components/ui';
@@ -90,6 +94,39 @@ function getCurrentMonthSelection():
 
     month:
       now.getMonth() + 1,
+  };
+}
+
+function getMonthSelectionFromSearchParams(
+  searchParams: URLSearchParams,
+): ScheduleMonthSelection {
+  const fallback =
+    getCurrentMonthSelection();
+
+  const year =
+    Number(
+      searchParams.get('year'),
+    );
+
+  const month =
+    Number(
+      searchParams.get('month'),
+    );
+
+  if (
+    !Number.isInteger(year) ||
+    year < 2020 ||
+    year > 2100 ||
+    !Number.isInteger(month) ||
+    month < 1 ||
+    month > 12
+  ) {
+    return fallback;
+  }
+
+  return {
+    year,
+    month,
   };
 }
 
@@ -272,6 +309,21 @@ const scheduleStatusLabels = {
   published: 'פורסם',
   archived: 'בארכיון',
 } as const;
+
+function getScheduleStatusLabel(
+  status: string,
+): string {
+  if (
+    status in
+    scheduleStatusLabels
+  ) {
+    return scheduleStatusLabels[
+      status as keyof typeof scheduleStatusLabels
+    ];
+  }
+
+  return status;
+}
 
 function formatDate(
   value: string,
@@ -979,6 +1031,12 @@ function ScheduleShiftCard({
 }
 
 function SchedulePage() {
+  const [
+    searchParams,
+    setSearchParams,
+  ] =
+    useSearchParams();
+
   const {
     user,
     profile,
@@ -1016,7 +1074,10 @@ function SchedulePage() {
     setSelectedMonth,
   ] =
     useState<ScheduleMonthSelection>(
-      getCurrentMonthSelection,
+      () =>
+        getMonthSelectionFromSearchParams(
+          searchParams,
+        ),
     );
 
   const [
@@ -1136,19 +1197,55 @@ function SchedulePage() {
     state.currentSchedule,
   ]);
 
+  useEffect(
+    () => {
+      const nextYear =
+        String(selectedMonth.year);
+
+      const nextMonth =
+        String(selectedMonth.month);
+
+      if (
+        searchParams.get('year') ===
+          nextYear &&
+        searchParams.get('month') ===
+          nextMonth
+      ) {
+        return;
+      }
+
+      const nextSearchParams =
+        new URLSearchParams(
+          searchParams,
+        );
+
+      nextSearchParams.set(
+        'year',
+        nextYear,
+      );
+      nextSearchParams.set(
+        'month',
+        nextMonth,
+      );
+
+      setSearchParams(
+        nextSearchParams,
+        { replace: true },
+      );
+    },
+    [
+      searchParams,
+      selectedMonth.month,
+      selectedMonth.year,
+      setSearchParams,
+    ],
+  );
+
   const currentSchedule =
     state.currentSchedule;
 
   const currentMonthSelection =
     getCurrentMonthSelection();
-
-  const isPersonalScheduleUser =
-    Boolean(
-      currentSchedule &&
-      !currentSchedule
-        .access
-        .canViewTeamSchedule,
-    );
 
   const isViewingCurrentMonth =
     isSameMonth(
@@ -1159,7 +1256,6 @@ function SchedulePage() {
   useEffect(
     () => {
       if (
-        !isPersonalScheduleUser ||
         isViewingCurrentMonth
       ) {
         setSelectedMonthSchedule(
@@ -1238,7 +1334,6 @@ function SchedulePage() {
       };
     },
     [
-      isPersonalScheduleUser,
       isViewingCurrentMonth,
       selectedMonth.month,
       selectedMonth.year,
@@ -1457,36 +1552,59 @@ const canEditCurrentSchedule =
         }
 
         if (
-          isPersonalScheduleUser &&
           !isViewingCurrentMonth
         ) {
           if (
-            !user ||
             !selectedMonthSchedule
-              ?.period ||
-            (
-              selectedMonthSchedule
-                .period
-                .status !==
-                'published' &&
-              selectedMonthSchedule
-                .period
-                .status !==
-                'archived'
-            )
+              ?.period
           ) {
             return [];
           }
 
-          return selectedMonthSchedule
-            .shifts
+          const monthShifts =
+            selectedMonthSchedule
+              .shifts
+              .map(
+                mapHistoricalShift,
+              );
+
+          if (
+            !currentSchedule
+              .access
+              .canViewTeamSchedule
+          ) {
+            if (!user) {
+              return [];
+            }
+
+            return monthShifts
+              .filter(
+                (shift) =>
+                  shift
+                    .assignedUser
+                    ?.id ===
+                  user.id,
+              );
+          }
+
+          if (
+            viewMode ===
+            'team'
+          ) {
+            return monthShifts;
+          }
+
+          if (!selectedUserId) {
+            return [];
+          }
+
+          return monthShifts
             .filter(
               (shift) =>
-                shift.assignedUserId ===
-                user.id,
-            )
-            .map(
-              mapHistoricalShift,
+                shift
+                  .assignedUser
+                  ?.id ===
+                selectedUserId,
             );
         }
 
@@ -1523,7 +1641,6 @@ const canEditCurrentSchedule =
       },
       [
         currentSchedule,
-        isPersonalScheduleUser,
         isViewingCurrentMonth,
         selectedMonthSchedule,
         selectedUserId,
@@ -1628,10 +1745,7 @@ const canEditCurrentSchedule =
 
   const handlePublishSchedule =
     async (): Promise<void> => {
-      if (
-        !currentSchedule
-          ?.period
-      ) {
+      if (!displayedPeriod) {
         return;
       }
 
@@ -1644,9 +1758,7 @@ const canEditCurrentSchedule =
       }
 
       if (
-        currentSchedule
-          .period
-          .status ===
+        displayedPeriod.status ===
         'published'
       ) {
         return;
@@ -1654,7 +1766,7 @@ const canEditCurrentSchedule =
 
       const confirmed =
         window.confirm(
-          `האם לפרסם את השיבוץ לחודש ${currentSchedule.period.month}/${currentSchedule.period.year}?\n\n` +
+          `האם לפרסם את השיבוץ לחודש ${displayedPeriod.month}/${displayedPeriod.year}?\n\n` +
           'לאחר הפרסום המוקדנים יוכלו לראות את המשמרות והנתונים האישיים שלהם.',
         );
 
@@ -1666,10 +1778,23 @@ const canEditCurrentSchedule =
 
       try {
         await publishSchedulePeriod(
-          currentSchedule
-            .period
-            .id,
+          displayedPeriod.id,
         );
+
+        if (
+          !isViewingCurrentMonth
+        ) {
+          const refreshedMonth =
+            await scheduleService
+              .getScheduleByMonth(
+                selectedMonth.year,
+                selectedMonth.month,
+              );
+
+          setSelectedMonthSchedule(
+            refreshedMonth,
+          );
+        }
       } catch {
         /*
          * הודעת השגיאה נשמרת
@@ -1799,7 +1924,6 @@ const canEditCurrentSchedule =
     ]} ${selectedMonth.year}`;
 
   const periodTitle =
-    isPersonalScheduleUser &&
     !isViewingCurrentMonth
       ? selectedMonthTitle
       : currentSchedule
@@ -1814,6 +1938,13 @@ const canEditCurrentSchedule =
             .period
             .year
         }`;
+
+  const displayedPeriod =
+    isViewingCurrentMonth
+      ? currentSchedule.period
+      : selectedMonthSchedule
+          ?.period ??
+        null;
 
   const isPersonalUserBlocked =
     !currentSchedule
@@ -1877,9 +2008,8 @@ const canPublishSchedule =
   hasPermission(
     'schedule.edit',
   ) &&
-  currentSchedule
-    .period
-    .status ===
+  displayedPeriod
+    ?.status ===
     'scheduling';
 
   return (
@@ -2004,9 +2134,7 @@ const canPublishSchedule =
       <div className="schedule-period-bar">
         <div>
           <span>
-            {isPersonalScheduleUser
-              ? 'חודש מוצג'
-              : 'חודש נוכחי'}
+            חודש מוצג
           </span>
 
           <strong>
@@ -2014,27 +2142,13 @@ const canPublishSchedule =
           </strong>
         </div>
 
-        {isViewingCurrentMonth ? (
+        {displayedPeriod ? (
           <span
-            className={`schedule-status schedule-status-${currentSchedule.period.status}`}
+            className={`schedule-status schedule-status-${displayedPeriod.status}`}
           >
-            {
-              scheduleStatusLabels[
-                currentSchedule
-                  .period
-                  .status
-              ]
-            }
-          </span>
-        ) : selectedMonthSchedule
-            ?.period ? (
-          <span className="schedule-status schedule-status-published">
-            {selectedMonthSchedule
-              .period
-              .status ===
-              'archived'
-              ? 'בארכיון'
-              : 'פורסם'}
+            {getScheduleStatusLabel(
+              displayedPeriod.status,
+            )}
           </span>
         ) : null}
       </div>
@@ -2368,15 +2482,12 @@ const canPublishSchedule =
               משמרות.
             </p>
 
-            {isPersonalScheduleUser ? (
-              <strong className="schedule-month-section-viewed-month">
-                {selectedMonthTitle}
-              </strong>
-            ) : null}
+            <strong className="schedule-month-section-viewed-month">
+              {selectedMonthTitle}
+            </strong>
           </div>
 
-          {isPersonalScheduleUser ? (
-            <div
+          <div
               className="schedule-month-navigation"
               aria-label="ניווט בין חודשי השיבוץ"
             >
@@ -2455,11 +2566,9 @@ const canPublishSchedule =
                 />
               </Button>
             </div>
-          ) : null}
         </div>
 
-        {isPersonalScheduleUser &&
-        selectedMonthError ? (
+        {selectedMonthError ? (
           <div
             className="schedule-error-banner schedule-month-feedback"
             role="alert"
@@ -2473,8 +2582,7 @@ const canPublishSchedule =
           </div>
         ) : null}
 
-        {isPersonalScheduleUser &&
-        isLoadingSelectedMonth ? (
+        {isLoadingSelectedMonth ? (
           <div className="schedule-month-loading schedule-month-feedback">
             <RefreshCw
               size={18}
@@ -2490,18 +2598,10 @@ const canPublishSchedule =
           <div className="schedule-calendar-view">
             <MonthCalendar
               year={
-                isPersonalScheduleUser
-                  ? selectedMonth.year
-                  : currentSchedule
-                      .period
-                      .year
+                selectedMonth.year
               }
               month={
-                isPersonalScheduleUser
-                  ? selectedMonth.month
-                  : currentSchedule
-                      .period
-                      .month
+                selectedMonth.month
               }
               getDayClassName={(
                 context,

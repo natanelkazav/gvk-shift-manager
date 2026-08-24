@@ -3,6 +3,9 @@ import {
 } from '../lib/supabase';
 
 import type {
+  DispatcherAvailabilityMonthlyRow,
+  DispatcherAvailabilityStatisticsRow,
+  DispatcherAvailabilityStatisticsSummary,
   DispatcherStatisticsRow,
   DriverStatisticsRow,
   PayrollStatisticsResponse,
@@ -21,12 +24,29 @@ interface SupabaseErrorShape {
 interface LegacyStatisticsResponse
   extends Omit<
     StatisticsDashboardResponse,
-    'filters'
+    | 'filters'
+    | 'dispatcherAvailabilitySummary'
+    | 'dispatcherAvailabilityStatistics'
+    | 'dispatcherAvailabilityMonthlyBreakdown'
   > {
   filters: {
     year: number | null;
     month: number | null;
   };
+}
+
+
+interface DispatcherAvailabilityStatisticsResponse {
+  summary: DispatcherAvailabilityStatisticsSummary;
+  dispatcherStatistics: DispatcherAvailabilityStatisticsRow[];
+  monthlyBreakdown: DispatcherAvailabilityMonthlyRow[];
+  generatedAt: string;
+}
+
+interface CombinedSinglePeriodResponse extends LegacyStatisticsResponse {
+  dispatcherAvailabilitySummary: DispatcherAvailabilityStatisticsSummary;
+  dispatcherAvailabilityStatistics: DispatcherAvailabilityStatisticsRow[];
+  dispatcherAvailabilityMonthlyBreakdown: DispatcherAvailabilityMonthlyRow[];
 }
 
 function normalizeStatisticsError(
@@ -123,6 +143,28 @@ function isLegacyStatisticsResponse(
     ) &&
     typeof response.generatedAt ===
       'string'
+  );
+}
+
+function isDispatcherAvailabilityStatisticsResponse(
+  value: unknown,
+): value is DispatcherAvailabilityStatisticsResponse {
+  if (
+    typeof value !== 'object' ||
+    value === null
+  ) {
+    return false;
+  }
+
+  const response =
+    value as Partial<DispatcherAvailabilityStatisticsResponse>;
+
+  return (
+    typeof response.summary === 'object' &&
+    response.summary !== null &&
+    Array.isArray(response.dispatcherStatistics) &&
+    Array.isArray(response.monthlyBreakdown) &&
+    typeof response.generatedAt === 'string'
   );
 }
 
@@ -230,13 +272,94 @@ function mergeDriverRows(
 
 function mergeResponses(
   request: StatisticsDashboardRequest,
-  responses: LegacyStatisticsResponse[],
+  responses: CombinedSinglePeriodResponse[],
 ): StatisticsDashboardResponse {
   const dispatcherStatistics =
     mergeDispatcherRows(responses);
 
   const driverStatistics =
     mergeDriverRows(responses);
+
+  const availabilityRows =
+    new Map<string, DispatcherAvailabilityStatisticsRow>();
+
+  for (const response of responses) {
+    for (const row of response.dispatcherAvailabilityStatistics) {
+      const current = availabilityRows.get(row.userId);
+
+      if (!current) {
+        availabilityRows.set(row.userId, { ...row });
+        continue;
+      }
+
+      current.periodCount += row.periodCount;
+      current.manualSubmissionPeriods += row.manualSubmissionPeriods;
+      current.autoPartialPeriods += row.autoPartialPeriods;
+      current.noSubmissionPeriods += row.noSubmissionPeriods;
+      current.declaredAvailableCount += row.declaredAvailableCount;
+      current.declaredUnavailableCount += row.declaredUnavailableCount;
+      current.autoCompletedAvailableCount += row.autoCompletedAvailableCount;
+      current.fridayMorningAvailableCount += row.fridayMorningAvailableCount;
+      current.fridayAfternoonAvailableCount += row.fridayAfternoonAvailableCount;
+      current.fridayNightAvailableCount += row.fridayNightAvailableCount;
+      current.saturdayMorningAvailableCount += row.saturdayMorningAvailableCount;
+      current.saturdayAfternoonAvailableCount += row.saturdayAfternoonAvailableCount;
+      current.saturdayNightAvailableCount += row.saturdayNightAvailableCount;
+      current.nightAvailableCount += row.nightAvailableCount;
+      current.premiumAvailableCount += row.premiumAvailableCount;
+      current.holidayAvailableCount += row.holidayAvailableCount;
+      current.weekendAvailableCount += row.weekendAvailableCount;
+
+      const declaredTotal =
+        current.declaredAvailableCount +
+        current.declaredUnavailableCount;
+
+      current.declaredAvailabilityRate =
+        declaredTotal > 0
+          ? Math.round(
+              (current.declaredAvailableCount / declaredTotal) * 1000,
+            ) / 10
+          : 0;
+    }
+  }
+
+  const dispatcherAvailabilityStatistics =
+    Array.from(availabilityRows.values()).sort(
+      (firstRow, secondRow) =>
+        secondRow.declaredAvailableCount -
+          firstRow.declaredAvailableCount ||
+        firstRow.displayName.localeCompare(secondRow.displayName, 'he'),
+    );
+
+  const dispatcherAvailabilityMonthlyBreakdown =
+    responses.flatMap(
+      (response) =>
+        response.dispatcherAvailabilityMonthlyBreakdown,
+    );
+
+  const availabilityTotal = (
+    key: keyof DispatcherAvailabilityStatisticsSummary,
+  ): number =>
+    responses.reduce(
+      (sum, response) =>
+        sum + Number(response.dispatcherAvailabilitySummary[key]),
+      0,
+    );
+
+  const dispatcherAvailabilitySummary: DispatcherAvailabilityStatisticsSummary = {
+    periodCount: availabilityTotal('periodCount'),
+    dispatcherCount: dispatcherAvailabilityStatistics.length,
+    manualSubmissionPeriods: availabilityTotal('manualSubmissionPeriods'),
+    autoPartialPeriods: availabilityTotal('autoPartialPeriods'),
+    noSubmissionPeriods: availabilityTotal('noSubmissionPeriods'),
+    declaredAvailableCount: availabilityTotal('declaredAvailableCount'),
+    declaredUnavailableCount: availabilityTotal('declaredUnavailableCount'),
+    autoCompletedAvailableCount: availabilityTotal('autoCompletedAvailableCount'),
+    fridayMorningAvailableCount: availabilityTotal('fridayMorningAvailableCount'),
+    nightAvailableCount: availabilityTotal('nightAvailableCount'),
+    premiumAvailableCount: availabilityTotal('premiumAvailableCount'),
+    holidayAvailableCount: availabilityTotal('holidayAvailableCount'),
+  };
 
   const monthlyStatistics =
     responses
@@ -337,6 +460,9 @@ function mergeResponses(
     monthlyStatistics,
     dispatcherMonthlyBreakdown,
     driverMonthlyBreakdown,
+    dispatcherAvailabilitySummary,
+    dispatcherAvailabilityStatistics,
+    dispatcherAvailabilityMonthlyBreakdown,
     generatedAt:
       responses
         .map(
@@ -353,37 +479,60 @@ class StatisticsService {
   private async getSinglePeriod(
     request:
       StatisticsSinglePeriodRequest,
-  ): Promise<LegacyStatisticsResponse> {
-    const {
-      data,
-      error,
-    } = await supabase.rpc(
-      'get_statistics_dashboard',
-      {
-        requested_year:
-          request.year,
-        requested_month:
-          request.month,
-      },
-    );
+  ): Promise<CombinedSinglePeriodResponse> {
+    const [
+      scheduleResult,
+      availabilityResult,
+    ] = await Promise.all([
+      supabase.rpc(
+        'get_statistics_dashboard',
+        {
+          requested_year: request.year,
+          requested_month: request.month,
+        },
+      ),
+      supabase.rpc(
+        'get_dispatcher_availability_statistics',
+        {
+          requested_year: request.year,
+          requested_month: request.month,
+        },
+      ),
+    ]);
 
-    if (error) {
-      throw normalizeStatisticsError(
-        error,
-      );
+    if (scheduleResult.error) {
+      throw normalizeStatisticsError(scheduleResult.error);
     }
 
-    if (
-      !isLegacyStatisticsResponse(
-        data,
-      )
-    ) {
+    if (availabilityResult.error) {
+      throw normalizeStatisticsError(availabilityResult.error);
+    }
+
+    if (!isLegacyStatisticsResponse(scheduleResult.data)) {
       throw new Error(
         'התקבלה תשובה לא תקינה ממסך הסטטיסטיקות.',
       );
     }
 
-    return data;
+    if (
+      !isDispatcherAvailabilityStatisticsResponse(
+        availabilityResult.data,
+      )
+    ) {
+      throw new Error(
+        'התקבלה תשובה לא תקינה מנתוני אילוצי המוקדנים.',
+      );
+    }
+
+    return {
+      ...scheduleResult.data,
+      dispatcherAvailabilitySummary:
+        availabilityResult.data.summary,
+      dispatcherAvailabilityStatistics:
+        availabilityResult.data.dispatcherStatistics,
+      dispatcherAvailabilityMonthlyBreakdown:
+        availabilityResult.data.monthlyBreakdown,
+    };
   }
 
   async getStatisticsDashboard(

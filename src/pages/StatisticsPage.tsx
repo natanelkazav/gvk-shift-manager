@@ -48,6 +48,7 @@ import '../styles/statistics.css';
 type StatisticsSectionFilter =
   | 'all'
   | 'dispatchers'
+  | 'availability'
   | 'drivers'
   | 'payroll';
 
@@ -105,6 +106,20 @@ function filterStatisticsData(
             driverSet.has(
               row.userId,
             ),
+        );
+
+  const dispatcherAvailabilityStatistics =
+    dispatcherIds.length === 0
+      ? data.dispatcherAvailabilityStatistics
+      : data.dispatcherAvailabilityStatistics.filter(
+          (row) => dispatcherSet.has(row.userId),
+        );
+
+  const dispatcherAvailabilityMonthlyBreakdown =
+    dispatcherIds.length === 0
+      ? data.dispatcherAvailabilityMonthlyBreakdown
+      : data.dispatcherAvailabilityMonthlyBreakdown.filter(
+          (row) => dispatcherSet.has(row.userId),
         );
 
   const dispatcherMonthlyBreakdown =
@@ -187,6 +202,24 @@ function filterStatisticsData(
       0,
     );
 
+  const availabilitySum = (
+    key:
+      | 'manualSubmissionPeriods'
+      | 'autoPartialPeriods'
+      | 'noSubmissionPeriods'
+      | 'declaredAvailableCount'
+      | 'declaredUnavailableCount'
+      | 'autoCompletedAvailableCount'
+      | 'fridayMorningAvailableCount'
+      | 'nightAvailableCount'
+      | 'premiumAvailableCount'
+      | 'holidayAvailableCount',
+  ): number =>
+    dispatcherAvailabilityStatistics.reduce(
+      (sum, row) => sum + row[key],
+      0,
+    );
+
   return {
     ...data,
     summary: {
@@ -244,6 +277,33 @@ function filterStatisticsData(
     monthlyStatistics,
     dispatcherMonthlyBreakdown,
     driverMonthlyBreakdown,
+    dispatcherAvailabilitySummary: {
+      ...data.dispatcherAvailabilitySummary,
+      dispatcherCount:
+        dispatcherAvailabilityStatistics.length,
+      manualSubmissionPeriods:
+        availabilitySum('manualSubmissionPeriods'),
+      autoPartialPeriods:
+        availabilitySum('autoPartialPeriods'),
+      noSubmissionPeriods:
+        availabilitySum('noSubmissionPeriods'),
+      declaredAvailableCount:
+        availabilitySum('declaredAvailableCount'),
+      declaredUnavailableCount:
+        availabilitySum('declaredUnavailableCount'),
+      autoCompletedAvailableCount:
+        availabilitySum('autoCompletedAvailableCount'),
+      fridayMorningAvailableCount:
+        availabilitySum('fridayMorningAvailableCount'),
+      nightAvailableCount:
+        availabilitySum('nightAvailableCount'),
+      premiumAvailableCount:
+        availabilitySum('premiumAvailableCount'),
+      holidayAvailableCount:
+        availabilitySum('holidayAvailableCount'),
+    },
+    dispatcherAvailabilityStatistics,
+    dispatcherAvailabilityMonthlyBreakdown,
   };
 }
 
@@ -323,19 +383,34 @@ function StatisticsPage() {
     );
 
   const dispatcherOptions =
-    useMemo(
-      () =>
-        data?.dispatcherStatistics.map(
-          (row) => ({
-            value: row.userId,
-            label: getPersonLabel(
-              row.displayName,
-              row.scheduleName,
-            ),
-          }),
-        ) ?? [],
-      [data],
-    );
+    useMemo(() => {
+      if (!data) {
+        return [];
+      }
+
+      const people = new Map<
+        string,
+        { value: string; label: string }
+      >();
+
+      for (const row of [
+        ...data.dispatcherStatistics,
+        ...data.dispatcherAvailabilityStatistics,
+      ]) {
+        people.set(row.userId, {
+          value: row.userId,
+          label: getPersonLabel(
+            row.displayName,
+            row.scheduleName,
+          ),
+        });
+      }
+
+      return Array.from(people.values()).sort(
+        (first, second) =>
+          first.label.localeCompare(second.label, 'he'),
+      );
+    }, [data]);
 
   const driverOptions =
     useMemo(
@@ -407,6 +482,10 @@ function StatisticsPage() {
       label: 'מוקדנים',
     },
     {
+      value: 'availability' as const,
+      label: 'אילוצי מוקדנים',
+    },
+    {
       value: 'drivers' as const,
       label: 'כוננים',
     },
@@ -423,6 +502,7 @@ function StatisticsPage() {
   const showDispatcherFilter =
     sectionFilter === 'all' ||
     sectionFilter === 'dispatchers' ||
+    sectionFilter === 'availability' ||
     sectionFilter === 'payroll';
 
   const showDriverFilter =
@@ -434,7 +514,7 @@ function StatisticsPage() {
     <section className="statistics-page">
       <PageHeader
         title="סטטיסטיקות"
-        description="נתוני משמרות, כוננויות, מגמות, חלוקת עבודה ושכר צפוי לפי הרשאה."
+        description="נתוני משמרות, אילוצי מוקדנים, כוננויות, מגמות, חלוקת עבודה ושכר צפוי לפי הרשאה."
         actions={
           <Button
             type="button"

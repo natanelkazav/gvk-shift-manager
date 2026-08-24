@@ -11,6 +11,9 @@ import StatisticsPieChart
 import StatisticsTrendChart
   from '../components/StatisticsTrendChart';
 
+import DispatcherAvailabilityInsights
+  from './DispatcherAvailabilityInsights';
+
 interface StatisticsChartsViewProps {
   data:
     StatisticsDashboardResponse;
@@ -18,6 +21,7 @@ interface StatisticsChartsViewProps {
   sectionFilter:
     'all'
     | 'dispatchers'
+    | 'availability'
     | 'drivers';
 }
 
@@ -95,8 +99,8 @@ function StatisticsChartsView({
 
   return (
     <section className="statistics-charts-grid">
-      {sectionFilter !==
-      'drivers' ? (
+      {(sectionFilter === 'all' ||
+      sectionFilter === 'dispatchers') ? (
         <>
           <StatisticsPieChart
             title="חלוקת משמרות לפי סוג"
@@ -272,8 +276,8 @@ function StatisticsChartsView({
         </>
       ) : null}
 
-      {sectionFilter !==
-      'dispatchers' ? (
+      {(sectionFilter === 'all' ||
+      sectionFilter === 'drivers') ? (
         <>
           <StatisticsPieChart
             title="חלוקת כוננויות"
@@ -365,6 +369,13 @@ function StatisticsChartsView({
             }
           />
         </>
+      ) : null}
+      {(sectionFilter === 'all' ||
+        sectionFilter === 'availability') ? (
+        <DispatcherAvailabilityInsights
+          data={data}
+          mode="charts"
+        />
       ) : null}
     </section>
   );
