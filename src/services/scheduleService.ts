@@ -1,4 +1,8 @@
 import {
+  schedulePublicationNotificationService,
+} from './schedulePublicationNotificationService';
+
+import {
   FunctionsHttpError,
 } from '@supabase/supabase-js';
 
@@ -401,8 +405,18 @@ async getScheduleByMonth(
       );
     }
 
-    return data as
-      PublishSchedulePeriodResponse;
+    const response =
+      data as PublishSchedulePeriodResponse;
+
+    if (!response.alreadyPublished) {
+      await schedulePublicationNotificationService
+        .notifyPublished(
+          'dispatcher',
+          normalizedSchedulePeriodId,
+        );
+    }
+
+    return response;
   }
 }
 

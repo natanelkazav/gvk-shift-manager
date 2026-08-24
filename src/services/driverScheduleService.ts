@@ -1,4 +1,8 @@
 import {
+  schedulePublicationNotificationService,
+} from './schedulePublicationNotificationService';
+
+import {
   supabase,
 } from '../lib/supabase';
 
@@ -156,8 +160,18 @@ class DriverScheduleService {
       );
     }
 
-    return data as
-      PublishDriverScheduleResponse;
+    const response =
+      data as PublishDriverScheduleResponse;
+
+    if (!response.alreadyPublished) {
+      await schedulePublicationNotificationService
+        .notifyPublished(
+          'driver',
+          normalizedSchedulePeriodId,
+        );
+    }
+
+    return response;
   }
   async getSchedule(
     request:

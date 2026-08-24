@@ -1,4 +1,8 @@
 import {
+  useState,
+} from 'react';
+
+import {
   CalendarDays,
   CheckCircle2,
   Gauge,
@@ -45,6 +49,33 @@ type CoreShiftGroup =
   | 'fridayLike'
   | 'saturdayLike'
   | 'holidayOnly';
+
+type BalanceColumnGroup =
+  | 'weekday'
+  | 'friday'
+  | 'saturday'
+  | 'premium'
+  | 'holiday'
+  | 'total';
+
+const balanceColumnOptions: Array<{
+  key: BalanceColumnGroup;
+  label: string;
+}> = [
+  { key: 'total', label: 'סה״כ' },
+  { key: 'weekday', label: 'יום חול' },
+  { key: 'friday', label: 'שישי / ערב חג' },
+  { key: 'saturday', label: 'שבת / מוצאי חג' },
+  { key: 'holiday', label: 'חג / מועד' },
+  { key: 'premium', label: '200%' },
+];
+
+const defaultBalanceGroups = new Set<BalanceColumnGroup>([
+  'total',
+  'weekday',
+  'friday',
+  'saturday',
+]);
 
 function getLocalStartHour(shift: ScheduleShift): number {
   const date = new Date(shift.startsAt);
@@ -223,9 +254,26 @@ export default function ScheduleDraftOverview({
   shifts,
   context,
 }: ScheduleDraftOverviewProps) {
+  const [visibleGroups, setVisibleGroups] =
+    useState<Set<BalanceColumnGroup>>(
+      () => new Set(defaultBalanceGroups),
+    );
+
   if (!context) {
     return null;
   }
+
+  const toggleBalanceGroup = (group: BalanceColumnGroup) => {
+    setVisibleGroups((current) => {
+      const next = new Set(current);
+      if (next.has(group)) {
+        next.delete(group);
+      } else {
+        next.add(group);
+      }
+      return next.size > 0 ? next : new Set(['total']);
+    });
+  };
 
   const totalShifts = context.shifts.length;
   const noAvailable = context.shifts.filter((item) => item.availableCount === 0).length;
@@ -327,27 +375,67 @@ export default function ScheduleDraftOverview({
           </div>
         </div>
 
+        <div className="schedule-draft-balance-controls">
+          <div>
+            <strong>מה להציג בטבלה?</strong>
+            <span>בחרו רק את המדדים שרלוונטיים לבדיקה הנוכחית.</span>
+          </div>
+          <div className="schedule-draft-balance-toggles">
+            {balanceColumnOptions.map((option) => (
+              <label
+                key={option.key}
+                className={visibleGroups.has(option.key) ? 'is-active' : undefined}
+              >
+                <input
+                  type="checkbox"
+                  checked={visibleGroups.has(option.key)}
+                  onChange={() => toggleBalanceGroup(option.key)}
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         <div className="schedule-draft-balance-table-wrapper">
           <table className="schedule-draft-balance-table">
             <thead>
               <tr>
                 <th rowSpan={2} className="schedule-draft-person-column">מוקדן</th>
-                <th colSpan={2} className="schedule-draft-group-weekday">יום חול</th>
-                <th colSpan={3} className="schedule-draft-group-friday">שישי / ערב חג</th>
-                <th colSpan={3} className="schedule-draft-group-saturday">שבת / מוצאי חג</th>
-                <th rowSpan={2} className="schedule-draft-group-premium">200%</th>
-                <th rowSpan={2} className="schedule-draft-group-holiday">חג</th>
-                <th rowSpan={2} className="schedule-draft-total-column">סה״כ שיבוצים</th>
+                {visibleGroups.has('weekday') ? (
+                  <th colSpan={2} className="schedule-draft-group-weekday">יום חול</th>
+                ) : null}
+                {visibleGroups.has('friday') ? (
+                  <th colSpan={3} className="schedule-draft-group-friday">שישי / ערב חג</th>
+                ) : null}
+                {visibleGroups.has('saturday') ? (
+                  <th colSpan={3} className="schedule-draft-group-saturday">שבת / מוצאי חג</th>
+                ) : null}
+                {visibleGroups.has('premium') ? (
+                  <th rowSpan={2} className="schedule-draft-group-premium">200%</th>
+                ) : null}
+                {visibleGroups.has('holiday') ? (
+                  <th rowSpan={2} className="schedule-draft-group-holiday">חג / מועד</th>
+                ) : null}
+                {visibleGroups.has('total') ? (
+                  <th rowSpan={2} className="schedule-draft-total-column">סה״כ שיבוצים</th>
+                ) : null}
               </tr>
               <tr>
-                <th>ערב<small>16–23</small></th>
-                <th>לילה<small>23–06</small></th>
-                <th>בוקר<small>06–14</small></th>
-                <th>צהריים<small>14–22</small></th>
-                <th>לילה<small>22–06</small></th>
-                <th>בוקר<small>06–14</small></th>
-                <th>צהריים<small>14–22</small></th>
-                <th>לילה<small>22–06</small></th>
+                {visibleGroups.has('weekday') ? (<>
+                  <th>ערב<small>16–23</small></th>
+                  <th>לילה<small>23–06</small></th>
+                </>) : null}
+                {visibleGroups.has('friday') ? (<>
+                  <th>בוקר<small>06–14</small></th>
+                  <th>צהריים<small>14–22</small></th>
+                  <th>לילה<small>22–06</small></th>
+                </>) : null}
+                {visibleGroups.has('saturday') ? (<>
+                  <th>בוקר<small>06–14</small></th>
+                  <th>צהריים<small>14–22</small></th>
+                  <th>לילה<small>22–06</small></th>
+                </>) : null}
               </tr>
             </thead>
             <tbody>
@@ -363,22 +451,30 @@ export default function ScheduleDraftOverview({
                       <strong>{row.scheduleName ?? row.displayName}</strong>
                       {row.scheduleName ? <small>{row.displayName}</small> : null}
                     </td>
-                    {renderCell(row, 'weekdayEvening')}
-                    {renderCell(row, 'weekdayNight')}
-                    {renderCell(row, 'fridayMorning')}
-                    {renderCell(row, 'fridayAfternoon')}
-                    {renderCell(row, 'fridayNight')}
-                    {renderCell(row, 'saturdayMorning')}
-                    {renderCell(row, 'saturdayAfternoon')}
-                    {renderCell(row, 'saturdayNight')}
-                    {renderCell(row, 'premium')}
-                    {renderCell(row, 'holiday')}
-                    <td className={`schedule-draft-total-cell ${totalClass}`}>
-                      <strong>{row.total}</strong>
-                      <span className="schedule-draft-total-track" aria-hidden="true">
-                        <span style={{ width: `${progress}%` }} />
-                      </span>
-                    </td>
+                    {visibleGroups.has('weekday') ? (<>
+                      {renderCell(row, 'weekdayEvening')}
+                      {renderCell(row, 'weekdayNight')}
+                    </>) : null}
+                    {visibleGroups.has('friday') ? (<>
+                      {renderCell(row, 'fridayMorning')}
+                      {renderCell(row, 'fridayAfternoon')}
+                      {renderCell(row, 'fridayNight')}
+                    </>) : null}
+                    {visibleGroups.has('saturday') ? (<>
+                      {renderCell(row, 'saturdayMorning')}
+                      {renderCell(row, 'saturdayAfternoon')}
+                      {renderCell(row, 'saturdayNight')}
+                    </>) : null}
+                    {visibleGroups.has('premium') ? renderCell(row, 'premium') : null}
+                    {visibleGroups.has('holiday') ? renderCell(row, 'holiday') : null}
+                    {visibleGroups.has('total') ? (
+                      <td className={`schedule-draft-total-cell ${totalClass}`}>
+                        <strong>{row.total}</strong>
+                        <span className="schedule-draft-total-track" aria-hidden="true">
+                          <span style={{ width: `${progress}%` }} />
+                        </span>
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -387,7 +483,7 @@ export default function ScheduleDraftOverview({
         </div>
 
         <p className="schedule-draft-balance-note">
-          חג ו־200% הם מדדים חופפים: משמרת יכולה להיספר גם בעמודת הזמן שלה וגם בחג/200%, ולכן אין לחבר את כל עמודות הטבלה כדי לקבל את הסה״כ. הסה״כ מציג כל משמרת פעם אחת בלבד.
+          חג ו־200% הם מדדים חופפים לבדיקת עומס ואינם חלק מחישוב הסה״כ. לכן הם מוסתרים כברירת מחדל וניתן להציג אותם לפי הצורך. הסה״כ מציג כל משמרת פעם אחת בלבד.
         </p>
       </div>
     </section>

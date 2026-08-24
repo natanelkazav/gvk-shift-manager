@@ -1,4 +1,8 @@
 import {
+  schedulePublicationNotificationService,
+} from './schedulePublicationNotificationService';
+
+import {
   supabase,
 } from '../lib/supabase';
 
@@ -323,8 +327,18 @@ class MorningDriverScheduleService {
       );
     }
 
-    return data as
-      PublishMorningDriverScheduleResponse;
+    const response =
+      data as PublishMorningDriverScheduleResponse;
+
+    if (!response.alreadyPublished) {
+      await schedulePublicationNotificationService
+        .notifyPublished(
+          'morning_driver',
+          normalizedId,
+        );
+    }
+
+    return response;
   }
 
   async transferMyAssignment(
