@@ -110,25 +110,12 @@ function buildBalanceRows(
       continue;
     }
 
-    let row = rows.get(userId);
+    const row = rows.get(userId);
     if (!row) {
-      row = {
-        userId,
-        displayName: shift.assignedUser?.displayName ?? 'ללא שם',
-        scheduleName: shift.assignedUser?.scheduleName ?? null,
-        weekdayEvening: 0,
-        weekdayNight: 0,
-        fridayMorning: 0,
-        fridayAfternoon: 0,
-        fridayNight: 0,
-        saturdayMorning: 0,
-        saturdayAfternoon: 0,
-        saturdayNight: 0,
-        premium: 0,
-        holiday: 0,
-        total: 0,
-      };
-      rows.set(userId, row);
+      // The draft context is intentionally limited to profiles whose role is
+      // dispatcher. Do not re-introduce managers/on-call users merely because
+      // an older draft happens to contain their user id.
+      continue;
     }
 
     row.total += 1;
