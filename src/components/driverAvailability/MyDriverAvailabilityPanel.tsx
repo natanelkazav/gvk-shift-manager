@@ -783,6 +783,18 @@ const isEditable =
                           .availabilityDate,
                       )}
                     </strong>
+
+                    {day.holidayName ? (
+                      <span className="availability-holiday-badge">
+                        {day.holidayScheduleType === 'holiday_eve'
+                          ? 'ערב חג'
+                          : day.holidayScheduleType === 'holiday_end'
+                            ? 'מוצאי חג'
+                            : 'חג / מועד'}
+                        {' · '}
+                        {day.holidayName}
+                      </span>
+                    ) : null}
                   </div>
 
                   <span className="my-driver-availability-day-number">

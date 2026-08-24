@@ -61,6 +61,9 @@ export interface DriverAvailabilityDay {
   sortOrder: number;
 
   createdAt: string;
+
+  holidayName?: string | null;
+  holidayScheduleType?: string | null;
 }
 
 export interface DriverAvailabilityEntry {

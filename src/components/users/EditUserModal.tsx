@@ -344,7 +344,8 @@ function EditUserModal({
 
       if (
         canManagePayroll &&
-        formState.role === 'dispatcher' &&
+        (formState.role === 'dispatcher' ||
+          formState.role === 'morning_driver') &&
         formState.hourlyRate.trim() &&
         (
           !Number.isFinite(Number(formState.hourlyRate)) ||
@@ -427,7 +428,8 @@ function EditUserModal({
               .mustChangePassword,
 
           ...(canManagePayroll &&
-          formState.role === 'dispatcher'
+          (formState.role === 'dispatcher' ||
+          formState.role === 'morning_driver')
             ? {
                 hourlyRate:
                   formState.hourlyRate.trim()
@@ -816,7 +818,8 @@ function EditUserModal({
                 />
 
                 {canManagePayroll &&
-                formState.role === 'dispatcher' ? (
+                (formState.role === 'dispatcher' ||
+                formState.role === 'morning_driver') ? (
                   <Input
                     id="edit-user-hourly-rate"
                     label="שכר שעתי (₪)"

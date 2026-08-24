@@ -465,3 +465,17 @@
   background: #16a34a;
   transition: width 180ms ease;
 }
+
+
+.availability-holiday-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  font-size: 0.76rem;
+  font-weight: 700;
+}

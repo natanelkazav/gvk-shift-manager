@@ -626,6 +626,13 @@ function MorningDriverAvailabilityManagementPanel({
                         {formatDate(
                           shift.shiftDate,
                         )}
+                        {shift.holidayName ? (
+                          <span className="availability-holiday-badge">
+                            {shift.holidayScheduleType === 'holiday_eve' ? 'ערב חג' : shift.holidayScheduleType === 'holiday_end' ? 'מוצאי חג' : 'חג / מועד'}
+                            {' · '}
+                            {shift.holidayName}
+                          </span>
+                        ) : null}
                       </strong>
 
                       <span>

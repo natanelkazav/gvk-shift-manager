@@ -570,6 +570,18 @@ function MyMorningDriverAvailabilityPanel() {
                         group.date,
                       )}
                     </strong>
+
+                    {firstShift?.holidayName ? (
+                      <span className="availability-holiday-badge">
+                        {firstShift.holidayScheduleType === 'holiday_eve'
+                          ? 'ערב חג'
+                          : firstShift.holidayScheduleType === 'holiday_end'
+                            ? 'מוצאי חג'
+                            : 'חג / מועד'}
+                        {' · '}
+                        {firstShift.holidayName}
+                      </span>
+                    ) : null}
                   </div>
 
                   <span>

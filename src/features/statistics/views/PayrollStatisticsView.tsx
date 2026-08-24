@@ -22,7 +22,8 @@ interface PayrollStatisticsViewProps {
   months: number[];
   dispatcherIds: string[];
   driverIds: string[];
-  mode: 'dispatchers' | 'drivers';
+  morningDriverIds: string[];
+  mode: 'dispatchers' | 'drivers' | 'morning_drivers';
 }
 
 function formatCurrency(
@@ -47,6 +48,7 @@ function PayrollStatisticsView({
   months,
   dispatcherIds,
   driverIds,
+  morningDriverIds,
   mode,
 }: PayrollStatisticsViewProps) {
   const {
@@ -154,6 +156,16 @@ function PayrollStatisticsView({
             ),
         );
 
+  const visibleMorningDrivers =
+    morningDriverIds.length === 0
+      ? (data.morningDrivers ?? [])
+      : (data.morningDrivers ?? []).filter(
+          (row) =>
+            morningDriverIds.includes(
+              row.userId,
+            ),
+        );
+
   const projectedDispatcherPay =
     visibleDispatchers.reduce(
       (sum, row) =>
@@ -164,6 +176,14 @@ function PayrollStatisticsView({
 
   const projectedDriverPay =
     visibleDrivers.reduce(
+      (sum, row) =>
+        sum +
+        (row.projectedPay ?? 0),
+      0,
+    );
+
+  const projectedMorningDriverPay =
+    visibleMorningDrivers.reduce(
       (sum, row) =>
         sum +
         (row.projectedPay ?? 0),
@@ -190,12 +210,20 @@ function PayrollStatisticsView({
               </div>
             </article>
           </>
-        ) : (
+        ) : mode === 'drivers' ? (
           <article>
             <WalletCards size={22} aria-hidden="true" />
             <div>
               <span>עלות כוננויות צפויה</span>
               <strong>{formatCurrency(projectedDriverPay)}</strong>
+            </div>
+          </article>
+        ) : (
+          <article>
+            <WalletCards size={22} aria-hidden="true" />
+            <div>
+              <span>שכר כונני בוקר צפוי</span>
+              <strong>{formatCurrency(projectedMorningDriverPay)}</strong>
             </div>
           </article>
         )}
@@ -319,6 +347,40 @@ function PayrollStatisticsView({
               האזור מוכן להרשאת attendance.view. הנתונים יופיעו כאן לאחר חיבור API של TimeWatch.
             </p>
           </header>
+        </section>
+      ) : null}
+
+      {mode === 'morning_drivers' ? (
+        <section className="statistics-section">
+          <header>
+            <h2>שכר כונני בוקר צפוי</h2>
+            <p>
+              מחושב לפי השכר השעתי שהוגדר לכל כונן בוקר ולפי שעות השיבוץ בלוחות שפורסמו.
+            </p>
+          </header>
+
+          <div className="statistics-table-wrapper">
+            <table className="statistics-table">
+              <thead>
+                <tr>
+                  <th>כונן בוקר</th>
+                  <th>שכר שעתי</th>
+                  <th>שעות מתוכננות</th>
+                  <th>שכר צפוי</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleMorningDrivers.map((row) => (
+                  <tr key={row.userId}>
+                    <td>{row.scheduleName ?? row.displayName}</td>
+                    <td>{formatCurrency(row.hourlyRate)}</td>
+                    <td>{row.scheduledHours}</td>
+                    <td>{formatCurrency(row.projectedPay)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       ) : null}
     </div>

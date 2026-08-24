@@ -249,7 +249,7 @@ function StatisticsPage() {
       : []),
     { value: 'charts', label: 'גרפים', icon: BarChart3 },
     { value: 'tables', label: 'טבלאות', icon: Table2 },
-    ...(canViewPayroll && userType !== 'morning_drivers'
+    ...(canViewPayroll
       ? [{
           value: 'payroll' as const,
           label: userType === 'dispatchers' ? 'שכר ונוכחות' : 'שכר',
@@ -442,13 +442,14 @@ function StatisticsPage() {
         />
       ) : null}
 
-      {workspaceView === 'payroll' && canViewPayroll && userType !== 'morning_drivers' ? (
+      {workspaceView === 'payroll' && canViewPayroll ? (
         <PayrollStatisticsView
           years={filters.years}
           months={filters.months}
           dispatcherIds={userType === 'dispatchers' ? selectedUserIds : []}
           driverIds={userType === 'drivers' ? selectedUserIds : []}
-          mode={userType === 'dispatchers' ? 'dispatchers' : 'drivers'}
+          morningDriverIds={userType === 'morning_drivers' ? selectedUserIds : []}
+          mode={userType === 'dispatchers' ? 'dispatchers' : userType === 'drivers' ? 'drivers' : 'morning_drivers'}
         />
       ) : null}
     </section>

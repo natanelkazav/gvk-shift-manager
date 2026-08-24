@@ -242,7 +242,7 @@ export const permissionGroups:
           key: 'payroll.manage',
           label: 'ניהול תעריפי שכר',
           description:
-            'מאפשרת להגדיר שכר שעתי למוקדנים ועלות כוננות יומית לכוננים.',
+            'מאפשרת להגדיר שכר שעתי למוקדנים ולכונני בוקר ועלות כוננות יומית לכוננים.',
         },
         {
           key: 'attendance.view',

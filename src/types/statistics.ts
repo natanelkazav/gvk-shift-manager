@@ -225,11 +225,23 @@ export interface DriverPayrollRow {
   projectedPay: number | null;
 }
 
+
+export interface MorningDriverPayrollRow {
+  userId: string;
+  displayName: string;
+  scheduleName: string | null;
+  hourlyRate: number | null;
+  scheduledHours: number;
+  projectedPay: number | null;
+}
+
 export interface PayrollStatisticsResponse {
   dispatchers: DispatcherPayrollRow[];
   drivers: DriverPayrollRow[];
+  morningDrivers: MorningDriverPayrollRow[];
   projectedDispatcherPay: number;
   projectedDriverPay: number;
+  projectedMorningDriverPay: number;
   actualPayAvailable: boolean;
   attendanceAvailable: boolean;
 }

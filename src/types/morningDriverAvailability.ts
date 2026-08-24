@@ -171,6 +171,8 @@ export interface MorningDriverAvailabilityShift {
   sortOrder: number;
   availabilityStatus: MorningDriverAvailabilityStatus | null;
   note: string | null;
+  holidayName?: string | null;
+  holidayScheduleType?: string | null;
 }
 
 export interface MorningDriverAvailabilityPersonalData {
