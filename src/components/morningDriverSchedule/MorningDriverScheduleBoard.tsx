@@ -832,8 +832,6 @@ function MorningDriverScheduleBoard({
           </small>
         </div>
 
-        {renderMonthNavigation()}
-
         <div className="morning-driver-schedule-board-actions">
           <button
             type="button"
@@ -1051,6 +1049,8 @@ function MorningDriverScheduleBoard({
                 לחיצה על יום פותחת את כל המשמרות והשיבוצים שלו.
               </span>
             </div>
+
+            {renderMonthNavigation()}
           </header>
 
           <MonthCalendar

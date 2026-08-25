@@ -417,6 +417,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -974,7 +975,7 @@
 /* Unified month navigation inside the schedule board */
 .morning-driver-schedule-board-header {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto auto;
+  grid-template-columns: minmax(180px, 1fr) auto;
   align-items: center;
   gap: 16px;
 }
