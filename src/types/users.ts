@@ -18,6 +18,7 @@ export interface UpdateUserProfileInput {
   mustChangePassword?: boolean;
   hourlyRate?: number | null;
   dailyDutyRate?: number | null;
+  morningShiftRate?: number | null;
 }
 
 export interface CreateUserInput {

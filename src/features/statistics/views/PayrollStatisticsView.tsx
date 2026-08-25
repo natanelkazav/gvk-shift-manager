@@ -355,7 +355,7 @@ function PayrollStatisticsView({
           <header>
             <h2>שכר כונני בוקר צפוי</h2>
             <p>
-              מחושב לפי השכר השעתי שהוגדר לכל כונן בוקר ולפי שעות השיבוץ בלוחות שפורסמו.
+              מחושב לפי התעריף הקבוע למשמרת שהוגדר לכל כונן בוקר ולפי מספר המשמרות בלוחות שפורסמו.
             </p>
           </header>
 
@@ -364,8 +364,8 @@ function PayrollStatisticsView({
               <thead>
                 <tr>
                   <th>כונן בוקר</th>
-                  <th>שכר שעתי</th>
-                  <th>שעות מתוכננות</th>
+                  <th>תעריף למשמרת</th>
+                  <th>משמרות</th>
                   <th>שכר צפוי</th>
                 </tr>
               </thead>
@@ -373,8 +373,8 @@ function PayrollStatisticsView({
                 {visibleMorningDrivers.map((row) => (
                   <tr key={row.userId}>
                     <td>{row.scheduleName ?? row.displayName}</td>
-                    <td>{formatCurrency(row.hourlyRate)}</td>
-                    <td>{row.scheduledHours}</td>
+                    <td>{formatCurrency(row.shiftRate)}</td>
+                    <td>{row.totalShifts}</td>
                     <td>{formatCurrency(row.projectedPay)}</td>
                   </tr>
                 ))}

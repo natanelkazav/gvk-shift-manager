@@ -73,6 +73,7 @@ interface EditUserFormState {
   mustChangePassword: boolean;
   hourlyRate: string;
   dailyDutyRate: string;
+  morningShiftRate: string;
 }
 
 type EditUserTab =
@@ -106,6 +107,9 @@ function createFormState(
 
     dailyDutyRate:
       user.dailyDutyRate?.toString() ?? '',
+
+    morningShiftRate:
+      user.morningShiftRate?.toString() ?? '',
   };
 }
 
@@ -344,8 +348,7 @@ function EditUserModal({
 
       if (
         canManagePayroll &&
-        (formState.role === 'dispatcher' ||
-          formState.role === 'morning_driver') &&
+        formState.role === 'dispatcher' &&
         formState.hourlyRate.trim() &&
         (
           !Number.isFinite(Number(formState.hourlyRate)) ||
@@ -353,6 +356,18 @@ function EditUserModal({
         )
       ) {
         return 'השכר השעתי חייב להיות מספר חיובי.';
+      }
+
+      if (
+        canManagePayroll &&
+        formState.role === 'morning_driver' &&
+        formState.morningShiftRate.trim() &&
+        (
+          !Number.isFinite(Number(formState.morningShiftRate)) ||
+          Number(formState.morningShiftRate) < 0
+        )
+      ) {
+        return 'התעריף למשמרת בוקר חייב להיות מספר חיובי.';
       }
 
       if (
@@ -428,12 +443,21 @@ function EditUserModal({
               .mustChangePassword,
 
           ...(canManagePayroll &&
-          (formState.role === 'dispatcher' ||
-          formState.role === 'morning_driver')
+          formState.role === 'dispatcher'
             ? {
                 hourlyRate:
                   formState.hourlyRate.trim()
                     ? Number(formState.hourlyRate)
+                    : null,
+              }
+            : {}),
+
+          ...(canManagePayroll &&
+          formState.role === 'morning_driver'
+            ? {
+                morningShiftRate:
+                  formState.morningShiftRate.trim()
+                    ? Number(formState.morningShiftRate)
                     : null,
               }
             : {}),
@@ -818,8 +842,7 @@ function EditUserModal({
                 />
 
                 {canManagePayroll &&
-                (formState.role === 'dispatcher' ||
-                formState.role === 'morning_driver') ? (
+                formState.role === 'dispatcher' ? (
                   <Input
                     id="edit-user-hourly-rate"
                     label="שכר שעתי (₪)"
@@ -835,6 +858,32 @@ function EditUserModal({
                             ? {
                                 ...currentState,
                                 hourlyRate:
+                                  event.target.value,
+                              }
+                            : currentState,
+                      );
+                      setFormError(null);
+                    }}
+                  />
+                ) : null}
+
+                {canManagePayroll &&
+                formState.role === 'morning_driver' ? (
+                  <Input
+                    id="edit-user-morning-shift-rate"
+                    label="תעריף למשמרת בוקר (₪)"
+                    type="number"
+                    value={formState.morningShiftRate}
+                    min="0"
+                    step="0.01"
+                    disabled={isSaving}
+                    onChange={(event) => {
+                      setFormState(
+                        (currentState) =>
+                          currentState
+                            ? {
+                                ...currentState,
+                                morningShiftRate:
                                   event.target.value,
                               }
                             : currentState,

@@ -39,6 +39,8 @@ interface MonthCalendarProps {
   ) => void;
 
   emptyMessage?: string;
+
+  dayLabels?: ReadonlyMap<string, string[]>;
 }
 
 const weekdayLabels = [
@@ -111,6 +113,7 @@ function MonthCalendar({
   onDayClick,
   emptyMessage =
     'אין נתונים להצגה בחודש הזה.',
+  dayLabels,
 }: MonthCalendarProps) {
   const isValidMonth =
     Number.isInteger(
@@ -337,11 +340,12 @@ function MonthCalendar({
                     );
                   }}
                 >
-                  <span className="month-calendar-day-number">
-                    {
-                      dayNumber
-                    }
-                  </span>
+                  <div className="month-calendar-day-heading">
+                    <span className="month-calendar-day-number">{dayNumber}</span>
+                    {(dayLabels?.get(context.date) ?? []).map((label) => (
+                      <span key={label} className="month-calendar-day-holiday">{label}</span>
+                    ))}
+                  </div>
 
                   <div className="month-calendar-day-content">
                     {
@@ -361,11 +365,12 @@ function MonthCalendar({
                   className
                 }
               >
-                <span className="month-calendar-day-number">
-                  {
-                    dayNumber
-                  }
-                </span>
+                <div className="month-calendar-day-heading">
+                  <span className="month-calendar-day-number">{dayNumber}</span>
+                  {(dayLabels?.get(context.date) ?? []).map((label) => (
+                    <span key={label} className="month-calendar-day-holiday">{label}</span>
+                  ))}
+                </div>
 
                 <div className="month-calendar-day-content">
                   {

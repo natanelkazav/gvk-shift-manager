@@ -15,6 +15,10 @@ import MonthCalendar
   from '../calendar/MonthCalendar';
 
 import {
+  useCalendarHolidays,
+} from '../../hooks/useCalendarHolidays';
+
+import {
   Button,
 } from '../ui';
 
@@ -203,6 +207,12 @@ function DriverScheduleCalendar({
   onSelectTransferDay,
   onSelectEditDay,
 }: DriverScheduleCalendarProps) {
+  const holidayLabels =
+    useCalendarHolidays(
+      viewedYear,
+      viewedMonth,
+    );
+
   const canViewAllDrivers =
     canViewTeamSchedule ||
     canEditSchedule ||
@@ -640,6 +650,7 @@ const scheduleDaysByDate =
       </header>
 
       <MonthCalendar
+        dayLabels={holidayLabels}
         year={
           displayedYear
         }

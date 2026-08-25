@@ -23,6 +23,10 @@ import {
 import MonthCalendar
   from '../calendar/MonthCalendar';
 
+import {
+  useCalendarHolidays,
+} from '../../hooks/useCalendarHolidays';
+
 import type {
   MorningDriverScheduleAssignment,
   MorningDriverScheduleData,
@@ -199,6 +203,12 @@ function MorningDriverScheduleBoard({
   onSelectTransferAssignment,
   onPublish,
 }: MorningDriverScheduleBoardProps) {
+  const holidayLabels =
+    useCalendarHolidays(
+      viewedYear,
+      viewedMonth,
+    );
+
   const [
     displayMode,
     setDisplayMode,
@@ -1049,6 +1059,7 @@ function MorningDriverScheduleBoard({
           </header>
 
           <MonthCalendar
+            dayLabels={holidayLabels}
             year={
               data.period.year
             }

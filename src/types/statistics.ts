@@ -231,8 +231,8 @@ export interface MorningDriverPayrollRow {
   userId: string;
   displayName: string;
   scheduleName: string | null;
-  hourlyRate: number | null;
-  scheduledHours: number;
+  shiftRate: number | null;
+  totalShifts: number;
   projectedPay: number | null;
 }
 

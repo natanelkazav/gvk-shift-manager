@@ -48,6 +48,10 @@ import {
 } from '../hooks/useSchedule';
 
 import {
+  useCalendarHolidays,
+} from '../hooks/useCalendarHolidays';
+
+import {
   scheduleService,
 } from '../services/scheduleService';
 
@@ -1095,6 +1099,12 @@ function SchedulePage() {
         getMonthSelectionFromSearchParams(
           searchParams,
         ),
+    );
+
+  const holidayLabels =
+    useCalendarHolidays(
+      selectedMonth.year,
+      selectedMonth.month,
     );
 
   const [
@@ -2816,6 +2826,7 @@ const canPublishSchedule =
         'calendar' ? (
           <div className="schedule-calendar-view">
             <MonthCalendar
+              dayLabels={holidayLabels}
               year={
                 selectedMonth.year
               }

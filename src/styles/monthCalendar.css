@@ -181,3 +181,25 @@
     padding: 8px 5px;
   }
 }
+.month-calendar-day-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.month-calendar-day-holiday {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.09);
+  color: #6d28d9;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

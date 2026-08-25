@@ -76,6 +76,7 @@ export interface UserProfile {
   updatedAt: string;
   hourlyRate?: number | null;
   dailyDutyRate?: number | null;
+  morningShiftRate?: number | null;
 }
 
 export interface AuthState {

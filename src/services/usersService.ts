@@ -30,6 +30,7 @@ interface ProfileDatabaseRow {
   updated_at: string;
   hourly_rate: number | null;
   daily_duty_rate: number | null;
+  morning_shift_rate: number | null;
 }
 
 interface ProfileDatabaseUpdate {
@@ -57,7 +58,8 @@ const PROFILE_COLUMNS = `
   created_at,
   updated_at,
   hourly_rate,
-  daily_duty_rate
+  daily_duty_rate,
+  morning_shift_rate
 `;
 
 function mapProfileRow(
@@ -85,6 +87,8 @@ function mapProfileRow(
       profileRow.hourly_rate,
     dailyDutyRate:
       profileRow.daily_duty_rate,
+    morningShiftRate:
+      profileRow.morning_shift_rate,
   };
 }
 
@@ -351,12 +355,14 @@ async function updateUser(
 
   if (
     input.hourlyRate !== undefined ||
-    input.dailyDutyRate !== undefined
+    input.dailyDutyRate !== undefined ||
+    input.morningShiftRate !== undefined
   ) {
     await updateUserCompensation(
       userId,
       input.hourlyRate ?? null,
       input.dailyDutyRate ?? null,
+      input.morningShiftRate ?? null,
     );
 
     const {
@@ -434,6 +440,7 @@ async function updateUserCompensation(
   userId: string,
   hourlyRate: number | null,
   dailyDutyRate: number | null,
+  morningShiftRate: number | null,
 ): Promise<void> {
   const normalizedUserId =
     userId.trim();
@@ -455,6 +462,8 @@ async function updateUserCompensation(
         hourlyRate,
       requested_daily_duty_rate:
         dailyDutyRate,
+      requested_morning_shift_rate:
+        morningShiftRate,
     },
   );
 
