@@ -9,6 +9,7 @@ export interface StatisticsPersonOption {
   displayName: string;
   scheduleName: string | null;
   userType: StatisticsPersonType;
+  isActive: boolean;
 }
 
 export interface StatisticsFilters {

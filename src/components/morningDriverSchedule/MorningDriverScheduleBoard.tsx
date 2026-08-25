@@ -635,21 +635,16 @@ function MorningDriverScheduleBoard({
               </option>
 
               {data.drivers.map(
-                (
-                  driver,
-                ) => (
+                (driver) => (
                   <option
-                    key={
-                      driver.id
-                    }
-                    value={
-                      driver.id
+                    key={driver.id}
+                    value={driver.id}
+                    disabled={
+                      !driver.isActive &&
+                      driver.id !== assignment.assignedUserId
                     }
                   >
-                    {
-                      driver.scheduleName ??
-                      driver.displayName
-                    }
+                    {`${driver.scheduleName ?? driver.displayName}${driver.isActive ? '' : ' (מושבת)'}`}
                   </option>
                 ),
               )}

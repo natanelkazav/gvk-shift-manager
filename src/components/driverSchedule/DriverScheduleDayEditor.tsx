@@ -266,17 +266,14 @@ function DriverScheduleDayEditor({
             {drivers.map(
               (driver) => (
                 <option
-                  key={
-                    driver.id
-                  }
-                  value={
-                    driver.id
+                  key={driver.id}
+                  value={driver.id}
+                  disabled={
+                    !driver.isActive &&
+                    driver.id !== day.assignedUserId
                   }
                 >
-                  {
-                    driver.scheduleName ??
-                    driver.displayName
-                  }
+                  {`${driver.scheduleName ?? driver.displayName}${driver.isActive ? '' : ' (מושבת)'}`}
                 </option>
               ),
             )}

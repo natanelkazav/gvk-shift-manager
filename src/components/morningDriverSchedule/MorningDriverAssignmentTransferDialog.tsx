@@ -96,6 +96,7 @@ function MorningDriverAssignmentTransferDialog({
           (
             driver,
           ) =>
+            driver.isActive &&
             driver.id !==
               currentUserId,
         ),

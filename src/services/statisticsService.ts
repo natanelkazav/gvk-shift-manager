@@ -554,6 +554,7 @@ class StatisticsService {
           ? row.scheduleName
           : null,
         userType,
+        isActive: row.isActive !== false,
       }];
     });
   }

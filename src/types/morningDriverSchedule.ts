@@ -26,6 +26,7 @@ export interface MorningDriverScheduleDriver {
   displayName: string;
   scheduleName: string | null;
   email: string;
+  isActive: boolean;
 }
 
 export interface MorningDriverScheduleAssignment {

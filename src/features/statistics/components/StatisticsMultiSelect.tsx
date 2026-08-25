@@ -5,6 +5,7 @@ import {
 interface StatisticsMultiSelectOption {
   value: string | number;
   label: string;
+  muted?: boolean;
 }
 
 interface StatisticsMultiSelectProps {
@@ -115,6 +116,7 @@ function StatisticsMultiSelect({
           {options.map((option) => (
             <label
               key={option.value}
+              className={option.muted ? 'statistics-multi-select-option-muted' : undefined}
             >
               <input
                 type="checkbox"

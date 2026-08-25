@@ -220,9 +220,17 @@ function StatisticsPage() {
       .filter((person) => person.userType === userType)
       .map((person) => ({
         value: person.userId,
-        label: getPersonLabel(person.displayName, person.scheduleName),
+        label: `${getPersonLabel(person.displayName, person.scheduleName)}${person.isActive ? '' : ' · מושבת'}`,
+        muted: !person.isActive,
+        isActive: person.isActive,
       }))
-      .sort((first, second) => first.label.localeCompare(second.label, 'he')),
+      .sort((first, second) => {
+        if (first.isActive !== second.isActive) {
+          return first.isActive ? -1 : 1;
+        }
+
+        return first.label.localeCompare(second.label, 'he');
+      }),
   [people, userType]);
 
   const filteredData = useMemo(

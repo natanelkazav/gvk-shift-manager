@@ -1013,3 +1013,13 @@
   color: #1d4ed8;
   box-shadow: inset 0 0 0 1px #2563eb;
 }
+
+
+.statistics-multi-select-menu label.statistics-multi-select-option-muted {
+  color: var(--text-muted, #7a8494);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.statistics-multi-select-menu label.statistics-multi-select-option-muted span {
+  opacity: 0.72;
+}
