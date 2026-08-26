@@ -100,6 +100,9 @@ function filterStatisticsData(
       ...data,
       dispatcherStatistics,
       dispatcherMonthlyBreakdown,
+      dispatcherShiftTimeDistribution: data.dispatcherShiftTimeDistribution.filter(
+        (row) => selected.has(row.userId),
+      ),
       dispatcherAvailabilityStatistics: availability,
       dispatcherAvailabilityMonthlyBreakdown: availabilityMonthly,
       summary: {
@@ -147,6 +150,9 @@ function filterStatisticsData(
       (row) => selected.has(row.userId),
     ),
     morningDriverMonthlyBreakdown: data.morningDriverMonthlyBreakdown.filter(
+      (row) => selected.has(row.userId),
+    ),
+    morningDriverShiftTimeDistribution: data.morningDriverShiftTimeDistribution.filter(
       (row) => selected.has(row.userId),
     ),
   };
@@ -446,6 +452,7 @@ function StatisticsPage() {
         <MorningDriverStatisticsView
           rows={filteredData.morningDriverStatistics}
           monthlyRows={filteredData.morningDriverMonthlyBreakdown}
+          shiftTimeRows={filteredData.morningDriverShiftTimeDistribution}
           mode={workspaceView}
         />
       ) : null}

@@ -15,6 +15,7 @@ import type {
   StatisticsDashboardResponse,
   StatisticsSinglePeriodRequest,
   StatisticsPersonOption,
+  ShiftTimeDistributionRow,
 } from '../types/statistics';
 
 interface SupabaseErrorShape {
@@ -33,6 +34,8 @@ interface LegacyStatisticsResponse
     | 'dispatcherAvailabilityMonthlyBreakdown'
     | 'morningDriverStatistics'
     | 'morningDriverMonthlyBreakdown'
+    | 'dispatcherShiftTimeDistribution'
+    | 'morningDriverShiftTimeDistribution'
   > {
   filters: {
     year: number | null;
@@ -54,12 +57,20 @@ interface MorningDriverStatisticsResponse {
   generatedAt: string;
 }
 
+interface ShiftTimeDistributionStatisticsResponse {
+  dispatchers: ShiftTimeDistributionRow[];
+  morningDrivers: ShiftTimeDistributionRow[];
+  generatedAt: string;
+}
+
 interface CombinedSinglePeriodResponse extends LegacyStatisticsResponse {
   dispatcherAvailabilitySummary: DispatcherAvailabilityStatisticsSummary;
   dispatcherAvailabilityStatistics: DispatcherAvailabilityStatisticsRow[];
   dispatcherAvailabilityMonthlyBreakdown: DispatcherAvailabilityMonthlyRow[];
   morningDriverStatistics: MorningDriverStatisticsRow[];
   morningDriverMonthlyBreakdown: MorningDriverMonthlyBreakdownRow[];
+  dispatcherShiftTimeDistribution: ShiftTimeDistributionRow[];
+  morningDriverShiftTimeDistribution: ShiftTimeDistributionRow[];
 }
 
 function normalizeStatisticsError(
@@ -283,6 +294,32 @@ function mergeDriverRows(
     );
 }
 
+function mergeShiftTimeDistributionRows(
+  responses: ShiftTimeDistributionRow[][],
+): ShiftTimeDistributionRow[] {
+  const rows = new Map<string, ShiftTimeDistributionRow>();
+
+  for (const responseRows of responses) {
+    for (const row of responseRows) {
+      const key = `${row.userId}::${row.shiftTime}`;
+      const current = rows.get(key);
+
+      if (!current) {
+        rows.set(key, { ...row });
+        continue;
+      }
+
+      current.shiftCount += row.shiftCount;
+    }
+  }
+
+  return Array.from(rows.values()).sort(
+    (firstRow, secondRow) =>
+      firstRow.displayName.localeCompare(secondRow.displayName, 'he') ||
+      firstRow.shiftTime.localeCompare(secondRow.shiftTime),
+  );
+}
+
 function mergeResponses(
   request: StatisticsDashboardRequest,
   responses: CombinedSinglePeriodResponse[],
@@ -439,6 +476,16 @@ function mergeResponses(
     (response) => response.morningDriverMonthlyBreakdown,
   );
 
+  const dispatcherShiftTimeDistribution =
+    mergeShiftTimeDistributionRows(
+      responses.map((response) => response.dispatcherShiftTimeDistribution),
+    );
+
+  const morningDriverShiftTimeDistribution =
+    mergeShiftTimeDistributionRows(
+      responses.map((response) => response.morningDriverShiftTimeDistribution),
+    );
+
   const total = (
     key:
       keyof LegacyStatisticsResponse['summary'],
@@ -500,6 +547,8 @@ function mergeResponses(
     dispatcherMonthlyBreakdown,
     driverMonthlyBreakdown,
     morningDriverMonthlyBreakdown,
+    dispatcherShiftTimeDistribution,
+    morningDriverShiftTimeDistribution,
     dispatcherAvailabilitySummary,
     dispatcherAvailabilityStatistics,
     dispatcherAvailabilityMonthlyBreakdown,
@@ -567,6 +616,7 @@ class StatisticsService {
       scheduleResult,
       availabilityResult,
       morningDriverResult,
+      shiftTimeDistributionResult,
     ] = await Promise.all([
       supabase.rpc(
         'get_statistics_dashboard',
@@ -589,6 +639,13 @@ class StatisticsService {
           requested_month: request.month,
         },
       ),
+      supabase.rpc(
+        'get_shift_time_distribution_statistics',
+        {
+          requested_year: request.year,
+          requested_month: request.month,
+        },
+      ),
     ]);
 
     if (scheduleResult.error) {
@@ -601,6 +658,10 @@ class StatisticsService {
 
     if (morningDriverResult.error) {
       throw normalizeStatisticsError(morningDriverResult.error);
+    }
+
+    if (shiftTimeDistributionResult.error) {
+      throw normalizeStatisticsError(shiftTimeDistributionResult.error);
     }
 
     if (!isLegacyStatisticsResponse(scheduleResult.data)) {
@@ -628,6 +689,17 @@ class StatisticsService {
       throw new Error('התקבלה תשובה לא תקינה מנתוני כונני הבוקר.');
     }
 
+    const shiftTimeData =
+      shiftTimeDistributionResult.data as ShiftTimeDistributionStatisticsResponse | null;
+
+    if (
+      !shiftTimeData ||
+      !Array.isArray(shiftTimeData.dispatchers) ||
+      !Array.isArray(shiftTimeData.morningDrivers)
+    ) {
+      throw new Error('התקבלה תשובה לא תקינה מנתוני חלוקת שעות המשמרות.');
+    }
+
     return {
       ...scheduleResult.data,
       dispatcherAvailabilitySummary:
@@ -638,6 +710,8 @@ class StatisticsService {
         availabilityResult.data.monthlyBreakdown,
       morningDriverStatistics: morningData.statistics,
       morningDriverMonthlyBreakdown: morningData.monthlyBreakdown,
+      dispatcherShiftTimeDistribution: shiftTimeData.dispatchers,
+      morningDriverShiftTimeDistribution: shiftTimeData.morningDrivers,
     };
   }
 

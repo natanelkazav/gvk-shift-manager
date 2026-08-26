@@ -1,6 +1,6 @@
 begin;
 
-select plan(36);
+select plan(37);
 
 select has_table('public', 'profiles', 'profiles table exists');
 select has_table('public', 'schedule_shifts', 'schedule_shifts table exists');
@@ -21,6 +21,7 @@ select has_function('public', 'get_calendar_holidays', 'calendar holiday RPC exi
 select has_function('public', 'get_statistics_dashboard', 'statistics dashboard RPC exists');
 select has_function('public', 'get_statistics_people', 'statistics people RPC exists');
 select has_function('public', 'get_morning_driver_statistics', 'morning-driver statistics RPC exists');
+select has_function('public', 'get_shift_time_distribution_statistics', 'shift-time distribution statistics RPC exists');
 select has_function('public', 'get_dispatcher_availability_statistics', 'dispatcher availability statistics RPC exists');
 select has_function('public', 'get_payroll_statistics', 'payroll RPC exists');
 select has_function('public', 'save_schedule_draft', 'dispatcher draft save RPC exists');

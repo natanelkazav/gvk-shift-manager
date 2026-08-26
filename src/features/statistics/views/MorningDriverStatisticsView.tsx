@@ -1,6 +1,7 @@
 import type {
   MorningDriverMonthlyBreakdownRow,
   MorningDriverStatisticsRow,
+  ShiftTimeDistributionRow,
 } from '../../../types/statistics';
 
 import StatisticsBarChart
@@ -9,10 +10,13 @@ import StatisticsPieChart
   from '../components/StatisticsPieChart';
 import StatisticsTrendChart
   from '../components/StatisticsTrendChart';
+import StatisticsStackedBarChart
+  from '../components/StatisticsStackedBarChart';
 
 interface MorningDriverStatisticsViewProps {
   rows: MorningDriverStatisticsRow[];
   monthlyRows: MorningDriverMonthlyBreakdownRow[];
+  shiftTimeRows: ShiftTimeDistributionRow[];
   mode: 'charts' | 'tables';
 }
 
@@ -25,9 +29,67 @@ function nameOf(row: MorningDriverStatisticsRow): string {
   return row.scheduleName?.trim() || row.displayName.trim() || 'ללא שם';
 }
 
+function shiftTimeStartMinutes(
+  shiftTime: string,
+): number {
+  const start = shiftTime.split('–')[0] ?? shiftTime.split('-')[0] ?? '';
+  const [hours, minutes] = start.split(':').map(Number);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return (hours * 60) + minutes;
+}
+
+function buildShiftTimeSeries(
+  rows: ShiftTimeDistributionRow[],
+) {
+  return Array.from(new Set(rows.map((row) => row.shiftTime)))
+    .sort((first, second) =>
+      shiftTimeStartMinutes(first) - shiftTimeStartMinutes(second) ||
+      first.localeCompare(second),
+    )
+    .map((shiftTime) => ({
+      key: shiftTime,
+      label: shiftTime,
+    }));
+}
+
+function buildShiftTimeItems(
+  rows: ShiftTimeDistributionRow[],
+) {
+  const items = new Map<
+    string,
+    {
+      key: string;
+      label: string;
+      values: Record<string, number>;
+    }
+  >();
+
+  for (const row of rows) {
+    const current = items.get(row.userId) ?? {
+      key: row.userId,
+      label: row.scheduleName?.trim() || row.displayName.trim() || 'ללא שם',
+      values: {},
+    };
+
+    current.values[row.shiftTime] =
+      (current.values[row.shiftTime] ?? 0) + row.shiftCount;
+
+    items.set(row.userId, current);
+  }
+
+  return Array.from(items.values()).sort(
+    (first, second) => first.label.localeCompare(second.label, 'he'),
+  );
+}
+
 function MorningDriverStatisticsView({
   rows,
   monthlyRows,
+  shiftTimeRows,
   mode,
 }: MorningDriverStatisticsViewProps) {
   if (mode === 'tables') {
@@ -78,12 +140,25 @@ function MorningDriverStatisticsView({
     monthlyTotals.set(key, (monthlyTotals.get(key) ?? 0) + row.totalShifts);
   }
 
+  const shiftTimeSeries =
+    buildShiftTimeSeries(shiftTimeRows);
+
+  const shiftTimeItems =
+    buildShiftTimeItems(shiftTimeRows);
+
   return (
     <div className="statistics-charts-grid">
       <StatisticsBarChart
         title="שיבוצים לפי כונן בוקר"
         description="מספר השיבוצים בפועל בתקופה שנבחרה."
         items={rows.map((row) => ({ label: nameOf(row), value: row.totalShifts }))}
+      />
+
+      <StatisticsStackedBarChart
+        title="הרכב המשמרות לפי כונן בוקר"
+        description="גובה העמודה הוא מספר המשמרות בפועל. הצבעים מייצגים את שעות המשמרת האמיתיות, כולל שעות ששונו ידנית בטיוטה לפני הפרסום."
+        series={shiftTimeSeries}
+        items={shiftTimeItems}
       />
 
       <StatisticsPieChart

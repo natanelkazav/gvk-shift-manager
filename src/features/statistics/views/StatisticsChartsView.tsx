@@ -14,6 +14,9 @@ import StatisticsTrendChart
 import StatisticsGroupedBarChart
   from '../components/StatisticsGroupedBarChart';
 
+import StatisticsStackedBarChart
+  from '../components/StatisticsStackedBarChart';
+
 import DispatcherAvailabilityInsights
   from './DispatcherAvailabilityInsights';
 
@@ -37,6 +40,65 @@ function getDisplayName(
     scheduleName?.trim() ||
     displayName.trim() ||
     'ללא שם'
+  );
+}
+
+function shiftTimeStartMinutes(
+  shiftTime: string,
+): number {
+  const start = shiftTime.split('–')[0] ?? shiftTime.split('-')[0] ?? '';
+  const [hours, minutes] = start.split(':').map(Number);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return (hours * 60) + minutes;
+}
+
+function buildShiftTimeSeries(
+  rows: StatisticsDashboardResponse['dispatcherShiftTimeDistribution'],
+) {
+  return Array.from(
+    new Set(rows.map((row) => row.shiftTime)),
+  )
+    .sort((first, second) =>
+      shiftTimeStartMinutes(first) - shiftTimeStartMinutes(second) ||
+      first.localeCompare(second),
+    )
+    .map((shiftTime) => ({
+      key: shiftTime,
+      label: shiftTime,
+    }));
+}
+
+function buildShiftTimeItems(
+  rows: StatisticsDashboardResponse['dispatcherShiftTimeDistribution'],
+) {
+  const items = new Map<
+    string,
+    {
+      key: string;
+      label: string;
+      values: Record<string, number>;
+    }
+  >();
+
+  for (const row of rows) {
+    const current = items.get(row.userId) ?? {
+      key: row.userId,
+      label: getDisplayName(row.displayName, row.scheduleName),
+      values: {},
+    };
+
+    current.values[row.shiftTime] =
+      (current.values[row.shiftTime] ?? 0) + row.shiftCount;
+
+    items.set(row.userId, current);
+  }
+
+  return Array.from(items.values()).sort(
+    (first, second) => first.label.localeCompare(second.label, 'he'),
   );
 }
 
@@ -76,6 +138,12 @@ function StatisticsChartsView({
     );
 
 
+
+  const dispatcherShiftTimeSeries =
+    buildShiftTimeSeries(data.dispatcherShiftTimeDistribution);
+
+  const dispatcherShiftTimeItems =
+    buildShiftTimeItems(data.dispatcherShiftTimeDistribution);
 
   return (
     <section className="statistics-charts-grid">
@@ -184,6 +252,13 @@ function StatisticsChartsView({
                 }),
               )
             }
+          />
+
+          <StatisticsStackedBarChart
+            title="הרכב המשמרות לפי מוקדן"
+            description="גובה העמודה הוא מספר המשמרות הכולל. כל צבע מייצג שעות משמרת אחרות, וניתן להסתיר או להחזיר שעות באמצעות תיבות הסימון."
+            series={dispatcherShiftTimeSeries}
+            items={dispatcherShiftTimeItems}
           />
 
           <StatisticsTrendChart

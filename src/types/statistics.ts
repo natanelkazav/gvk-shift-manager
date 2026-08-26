@@ -82,6 +82,15 @@ export interface MorningDriverMonthlyBreakdownRow {
   totalShifts: number;
 }
 
+
+export interface ShiftTimeDistributionRow {
+  userId: string;
+  displayName: string;
+  scheduleName: string | null;
+  shiftTime: string;
+  shiftCount: number;
+}
+
 export interface MonthlyStatisticsRow {
   year: number;
   month: number;
@@ -191,6 +200,8 @@ export interface StatisticsDashboardResponse {
   dispatcherMonthlyBreakdown: DispatcherMonthlyBreakdownRow[];
   driverMonthlyBreakdown: DriverMonthlyBreakdownRow[];
   morningDriverMonthlyBreakdown: MorningDriverMonthlyBreakdownRow[];
+  dispatcherShiftTimeDistribution: ShiftTimeDistributionRow[];
+  morningDriverShiftTimeDistribution: ShiftTimeDistributionRow[];
   dispatcherAvailabilitySummary: DispatcherAvailabilityStatisticsSummary;
   dispatcherAvailabilityStatistics: DispatcherAvailabilityStatisticsRow[];
   dispatcherAvailabilityMonthlyBreakdown: DispatcherAvailabilityMonthlyRow[];
