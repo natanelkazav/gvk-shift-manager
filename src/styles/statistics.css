@@ -1094,6 +1094,13 @@
   accent-color: var(--color-primary-600);
 }
 
+.statistics-stacked-series-label {
+  display: inline-block;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+
 .statistics-stacked-series-chip-active {
   border-color: var(--color-primary-200);
   background: var(--color-primary-50);
@@ -1105,42 +1112,6 @@
   height: 10px;
   flex: 0 0 auto;
   border-radius: 3px;
-  background: var(--color-primary-600);
-}
-
-.statistics-stacked-series-marker-2,
-.statistics-stacked-series-fill-2 {
-  background: var(--color-warning-600);
-}
-
-.statistics-stacked-series-marker-3,
-.statistics-stacked-series-fill-3 {
-  background: var(--color-danger-600);
-}
-
-.statistics-stacked-series-marker-4,
-.statistics-stacked-series-fill-4 {
-  background: #7c3aed;
-}
-
-.statistics-stacked-series-marker-5,
-.statistics-stacked-series-fill-5 {
-  background: #0891b2;
-}
-
-.statistics-stacked-series-marker-6,
-.statistics-stacked-series-fill-6 {
-  background: #db2777;
-}
-
-.statistics-stacked-series-marker-7,
-.statistics-stacked-series-fill-7 {
-  background: #4d7c0f;
-}
-
-.statistics-stacked-series-marker-8,
-.statistics-stacked-series-fill-8 {
-  background: #c2410c;
 }
 
 .statistics-stacked-bars {
@@ -1213,6 +1184,51 @@
 .statistics-stacked-bar-segment > span {
   padding: 2px;
   text-shadow: 0 1px 2px rgb(15 23 42 / 35%);
+}
+
+/*
+ * Keep the legend marker and the stacked segment on the exact same palette.
+ * These rules intentionally appear AFTER .statistics-stacked-bar-segment so
+ * the generic segment background cannot override the individual series color.
+ */
+.statistics-stacked-series-marker-1,
+.statistics-stacked-series-fill-1 {
+  background: #2563eb;
+}
+
+.statistics-stacked-series-marker-2,
+.statistics-stacked-series-fill-2 {
+  background: #d97706;
+}
+
+.statistics-stacked-series-marker-3,
+.statistics-stacked-series-fill-3 {
+  background: #dc2626;
+}
+
+.statistics-stacked-series-marker-4,
+.statistics-stacked-series-fill-4 {
+  background: #7c3aed;
+}
+
+.statistics-stacked-series-marker-5,
+.statistics-stacked-series-fill-5 {
+  background: #0891b2;
+}
+
+.statistics-stacked-series-marker-6,
+.statistics-stacked-series-fill-6 {
+  background: #db2777;
+}
+
+.statistics-stacked-series-marker-7,
+.statistics-stacked-series-fill-7 {
+  background: #4d7c0f;
+}
+
+.statistics-stacked-series-marker-8,
+.statistics-stacked-series-fill-8 {
+  background: #c2410c;
 }
 
 @media (max-width: 700px) {

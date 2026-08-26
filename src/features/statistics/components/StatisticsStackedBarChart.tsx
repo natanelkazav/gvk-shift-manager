@@ -110,7 +110,7 @@ function StatisticsStackedBarChart({
                   aria-hidden="true"
                 />
 
-                <span>{entry.label}</span>
+                <span className="statistics-stacked-series-label" dir="ltr">{entry.label}</span>
               </label>
             );
           })}
