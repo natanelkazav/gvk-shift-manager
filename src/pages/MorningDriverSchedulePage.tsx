@@ -135,6 +135,7 @@ function MorningDriverSchedulePage() {
     loadSchedule,
     createDraft,
     updateAssignment,
+    updateShiftTime,
     setIntentionallyUnassigned,
     transferMyAssignment,
     publishSchedule,
@@ -531,6 +532,9 @@ function MorningDriverSchedulePage() {
           void updateAssignment(
             request,
           );
+        }}
+        onUpdateShiftTime={(request) => {
+          void updateShiftTime(request);
         }}
         onSetIntentionallyUnassigned={(
           assignmentId,

@@ -13,6 +13,7 @@ import type {
   SetMorningDriverIntentionallyUnassignedRequest,
   UpdateMorningDriverScheduleAssignmentRequest,
   UpdateMorningDriverScheduleAssignmentResponse,
+  UpdateMorningDriverShiftTimeRequest,
   TransferMyMorningDriverAssignmentRequest,
   TransferMyMorningDriverAssignmentResponse,
 } from '../types/morningDriverSchedule';
@@ -245,6 +246,23 @@ class MorningDriverScheduleService {
 
     return data as
       MorningDriverScheduleData;
+  }
+
+  async updateShiftTime(
+    request: UpdateMorningDriverShiftTimeRequest,
+  ): Promise<void> {
+    const { error } = await supabase.rpc(
+      'update_morning_driver_schedule_shift_time',
+      {
+        requested_assignment_id: request.assignmentId.trim(),
+        requested_start_time: request.startTime,
+        requested_end_time: request.endTime,
+      },
+    );
+
+    if (error) {
+      throw normalizeMorningDriverScheduleError(error);
+    }
   }
 
   async updateAssignment(

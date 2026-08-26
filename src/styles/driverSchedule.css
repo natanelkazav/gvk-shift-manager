@@ -1921,3 +1921,19 @@
   font-size: 0.76rem;
   font-weight: 700;
 }
+
+.driver-schedule-day-editor-holidays {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.driver-schedule-day-editor-holidays span {
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  background: #f3edff;
+  color: #6d28d9;
+  font-size: 0.75rem;
+  font-weight: 700;
+}

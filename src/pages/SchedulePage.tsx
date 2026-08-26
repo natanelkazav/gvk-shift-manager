@@ -1769,7 +1769,7 @@ const canEditDisplayedSchedule =
       ],
     );
 
-  const displayedShifts =
+  const rawDisplayedShifts =
     useMemo(
       () => {
         if (
@@ -1873,6 +1873,23 @@ const canEditDisplayedSchedule =
         selectedUserId,
         user,
         viewMode,
+      ],
+    );
+
+  // Empty/unassigned shifts are operational management information.
+  // Users without schedule editing permission should only see actual
+  // published assignments, never red "unassigned" placeholders.
+  const displayedShifts =
+    useMemo(
+      () =>
+        hasPermission('schedule.edit')
+          ? rawDisplayedShifts
+          : rawDisplayedShifts.filter(
+              (shift) => Boolean(shift.assignedUser),
+            ),
+      [
+        hasPermission,
+        rawDisplayedShifts,
       ],
     );
 

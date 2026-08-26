@@ -39,6 +39,7 @@ import {
 import {
   useDriverAvailabilityPeriods,
 } from '../hooks/useDriverAvailabilityPeriods';
+import { useCalendarHolidays } from '../hooks/useCalendarHolidays';
 
 import type {
   DriverAvailabilityPeriodStatus,
@@ -235,6 +236,11 @@ function DriverSchedulePage() {
     useState(
       defaultPeriod.year,
     );
+
+  const draftHolidayLabels = useCalendarHolidays(
+    selectedYear,
+    selectedMonth,
+  );
 
   const [
     title,
@@ -2370,6 +2376,9 @@ effectiveWorkspaceTab ===
                         ?.status ===
                         'published'
                     )
+                  }
+                  holidayLabels={
+                    draftHolidayLabels.get(scheduleDay.dutyDate) ?? []
                   }
                   isSaving={
                     scheduleDraftState

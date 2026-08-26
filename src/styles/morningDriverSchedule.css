@@ -1091,3 +1091,24 @@
   color: #991b1b !important;
   font-size: 0.75rem !important;
 }
+
+.morning-driver-schedule-time-editor {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+
+.morning-driver-schedule-time-editor label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+}
+
+.morning-driver-schedule-time-editor input {
+  min-height: 2.25rem;
+  border: 1px solid var(--border-color, #d7deea);
+  border-radius: 0.65rem;
+  padding: 0.35rem 0.55rem;
+  background: #fff;
+}

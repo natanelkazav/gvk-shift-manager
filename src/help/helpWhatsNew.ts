@@ -12,6 +12,16 @@ export interface HelpWhatsNewItem {
 export const helpWhatsNewItems:
   readonly HelpWhatsNewItem[] = [
     {
+      id: 'morning-driver-dynamic-times',
+      title: 'שעות דינמיות לכונני בוקר',
+      description:
+        'בטיוטת כונני הבוקר ניתן לשנות שעת התחלה וסיום. הייצוא לאקסל משתמש בשעות שנקבעו ומציג רק כוננים ששובצו בפועל.',
+      requiredAnyPermissions: [
+        'morning_driver_schedule.edit',
+        'schedule_export.manage',
+      ],
+    },
+    {
       id: 'help-center',
       title: 'מרכז העזרה החדש',
       description:

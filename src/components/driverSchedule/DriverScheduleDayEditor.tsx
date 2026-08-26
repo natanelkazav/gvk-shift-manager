@@ -31,6 +31,8 @@ interface DriverScheduleDayEditorProps {
 
   isSaving: boolean;
 
+  holidayLabels?: string[];
+
   onSave: (
     request:
       UpdateDriverScheduleDayRequest,
@@ -69,6 +71,7 @@ function DriverScheduleDayEditor({
   drivers,
   isEditable,
   isSaving,
+  holidayLabels = [],
   onSave,
 }: DriverScheduleDayEditorProps) {
   const [
@@ -183,6 +186,14 @@ function DriverScheduleDayEditor({
               ),
             )}
           </span>
+
+          {holidayLabels.length > 0 ? (
+            <div className="driver-schedule-day-editor-holidays">
+              {holidayLabels.map((label) => (
+                <span key={label}>{label}</span>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <button

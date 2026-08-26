@@ -14,6 +14,7 @@ import type {
   SetMorningDriverIntentionallyUnassignedRequest,
   UpdateMorningDriverScheduleAssignmentRequest,
   UpdateMorningDriverScheduleAssignmentResponse,
+  UpdateMorningDriverShiftTimeRequest,
   TransferMyMorningDriverAssignmentRequest,
   TransferMyMorningDriverAssignmentResponse,
 } from '../types/morningDriverSchedule';
@@ -427,6 +428,24 @@ export function useMorningDriverSchedule() {
       ],
     );
 
+  const updateShiftTime =
+    useCallback(
+      async (request: UpdateMorningDriverShiftTimeRequest): Promise<void> => {
+        setState((current) => ({ ...current, error: null }));
+        try {
+          await morningDriverScheduleService.updateShiftTime(request);
+          const data = state.data
+            ? await morningDriverScheduleService.getSchedule(state.data.period.id)
+            : null;
+          setState((current) => ({ ...current, data, error: null }));
+        } catch (error) {
+          setState((current) => ({ ...current, error: normalizeError(error) }));
+          throw error;
+        }
+      },
+      [state.data],
+    );
+
   const setIntentionallyUnassigned =
     useCallback(
       async (
@@ -695,6 +714,7 @@ export function useMorningDriverSchedule() {
     loadSchedule,
     createDraft,
     updateAssignment,
+    updateShiftTime,
     setIntentionallyUnassigned,
     transferMyAssignment,
     publishSchedule,

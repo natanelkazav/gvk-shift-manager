@@ -31,6 +31,7 @@ import type {
   MorningDriverScheduleAssignment,
   MorningDriverScheduleData,
   UpdateMorningDriverScheduleAssignmentRequest,
+  UpdateMorningDriverShiftTimeRequest,
 } from '../../types/morningDriverSchedule';
 
 interface MorningDriverScheduleBoardProps {
@@ -67,6 +68,10 @@ interface MorningDriverScheduleBoardProps {
   onUpdateAssignment: (
     request:
       UpdateMorningDriverScheduleAssignmentRequest,
+  ) => void;
+
+  onUpdateShiftTime: (
+    request: UpdateMorningDriverShiftTimeRequest,
   ) => void;
 
   onSetIntentionallyUnassigned: (
@@ -203,6 +208,7 @@ function MorningDriverScheduleBoard({
   canEditPublishedAssignments,
   onRefresh,
   onUpdateAssignment,
+  onUpdateShiftTime,
   onSetIntentionallyUnassigned,
   currentUserId,
   canTransferMyAssignments,
@@ -561,6 +567,13 @@ function MorningDriverScheduleBoard({
       assignment:
         MorningDriverScheduleAssignment,
     ) => {
+      if (
+        assignment.assignmentSlot > assignment.minimumWorkers &&
+        !assignment.assignedUserId
+      ) {
+        return null;
+      }
+
       const isUpdating =
         updatingAssignmentId ===
         assignment.id;
@@ -834,12 +847,50 @@ function MorningDriverScheduleBoard({
             </strong>
 
             <span>
-              מינימום {
-                group.minimumWorkers
-              } · מומלץ {
-                group.recommendedWorkers
-              }
+              מינימום {group.minimumWorkers}
+              {group.recommendedWorkers > group.minimumWorkers
+                ? ` · כונן נוסף אופציונלי`
+                : ''}
             </span>
+
+            {isDraft && canEdit ? (
+              <div className="morning-driver-schedule-time-editor">
+                <label>
+                  <span>התחלה</span>
+                  <input
+                    type="time"
+                    defaultValue={formatTime(group.startTime)}
+                    onBlur={(event) => {
+                      const value = event.target.value;
+                      if (value && value !== formatTime(group.startTime)) {
+                        onUpdateShiftTime({
+                          assignmentId: group.assignments[0].id,
+                          startTime: value,
+                          endTime: formatTime(group.endTime),
+                        });
+                      }
+                    }}
+                  />
+                </label>
+                <label>
+                  <span>סיום</span>
+                  <input
+                    type="time"
+                    defaultValue={formatTime(group.endTime)}
+                    onBlur={(event) => {
+                      const value = event.target.value;
+                      if (value && value !== formatTime(group.endTime)) {
+                        onUpdateShiftTime({
+                          assignmentId: group.assignments[0].id,
+                          startTime: formatTime(group.startTime),
+                          endTime: value,
+                        });
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            ) : null}
           </div>
         </header>
 

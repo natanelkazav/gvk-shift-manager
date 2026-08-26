@@ -88,6 +88,12 @@ export interface UpdateMorningDriverScheduleAssignmentRequest {
   note: string | null;
 }
 
+export interface UpdateMorningDriverShiftTimeRequest {
+  assignmentId: string;
+  startTime: string;
+  endTime: string;
+}
+
 export interface SetMorningDriverIntentionallyUnassignedRequest {
   assignmentId: string;
   isIntentionallyUnassigned: boolean;

@@ -468,97 +468,33 @@ function createDriverMap(
 }
 
 function createMorningDriverMap(
-  assignments:
-    MorningDriverScheduleAssignment[],
-): Map<string, string> {
-  const groupedAssignments =
-    new Map<
-      string,
-      MorningDriverScheduleAssignment[]
-    >();
+  assignments: MorningDriverScheduleAssignment[],
+): Map<string, { hours: string; names: string }> {
+  const grouped = new Map<string, MorningDriverScheduleAssignment[]>();
 
-  assignments.forEach(
-    (
-      assignment,
-    ) => {
-      if (
-        !assignment.assignedUserName
-      ) {
-        return;
-      }
+  assignments.forEach((assignment) => {
+    if (!assignment.assignedUserName) return;
+    const key = `${assignment.shiftDate}|${assignment.shiftType}`;
+    const current = grouped.get(key) ?? [];
+    current.push(assignment);
+    grouped.set(key, current);
+  });
 
-      const range =
-        createShiftRange(
-          assignment.startTime,
-          assignment.endTime,
-        );
-
-      if (!range) {
-        return;
-      }
-
-      const key =
-        `${assignment.shiftDate}|${range}`;
-
-      const current =
-        groupedAssignments.get(
-          key,
-        ) ?? [];
-
-      current.push(
-        assignment,
-      );
-
-      groupedAssignments.set(
-        key,
-        current,
-      );
-    },
-  );
-
-  const result =
-    new Map<
-      string,
-      string
-    >();
-
-  groupedAssignments.forEach(
-    (
-      values,
-      key,
-    ) => {
-      const names =
+  const result = new Map<string, { hours: string; names: string }>();
+  grouped.forEach((values, key) => {
+    const first = values[0];
+    const hours = createShiftRange(first.startTime, first.endTime);
+    if (!hours) return;
+    const names = Array.from(
+      new Set(
         values
-          .sort(
-            (
-              first,
-              second,
-            ) =>
-              first.assignmentSlot -
-              second.assignmentSlot,
-          )
-          .map(
-            (
-              value,
-            ) =>
-              value.assignedUserName,
-          )
-          .filter(
-            (
-              value,
-            ): value is string =>
-              Boolean(value),
-          );
-
-      result.set(
-        key,
-        Array.from(
-          new Set(names),
-        ).join('/'),
-      );
-    },
-  );
-
+          .sort((a, b) => a.assignmentSlot - b.assignmentSlot)
+          .map((value) => value.assignedUserName)
+          .filter((value): value is string => Boolean(value)),
+      ),
+    ).join('/');
+    result.set(key, { hours, names });
+  });
   return result;
 }
 
@@ -1107,11 +1043,23 @@ class ScheduleExportService {
               ?.assignedUserName ??
             null;
 
+          const morningShiftType =
+            weekdayNumber === 5 && rowOffset === 0
+              ? 'friday_morning'
+              : weekdayNumber !== 5 && weekdayNumber !== 6 && rowOffset === 0
+                ? 'weekday_morning'
+                : weekdayNumber !== 5 && weekdayNumber !== 6 && rowOffset === 1
+                  ? 'weekday_evening'
+                  : null;
+
+          const morningAssignment = morningShiftType
+            ? morningDriverMap.get(`${dateKey}|${morningShiftType}`)
+            : undefined;
+
           worksheet.getCell(
             `E${targetRow}`,
           ).value =
-            rowDefinition
-              .morningDriverHours;
+            morningAssignment?.hours ?? rowDefinition.morningDriverHours;
 
           applyShiftHourStyle(
             worksheet,
@@ -1127,11 +1075,7 @@ class ScheduleExportService {
 
           worksheet.getCell(
             `F${targetRow}`,
-          ).value =
-            morningDriverMap.get(
-              `${dateKey}|${rowDefinition.morningDriverHours}`,
-            ) ??
-            null;
+          ).value = morningAssignment?.names ?? null;
         },
       );
 
