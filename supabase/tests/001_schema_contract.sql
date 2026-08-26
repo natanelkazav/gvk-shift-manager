@@ -1,6 +1,6 @@
 begin;
 
-select plan(37);
+select plan(41);
 
 select has_table('public', 'profiles', 'profiles table exists');
 select has_table('public', 'schedule_shifts', 'schedule_shifts table exists');
@@ -14,6 +14,30 @@ select has_column('public', 'profiles', 'daily_duty_rate', 'driver daily duty ra
 select has_column('public', 'profiles', 'morning_shift_rate', 'morning-driver per-shift rate exists');
 select has_column('public', 'schedule_shifts', 'is_intentionally_unassigned', 'intentional unassignment flag exists');
 select has_column('public', 'morning_driver_schedule_assignments', 'is_intentionally_unassigned', 'morning-driver intentional unassignment flag exists');
+
+
+select has_function('public', 'rebuild_availability_period_slots', 'dispatcher availability rebuild RPC exists');
+select has_function('public', 'create_morning_driver_availability_period', 'morning-driver availability creation RPC exists');
+
+select ok(
+  position(
+    "holiday_schedule_type_value = 'holiday_eve'::public.schedule_type"
+    in pg_get_functiondef(
+      'public.create_morning_driver_availability_period(integer,integer,text,text,timestamp with time zone)'::regprocedure
+    )
+  ) > 0,
+  'morning-driver holiday eve has an explicit Friday-pattern branch'
+);
+
+select ok(
+  position(
+    "'holiday_end'::public.schedule_type"
+    in pg_get_functiondef(
+      'public.create_morning_driver_availability_period(integer,integer,text,text,timestamp with time zone)'::regprocedure
+    )
+  ) > 0,
+  'morning-driver holiday-end days are handled explicitly'
+);
 
 select has_function('public', 'get_my_dashboard', 'dispatcher/general dashboard RPC exists');
 select has_function('public', 'get_my_morning_driver_dashboard', 'morning-driver dashboard RPC exists');

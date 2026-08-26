@@ -1135,8 +1135,43 @@ class ScheduleExportService {
 
       notesCell.alignment = {
         ...notesCell.alignment,
+        horizontal: 'center',
         wrapText: true,
         vertical: 'middle',
+      };
+
+      /*
+       * עמודת ההערות מחולקת ויזואלית לפי ימים.
+       * כל יום הוא תא ממוזג עצמאי של שלוש שורות,
+       * ולכן מוסיפים מסגרת מפורשת סביב כל בלוק יום.
+       * בלי המסגרת, תאים ריקים סמוכים נראים באקסל
+       * כמו עמודה רציפה אחת.
+       */
+      notesCell.border = {
+        top: {
+          style: 'thin',
+          color: {
+            argb: 'FFD1D5DB',
+          },
+        },
+        right: {
+          style: 'thin',
+          color: {
+            argb: 'FFD1D5DB',
+          },
+        },
+        bottom: {
+          style: 'thin',
+          color: {
+            argb: 'FFD1D5DB',
+          },
+        },
+        left: {
+          style: 'thin',
+          color: {
+            argb: 'FFD1D5DB',
+          },
+        },
       };
 
       notesCell.value =
