@@ -1069,3 +1069,25 @@
     width: 100%;
   }
 }
+
+.morning-driver-schedule-slot-intentionally-empty {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.morning-driver-schedule-intentionally-unassigned-field {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fff7f7;
+  cursor: pointer;
+}
+
+.morning-driver-schedule-intentionally-unassigned-field > span {
+  color: #991b1b !important;
+  font-size: 0.75rem !important;
+}

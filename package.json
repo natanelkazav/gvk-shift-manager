@@ -9,7 +9,13 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -b --pretty false",
+    "test:contracts": "node scripts/testing/check-project-contracts.mjs",
+"test:smoke": "node --env-file=.env.local scripts/testing/remote-smoke.mjs",
+"test:quality": "npm run lint && npm run build && npm run test:contracts",    "test:db": "npx supabase test db",
+    "test:db:reset": "npx supabase db reset && npx supabase test db",
+    "test:full": "npm run test:quality && npm run test:db:reset"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",
@@ -27,6 +33,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "dotenv": "^17.4.2",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",

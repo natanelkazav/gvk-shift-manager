@@ -217,12 +217,12 @@ export function createMorningDriverWorkflowState({
 
     scheduleStatus,
 
+    /*
+     * Recommended second morning drivers are a warning, not a publication
+     * blocker. A minimum slot explicitly marked as intentionally unassigned
+     * is already excluded from minimumUnfilled by the database.
+     */
     hasUnassignedScheduleItems:
-      (
-        statistics
-          ?.unassignedAssignments ??
-        0
-      ) > 0 ||
       (
         statistics
           ?.minimumUnfilled ??

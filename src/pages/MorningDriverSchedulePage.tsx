@@ -135,6 +135,7 @@ function MorningDriverSchedulePage() {
     loadSchedule,
     createDraft,
     updateAssignment,
+    setIntentionallyUnassigned,
     transferMyAssignment,
     publishSchedule,
   } =
@@ -530,6 +531,15 @@ function MorningDriverSchedulePage() {
           void updateAssignment(
             request,
           );
+        }}
+        onSetIntentionallyUnassigned={(
+          assignmentId,
+          isIntentionallyUnassigned,
+        ) => {
+          void setIntentionallyUnassigned({
+            assignmentId,
+            isIntentionallyUnassigned,
+          });
         }}
         currentUserId={
           authenticatedUser?.id ??

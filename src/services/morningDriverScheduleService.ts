@@ -10,6 +10,7 @@ import type {
   CreateMorningDriverScheduleDraftResponse,
   MorningDriverScheduleData,
   PublishMorningDriverScheduleResponse,
+  SetMorningDriverIntentionallyUnassignedRequest,
   UpdateMorningDriverScheduleAssignmentRequest,
   UpdateMorningDriverScheduleAssignmentResponse,
   TransferMyMorningDriverAssignmentRequest,
@@ -289,6 +290,30 @@ class MorningDriverScheduleService {
 
     return data as
       UpdateMorningDriverScheduleAssignmentResponse;
+  }
+
+
+  async setIntentionallyUnassigned(
+    request:
+      SetMorningDriverIntentionallyUnassignedRequest,
+  ): Promise<void> {
+    const { error } =
+      await supabase.rpc(
+        'set_morning_driver_assignment_intentionally_unassigned',
+        {
+          requested_assignment_id:
+            request.assignmentId.trim(),
+
+          requested_is_intentionally_unassigned:
+            request.isIntentionallyUnassigned,
+        },
+      );
+
+    if (error) {
+      throw normalizeMorningDriverScheduleError(
+        error,
+      );
+    }
   }
 
   async publishSchedule(

@@ -1,0 +1,50 @@
+name: Full Regression
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1'
+
+jobs:
+  database-replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Start local Supabase
+        run: npx supabase start -x studio,imgproxy,logflare,vector,supavisor
+      - name: Replay all migrations from zero
+        run: npx supabase db reset
+      - name: Run pgTAP regression suite
+        run: npx supabase test db
+      - name: Stop Supabase
+        if: always()
+        run: npx supabase stop --no-backup
+
+  staging-e2e:
+    if: ${{ vars.GVK_E2E_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm install --no-save @playwright/test@1.55.0
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+        env:
+          GVK_TEST_BASE_URL: ${{ vars.GVK_TEST_BASE_URL }}
+          GVK_TEST_MANAGER_EMAIL: ${{ secrets.GVK_TEST_MANAGER_EMAIL }}
+          GVK_TEST_MANAGER_PASSWORD: ${{ secrets.GVK_TEST_MANAGER_PASSWORD }}
+          GVK_TEST_DISPATCHER_EMAIL: ${{ secrets.GVK_TEST_DISPATCHER_EMAIL }}
+          GVK_TEST_DISPATCHER_PASSWORD: ${{ secrets.GVK_TEST_DISPATCHER_PASSWORD }}
+          GVK_TEST_DRIVER_EMAIL: ${{ secrets.GVK_TEST_DRIVER_EMAIL }}
+          GVK_TEST_DRIVER_PASSWORD: ${{ secrets.GVK_TEST_DRIVER_PASSWORD }}
+          GVK_TEST_MORNING_DRIVER_EMAIL: ${{ secrets.GVK_TEST_MORNING_DRIVER_EMAIL }}
+          GVK_TEST_MORNING_DRIVER_PASSWORD: ${{ secrets.GVK_TEST_MORNING_DRIVER_PASSWORD }}

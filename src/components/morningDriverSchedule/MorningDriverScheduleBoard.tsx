@@ -69,6 +69,11 @@ interface MorningDriverScheduleBoardProps {
       UpdateMorningDriverScheduleAssignmentRequest,
   ) => void;
 
+  onSetIntentionallyUnassigned: (
+    assignmentId: string,
+    isIntentionallyUnassigned: boolean,
+  ) => void;
+
   currentUserId:
     string | null;
 
@@ -198,6 +203,7 @@ function MorningDriverScheduleBoard({
   canEditPublishedAssignments,
   onRefresh,
   onUpdateAssignment,
+  onSetIntentionallyUnassigned,
   currentUserId,
   canTransferMyAssignments,
   onSelectTransferAssignment,
@@ -587,7 +593,9 @@ function MorningDriverScheduleBoard({
 
             assignment.assignedUserId
               ? 'morning-driver-schedule-slot-filled'
-              : 'morning-driver-schedule-slot-empty',
+              : assignment.isIntentionallyUnassigned
+                ? 'morning-driver-schedule-slot-intentionally-empty'
+                : 'morning-driver-schedule-slot-empty',
           ].join(
             ' ',
           )}
@@ -660,6 +668,33 @@ function MorningDriverScheduleBoard({
               )}
             </select>
           </label>
+
+          {assignment.assignmentSlot === 1 &&
+          isDraft ? (
+            <label className="morning-driver-schedule-intentionally-unassigned-field">
+              <input
+                type="checkbox"
+                checked={
+                  assignment.isIntentionallyUnassigned
+                }
+                disabled={
+                  !canEdit ||
+                  isUpdating ||
+                  assignment.assignedUserId !== null
+                }
+                onChange={(event) => {
+                  onSetIntentionallyUnassigned(
+                    assignment.id,
+                    event.target.checked,
+                  );
+                }}
+              />
+
+              <span>
+                השאר משמרת לא משובצת
+              </span>
+            </label>
+          ) : null}
 
           <label className="morning-driver-schedule-lock-field">
             <input
@@ -973,7 +1008,7 @@ function MorningDriverScheduleBoard({
         .minimumUnfilled >
       0 ? (
         <div className="morning-driver-schedule-minimum-warning">
-          לא ניתן לפרסם את הלוח עד שיוקצה לפחות כונן אחד לכל משמרת.
+          לא ניתן לפרסם עד שכל משמרת תקבל כונן בוקר או תסומן במפורש כמשמרת לא משובצת.
         </div>
       ) : data.statistics
           .recommendationUnfilled >

@@ -50,6 +50,7 @@ export interface MorningDriverScheduleAssignment {
   assignmentSource:
     MorningDriverScheduleAssignmentSource | null;
   isLocked: boolean;
+  isIntentionallyUnassigned: boolean;
   notes: string | null;
   updatedAt: string;
 }
@@ -60,6 +61,7 @@ export interface MorningDriverScheduleStatistics {
   unassignedAssignments: number;
   minimumUnfilled: number;
   recommendationUnfilled: number;
+  intentionallyUnassignedMinimum: number;
 }
 
 export interface MorningDriverScheduleData {
@@ -86,6 +88,11 @@ export interface UpdateMorningDriverScheduleAssignmentRequest {
   note: string | null;
 }
 
+export interface SetMorningDriverIntentionallyUnassignedRequest {
+  assignmentId: string;
+  isIntentionallyUnassigned: boolean;
+}
+
 export interface UpdateMorningDriverScheduleAssignmentResponse {
   assignmentId: string;
   schedulePeriodId: string;
@@ -94,6 +101,7 @@ export interface UpdateMorningDriverScheduleAssignmentResponse {
   assignmentSource:
     MorningDriverScheduleAssignmentSource | null;
   isLocked: boolean;
+  isIntentionallyUnassigned: boolean;
   notes: string | null;
   hasWarnings: boolean;
   warnings: string[];

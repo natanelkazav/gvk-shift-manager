@@ -11,6 +11,7 @@ import type {
   CreateMorningDriverScheduleDraftResponse,
   MorningDriverScheduleData,
   PublishMorningDriverScheduleResponse,
+  SetMorningDriverIntentionallyUnassignedRequest,
   UpdateMorningDriverScheduleAssignmentRequest,
   UpdateMorningDriverScheduleAssignmentResponse,
   TransferMyMorningDriverAssignmentRequest,
@@ -426,6 +427,57 @@ export function useMorningDriverSchedule() {
       ],
     );
 
+  const setIntentionallyUnassigned =
+    useCallback(
+      async (
+        request:
+          SetMorningDriverIntentionallyUnassignedRequest,
+      ): Promise<void> => {
+        setState(
+          (current) => ({
+            ...current,
+            updatingAssignmentId:
+              request.assignmentId,
+            error: null,
+          }),
+        );
+
+        try {
+          await morningDriverScheduleService
+            .setIntentionallyUnassigned(
+              request,
+            );
+
+          const data =
+            state.data
+              ? await morningDriverScheduleService
+                  .getSchedule(
+                    state.data.period.id,
+                  )
+              : null;
+
+          setState(
+            (current) => ({
+              ...current,
+              data,
+              updatingAssignmentId: null,
+              error: null,
+            }),
+          );
+        } catch (error) {
+          setState(
+            (current) => ({
+              ...current,
+              updatingAssignmentId: null,
+              error: normalizeError(error),
+            }),
+          );
+          throw error;
+        }
+      },
+      [state.data],
+    );
+
   const publishSchedule =
     useCallback(
       async (): Promise<PublishMorningDriverScheduleResponse> => {
@@ -643,6 +695,7 @@ export function useMorningDriverSchedule() {
     loadSchedule,
     createDraft,
     updateAssignment,
+    setIntentionallyUnassigned,
     transferMyAssignment,
     publishSchedule,
     reset,
