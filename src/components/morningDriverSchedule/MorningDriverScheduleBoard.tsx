@@ -1122,15 +1122,29 @@ function MorningDriverScheduleBoard({
 
               if (
                 dayGroups.some(
-                  (
-                    group,
-                  ) =>
-                    group.assignments.some(
-                      (
-                        assignment,
-                      ) =>
-                        !assignment.assignedUserId,
-                    ),
+                  (group) => {
+                    const assignedCount =
+                      group.assignments.filter(
+                        (assignment) =>
+                          Boolean(
+                            assignment.assignedUserId,
+                          ),
+                      ).length;
+
+                    const minimumAssignment =
+                      group.assignments.find(
+                        (assignment) =>
+                          assignment.assignmentSlot ===
+                          1,
+                      );
+
+                    return (
+                      assignedCount <
+                        group.minimumWorkers &&
+                      !minimumAssignment
+                        ?.isIntentionallyUnassigned
+                    );
+                  },
                 )
               ) {
                 classNames.push(
@@ -1189,7 +1203,13 @@ function MorningDriverScheduleBoard({
                             'morning-driver-schedule-calendar-assignment',
 
                             assignedNames.length <
-                            group.minimumWorkers
+                              group.minimumWorkers &&
+                            !group.assignments.find(
+                              (assignment) =>
+                                assignment.assignmentSlot ===
+                                1,
+                            )
+                              ?.isIntentionallyUnassigned
                               ? 'morning-driver-schedule-calendar-assignment-unfilled'
                               : '',
                           ]
