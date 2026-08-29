@@ -1285,6 +1285,18 @@ function SchedulePage() {
       currentMonthSelection,
     );
 
+  const currentPeriodValue =
+    currentMonthSelection.year * 12 +
+    currentMonthSelection.month - 1;
+
+  const selectedPeriodValue =
+    selectedMonth.year * 12 +
+    selectedMonth.month - 1;
+
+  const isViewingCurrentOrNextMonth =
+    selectedPeriodValue === currentPeriodValue ||
+    selectedPeriodValue === currentPeriodValue + 1;
+
   const activeDisplayedPeriod =
     isViewingCurrentMonth
       ? currentSchedule?.period ?? null
@@ -1389,7 +1401,7 @@ const canEditDisplayedSchedule =
   (
     isDraftDisplayedPeriod ||
     (
-      isViewingCurrentMonth &&
+      isViewingCurrentOrNextMonth &&
       activeDisplayedPeriod?.status === 'published'
     )
   );
@@ -1469,13 +1481,19 @@ const canEditDisplayedSchedule =
 
         if (
           normalizedMessage.includes(
+            'only current or next month schedule',
+          ) ||
+          normalizedMessage.includes(
             'only current month schedule',
           )
         ) {
-          return 'ניתן לערוך במסך זה רק את שיבוץ החודש הנוכחי.';
+          return 'ניתן לערוך במסך זה רק את שיבוץ החודש הנוכחי או החודש הבא.';
         }
 
         if (
+          normalizedMessage.includes(
+            'only published current or next month schedule',
+          ) ||
           normalizedMessage.includes(
             'only published current schedule',
           )
