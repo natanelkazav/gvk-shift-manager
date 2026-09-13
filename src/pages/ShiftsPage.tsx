@@ -1,22 +1,23 @@
 import {
   CalendarClock,
-  CalendarRange,
+  CalendarDays,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   CircleDashed,
-  LayoutGrid,
+  List,
   LoaderCircle,
   RefreshCw,
   UsersRound,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import DynamicAllSchedulesCalendar from '../components/shifts/DynamicAllSchedulesCalendar';
 import DynamicPeriodWorkflowPanel from '../components/users/dynamic/DynamicPeriodWorkflowPanel';
 import { Button, Card, CardBody, PageHeader } from '../components/ui';
 import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
-import type { DynamicPublishedEditorWorkspace } from '../types/dynamicScheduling';
 import type {
+  DynamicScheduleCalendarWorkspace,
   DynamicShiftsManagementWorkspace,
   DynamicShiftsWorkspaceRole,
 } from '../types/dynamicShiftsWorkspace';
@@ -27,18 +28,8 @@ const HEBREW_MONTHS = [
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר',
 ];
 
-type SchedulingHubView = 'management' | 'boards';
-
-interface CombinedScheduleRow {
-  date: string;
-  jobTypeId: string;
-  jobTypeName: string;
-  shiftName: string;
-  startTime: string;
-  endTime: string;
-  assignments: string[];
-  intentionallyUnassignedCount: number;
-}
+type SchedulingHubView = 'schedules' | 'management';
+type ScheduleDisplayMode = 'calendar' | 'list';
 
 const getCurrentMonth = (): { year: number; month: number } => {
   const now = new Date();
@@ -91,34 +82,27 @@ const getRoleStage = (role: DynamicShiftsWorkspaceRole): {
   return { label: 'טרם נפתח חודש', detail: 'אפשר להתחיל את מחזור השיבוץ', tone: 'empty' };
 };
 
-const formatScheduleDate = (value: string): string => {
-  const date = new Date(`${value}T12:00:00`);
-  return new Intl.DateTimeFormat('he-IL', {
-    weekday: 'long',
-    day: '2-digit',
-    month: '2-digit',
-  }).format(date);
-};
-
 function ShiftsPage() {
   const initial = useMemo(getCurrentMonth, []);
   const [searchParams, setSearchParams] = useSearchParams();
   const [year, setYear] = useState(() => Number(searchParams.get('year')) || initial.year);
   const [month, setMonth] = useState(() => Number(searchParams.get('month')) || initial.month);
-  const [hubView, setHubView] = useState<SchedulingHubView>(() =>
-    searchParams.get('view') === 'boards' ? 'boards' : 'management',
-  );
+  const [hubView, setHubView] = useState<SchedulingHubView>(() => (
+    searchParams.get('view') === 'management' ? 'management' : 'schedules'
+  ));
+  const [displayMode, setDisplayMode] = useState<ScheduleDisplayMode>(() => (
+    searchParams.get('mode') === 'list' || searchParams.get('view') === 'boards' ? 'list' : 'calendar'
+  ));
   const [workspace, setWorkspace] = useState<DynamicShiftsManagementWorkspace | null>(null);
   const [selectedJobTypeId, setSelectedJobTypeId] = useState<string | null>(() => searchParams.get('jobType'));
-  const [boardJobTypeFilter, setBoardJobTypeFilter] = useState<string>('all');
-  const [publishedEditors, setPublishedEditors] = useState<DynamicPublishedEditorWorkspace[]>([]);
-  const [boardsLoading, setBoardsLoading] = useState(false);
-  const [boardsError, setBoardsError] = useState<string | null>(null);
+  const [calendarWorkspace, setCalendarWorkspace] = useState<DynamicScheduleCalendarWorkspace | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (background = false): Promise<void> => {
+  const loadManagement = useCallback(async (background = false): Promise<void> => {
     if (background) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -138,139 +122,82 @@ function ShiftsPage() {
     }
   }, [year, month]);
 
+  const loadCalendarWorkspace = useCallback(async (): Promise<void> => {
+    if (hubView !== 'schedules') return;
+    setCalendarLoading(true);
+    setCalendarError(null);
+    try {
+      const data = await dynamicSchedulingService.getScheduleCalendarWorkspace(year, month);
+      setCalendarWorkspace(data);
+    } catch (loadError) {
+      setCalendarWorkspace(null);
+      setCalendarError(loadError instanceof Error ? loadError.message : 'טעינת לוח השיבוצים המאוחד נכשלה.');
+    } finally {
+      setCalendarLoading(false);
+    }
+  }, [hubView, month, year]);
+
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (hubView === 'management') void loadManagement();
+  }, [hubView, loadManagement]);
+
+  useEffect(() => {
+    void loadCalendarWorkspace();
+  }, [loadCalendarWorkspace]);
 
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
     next.set('year', String(year));
     next.set('month', String(month));
-    next.set('view', hubView === 'boards' ? 'boards' : 'management');
+    next.set('view', hubView);
+    next.set('mode', displayMode);
     if (selectedJobTypeId) next.set('jobType', selectedJobTypeId);
     else next.delete('jobType');
     if (next.toString() !== searchParams.toString()) {
       setSearchParams(next, { replace: true });
     }
-  }, [year, month, hubView, selectedJobTypeId, searchParams, setSearchParams]);
-
-  const publishedRoles = useMemo(
-    () => workspace?.roles.filter((role) => role.workflow.publication?.status === 'published') ?? [],
-    [workspace],
-  );
-
-  const loadPublishedBoards = useCallback(async (): Promise<void> => {
-    if (!workspace || hubView !== 'boards') return;
-
-    const publications = workspace.roles
-      .map((role) => role.workflow.publication)
-      .filter((publication): publication is NonNullable<typeof publication> => publication?.status === 'published');
-
-    if (publications.length === 0) {
-      setPublishedEditors([]);
-      setBoardsError(null);
-      return;
-    }
-
-    setBoardsLoading(true);
-    setBoardsError(null);
-    try {
-      const results = await Promise.allSettled(
-        publications.map((publication) =>
-          dynamicSchedulingService.getPublishedScheduleEditor(publication.id),
-        ),
-      );
-      const editors = results
-        .filter((result): result is PromiseFulfilledResult<DynamicPublishedEditorWorkspace> => result.status === 'fulfilled')
-        .map((result) => result.value);
-      setPublishedEditors(editors);
-
-      if (editors.length !== publications.length) {
-        setBoardsError('חלק מהלוחות לא נטענו. ניתן לרענן ולנסות שוב.');
-      }
-    } catch (loadError) {
-      setPublishedEditors([]);
-      setBoardsError(loadError instanceof Error ? loadError.message : 'טעינת הלוחות שפורסמו נכשלה.');
-    } finally {
-      setBoardsLoading(false);
-    }
-  }, [hubView, workspace]);
-
-  useEffect(() => {
-    void loadPublishedBoards();
-  }, [loadPublishedBoards]);
+  }, [year, month, hubView, displayMode, selectedJobTypeId, searchParams, setSearchParams]);
 
   const selectedRole = workspace?.roles.find((role) => role.jobType.id === selectedJobTypeId) ?? null;
 
-  const combinedScheduleRows = useMemo<CombinedScheduleRow[]>(() => {
-    return publishedEditors
-      .filter((editor) => boardJobTypeFilter === 'all' || editor.jobTypeId === boardJobTypeFilter)
-      .flatMap((editor) =>
-        editor.slots.map((slot) => ({
-          date: slot.shiftDate,
-          jobTypeId: editor.jobTypeId,
-          jobTypeName: editor.jobTypeName,
-          shiftName: slot.shiftName,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          assignments: slot.assignments.map((assignment) => assignment.displayName),
-          intentionallyUnassignedCount: slot.intentionallyUnassignedCount,
-        })),
-      )
-      .sort((a, b) => {
-        const byDate = a.date.localeCompare(b.date);
-        if (byDate !== 0) return byDate;
-        const byTime = a.startTime.localeCompare(b.startTime);
-        if (byTime !== 0) return byTime;
-        return a.jobTypeName.localeCompare(b.jobTypeName, 'he');
-      });
-  }, [boardJobTypeFilter, publishedEditors]);
-
-  const groupedScheduleRows = useMemo(() => {
-    const groups = new Map<string, CombinedScheduleRow[]>();
-    combinedScheduleRows.forEach((row) => {
-      const current = groups.get(row.date) ?? [];
-      current.push(row);
-      groups.set(row.date, current);
-    });
-    return Array.from(groups.entries());
-  }, [combinedScheduleRows]);
-
-  const boardSummary = useMemo(() => {
-    const assignmentCount = combinedScheduleRows.reduce((sum, row) => sum + row.assignments.length, 0);
-    const unassignedCount = combinedScheduleRows.reduce(
-      (sum, row) => sum + row.intentionallyUnassignedCount,
-      0,
-    );
-    return {
-      roleCount: publishedEditors.filter(
-        (editor) => boardJobTypeFilter === 'all' || editor.jobTypeId === boardJobTypeFilter,
-      ).length,
-      assignmentCount,
-      unassignedCount,
-    };
-  }, [boardJobTypeFilter, combinedScheduleRows, publishedEditors]);
-
   const changeMonth = (delta: number): void => {
     const next = moveMonth(year, month, delta);
+    if (hubView === 'schedules') {
+      const current = getCurrentMonth();
+      if ((next.year * 100 + next.month) > (current.year * 100 + current.month)) return;
+    }
     setYear(next.year);
     setMonth(next.month);
-    setBoardJobTypeFilter('all');
   };
 
-  const openRoleManagement = (jobTypeId: string): void => {
-    setSelectedJobTypeId(jobTypeId);
-    setHubView('management');
+  const openSchedulesView = (): void => {
+    const current = getCurrentMonth();
+    if ((year * 100 + month) > (current.year * 100 + current.month)) {
+      setYear(current.year);
+      setMonth(current.month);
+    }
+    setHubView('schedules');
   };
 
   return (
     <div className="dynamic-shifts-page">
       <PageHeader
         title="שיבוצים"
-        description="מרכז אחד לכל מחזורי השיבוץ ולכל הלוחות שפורסמו — דינמי לפי תפקיד."
+        description="לוח מאוחד לכל השיבוצים וניהול חודשי מסודר לפי תפקיד."
       />
 
       <div className="dynamic-shifts-hub-tabs" role="tablist" aria-label="תצוגת מרכז השיבוצים">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={hubView === 'schedules'}
+          className={hubView === 'schedules' ? 'is-active' : ''}
+          onClick={openSchedulesView}
+        >
+          <CalendarDays size={18} />
+          <span>שיבוצים</span>
+          <small>לוח שנה או רשימה · חודש נוכחי והיסטוריה</small>
+        </button>
         <button
           type="button"
           role="tab"
@@ -282,65 +209,99 @@ function ShiftsPage() {
           <span>ניהול חודשי</span>
           <small>אילוצים → טיוטה → פרסום</small>
         </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={hubView === 'boards'}
-          className={hubView === 'boards' ? 'is-active' : ''}
-          onClick={() => setHubView('boards')}
-        >
-          <LayoutGrid size={18} />
-          <span>תצוגת לוחות</span>
-          <small>כל השיבוצים שפורסמו במקום אחד</small>
-        </button>
       </div>
 
-      <div className="dynamic-shifts-monthbar" aria-label="בחירת חודש">
-        <Button variant="secondary" onClick={() => changeMonth(-1)}>
-          <ChevronRight size={17} /> חודש קודם
-        </Button>
-        <div className="dynamic-shifts-month-title">
-          <CalendarClock size={20} />
-          <div>
-            <strong>{HEBREW_MONTHS[month - 1]} {year}</strong>
-            <span>{hubView === 'boards' ? 'כל הלוחות שפורסמו בחודש הנבחר' : 'כל התפקידים המנוהלים בחודש הנבחר'}</span>
-          </div>
-        </div>
-        <Button variant="secondary" onClick={() => changeMonth(1)}>
-          חודש הבא <ChevronLeft size={17} />
-        </Button>
-      </div>
-
-      {error ? (
-        <Card>
-          <CardBody>
-            <div className="dynamic-shifts-error" role="alert">
-              <strong>לא ניתן לטעון את מרכז השיבוצים הדינמי</strong>
-              <span>{error}</span>
-              <Button variant="secondary" onClick={() => void load()}><RefreshCw size={16} /> נסה שוב</Button>
+      {hubView === 'schedules' ? (
+        <section className="dynamic-shifts-boards-section" aria-labelledby="all-schedules-title">
+          <div className="dynamic-schedules-toolbar">
+            <div>
+              <h2 id="all-schedules-title">כל השיבוצים</h2>
+              <p>תצוגה מאוחדת לפי תפקיד, עובד ומצב איוש. לחיצה על שיבוץ פותחת את פרטיו.</p>
             </div>
-          </CardBody>
-        </Card>
-      ) : null}
 
-      {loading ? (
-        <div className="dynamic-shifts-loading"><LoaderCircle className="spin" size={22} /> טוען תפקידים ומצב חודש…</div>
-      ) : workspace && !error ? (
-        hubView === 'management' ? (
-          <>
-            <section className="dynamic-shifts-role-section" aria-labelledby="managed-job-types-title">
-              <div className="dynamic-shifts-section-head">
-                <div>
-                  <h2 id="managed-job-types-title">תפקידים לניהול</h2>
-                  <p>בחר תפקיד כדי להמשיך את מחזור העבודה של {HEBREW_MONTHS[month - 1]}.</p>
-                </div>
-                <Button variant="secondary" disabled={refreshing} onClick={() => void load(true)}>
+            <div className="dynamic-schedules-toolbar-actions">
+              <div className="dynamic-schedule-display-toggle" role="group" aria-label="אופן תצוגת שיבוצים">
+                <button
+                  type="button"
+                  className={displayMode === 'calendar' ? 'is-active' : ''}
+                  onClick={() => setDisplayMode('calendar')}
+                >
+                  <CalendarDays size={16} /> לוח שנה
+                </button>
+                <button
+                  type="button"
+                  className={displayMode === 'list' ? 'is-active' : ''}
+                  onClick={() => setDisplayMode('list')}
+                >
+                  <List size={16} /> רשימה
+                </button>
+              </div>
+
+              <div className="dynamic-calendar-compact-nav" aria-label="ניווט חודשי">
+                <Button variant="secondary" onClick={() => changeMonth(-1)} aria-label="חודש קודם"><ChevronRight size={16} /></Button>
+                <strong>{HEBREW_MONTHS[month - 1]} {year}</strong>
+                <Button
+                  variant="secondary"
+                  onClick={() => changeMonth(1)}
+                  disabled={(year * 100 + month) >= (initial.year * 100 + initial.month)}
+                  aria-label="חודש הבא"
+                ><ChevronLeft size={16} /></Button>
+                <Button variant="secondary" disabled={calendarLoading} onClick={() => void loadCalendarWorkspace()}>
+                  <RefreshCw size={16} className={calendarLoading ? 'spin' : undefined} /> רענן
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {calendarError ? <div className="dynamic-shifts-board-warning">{calendarError}</div> : null}
+
+          {calendarLoading ? (
+            <div className="dynamic-shifts-loading"><LoaderCircle className="spin" size={22} /> טוען שיבוצים…</div>
+          ) : calendarWorkspace ? (
+            <DynamicAllSchedulesCalendar
+              workspace={calendarWorkspace}
+              displayMode={displayMode}
+              onChanged={loadCalendarWorkspace}
+            />
+          ) : (
+            <div className="dynamic-shifts-empty">
+              <CalendarDays size={24} />
+              <div>
+                <strong>אין נתוני שיבוצים להצגה</strong>
+                <span>בחר חודש נוכחי או חודש קודם ורענן.</span>
+              </div>
+            </div>
+          )}
+        </section>
+      ) : (
+        <>
+          <section className="dynamic-monthly-management-shell">
+            <div className="dynamic-monthly-management-toolbar">
+              <div>
+                <h2>ניהול חודשי</h2>
+                <p>בחר חודש ותפקיד, ואז המשך את מחזור האילוצים והשיבוץ במקום אחד.</p>
+              </div>
+              <div className="dynamic-calendar-compact-nav" aria-label="ניווט חודשי בניהול">
+                <Button variant="secondary" onClick={() => changeMonth(-1)} aria-label="חודש קודם"><ChevronRight size={16} /></Button>
+                <strong>{HEBREW_MONTHS[month - 1]} {year}</strong>
+                <Button variant="secondary" onClick={() => changeMonth(1)} aria-label="חודש הבא"><ChevronLeft size={16} /></Button>
+                <Button variant="secondary" disabled={refreshing || loading} onClick={() => void loadManagement(true)}>
                   <RefreshCw size={16} className={refreshing ? 'spin' : undefined} /> רענן
                 </Button>
               </div>
+            </div>
 
-              {workspace.roles.length ? (
-                <div className="dynamic-shifts-role-grid">
+            {error ? (
+              <div className="dynamic-shifts-error" role="alert">
+                <strong>לא ניתן לטעון את הניהול החודשי</strong>
+                <span>{error}</span>
+                <Button variant="secondary" onClick={() => void loadManagement()}><RefreshCw size={16} /> נסה שוב</Button>
+              </div>
+            ) : loading ? (
+              <div className="dynamic-shifts-loading"><LoaderCircle className="spin" size={22} /> טוען תפקידים ומצב חודש…</div>
+            ) : workspace ? (
+              <>
+                <div className="dynamic-management-role-selector" role="listbox" aria-label="בחירת תפקיד לניהול">
                   {workspace.roles.map((role) => {
                     const stage = getRoleStage(role);
                     const selected = role.jobType.id === selectedJobTypeId;
@@ -348,168 +309,64 @@ function ShiftsPage() {
                       <button
                         type="button"
                         key={role.jobType.id}
-                        className={`dynamic-shifts-role-card ${selected ? 'is-selected' : ''}`}
+                        className={selected ? 'is-selected' : ''}
                         onClick={() => setSelectedJobTypeId(role.jobType.id)}
                       >
-                        <div className="dynamic-shifts-role-card-head">
-                          <div>
-                            <strong>{role.jobType.name}</strong>
-                            <span><UsersRound size={14} /> {role.workflow.memberCount} עובדים</span>
-                          </div>
-                          {selected ? <CheckCircle2 size={20} /> : <CircleDashed size={20} />}
-                        </div>
-                        <div className={`dynamic-shifts-stage is-${stage.tone}`}>
-                          <strong>{stage.label}</strong>
-                          <span>{stage.detail}</span>
-                        </div>
-                        {role.workflow.period?.submissionDeadline ? (
-                          <small>
-                            מועד הגשה: {new Intl.DateTimeFormat('he-IL', {
-                              day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-                            }).format(new Date(role.workflow.period.submissionDeadline))}
-                          </small>
-                        ) : <small>אין מועד הגשה מוגדר</small>}
+                        <span className="dynamic-management-role-selector-head">
+                          <strong>{role.jobType.name}</strong>
+                          {selected ? <CheckCircle2 size={18} /> : <CircleDashed size={18} />}
+                        </span>
+                        <span className={`dynamic-management-role-stage is-${stage.tone}`}>{stage.label}</span>
+                        <small><UsersRound size={13} /> {role.workflow.memberCount} עובדים · {stage.detail}</small>
                       </button>
                     );
                   })}
                 </div>
-              ) : (
-                <div className="dynamic-shifts-empty">
-                  <UsersRound size={24} />
-                  <div>
-                    <strong>אין תפקידים לניהול</strong>
-                    <span>לא נמצא Job Type פעיל שאתה מנהל במערכת הדינמית.</span>
+
+                {workspace.roles.length === 0 ? (
+                  <div className="dynamic-shifts-empty">
+                    <UsersRound size={24} />
+                    <div>
+                      <strong>אין תפקידים לניהול</strong>
+                      <span>לא נמצא תפקיד פעיל שאתה מנהל.</span>
+                    </div>
                   </div>
-                </div>
-              )}
-            </section>
-
-            {selectedRole ? (
-              <section className="dynamic-shifts-management-section">
-                <div className="dynamic-shifts-selected-role-head">
-                  <div>
-                    <span>ניהול חודש</span>
-                    <h2>{selectedRole.jobType.name} · {HEBREW_MONTHS[month - 1]} {year}</h2>
-                    <p>אותו רצף עבודה משמש כל Job Type — בלי הסתעפות למוקדן, כונן או כונן בוקר.</p>
-                  </div>
-                  <div className="dynamic-shifts-access-badge">
-                    {selectedRole.accessSource === 'system_admin'
-                      ? 'מנהל מערכת'
-                      : selectedRole.accessSource === 'job_type_manager'
-                        ? 'מנהל התפקיד'
-                        : 'הרשאת מעבר'}
-                  </div>
-                </div>
-
-                <Card>
-                  <CardBody>
-                    <DynamicPeriodWorkflowPanel
-                      jobType={selectedRole.jobType}
-                      selectedYear={year}
-                      selectedMonth={month}
-                      showPeriodPicker={false}
-                      onWorkflowChanged={() => void load(true)}
-                    />
-                  </CardBody>
-                </Card>
-              </section>
-            ) : null}
-          </>
-        ) : (
-          <section className="dynamic-shifts-boards-section" aria-labelledby="published-schedules-title">
-            <div className="dynamic-shifts-section-head">
-              <div>
-                <h2 id="published-schedules-title">כל הלוחות שפורסמו</h2>
-                <p>תצוגה מאוחדת של כל השיבוצים הפעילים בחודש, בלי לעבור בין תפקידים.</p>
-              </div>
-              <Button variant="secondary" disabled={boardsLoading} onClick={() => void loadPublishedBoards()}>
-                <RefreshCw size={16} className={boardsLoading ? 'spin' : undefined} /> רענן לוחות
-              </Button>
-            </div>
-
-            <div className="dynamic-shifts-board-filters">
-              <button
-                type="button"
-                className={boardJobTypeFilter === 'all' ? 'is-active' : ''}
-                onClick={() => setBoardJobTypeFilter('all')}
-              >
-                כל התפקידים
-              </button>
-              {publishedRoles.map((role) => (
-                <button
-                  type="button"
-                  key={role.jobType.id}
-                  className={boardJobTypeFilter === role.jobType.id ? 'is-active' : ''}
-                  onClick={() => setBoardJobTypeFilter(role.jobType.id)}
-                >
-                  {role.jobType.name}
-                </button>
-              ))}
-            </div>
-
-            {boardsError ? <div className="dynamic-shifts-board-warning">{boardsError}</div> : null}
-
-            {boardsLoading ? (
-              <div className="dynamic-shifts-loading"><LoaderCircle className="spin" size={22} /> טוען לוחות שפורסמו…</div>
-            ) : publishedEditors.length === 0 ? (
-              <div className="dynamic-shifts-empty">
-                <CalendarRange size={24} />
-                <div>
-                  <strong>אין לוחות שפורסמו בחודש הזה</strong>
-                  <span>לאחר פרסום שיבוץ של תפקיד, הוא יופיע כאן אוטומטית.</span>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="dynamic-shifts-board-summary">
-                  <div><strong>{boardSummary.roleCount}</strong><span>לוחות פעילים</span></div>
-                  <div><strong>{boardSummary.assignmentCount}</strong><span>שיבוצים</span></div>
-                  <div><strong>{boardSummary.unassignedCount}</strong><span>לא מאוישים במכוון</span></div>
-                </div>
-
-                <div className="dynamic-shifts-combined-board">
-                  {groupedScheduleRows.map(([date, rows]) => (
-                    <section className="dynamic-shifts-board-day" key={date}>
-                      <div className="dynamic-shifts-board-day-title">
-                        <CalendarRange size={18} />
-                        <strong>{formatScheduleDate(date)}</strong>
-                      </div>
-                      <div className="dynamic-shifts-board-day-rows">
-                        {rows.map((row, index) => (
-                          <article
-                            className="dynamic-shifts-board-row"
-                            key={`${row.jobTypeId}-${row.date}-${row.startTime}-${row.shiftName}-${index}`}
-                          >
-                            <div className="dynamic-shifts-board-role">
-                              <button type="button" onClick={() => openRoleManagement(row.jobTypeId)}>
-                                {row.jobTypeName}
-                              </button>
-                            </div>
-                            <div className="dynamic-shifts-board-shift">
-                              <strong>{row.shiftName}</strong>
-                              <span>{row.startTime.slice(0, 5)}–{row.endTime.slice(0, 5)}</span>
-                            </div>
-                            <div className="dynamic-shifts-board-assignees">
-                              {row.assignments.length ? (
-                                row.assignments.map((name) => <span key={name}>{name}</span>)
-                              ) : (
-                                <span className="is-empty">אין עובד משובץ</span>
-                              )}
-                              {row.intentionallyUnassignedCount > 0 ? (
-                                <small>{row.intentionallyUnassignedCount} לא מאויש במכוון</small>
-                              ) : null}
-                            </div>
-                          </article>
-                        ))}
-                      </div>
-                    </section>
-                  ))}
-                </div>
+                ) : null}
               </>
-            )}
+            ) : null}
           </section>
-        )
-      ) : null}
+
+          {selectedRole && workspace && !loading && !error ? (
+            <section className="dynamic-shifts-management-section">
+              <div className="dynamic-shifts-selected-role-head compact">
+                <div>
+                  <span>מחזור שיבוץ פעיל</span>
+                  <h2>{selectedRole.jobType.name} · {HEBREW_MONTHS[month - 1]} {year}</h2>
+                </div>
+                <div className="dynamic-shifts-access-badge">
+                  {selectedRole.accessSource === 'system_admin'
+                    ? 'מנהל מערכת'
+                    : selectedRole.accessSource === 'job_type_manager'
+                      ? 'מנהל התפקיד'
+                      : 'הרשאת מעבר'}
+                </div>
+              </div>
+
+              <Card>
+                <CardBody>
+                  <DynamicPeriodWorkflowPanel
+                    jobType={selectedRole.jobType}
+                    selectedYear={year}
+                    selectedMonth={month}
+                    showPeriodPicker={false}
+                    onWorkflowChanged={() => void loadManagement(true)}
+                  />
+                </CardBody>
+              </Card>
+            </section>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

@@ -113,12 +113,28 @@ function DynamicPeriodWorkflowPanel({
   );
 
   const createPeriod = (): Promise<void> => run(
-    async () => { await dynamicSchedulingService.createAvailabilityShadowPeriod(jobType.id, year, month); },
-    'תקופת האילוצים נוצרה. אפשר לפתוח אותה להגשה.',
+    async () => {
+      if (!deadlineInput) {
+        throw new Error('יש לקבוע מועד אחרון להגשת אילוצים לפני יצירת התקופה.');
+      }
+      await dynamicSchedulingService.createAvailabilityShadowPeriod(jobType.id, year, month);
+      await dynamicSchedulingService.setDynamicPeriodSubmissionDeadline(
+        jobType.id,
+        year,
+        month,
+        new Date(deadlineInput).toISOString(),
+      );
+    },
+    'תקופת האילוצים נוצרה ומועד ההגשה נשמר. אפשר לפתוח אותה להגשה.',
   );
 
   const openPeriod = (): Promise<void> => run(
-    async () => { await dynamicSchedulingService.setPeriodStatus(jobType.id, year, month, 'open'); },
+    async () => {
+      if (!state?.period?.submissionDeadline) {
+        throw new Error('יש לקבוע ולשמור מועד אחרון להגשת אילוצים לפני פתיחת התקופה.');
+      }
+      await dynamicSchedulingService.setPeriodStatus(jobType.id, year, month, 'open');
+    },
     'תקופת האילוצים נפתחה.',
   );
 
@@ -217,11 +233,15 @@ function DynamicPeriodWorkflowPanel({
             {state.draft ? <span><strong>{effectiveUnfilled}</strong> חוסרים שמונעים פרסום</span> : null}
           </div>
 
-          {state.period && state.period.status !== 'archived' ? (
+          {state.period?.status !== 'archived' ? (
             <div className="dynamic-period-deadline-card">
               <div>
                 <strong>מועד אחרון להגשת אילוצים</strong>
-                <span>המועד נשמר בתקופה הדינמית ומשמש את מסך ההגשה האישי.</span>
+                <span>
+                  {state.period
+                    ? 'המועד נשמר בתקופה הדינמית ומשמש את מסך ההגשה האישי.'
+                    : 'קבע מועד הגשה לפני יצירת התקופה. המועד יישמר יחד עם יצירת תקופת האילוצים.'}
+                </span>
               </div>
               <div className="dynamic-period-deadline-controls">
                 <input
@@ -231,17 +251,19 @@ function DynamicPeriodWorkflowPanel({
                   onChange={(event) => setDeadlineInput(event.target.value)}
                   aria-label="מועד אחרון להגשת אילוצים"
                 />
-                <Button variant="secondary" disabled={busy || !canOpenPeriod} onClick={() => void saveDeadline()}>שמור מועד</Button>
+                {state.period ? (
+                  <Button variant="secondary" disabled={busy || !canOpenPeriod || !deadlineInput} onClick={() => void saveDeadline()}>שמור מועד</Button>
+                ) : null}
               </div>
             </div>
           ) : null}
 
           <div className="dynamic-period-workflow-actions">
             {!state.period ? (
-              <Button disabled={busy || !state.availabilityEnabled || !canOpenPeriod} onClick={() => void createPeriod()}><CalendarClock size={16} /> צור תקופת אילוצים</Button>
+              <Button disabled={busy || !state.availabilityEnabled || !canOpenPeriod || !deadlineInput} onClick={() => void createPeriod()}><CalendarClock size={16} /> צור תקופת אילוצים</Button>
             ) : null}
             {state.period && ['shadow', 'draft', 'closed'].includes(state.period.status) && !state.publication ? (
-              <Button disabled={busy || !canOpenPeriod} onClick={() => void openPeriod()}><Play size={16} /> {state.period.status === 'closed' ? 'פתח אילוצים מחדש' : 'פתח אילוצים'}</Button>
+              <Button disabled={busy || !canOpenPeriod || !state.period.submissionDeadline} onClick={() => void openPeriod()}><Play size={16} /> {state.period.status === 'closed' ? 'פתח אילוצים מחדש' : 'פתח אילוצים'}</Button>
             ) : null}
             {state.period?.status === 'open' ? (
               <Button disabled={busy || !canClosePeriod} onClick={() => void closePeriod()}><LockKeyhole size={16} /> סגור אילוצים</Button>

@@ -460,23 +460,15 @@ function UsersPage() {
       <PageHeader
         title="ניהול משתמשים"
         description="ניהול משתמשים, תפקידים והרשאות במערכת."
-        actions={
+        actions={activeSection === 'users' ? (
           <>
             {canManageUsers ? (
               <Button
                 type="button"
-                onClick={
-                  openCreateModal
-                }
-                disabled={
-                  isCreatingUser
-                }
+                onClick={openCreateModal}
+                disabled={isCreatingUser}
               >
-                <UserPlus
-                  size={18}
-                  aria-hidden="true"
-                />
-
+                <UserPlus size={18} aria-hidden="true" />
                 משתמש חדש
               </Button>
             ) : null}
@@ -490,20 +482,14 @@ function UsersPage() {
               disabled={
                 usersState.isLoading ||
                 isCreatingUser ||
-                Boolean(
-                  deletingUserId,
-                )
+                Boolean(deletingUserId)
               }
             >
-              <RefreshCw
-                size={18}
-                aria-hidden="true"
-              />
-
+              <RefreshCw size={18} aria-hidden="true" />
               רענון
             </Button>
           </>
-        }
+        ) : undefined}
       />
 
       <div className="users-page-tabs" role="tablist" aria-label="ניהול משתמשים ותפקידים">

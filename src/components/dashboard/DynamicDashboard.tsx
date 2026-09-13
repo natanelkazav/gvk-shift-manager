@@ -2,7 +2,6 @@ import {
   CalendarClock,
   CalendarDays,
   CheckCircle2,
-  Settings2,
   Users,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -53,21 +52,6 @@ function getAvailabilityText(role: DynamicRuntimeRole): string {
 function DynamicDashboard({ context }: DynamicDashboardProps) {
   return (
     <div className="dynamic-dashboard-stack">
-      <section className="dashboard-card dynamic-dashboard-intro">
-        <div className="dashboard-card-body">
-          <div className="dynamic-dashboard-intro-icon" aria-hidden="true">
-            <Settings2 size={24} />
-          </div>
-          <div>
-            <h2>סביבת העבודה שלי</h2>
-            <p>
-              התצוגה נבנית אוטומטית מהתפקידים שהוגדרו לך במערכת — ללא תלות
-              בתפקידי Legacy קבועים.
-            </p>
-          </div>
-        </div>
-      </section>
-
       <div className="dynamic-dashboard-role-grid">
         {context.roles.map((role) => (
           <section className="dashboard-card dynamic-dashboard-role-card" key={role.jobTypeId}>
