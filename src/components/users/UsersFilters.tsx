@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react';
 import { Input } from '../ui';
-import type { UserRole } from '../../types/auth';
+import type { SystemAccountType } from '../../config/systemAccountTypes';
 import type { UsersFilters as UsersFiltersState } from '../../types/users';
 
 interface UsersFiltersProps {
@@ -49,7 +49,7 @@ function UsersFilters({
       />
 
       <label className="users-filter-field">
-        <span>תפקיד</span>
+        <span>סוג חשבון</span>
 
         <select
           value={filters.role}
@@ -57,33 +57,25 @@ function UsersFilters({
             updateFilter(
               'role',
               event.target.value as
-                | UserRole
+                | SystemAccountType
                 | 'all',
             );
           }}
         >
           <option value="all">
-            כל התפקידים
+            כל סוגי החשבון
+          </option>
+
+          <option value="employee">
+            עובד
+          </option>
+
+          <option value="manager">
+            מנהל
           </option>
 
           <option value="admin">
             מנהל מערכת
-          </option>
-
-          <option value="manager">
-            מנהלת
-          </option>
-
-          <option value="dispatcher">
-            מוקדן
-          </option>
-
-          <option value="on_call">
-            כונן
-          </option>
-
-          <option value="morning_driver">
-            כונן בוקר
           </option>
 
           <option value="viewer">

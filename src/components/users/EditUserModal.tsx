@@ -1,8 +1,8 @@
 import {
+  BriefcaseBusiness,
   KeyRound,
   LoaderCircle,
   RefreshCw,
-  RotateCcw,
   Save,
   UserCog,
   UserRound,
@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import {
   useEffect,
-  useMemo,
   useState,
   type FormEvent,
 } from 'react';
@@ -19,9 +18,9 @@ import {
   Input,
 } from '../ui';
 import UserPermissionsTab from './UserPermissionsTab';
+import DynamicUserJobTypePermissions from './dynamic/DynamicUserJobTypePermissions';
+import DynamicUserAssignmentsEditor from './dynamic/DynamicUserAssignmentsEditor';
 import {
-  arePermissionListsEqual,
-  getDefaultPermissionsForRole,
   ROLE_LABELS,
 } from '../../config/defaultRolePermissions';
 import type {
@@ -29,14 +28,42 @@ import type {
   UserProfile,
   UserRole,
 } from '../../types/auth';
+import { dynamicPermissionEngineService } from '../../services/dynamicPermissionEngineService';
 import type {
-  UpdateUserProfileInput,
-} from '../../types/users';
+  DynamicUserJobTypePermissionEditor,
+  DynamicUserJobTypePermissionSelection,
+} from '../../types/dynamicPermissionEngine';
+import type { UpdateUserProfileInput } from '../../types/users';
+import type { DynamicJobType } from '../../types/dynamicScheduling';
+import type { DynamicUserAssignmentSelection } from '../../types/dynamicUserAssignments';
+import { dynamicUserAssignmentsService } from '../../services/dynamicUserAssignmentsService';
+import {
+  accountTypeFromLegacyRole,
+  legacyRoleForAccountType,
+  SYSTEM_ACCOUNT_DESCRIPTIONS,
+  SYSTEM_ACCOUNT_LABELS,
+  type SystemAccountType,
+} from '../../config/systemAccountTypes';
 
 import './EditUserModalTabs.css';
 
+const SYSTEM_PERMISSION_KEYS: PermissionKey[] = [
+  'dashboard.view',
+  'notifications.view',
+  'notifications.manage',
+  'users.view',
+  'users.manage',
+  'schedule_import.manage',
+  'schedule_export.manage',
+  'archive.view',
+  'audit.view',
+  'attendance.view',
+  'attendance.manage',
+];
+
 interface EditUserModalProps {
   user: UserProfile | null;
+  dynamicJobTypes: DynamicJobType[];
   isOpen: boolean;
   isSaving: boolean;
   currentUserId: string | null;
@@ -61,6 +88,9 @@ interface EditUserModalProps {
       UpdateUserProfileInput,
     permissions:
       PermissionKey[],
+    dynamicJobTypePermissions:
+      DynamicUserJobTypePermissionSelection[],
+    assignments: DynamicUserAssignmentSelection[],
   ) => Promise<void>;
 }
 
@@ -78,6 +108,7 @@ interface EditUserFormState {
 
 type EditUserTab =
   | 'details'
+  | 'assignments'
   | 'permissions';
 
 function createFormState(
@@ -115,6 +146,7 @@ function createFormState(
 
 function EditUserModal({
   user,
+  dynamicJobTypes,
   isOpen,
   isSaving,
   currentUserId,
@@ -169,6 +201,17 @@ function EditUserModal({
     setIsRetryingPermissions,
   ] = useState(false);
 
+  const [dynamicPermissionEditor, setDynamicPermissionEditor] =
+    useState<DynamicUserJobTypePermissionEditor>({ jobTypes: [] });
+  const [assignments, setAssignments] = useState<DynamicUserAssignmentSelection[]>([]);
+  const [isAssignmentsLoading, setIsAssignmentsLoading] = useState(false);
+  const [assignmentsError, setAssignmentsError] = useState<string | null>(null);
+
+  const [isDynamicPermissionSummaryLoading, setIsDynamicPermissionSummaryLoading] =
+    useState(false);
+  const [dynamicPermissionSummaryError, setDynamicPermissionSummaryError] =
+    useState<string | null>(null);
+
   useEffect(() => {
     if (!user) {
       return;
@@ -184,8 +227,50 @@ function EditUserModal({
     setIsRetryingPermissions(
       false,
     );
+    setDynamicPermissionEditor({ jobTypes: [] });
+    setDynamicPermissionSummaryError(null);
+    setAssignments([]);
+    setAssignmentsError(null);
     setActiveTab('details');
   }, [user]);
+
+  useEffect(() => {
+    if (!isOpen || !user) return;
+    let cancelled = false;
+    setIsDynamicPermissionSummaryLoading(true);
+    setDynamicPermissionSummaryError(null);
+    void dynamicPermissionEngineService.getUserJobTypePermissionEditor(user.id)
+      .then((editor) => { if (!cancelled) setDynamicPermissionEditor(editor); })
+      .catch((error: unknown) => {
+        if (!cancelled) setDynamicPermissionSummaryError(error instanceof Error ? error.message : 'לא ניתן לטעון הרשאות דינמיות.');
+      })
+      .finally(() => { if (!cancelled) setIsDynamicPermissionSummaryLoading(false); });
+    return () => { cancelled = true; };
+  }, [isOpen, user]);
+
+  useEffect(() => {
+    if (!isOpen || !user) return;
+    let cancelled = false;
+    setIsAssignmentsLoading(true);
+    setAssignmentsError(null);
+    void dynamicUserAssignmentsService.getEditor(user.id)
+      .then((editor) => {
+        if (!cancelled) {
+          setAssignments(editor.assignments.map((item) => ({
+            jobTypeId: item.jobTypeId,
+            isMember: item.isMember,
+            isManager: item.isManager,
+            employmentScope: item.employmentScope,
+            partTimeDefinition: item.partTimeDefinition,
+          })));
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setAssignmentsError(error instanceof Error ? error.message : 'לא ניתן לטעון שיוכי תפקידים.');
+      })
+      .finally(() => { if (!cancelled) setIsAssignmentsLoading(false); });
+    return () => { cancelled = true; };
+  }, [isOpen, user]);
 
   useEffect(() => {
     if (
@@ -257,29 +342,6 @@ function EditUserModal({
     onClose,
   ]);
 
-  const defaultPermissions =
-    useMemo<PermissionKey[]>(
-      () =>
-        formState
-          ? getDefaultPermissionsForRole(
-              formState.role,
-            )
-          : [],
-      [formState],
-    );
-
-  const usesDefaultPermissions =
-    useMemo(
-      () =>
-        arePermissionListsEqual(
-          selectedPermissions,
-          defaultPermissions,
-        ),
-      [
-        selectedPermissions,
-        defaultPermissions,
-      ],
-    );
 
   if (
     !isOpen ||
@@ -299,6 +361,7 @@ function EditUserModal({
   const isInteractionDisabled =
     isSaving ||
     isPermissionsLoading ||
+    isAssignmentsLoading ||
     isRetryingPermissions;
 
   const validateForm =
@@ -473,6 +536,14 @@ function EditUserModal({
             : {}),
         },
         selectedPermissions,
+        dynamicPermissionEditor.jobTypes.flatMap((jobType) =>
+          jobType.permissions.map((permission) => ({
+            jobTypeId: jobType.jobTypeId,
+            permissionKey: permission.permissionKey,
+            enabled: permission.enabled,
+          })),
+        ),
+           assignments,
       );
     } catch (error) {
       setFormError(
@@ -500,6 +571,10 @@ function EditUserModal({
     setActiveTab(tab);
   };
 
+  const handleAccountTypeChange = (nextAccountType: SystemAccountType): void => {
+    handleRoleChange(legacyRoleForAccountType(nextAccountType, formState.role));
+  };
+
   const handleRoleChange = (
     nextRole: UserRole,
   ): void => {
@@ -522,28 +597,11 @@ function EditUserModal({
       previousRole !== nextRole
     ) {
       setPermissionsNotice(
-        `התפקיד שונה ל־${ROLE_LABELS[nextRole]}. ההרשאות הקיימות לא שונו. ניתן לעבור לטאב ההרשאות ולהחיל את ברירת המחדל של התפקיד החדש.`,
+        `התפקיד הישן שונה ל־${ROLE_LABELS[nextRole]}. הרשאות העבודה הדינמיות אינן מושפעות מה-role הישן ונגזרות מה-Job Types.`,
       );
     }
   };
 
-  const handleApplyRoleDefaults =
-    (): void => {
-      const nextPermissions =
-        getDefaultPermissionsForRole(
-          formState.role,
-        );
-
-      setSelectedPermissions(
-        nextPermissions,
-      );
-
-      setFormError(null);
-
-      setPermissionsNotice(
-        `הרשאות ברירת המחדל של התפקיד "${ROLE_LABELS[formState.role]}" הוחלו. השינוי יישמר רק לאחר לחיצה על "שמירת שינויים".`,
-      );
-    };
 
   const handleRetryPermissions =
     async (): Promise<void> => {
@@ -658,6 +716,26 @@ function EditUserModal({
 
             <span>
               פרטי משתמש
+            </span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            id="edit-user-assignments-tab"
+            aria-selected={activeTab === 'assignments'}
+            aria-controls="edit-user-assignments-panel"
+            className={[
+              'edit-user-tab',
+              activeTab === 'assignments' ? 'edit-user-tab-active' : '',
+            ].filter(Boolean).join(' ')}
+            disabled={isSaving || isAssignmentsLoading}
+            onClick={() => handleTabChange('assignments')}
+          >
+            <BriefcaseBusiness size={18} aria-hidden="true" />
+            <span>תפקידים</span>
+            <span className="create-user-permissions-count">
+              {assignments.filter((item) => item.isMember || item.isManager).length}
             </span>
           </button>
 
@@ -920,51 +998,18 @@ function EditUserModal({
                 ) : null}
 
                 <label className="edit-user-field">
-                  <span>תפקיד</span>
+                  <span>סוג חשבון</span>
 
                   <select
-                    value={
-                      formState.role
-                    }
-                    disabled={
-                      isInteractionDisabled
-                    }
-                    onChange={(
-                      event,
-                    ) => {
-                      handleRoleChange(
-                        event.target
-                          .value as UserRole,
-                      );
-                    }}
+                    value={accountTypeFromLegacyRole(formState.role)}
+                    disabled={isInteractionDisabled}
+                    onChange={(event) => handleAccountTypeChange(event.target.value as SystemAccountType)}
                   >
-                    {(
-                      Object.entries(
-                        ROLE_LABELS,
-                      ) as Array<
-                        [
-                          UserRole,
-                          string,
-                        ]
-                      >
-                    ).map(
-                      ([
-                        roleValue,
-                        roleLabel,
-                      ]) => (
-                        <option
-                          key={
-                            roleValue
-                          }
-                          value={
-                            roleValue
-                          }
-                        >
-                          {roleLabel}
-                        </option>
-                      ),
-                    )}
+                    {(Object.entries(SYSTEM_ACCOUNT_LABELS) as Array<[SystemAccountType, string]>).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
                   </select>
+                  <small>{SYSTEM_ACCOUNT_DESCRIPTIONS[accountTypeFromLegacyRole(formState.role)]}</small>
                 </label>
               </div>
 
@@ -1070,6 +1115,33 @@ function EditUserModal({
                 </div>
               ) : null}
             </div>
+          ) : activeTab === 'assignments' ? (
+            <div
+              id="edit-user-assignments-panel"
+              role="tabpanel"
+              aria-labelledby="edit-user-assignments-tab"
+              className="edit-user-tab-panel"
+            >
+              {isAssignmentsLoading ? (
+                <div className="edit-user-permissions-status" role="status">
+                  <LoaderCircle size={26} className="edit-user-permissions-loading-icon" aria-hidden="true" />
+                  <strong>טוען תפקידי עבודה</strong>
+                </div>
+              ) : assignmentsError ? (
+                <div className="edit-user-permissions-status edit-user-permissions-error" role="alert">
+                  <BriefcaseBusiness size={28} aria-hidden="true" />
+                  <strong>טעינת התפקידים נכשלה</strong>
+                  <span>{assignmentsError}</span>
+                </div>
+              ) : (
+                <DynamicUserAssignmentsEditor
+                  jobTypes={dynamicJobTypes}
+                  assignments={assignments}
+                  isDisabled={isSaving}
+                  onChange={setAssignments}
+                />
+              )}
+            </div>
           ) : (
             <div
               id="edit-user-permissions-panel"
@@ -1139,51 +1211,45 @@ function EditUserModal({
                 </div>
               ) : (
                 <>
-                  <div className="edit-user-current-user-note">
-                    <strong>
-                      ברירת מחדל לתפקיד:
-                      {' '}
-                      {
-                        ROLE_LABELS[
-                          formState.role
-                        ]
-                      }
-                    </strong>
+                  <div className="permission-policy-card dynamic-inherited-permissions-card">
+                    {isDynamicPermissionSummaryLoading ? (
+                      <div className="permission-policy-note">טוען הרשאות דינמיות…</div>
+                    ) : dynamicPermissionSummaryError ? (
+                      <div className="permission-policy-note permission-policy-note-error">{dynamicPermissionSummaryError}</div>
+                    ) : (
+                      <DynamicUserJobTypePermissions
+                        editor={dynamicPermissionEditor}
+                        isDisabled={isSaving}
+                        onChange={(nextPermissions) => {
+                          const nextMap = new Map(
+                            nextPermissions.map((permission) => [
+                              `${permission.jobTypeId}:${permission.permissionKey}`,
+                              permission.enabled,
+                            ]),
+                          );
 
-                    <div>
-                      {usesDefaultPermissions
-                        ? 'ההרשאות הנוכחיות תואמות לברירת המחדל של התפקיד.'
-                        : 'ההרשאות הנוכחיות מותאמות אישית ואינן תואמות במלואן לברירת המחדל של התפקיד.'}
-                    </div>
+                          setDynamicPermissionEditor((current) => ({
+                            jobTypes: current.jobTypes.map((jobType) => ({
+                              ...jobType,
+                              permissions: jobType.permissions.map((permission) => ({
+                                ...permission,
+                                enabled: nextMap.get(`${jobType.jobTypeId}:${permission.permissionKey}`) ?? permission.enabled,
+                                hasOverride: (nextMap.get(`${jobType.jobTypeId}:${permission.permissionKey}`) ?? permission.enabled) !== permission.inheritedEnabled,
+                              })),
+                            })),
+                          }));
+                        }}
+                      />
+                    )}
+                  </div>
 
-                    <div
-                      style={{
-                        marginTop:
-                          '12px',
-                      }}
-                    >
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        disabled={
-                          isSaving ||
-                          usesDefaultPermissions
-                        }
-                        onClick={
-                          handleApplyRoleDefaults
-                        }
-                      >
-                        <RotateCcw
-                          size={17}
-                          aria-hidden="true"
-                        />
-
-                        החלת ברירת המחדל
-                      </Button>
-                    </div>
+                  <div className="permission-policy-note">
+                    הרשאות התפקידים נוצרות דינמית לפי היכולות של כל Job Type. הרשאות מערכת רוחביות נשארות בנפרד למטה.
                   </div>
 
                   <UserPermissionsTab
+                    title="הרשאות מערכת"
+                    allowedPermissionKeys={SYSTEM_PERMISSION_KEYS}
                     selectedPermissions={
                       selectedPermissions
                     }

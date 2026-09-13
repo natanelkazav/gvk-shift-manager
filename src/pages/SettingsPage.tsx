@@ -30,6 +30,11 @@ import PushTestNotification
   from '../components/settings/PushTestNotification';
 
 import '../styles/settings.css';
+import DevelopmentModeSettings from '../components/settings/DevelopmentModeSettings';
+import GvkLegacyMigrationPanel from '../components/settings/GvkLegacyMigrationPanel';
+import DynamicCutoverSettings from '../components/settings/DynamicCutoverSettings';
+import DynamicPilotQaPanel from '../components/settings/DynamicPilotQaPanel';
+import LegacyCompatibilityPanel from '../components/settings/LegacyCompatibilityPanel';
 
 type FileToolTab =
   | 'import'
@@ -38,7 +43,11 @@ type FileToolTab =
 function SettingsPage() {
   const {
     hasPermission,
+    profile,
   } = useAuth();
+
+  const isSystemAdmin = profile?.role === 'admin';
+  const canManageUsers = hasPermission('users.manage');
 
   const canManageNotifications =
     hasPermission(
@@ -226,6 +235,65 @@ function SettingsPage() {
                 </section>
               ) : null}
             </div>
+          </section>
+        ) : null}
+
+        {canManageUsers ? (
+          <section className="settings-section settings-section-card">
+            <div className="settings-section-header">
+              <ShieldCheck size={22} aria-hidden="true" />
+              <div><h2>Dynamic-first / Rollback</h2><p>מתג Cutover מרכזי לפיילוט. אינו מוחק נתונים וניתן לחזור זמנית ל-Legacy.</p></div>
+            </div>
+            <DynamicCutoverSettings />
+          </section>
+        ) : null}
+
+        {canManageUsers ? (
+          <section className="settings-section settings-section-card">
+            <div className="settings-section-header">
+              <ShieldCheck size={22} aria-hidden="true" />
+              <div>
+                <h2>QA לפיילוט הדינמי</h2>
+                <p>בדיקות Readiness לא הרסניות לפני מעבר לבדיקת המערכת הידנית המלאה.</p>
+              </div>
+            </div>
+            <DynamicPilotQaPanel />
+          </section>
+        ) : null}
+
+        {canManageUsers ? (
+          <section className="settings-section settings-section-card">
+            <div className="settings-section-header">
+              <ShieldCheck size={22} aria-hidden="true" />
+              <div>
+                <h2>מעבר GVK למערכת הדינמית</h2>
+                <p>Adapter חד-פעמי שממפה את שלושת מקורות ה-Legacy של הפיילוט לתפקידי Job Type שתבחר.</p>
+              </div>
+            </div>
+            <GvkLegacyMigrationPanel />
+          </section>
+        ) : null}
+
+        {canManageUsers ? (
+          <section className="settings-section settings-section-card">
+            <div className="settings-section-header">
+              <ShieldCheck size={22} aria-hidden="true" />
+              <div>
+                <h2>כלי Legacy לשחזור</h2>
+                <p>מסכי המערכת הישנה הוצאו מהניווט הראשי ונשמרו כאן לצורכי Rollback ובדיקות בלבד.</p>
+              </div>
+            </div>
+            <LegacyCompatibilityPanel />
+          </section>
+        ) : null}
+
+        {isSystemAdmin ? (
+          <section className="settings-section settings-section-card settings-development-section">
+            <div className="settings-section-header">
+              <ShieldCheck size={22} aria-hidden="true" />
+              <div><h2>סביבת פיתוח בטוחה</h2><p>הפעל סימולציה אישית לפני בדיקות בזמן שהמערכת בשימוש.</p></div>
+            </div>
+            <DevelopmentModeSettings />
           </section>
         ) : null}
 

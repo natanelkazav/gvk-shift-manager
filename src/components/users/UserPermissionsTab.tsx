@@ -27,6 +27,8 @@ interface UserPermissionsTabProps {
   onChange: (
     permissions: PermissionKey[],
   ) => void;
+  allowedPermissionKeys?: PermissionKey[];
+  title?: string;
 }
 
 function normalizeSearchValue(
@@ -41,6 +43,8 @@ function UserPermissionsTab({
   selectedPermissions,
   isDisabled = false,
   onChange,
+  allowedPermissionKeys,
+  title = 'הרשאות משתמש',
 }: UserPermissionsTabProps) {
   const [
     searchTerm,
@@ -63,6 +67,15 @@ function UserPermissionsTab({
       [selectedPermissions],
     );
 
+  const visiblePermissionKeys = useMemo(
+    () => allowedPermissionKeys ?? allPermissionKeys,
+    [allowedPermissionKeys],
+  );
+  const visiblePermissionKeySet = useMemo(
+    () => new Set<PermissionKey>(visiblePermissionKeys),
+    [visiblePermissionKeys],
+  );
+
   const normalizedSearchTerm =
     normalizeSearchValue(
       searchTerm,
@@ -71,11 +84,15 @@ function UserPermissionsTab({
   const filteredGroups =
     useMemo<PermissionGroup[]>(
       () => {
+        const visibleGroups = permissionGroups
+          .map((group) => ({ ...group, permissions: group.permissions.filter((permission) => visiblePermissionKeySet.has(permission.key)) }))
+          .filter((group) => group.permissions.length > 0);
+
         if (!normalizedSearchTerm) {
-          return permissionGroups;
+          return visibleGroups;
         }
 
-        return permissionGroups
+        return visibleGroups
           .map((group) => {
             const groupMatches =
               normalizeSearchValue(
@@ -118,7 +135,7 @@ function UserPermissionsTab({
               Boolean(group),
           );
       },
-      [normalizedSearchTerm],
+      [normalizedSearchTerm, visiblePermissionKeySet],
     );
 
   const handlePermissionChange = (
@@ -144,14 +161,9 @@ function UserPermissionsTab({
       );
     }
 
-    onChange(
-      allPermissionKeys.filter(
-        (currentPermission) =>
-          nextPermissionSet.has(
-            currentPermission,
-          ),
-      ),
-    );
+    const hiddenSelected = selectedPermissions.filter((permission) => !visiblePermissionKeySet.has(permission));
+    const nextVisible = visiblePermissionKeys.filter((permission) => nextPermissionSet.has(permission));
+    onChange(Array.from(new Set([...hiddenSelected, ...nextVisible])));
   };
 
   const handleSelectAll =
@@ -160,9 +172,8 @@ function UserPermissionsTab({
         return;
       }
 
-      onChange([
-        ...allPermissionKeys,
-      ]);
+      const hiddenSelected = selectedPermissions.filter((permission) => !visiblePermissionKeySet.has(permission));
+      onChange(Array.from(new Set([...hiddenSelected, ...visiblePermissionKeys])));
     };
 
   const handleClearAll =
@@ -171,7 +182,7 @@ function UserPermissionsTab({
         return;
       }
 
-      onChange([]);
+      onChange(selectedPermissions.filter((permission) => !visiblePermissionKeySet.has(permission)));
     };
 
   const handleSelectGroup = (
@@ -194,14 +205,9 @@ function UserPermissionsTab({
       },
     );
 
-    onChange(
-      allPermissionKeys.filter(
-        (permission) =>
-          nextPermissionSet.has(
-            permission,
-          ),
-      ),
-    );
+    const hiddenSelected = selectedPermissions.filter((permission) => !visiblePermissionKeySet.has(permission));
+    const nextVisible = visiblePermissionKeys.filter((permission) => nextPermissionSet.has(permission));
+    onChange(Array.from(new Set([...hiddenSelected, ...nextVisible])));
   };
 
   const handleClearGroup = (
@@ -229,8 +235,7 @@ function UserPermissionsTab({
     );
   };
 
-  const selectedCount =
-    selectedPermissions.length;
+  const selectedVisibleCount = visiblePermissionKeys.filter((permission) => selectedPermissionSet.has(permission)).length;
 
   return (
     <div className="user-permissions-tab">
@@ -245,12 +250,12 @@ function UserPermissionsTab({
 
           <div>
             <strong>
-              הרשאות משתמש
+              {title}
             </strong>
 
             <span>
-              נבחרו {selectedCount} מתוך{' '}
-              {allPermissionKeys.length}{' '}
+              נבחרו {visiblePermissionKeys.filter((permission) => selectedPermissionSet.has(permission)).length} מתוך{' '}
+              {visiblePermissionKeys.length}{' '}
               הרשאות
             </span>
           </div>
@@ -262,7 +267,7 @@ function UserPermissionsTab({
             variant="secondary"
             disabled={
               isDisabled ||
-              selectedCount === 0
+              selectedVisibleCount === 0
             }
             onClick={handleClearAll}
           >
@@ -279,8 +284,8 @@ function UserPermissionsTab({
             variant="secondary"
             disabled={
               isDisabled ||
-              selectedCount ===
-                allPermissionKeys.length
+              selectedVisibleCount ===
+                visiblePermissionKeys.length
             }
             onClick={handleSelectAll}
           >

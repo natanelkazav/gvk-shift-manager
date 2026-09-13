@@ -514,3 +514,138 @@
   color: var(--color-gray-600);
   font-size: var(--font-size-sm);
 }
+
+/* Phase 8.7 - generic Job Type dashboard */
+.dynamic-dashboard-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dynamic-dashboard-intro .dashboard-card-body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dynamic-dashboard-intro h2,
+.dynamic-dashboard-intro p {
+  margin: 0;
+}
+
+.dynamic-dashboard-intro p {
+  margin-top: 4px;
+  color: var(--color-gray-600);
+}
+
+.dynamic-dashboard-intro-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+}
+
+.dynamic-dashboard-role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dynamic-dashboard-role-meta {
+  display: block;
+  margin-top: 3px;
+  color: var(--color-gray-600);
+  font-size: 0.78rem;
+}
+
+.dynamic-dashboard-role-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dynamic-dashboard-description {
+  margin: 0;
+  color: var(--color-gray-600);
+}
+
+.dynamic-dashboard-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--color-gray-50);
+}
+
+.dynamic-dashboard-fact > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-primary-700);
+}
+
+.dynamic-dashboard-fact > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dynamic-dashboard-fact span {
+  color: var(--color-gray-600);
+  font-size: 0.86rem;
+}
+
+.dynamic-dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dynamic-dashboard-actions a {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 9px;
+  background: var(--color-white);
+  color: var(--color-primary-700);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.dynamic-dashboard-actions a:hover {
+  background: var(--color-gray-100);
+}
+
+.dynamic-dashboard-managed-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dynamic-dashboard-managed-role {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 12px;
+}
+
+.dynamic-dashboard-managed-role span {
+  color: var(--color-gray-600);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 900px) {
+  .dynamic-dashboard-role-grid,
+  .dynamic-dashboard-managed-grid {
+    grid-template-columns: 1fr;
+  }
+}

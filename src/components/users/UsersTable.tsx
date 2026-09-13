@@ -24,11 +24,13 @@ import {
 import {
   Button,
 } from '../ui';
+import DynamicJobTypeUserGroups from './DynamicJobTypeUserGroups';
 
 import type {
   UserProfile,
   UserRole,
 } from '../../types/auth';
+import type { DynamicJobType } from '../../types/dynamicScheduling';
 
 interface UsersTableProps {
   users:
@@ -50,6 +52,12 @@ interface UsersTableProps {
     string | null;
 
   canResetPasswords:
+    boolean;
+
+  dynamicJobTypes:
+    DynamicJobType[];
+
+  dynamicFirstEnabled:
     boolean;
 
   onEditUser: (
@@ -290,6 +298,8 @@ function UsersTable({
   deletingUserId,
   resettingPasswordUserId,
   canResetPasswords,
+  dynamicJobTypes,
+  dynamicFirstEnabled,
   onEditUser,
   onDeleteUser,
   onResetPassword,
@@ -341,6 +351,10 @@ const [
     >(
       () =>
         roleDefinitions
+          .filter((definition) =>
+            !dynamicFirstEnabled ||
+            !(['dispatcher', 'on_call', 'morning_driver'] as UserRole[]).includes(definition.role),
+          )
           .map(
             (
               definition,
@@ -387,6 +401,7 @@ const [
               0,
           ),
       [
+        dynamicFirstEnabled,
         users,
       ],
     );
@@ -451,6 +466,20 @@ const [
 
   return (
     <div className="users-role-groups">
+      <DynamicJobTypeUserGroups
+        users={users}
+        jobTypes={dynamicJobTypes}
+        currentUserId={currentUserId}
+        updatingUserId={updatingUserId}
+        deletingUserId={deletingUserId}
+        resettingPasswordUserId={resettingPasswordUserId}
+        canResetPasswords={canResetPasswords}
+        onEditUser={onEditUser}
+        onDeleteUser={onDeleteUser}
+        onResetPassword={onResetPassword}
+        onToggleActiveStatus={onToggleActiveStatus}
+      />
+
       {roleGroups.map(
         (
           group,

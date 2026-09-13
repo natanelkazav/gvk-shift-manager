@@ -15,6 +15,7 @@ interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   onClose: () => void;
+  className?: string;
 }
 
 /*
@@ -73,6 +74,7 @@ function Modal({
   children,
   footer,
   onClose,
+  className,
 }: ModalProps) {
   const titleId =
     useId();
@@ -148,7 +150,7 @@ function Modal({
       }
     >
       <section
-        className="modal"
+        className={`modal${className ? ` ${className}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={

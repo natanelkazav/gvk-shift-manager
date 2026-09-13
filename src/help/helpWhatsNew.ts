@@ -1,6 +1,4 @@
-import type {
-  PermissionKey,
-} from '../types/auth';
+import type { PermissionKey } from '../types/auth';
 
 export interface HelpWhatsNewItem {
   id: string;
@@ -11,15 +9,6 @@ export interface HelpWhatsNewItem {
 
 export const helpWhatsNewItems:
   readonly HelpWhatsNewItem[] = [
-    {
-      id: 'dispatcher-reopen-and-next-month-edit',
-      title: 'תיקון שיבוץ לאחר פרסום',
-      description:
-        'מנהל עם הרשאת עריכת שיבוץ יכול לפתוח מחדש אילוצים של חודש שכבר פורסם, לשמור טיוטה חדשה ולפרסם אותה מחדש. בנוסף ניתן לתקן לוח מוקדנים שפורסם גם עבור החודש הבא.',
-      requiredAnyPermissions: [
-        'schedule.edit',
-      ],
-    },
     {
       id: 'morning-driver-dynamic-times',
       title: 'שעות דינמיות לכונני בוקר',

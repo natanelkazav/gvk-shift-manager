@@ -1,11 +1,9 @@
-import type {
-  UserProfile,
-  UserRole,
-} from './auth';
+import type { UserProfile, UserRole } from './auth';
+import type { SystemAccountType } from '../config/systemAccountTypes';
 
 export interface UsersFilters {
   searchTerm: string;
-  role: UserRole | 'all';
+  role: SystemAccountType | 'all';
   status: 'all' | 'active' | 'inactive';
 }
 

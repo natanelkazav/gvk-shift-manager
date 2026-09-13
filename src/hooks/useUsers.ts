@@ -6,6 +6,7 @@ import {
   useState,
 } from 'react';
 import { usersService } from '../services/usersService';
+import { accountTypeFromLegacyRole } from '../config/systemAccountTypes';
 import type {
   PermissionKey,
   UserProfile,
@@ -841,8 +842,7 @@ export function useUsers({
 
           const matchesRole =
             filters.role === 'all' ||
-            profile.role ===
-              filters.role;
+            accountTypeFromLegacyRole(profile.role) === filters.role;
 
           const matchesStatus =
             filters.status ===

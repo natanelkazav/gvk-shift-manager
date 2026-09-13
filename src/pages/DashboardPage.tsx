@@ -23,6 +23,16 @@ import ManagerDashboard
 import MorningDriverDashboard
   from '../components/dashboard/MorningDriverDashboard';
 
+import DynamicDashboard
+  from '../components/dashboard/DynamicDashboard';
+
+import { dynamicRuntimeService }
+  from '../services/dynamicRuntimeService';
+import { dynamicCutoverService } from '../services/dynamicCutoverService';
+
+import type { DynamicRuntimeContext }
+  from '../types/dynamicRuntime';
+
 import '../styles/dashboard.css';
 
 interface DashboardLocationState {
@@ -43,6 +53,24 @@ function DashboardPage() {
     location.state as
       | DashboardLocationState
       | null;
+
+  const [
+    dynamicContext,
+    setDynamicContext,
+  ] = useState<DynamicRuntimeContext | null>(null);
+  const [useDynamicRuntime, setUseDynamicRuntime] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([dynamicRuntimeService.getMyRuntimeContext(), dynamicCutoverService.getState()])
+      .then(([context, cutover]) => {
+        if (active) { setDynamicContext(context); setUseDynamicRuntime(cutover.useDynamicRuntime); }
+      })
+      .catch(() => {
+        if (active) { setDynamicContext(null); setUseDynamicRuntime(false); }
+      });
+    return () => { active = false; };
+  }, []);
 
   const [
     accessDeniedMessage,
@@ -111,6 +139,18 @@ function DashboardPage() {
         {(
           dashboard,
         ) => {
+          // Dynamic-first: once the user has at least one active dynamic
+          // membership, the dashboard is derived from Job Types rather than
+          // the legacy profile.role. Legacy remains available only as a
+          // transition fallback for users not migrated yet.
+          if (useDynamicRuntime && dynamicContext?.hasDynamicMemberships) {
+            return (
+              <DynamicDashboard
+                context={dynamicContext}
+              />
+            );
+          }
+
           if (
             dashboard.manager
           ) {

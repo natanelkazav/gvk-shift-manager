@@ -1,8 +1,11 @@
 import {
+  BriefcaseBusiness,
   RefreshCw,
   UserPlus,
+  UsersRound,
 } from 'lucide-react';
 import {
+  useEffect,
   useState,
 } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -11,16 +14,24 @@ import DeleteUserModal from '../components/users/DeleteUserModal';
 import EditUserModal from '../components/users/EditUserModal';
 import UsersFilters from '../components/users/UsersFilters';
 import UsersStatistics from '../components/users/UsersStatistics';
+import DynamicJobTypesPanel from '../components/users/dynamic/DynamicJobTypesPanel';
 import UsersTable from '../components/users/UsersTable';
 import {
   Button,
   PageHeader,
 } from '../components/ui';
 import { useUsers } from '../hooks/useUsers';
+import { dynamicCutoverService } from '../services/dynamicCutoverService';
+import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
+import { dynamicPermissionEngineService } from '../services/dynamicPermissionEngineService';
+import { dynamicUserAssignmentsService } from '../services/dynamicUserAssignmentsService';
+import type { DynamicUserJobTypePermissionSelection } from '../types/dynamicPermissionEngine';
+import type { DynamicUserAssignmentSelection } from '../types/dynamicUserAssignments';
 import type {
   PermissionKey,
   UserProfile,
 } from '../types/auth';
+import type { DynamicJobType } from '../types/dynamicScheduling';
 import type {
   CreateUserInput,
   UpdateUserProfileInput,
@@ -34,6 +45,10 @@ const initialFilters:
     role: 'all',
     status: 'all',
   };
+
+type UsersPageSection =
+  | 'users'
+  | 'job-types';
 
 function UsersPage() {
   const {
@@ -59,12 +74,29 @@ function UsersPage() {
     );
 
   const [
+    activeSection,
+    setActiveSection,
+  ] = useState<UsersPageSection>(
+    'users',
+  );
+
+  const [
     filters,
     setFilters,
   ] =
     useState<UsersFiltersState>(
       initialFilters,
     );
+
+  const [
+    dynamicJobTypes,
+    setDynamicJobTypes,
+  ] = useState<DynamicJobType[]>([]);
+
+  const [
+    dynamicFirstEnabled,
+    setDynamicFirstEnabled,
+  ] = useState(false);
 
   const [
     selectedUser,
@@ -130,6 +162,32 @@ function UsersPage() {
 
     filters,
   });
+
+  useEffect(() => {
+    if (activeSection !== 'users') {
+      return;
+    }
+
+    let isCancelled = false;
+
+    void Promise.all([
+      dynamicSchedulingService.getAdminData(),
+      dynamicCutoverService.getState(),
+    ])
+      .then(([adminData, cutoverState]) => {
+        if (isCancelled) return;
+        setDynamicJobTypes(adminData.jobTypes ?? []);
+        setDynamicFirstEnabled(cutoverState.dynamicFirstEnabled);
+      })
+      .catch(() => {
+        if (isCancelled) return;
+        setDynamicJobTypes([]);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeSection]);
 
   const isSelectedUserSaving =
     Boolean(
@@ -245,6 +303,8 @@ function UsersPage() {
       input: CreateUserInput,
       permissions:
         PermissionKey[],
+      assignments:
+        DynamicUserAssignmentSelection[],
     ): Promise<void> => {
       if (!canManageUsers) {
         throw new Error(
@@ -259,6 +319,11 @@ function UsersPage() {
         await saveUserPermissions(
           createdUser.id,
           permissions,
+        );
+
+        await dynamicUserAssignmentsService.save(
+          createdUser.id,
+          assignments,
         );
         } catch (error) {
           throw new Error(
@@ -282,6 +347,10 @@ function UsersPage() {
         UpdateUserProfileInput,
       permissions:
         PermissionKey[],
+      dynamicJobTypePermissions:
+        DynamicUserJobTypePermissionSelection[],
+      assignments:
+        DynamicUserAssignmentSelection[],
     ): Promise<void> => {
       if (!canManageUsers) {
         throw new Error(
@@ -297,6 +366,16 @@ function UsersPage() {
       await saveUserPermissions(
         userId,
         permissions,
+      );
+
+      await dynamicUserAssignmentsService.save(
+        userId,
+        assignments,
+      );
+
+      await dynamicPermissionEngineService.saveUserJobTypePermissions(
+        userId,
+        dynamicJobTypePermissions,
       );
 
       setIsEditModalOpen(false);
@@ -427,6 +506,36 @@ function UsersPage() {
         }
       />
 
+      <div className="users-page-tabs" role="tablist" aria-label="ניהול משתמשים ותפקידים">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeSection === 'users'}
+          className={activeSection === 'users' ? 'is-active' : ''}
+          onClick={() => setActiveSection('users')}
+        >
+          <UsersRound size={17} />
+          משתמשים
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeSection === 'job-types'}
+          className={activeSection === 'job-types' ? 'is-active' : ''}
+          onClick={() => setActiveSection('job-types')}
+        >
+          <BriefcaseBusiness size={17} />
+          סוגי תפקידים ומערכי שיבוץ
+        </button>
+      </div>
+
+      {activeSection === 'job-types' ? (
+        <DynamicJobTypesPanel
+          canManage={canManageUsers}
+        />
+      ) : (
+        <>
       {!canManageUsers ? (
         <div
           className="users-error"
@@ -509,6 +618,12 @@ function UsersPage() {
         canResetPasswords={
           canResetPasswords
         }
+        dynamicJobTypes={
+          dynamicJobTypes
+        }
+        dynamicFirstEnabled={
+          dynamicFirstEnabled
+        }
         onEditUser={
           openEditModal
         }
@@ -526,6 +641,7 @@ function UsersPage() {
       {canManageUsers ? (
         <>
           <CreateUserModal
+            dynamicJobTypes={dynamicJobTypes}
             isOpen={
               isCreateModalOpen
             }
@@ -544,6 +660,7 @@ function UsersPage() {
 
           <EditUserModal
             user={selectedUser}
+            dynamicJobTypes={dynamicJobTypes}
             isOpen={
               isEditModalOpen
             }
@@ -617,6 +734,8 @@ function UsersPage() {
           />
         </>
       ) : null}
+        </>
+      )}
     </section>
   );
 }

@@ -1,0 +1,450 @@
+import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, List, LoaderCircle, Pencil, RefreshCw, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import MonthCalendar from '../components/calendar/MonthCalendar';
+import Button from '../components/ui/Button';
+import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
+import type {
+  MyDynamicSchedulePeriod,
+  MyDynamicScheduleWorkspace,
+  MyDynamicScheduleAssignment,
+  DynamicSelfEditWorkspace,
+} from '../types/dynamicScheduling';
+import '../styles/myDynamicShifts.css';
+
+type ViewMode = 'list' | 'calendar';
+
+const weekdays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+function localDate(value: string): Date {
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
+}
+
+function formatDate(value: string): string {
+  const [year, month, day] = value.slice(0, 10).split('-');
+  return `${day}/${month}/${year}`;
+}
+
+function formatTime(value: string): string {
+  return value.slice(0, 5);
+}
+
+
+function modeTitle(workMode: MyDynamicSchedulePeriod['workMode'] | MyDynamicScheduleWorkspace['workMode']): string {
+  return workMode === 'shifts' ? 'המשמרות שלי' : 'הכוננויות שלי';
+}
+
+function changeModeText(mode: MyDynamicScheduleWorkspace['scheduleChangeMode']): string | null {
+  if (mode === 'shift_exchange') return 'לתפקיד הזה פעילה מערכת חילופי משמרות. את הבקשות מגישים מהטאב „חילופי משמרות”.';
+  return null;
+}
+
+function MyDynamicShiftsPage() {
+  const [periods, setPeriods] = useState<MyDynamicSchedulePeriod[]>([]);
+  const [selectedId, setSelectedId] = useState<string>('');
+  const [selectedJobTypeId, setSelectedJobTypeId] = useState<string>('');
+  const [workspace, setWorkspace] = useState<MyDynamicScheduleWorkspace | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const [loading, setLoading] = useState(true);
+  const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selfEditOpen, setSelfEditOpen] = useState(false);
+  const [selfEditWorkspace, setSelfEditWorkspace] = useState<DynamicSelfEditWorkspace | null>(null);
+  const [selfEditLoading, setSelfEditLoading] = useState(false);
+  const [selfEditSavingId, setSelfEditSavingId] = useState<string | null>(null);
+
+  const loadPeriods = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const nextPeriods = await dynamicSchedulingService.getMyDynamicSchedulePeriods();
+      setPeriods(nextPeriods);
+      setSelectedId((current) =>
+        current && nextPeriods.some((period) => period.publicationId === current)
+          ? current
+          : nextPeriods[0]?.publicationId ?? '',
+      );
+      setSelectedJobTypeId((current) =>
+        current && nextPeriods.some((period) => period.jobTypeId === current)
+          ? current
+          : nextPeriods[0]?.jobTypeId ?? '',
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'טעינת המשמרות נכשלה.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSelfEditWorkspace = async (publicationId: string) => {
+    setSelfEditLoading(true);
+    setError(null);
+    try {
+      const data = await dynamicSchedulingService.getMyDynamicSelfEditWorkspace(publicationId);
+      setSelfEditWorkspace(data);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'טעינת עריכת השיבוץ נכשלה.');
+      setSelfEditWorkspace(null);
+    } finally {
+      setSelfEditLoading(false);
+    }
+  };
+
+  const reloadPersonalWorkspace = async (publicationId: string) => {
+    const data = await dynamicSchedulingService.getMyDynamicScheduleWorkspace(publicationId);
+    setWorkspace(data);
+  };
+
+  const handleSelfEditAssignment = async (assignmentId: string, userId: string) => {
+    if (!selectedId) return;
+    setSelfEditSavingId(assignmentId);
+    setError(null);
+    try {
+      await dynamicSchedulingService.updateMyDynamicPublishedAssignment(selectedId, assignmentId, userId);
+      await Promise.all([
+        loadSelfEditWorkspace(selectedId),
+        reloadPersonalWorkspace(selectedId),
+        loadPeriods(),
+      ]);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'עדכון השיבוץ נכשל.');
+    } finally {
+      setSelfEditSavingId(null);
+    }
+  };
+
+  useEffect(() => {
+    void loadPeriods();
+  }, []);
+
+  useEffect(() => {
+    setSelfEditOpen(false);
+    setSelfEditWorkspace(null);
+    if (!selectedId) {
+      setWorkspace(null);
+      return;
+    }
+
+    let active = true;
+    setWorkspaceLoading(true);
+    setError(null);
+    void dynamicSchedulingService.getMyDynamicScheduleWorkspace(selectedId)
+      .then((data) => {
+        if (active) setWorkspace(data);
+      })
+      .catch((caught: unknown) => {
+        if (active) setError(caught instanceof Error ? caught.message : 'טעינת הלוח נכשלה.');
+      })
+      .finally(() => {
+        if (active) setWorkspaceLoading(false);
+      });
+    return () => { active = false; };
+  }, [selectedId]);
+
+  const availableRoles = useMemo(() => {
+    const byId = new Map<string, MyDynamicSchedulePeriod>();
+    for (const period of periods) {
+      if (!byId.has(period.jobTypeId)) byId.set(period.jobTypeId, period);
+    }
+    return [...byId.values()].sort((first, second) => first.jobTypeName.localeCompare(second.jobTypeName, 'he'));
+  }, [periods]);
+
+  const rolePeriods = useMemo(
+    () => periods
+      .filter((period) => period.jobTypeId === selectedJobTypeId)
+      .sort((first, second) => (first.year * 12 + first.month) - (second.year * 12 + second.month)),
+    [periods, selectedJobTypeId],
+  );
+
+  const selectedRolePeriodIndex = rolePeriods.findIndex((period) => period.publicationId === selectedId);
+  const previousPeriod = selectedRolePeriodIndex > 0 ? rolePeriods[selectedRolePeriodIndex - 1] : null;
+  const nextPeriod = selectedRolePeriodIndex >= 0 && selectedRolePeriodIndex < rolePeriods.length - 1
+    ? rolePeriods[selectedRolePeriodIndex + 1]
+    : null;
+
+  useEffect(() => {
+    if (!selectedJobTypeId) return;
+    const selectedStillBelongsToRole = rolePeriods.some((period) => period.publicationId === selectedId);
+    if (!selectedStillBelongsToRole) {
+      const latest = rolePeriods[rolePeriods.length - 1];
+      setSelectedId(latest?.publicationId ?? '');
+    }
+  }, [rolePeriods, selectedId, selectedJobTypeId]);
+
+  const selectedPeriod = periods.find((period) => period.publicationId === selectedId) ?? null;
+  const pageTitle = workspace
+    ? modeTitle(workspace.workMode)
+    : selectedPeriod
+      ? modeTitle(selectedPeriod.workMode)
+      : 'המשמרות שלי';
+
+  const assignmentsByDate = useMemo(() => {
+    const map = new Map<string, MyDynamicScheduleAssignment[]>();
+    for (const assignment of workspace?.assignments ?? []) {
+      const current = map.get(assignment.shiftDate) ?? [];
+      current.push(assignment);
+      map.set(assignment.shiftDate, current);
+    }
+    return map;
+  }, [workspace]);
+
+  const groupedDates = useMemo(
+    () => [...assignmentsByDate.entries()].sort(([first], [second]) => first.localeCompare(second)),
+    [assignmentsByDate],
+  );
+
+  const selfEditGroupedDates = useMemo(() => {
+    const map = new Map<string, DynamicSelfEditWorkspace['assignments']>();
+    for (const assignment of selfEditWorkspace?.assignments ?? []) {
+      const current = map.get(assignment.shiftDate) ?? [];
+      current.push(assignment);
+      map.set(assignment.shiftDate, current);
+    }
+    return [...map.entries()].sort(([first], [second]) => first.localeCompare(second));
+  }, [selfEditWorkspace]);
+
+  if (loading) {
+    return <main className="my-dynamic-shifts page-shell" dir="rtl"><div className="my-shifts-loading"><LoaderCircle className="spin" /> טוען לוחות שפורסמו…</div></main>;
+  }
+
+  return (
+    <main className="my-dynamic-shifts page-shell" dir="rtl">
+      <header className="my-shifts-header">
+        <div>
+          <h1><CalendarDays size={27} /> {pageTitle}</h1>
+          <p>הלוחות כאן מגיעים מהמערכת הדינמית לאחר פרסום על ידי מנהל.</p>
+        </div>
+        <Button variant="secondary" onClick={() => void loadPeriods()}><RefreshCw size={16} /> רענן</Button>
+      </header>
+
+      {error ? <div className="users-error" role="alert">{error}</div> : null}
+
+      {!periods.length ? (
+        <section className="my-shifts-empty">
+          <CalendarDays size={34} />
+          <h2>אין עדיין לוח דינמי שפורסם עבורך</h2>
+          <p>לאחר שמנהל יפרסם לוח לתפקיד דינמי שאליו אתה משויך, הוא יופיע כאן.</p>
+        </section>
+      ) : (
+        <>
+          <section className="my-shifts-period-controls" aria-label="בחירת תפקיד וחודש">
+            <label>
+              <span>תפקיד</span>
+              <select
+                value={selectedJobTypeId}
+                onChange={(event) => setSelectedJobTypeId(event.target.value)}
+              >
+                {availableRoles.map((period) => (
+                  <option key={period.jobTypeId} value={period.jobTypeId}>{period.jobTypeName}</option>
+                ))}
+              </select>
+            </label>
+
+            <div className="my-shifts-month-navigation">
+              <button
+                type="button"
+                className="my-shifts-month-arrow"
+                disabled={!previousPeriod}
+                onClick={() => previousPeriod && setSelectedId(previousPeriod.publicationId)}
+                aria-label="חודש קודם"
+                title={previousPeriod ? 'חודש קודם' : 'אין לוח דינמי קודם זמין'}
+              >
+                <ChevronRight size={18} />
+              </button>
+
+              <label>
+                <span>חודש</span>
+                <select
+                  value={selectedId}
+                  onChange={(event) => setSelectedId(event.target.value)}
+                >
+                  {rolePeriods.map((period) => (
+                    <option key={period.publicationId} value={period.publicationId}>
+                      {String(period.month).padStart(2, '0')}/{period.year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button
+                type="button"
+                className="my-shifts-month-arrow"
+                disabled={!nextPeriod}
+                onClick={() => nextPeriod && setSelectedId(nextPeriod.publicationId)}
+                aria-label="חודש הבא"
+                title={nextPeriod ? 'חודש הבא' : 'אין לוח דינמי הבא זמין'}
+              >
+                <ChevronLeft size={18} />
+              </button>
+            </div>
+
+            <div className="my-shifts-period-meta">
+              {selectedPeriod ? (
+                <>
+                  <strong>{selectedPeriod.jobTypeName}</strong>
+                  <span dir="ltr">{String(selectedPeriod.month).padStart(2, '0')}/{selectedPeriod.year}</span>
+                  <small>{selectedPeriod.assignmentCount} {selectedPeriod.workMode === 'shifts' ? 'משמרות' : 'כוננויות'}</small>
+                </>
+              ) : null}
+            </div>
+          </section>
+
+          {workspaceLoading ? (
+            <section className="my-shifts-loading"><LoaderCircle className="spin" /> טוען לוח…</section>
+          ) : workspace ? (
+            <section className="my-shifts-card">
+              <div className="my-shifts-toolbar">
+                <div className="my-shifts-summary">
+                  <span className="my-shifts-published"><CheckCircle2 size={16} /> פורסם</span>
+                  <strong>{workspace.assignments.length}</strong>
+                  <span>{workspace.workMode === 'shifts' ? 'משמרות בחודש' : 'כוננויות בחודש'}</span>
+                </div>
+                <div className="my-shifts-view-toggle" role="group" aria-label="תצוגת לוח">
+                  <button type="button" className={viewMode === 'calendar' ? 'is-active' : ''} onClick={() => setViewMode('calendar')}><CalendarDays size={16} /> טבלה חודשית</button>
+                  <button type="button" className={viewMode === 'list' ? 'is-active' : ''} onClick={() => setViewMode('list')}><List size={16} /> רשימה</button>
+                </div>
+              </div>
+
+              {workspace.scheduleChangeMode === 'self_edit' ? (
+                <div className="my-shifts-self-edit-entry">
+                  <div>
+                    <strong>שינוי שיבוץ עצמי פעיל לתפקיד הזה</strong>
+                    <span>ניתן לפתוח את הלוח המלא של התפקיד ולשנות את העובד המשובץ, בהתאם לחלון העריכה.</span>
+                  </div>
+                  <Button
+                    variant={selfEditOpen ? 'secondary' : 'primary'}
+                    onClick={() => {
+                      const nextOpen = !selfEditOpen;
+                      setSelfEditOpen(nextOpen);
+                      if (nextOpen && !selfEditWorkspace) void loadSelfEditWorkspace(workspace.publicationId);
+                    }}
+                  >
+                    {selfEditOpen ? <><X size={16} /> סגור עריכה</> : <><Pencil size={16} /> ערוך שיבוץ</>}
+                  </Button>
+                </div>
+              ) : null}
+
+              {changeModeText(workspace.scheduleChangeMode) ? (
+                <div className="my-shifts-transition-note">{changeModeText(workspace.scheduleChangeMode)}</div>
+              ) : null}
+
+              {selfEditOpen ? (
+                <section className="my-shifts-self-edit-panel" aria-label="עריכת שיבוץ עצמי">
+                  <header>
+                    <div>
+                      <h2>עריכת שיבוץ</h2>
+                      <p>זהו הלוח המלא של התפקיד. שינוי נשמר מיד ומתועד ביומן המערכת.</p>
+                    </div>
+                    {selfEditWorkspace ? (
+                      <span className={selfEditWorkspace.editable ? 'is-editable' : 'is-locked'}>
+                        {selfEditWorkspace.editable ? 'פתוח לעריכה' : 'קריאה בלבד'}
+                      </span>
+                    ) : null}
+                  </header>
+
+                  {selfEditLoading ? (
+                    <div className="my-shifts-loading"><LoaderCircle className="spin" /> טוען לוח לעריכה…</div>
+                  ) : selfEditWorkspace ? (
+                    <>
+                      {!selfEditWorkspace.editable && selfEditWorkspace.editabilityReason ? (
+                        <div className="my-shifts-self-edit-warning">{selfEditWorkspace.editabilityReason}</div>
+                      ) : null}
+                      <div className="my-shifts-self-edit-list">
+                        {selfEditGroupedDates.map(([date, assignments]) => {
+                          const dateObject = localDate(date);
+                          return (
+                            <section key={date} className="my-shifts-self-edit-day">
+                              <header>
+                                <strong>{weekdays[dateObject.getDay()]}</strong>
+                                <span dir="ltr">{formatDate(date)}</span>
+                              </header>
+                              <div>
+                                {assignments.map((assignment) => (
+                                  <article key={assignment.id} className={assignment.isMine ? 'is-mine' : ''}>
+                                    <div className="my-shifts-self-edit-shift">
+                                      <strong>{assignment.shiftName}</strong>
+                                      <span dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
+                                    </div>
+                                    <label>
+                                      <span>משובץ</span>
+                                      <select
+                                        value={assignment.userId}
+                                        disabled={!selfEditWorkspace.editable || selfEditSavingId === assignment.id}
+                                        onChange={(event) => void handleSelfEditAssignment(assignment.id, event.target.value)}
+                                      >
+                                        {selfEditWorkspace.members.map((member) => (
+                                          <option key={member.userId} value={member.userId}>{member.displayName}</option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                    {selfEditSavingId === assignment.id ? <LoaderCircle className="spin" size={17} /> : null}
+                                  </article>
+                                ))}
+                              </div>
+                            </section>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {!workspace.assignments.length ? (
+                <div className="my-shifts-no-assignments">הלוח פורסם, אך לא שובצת למשמרות בחודש זה.</div>
+              ) : viewMode === 'calendar' ? (
+                <MonthCalendar
+                  year={workspace.year}
+                  month={workspace.month}
+                  emptyMessage="אין משמרות להצגה בחודש הזה."
+                  getDayClassName={({ date }) => assignmentsByDate.has(date) ? 'my-shifts-calendar-has-assignment' : null}
+                  renderDayContent={({ date }) => {
+                    const dayAssignments = assignmentsByDate.get(date) ?? [];
+                    if (!dayAssignments.length) return null;
+                    return (
+                      <div className="my-shifts-calendar-items">
+                        {dayAssignments.map((assignment) => (
+                          <div key={assignment.id} className="my-shifts-calendar-item">
+                            <strong>{assignment.shiftName}</strong>
+                            <span className="my-shifts-time" dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }}
+                />
+              ) : (
+                <div className="my-shifts-list">
+                  {groupedDates.map(([date, dayAssignments]) => {
+                    const dateObject = localDate(date);
+                    return (
+                      <section key={date} className="my-shifts-day-group">
+                        <header>
+                          <strong>{weekdays[dateObject.getDay()]}</strong>
+                          <span className="my-shifts-date" dir="ltr">{formatDate(date)}</span>
+                        </header>
+                        <div>
+                          {dayAssignments.map((assignment) => (
+                            <article key={assignment.id} className="my-shifts-row">
+                              <div>
+                                <strong>{assignment.shiftName}</strong>
+                                {assignment.managerEdited ? <small>השיבוץ עודכן ידנית על ידי מנהל</small> : null}
+                              </div>
+                              <span className="my-shifts-time" dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          ) : null}
+        </>
+      )}
+    </main>
+  );
+}
+
+export default MyDynamicShiftsPage;

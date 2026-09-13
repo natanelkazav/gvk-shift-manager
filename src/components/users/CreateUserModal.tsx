@@ -1,4 +1,5 @@
 import {
+  BriefcaseBusiness,
   KeyRound,
   LoaderCircle,
   Save,
@@ -17,22 +18,48 @@ import {
   Input,
 } from '../ui';
 import UserPermissionsTab from './UserPermissionsTab';
+import DynamicUserAssignmentsEditor from './dynamic/DynamicUserAssignmentsEditor';
 import {
   arePermissionListsEqual,
   getDefaultPermissionsForRole,
-  ROLE_LABELS,
 } from '../../config/defaultRolePermissions';
 import type {
   PermissionKey,
   UserRole,
 } from '../../types/auth';
-import type {
-  CreateUserInput,
-} from '../../types/users';
+import type { CreateUserInput } from '../../types/users';
+import type { DynamicJobType } from '../../types/dynamicScheduling';
+import type { DynamicUserAssignmentSelection } from '../../types/dynamicUserAssignments';
+import {
+  accountTypeFromLegacyRole,
+  legacyRoleForAccountType,
+  SYSTEM_ACCOUNT_DESCRIPTIONS,
+  SYSTEM_ACCOUNT_LABELS,
+  type SystemAccountType,
+} from '../../config/systemAccountTypes';
 
 import './EditUserModalTabs.css';
 
+
+const SYSTEM_PERMISSION_KEYS: PermissionKey[] = [
+  'dashboard.view',
+  'notifications.view',
+  'notifications.manage',
+  'users.view',
+  'users.manage',
+  'schedule_import.manage',
+  'schedule_export.manage',
+  'archive.view',
+  'audit.view',
+  'attendance.view',
+  'attendance.manage',
+];
+
+const getDefaultSystemPermissions = (role: UserRole): PermissionKey[] =>
+  getDefaultPermissionsForRole(role).filter((permission) => SYSTEM_PERMISSION_KEYS.includes(permission));
+
 interface CreateUserModalProps {
+  dynamicJobTypes: DynamicJobType[];
   isOpen: boolean;
   isSaving: boolean;
 
@@ -41,6 +68,7 @@ interface CreateUserModalProps {
   onCreate: (
     input: CreateUserInput,
     permissions: PermissionKey[],
+    assignments: DynamicUserAssignmentSelection[],
   ) => Promise<void>;
 }
 
@@ -57,6 +85,7 @@ interface CreateUserFormState {
 
 type CreateUserTab =
   | 'details'
+  | 'assignments'
   | 'permissions';
 
 const INITIAL_ROLE:
@@ -75,6 +104,7 @@ const initialFormState:
   };
 
 function CreateUserModal({
+  dynamicJobTypes,
   isOpen,
   isSaving,
   onClose,
@@ -99,10 +129,10 @@ function CreateUserModal({
     setSelectedPermissions,
   ] = useState<PermissionKey[]>(
     () =>
-      getDefaultPermissionsForRole(
-        INITIAL_ROLE,
-      ),
+      getDefaultSystemPermissions(INITIAL_ROLE),
   );
+
+  const [assignments, setAssignments] = useState<DynamicUserAssignmentSelection[]>([]);
 
   const [
     formError,
@@ -128,11 +158,10 @@ function CreateUserModal({
     });
 
     setSelectedPermissions(
-      getDefaultPermissionsForRole(
-        INITIAL_ROLE,
-      ),
+      getDefaultSystemPermissions(INITIAL_ROLE),
     );
 
+    setAssignments([]);
     setFormError(null);
     setPermissionsNotice(null);
     setActiveTab('details');
@@ -182,9 +211,7 @@ function CreateUserModal({
   const defaultPermissions =
     useMemo(
       () =>
-        getDefaultPermissionsForRole(
-          formState.role,
-        ),
+        getDefaultSystemPermissions(formState.role),
       [formState.role],
     );
 
@@ -307,6 +334,7 @@ function CreateUserModal({
               .mustChangePassword,
         },
         selectedPermissions,
+        assignments,
       );
     } catch (error) {
       setFormError(
@@ -317,13 +345,15 @@ function CreateUserModal({
     }
   };
 
+  const handleAccountTypeChange = (nextAccountType: SystemAccountType): void => {
+    handleRoleChange(legacyRoleForAccountType(nextAccountType, formState.role));
+  };
+
   const handleRoleChange = (
     nextRole: UserRole,
   ): void => {
     const nextPermissions =
-      getDefaultPermissionsForRole(
-        nextRole,
-      );
+      getDefaultSystemPermissions(nextRole);
 
     setFormState(
       (currentState) => ({
@@ -339,22 +369,20 @@ function CreateUserModal({
     setFormError(null);
 
     setPermissionsNotice(
-      `הוחלו הרשאות ברירת המחדל של התפקיד "${ROLE_LABELS[nextRole]}". ניתן לערוך אותן לפני יצירת המשתמש.`,
+      `הוחלו הרשאות ברירת המחדל של סוג החשבון "${SYSTEM_ACCOUNT_LABELS[accountTypeFromLegacyRole(nextRole)]}". ניתן לערוך אותן לפני יצירת המשתמש.`,
     );
   };
 
   const handleApplyRoleDefaults =
     (): void => {
       setSelectedPermissions(
-        getDefaultPermissionsForRole(
-          formState.role,
-        ),
+        getDefaultSystemPermissions(formState.role),
       );
 
       setFormError(null);
 
       setPermissionsNotice(
-        `הרשאות ברירת המחדל של התפקיד "${ROLE_LABELS[formState.role]}" הוחלו מחדש.`,
+        `הרשאות ברירת המחדל של סוג החשבון "${SYSTEM_ACCOUNT_LABELS[accountTypeFromLegacyRole(formState.role)]}" הוחלו מחדש.`,
       );
     };
 
@@ -454,6 +482,26 @@ function CreateUserModal({
 
             <span>
               פרטי משתמש
+            </span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            id="create-user-assignments-tab"
+            aria-selected={activeTab === 'assignments'}
+            aria-controls="create-user-assignments-panel"
+            className={[
+              'edit-user-tab',
+              activeTab === 'assignments' ? 'edit-user-tab-active' : '',
+            ].filter(Boolean).join(' ')}
+            disabled={isSaving}
+            onClick={() => handleTabChange('assignments')}
+          >
+            <BriefcaseBusiness size={18} aria-hidden="true" />
+            <span>תפקידים</span>
+            <span className="create-user-permissions-count">
+              {assignments.filter((item) => item.isMember || item.isManager).length}
             </span>
           </button>
 
@@ -616,49 +664,20 @@ function CreateUserModal({
                 />
 
                 <label className="edit-user-field">
-                  <span>תפקיד</span>
+                  <span>סוג חשבון</span>
 
                   <select
-                    value={
-                      formState.role
-                    }
+                    value={accountTypeFromLegacyRole(formState.role)}
                     disabled={isSaving}
-                    onChange={(
-                      event,
-                    ) => {
-                      handleRoleChange(
-                        event.target
-                          .value as UserRole,
-                      );
+                    onChange={(event) => {
+                      handleAccountTypeChange(event.target.value as SystemAccountType);
                     }}
                   >
-                    {(
-                      Object.entries(
-                        ROLE_LABELS,
-                      ) as Array<
-                        [
-                          UserRole,
-                          string,
-                        ]
-                      >
-                    ).map(
-                      ([
-                        roleValue,
-                        roleLabel,
-                      ]) => (
-                        <option
-                          key={
-                            roleValue
-                          }
-                          value={
-                            roleValue
-                          }
-                        >
-                          {roleLabel}
-                        </option>
-                      ),
-                    )}
+                    {(Object.entries(SYSTEM_ACCOUNT_LABELS) as Array<[SystemAccountType, string]>).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
                   </select>
+                  <small>{SYSTEM_ACCOUNT_DESCRIPTIONS[accountTypeFromLegacyRole(formState.role)]}</small>
                 </label>
 
                 <Input
@@ -798,6 +817,20 @@ function CreateUserModal({
                 </label>
               </div>
             </div>
+          ) : activeTab === 'assignments' ? (
+            <div
+              id="create-user-assignments-panel"
+              role="tabpanel"
+              aria-labelledby="create-user-assignments-tab"
+              className="edit-user-tab-panel"
+            >
+              <DynamicUserAssignmentsEditor
+                jobTypes={dynamicJobTypes}
+                assignments={assignments}
+                isDisabled={isSaving}
+                onChange={setAssignments}
+              />
+            </div>
           ) : (
             <div
               id="create-user-permissions-panel"
@@ -807,13 +840,8 @@ function CreateUserModal({
             >
               <div className="edit-user-current-user-note">
                 <strong>
-                  הרשאות לתפקיד:
-                  {' '}
-                  {
-                    ROLE_LABELS[
-                      formState.role
-                    ]
-                  }
+                  הרשאות מערכת לסוג חשבון: {' '}
+                  {SYSTEM_ACCOUNT_LABELS[accountTypeFromLegacyRole(formState.role)]}
                 </strong>
 
                 <div>
@@ -844,6 +872,8 @@ function CreateUserModal({
               </div>
 
               <UserPermissionsTab
+                title="הרשאות מערכת"
+                allowedPermissionKeys={SYSTEM_PERMISSION_KEYS}
                 selectedPermissions={
                   selectedPermissions
                 }

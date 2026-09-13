@@ -21,7 +21,9 @@ import {
 import { useAuth } from '../auth/AuthContext';
 import { useNotificationContext } from '../features/notifications/context/useNotificationContext';
 import type { MyNotification } from '../features/notifications/services/notificationService';
+import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
 import { shiftSwapService } from '../services/shiftSwapService';
+import type { DynamicShiftExchangeRequest } from '../types/dynamicScheduling';
 import type { ShiftSwapRequest } from '../types/shiftSwap';
 import '../styles/notifications.css';
 
@@ -87,6 +89,7 @@ function NotificationsPage() {
         : 'requests';
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>('all');
   const [swapRequests, setSwapRequests] = useState<ShiftSwapRequest[]>([]);
+  const [dynamicSwapRequests, setDynamicSwapRequests] = useState<DynamicShiftExchangeRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(canApproveSwaps);
   const [requestsError, setRequestsError] = useState<string | null>(null);
   const [requestsSuccess, setRequestsSuccess] = useState<string | null>(null);
@@ -107,8 +110,14 @@ function NotificationsPage() {
     let cancelled = false;
     const load = async (): Promise<void> => {
       try {
-        const data = await shiftSwapService.getRequests();
-        if (!cancelled) setSwapRequests(data);
+        const [legacyData, dynamicData] = await Promise.all([
+          shiftSwapService.getRequests(),
+          dynamicSchedulingService.getDynamicShiftExchangeRequests(),
+        ]);
+        if (!cancelled) {
+          setSwapRequests(legacyData);
+          setDynamicSwapRequests(dynamicData);
+        }
       } catch (error) {
         if (!cancelled) setRequestsError(getErrorMessage(error));
       } finally {
@@ -124,6 +133,25 @@ function NotificationsPage() {
   const pendingManagerRequests = useMemo(
     () => swapRequests.filter((request) => request.status === 'pending_manager'),
     [swapRequests],
+  );
+
+  const pendingDynamicManagerRequests = useMemo(
+    () => dynamicSwapRequests.filter((request) => request.status === 'pending_manager'),
+    [dynamicSwapRequests],
+  );
+
+  const reviewedDynamicManagerRequests = useMemo(
+    () =>
+      dynamicSwapRequests
+        .filter(
+          (request) =>
+            Boolean(request.managerReviewedAt) &&
+            (request.status === 'approved' || request.status === 'rejected_by_manager'),
+        )
+        .sort((first, second) =>
+          (second.managerReviewedAt ?? '').localeCompare(first.managerReviewedAt ?? ''),
+        ),
+    [dynamicSwapRequests],
   );
 
   const reviewedManagerRequests = useMemo(
@@ -183,12 +211,48 @@ function NotificationsPage() {
     setRequestsLoading(true);
     setRequestsError(null);
     try {
-      setSwapRequests(await shiftSwapService.getRequests());
+      const [legacyData, dynamicData] = await Promise.all([
+        shiftSwapService.getRequests(),
+        dynamicSchedulingService.getDynamicShiftExchangeRequests(),
+      ]);
+      setSwapRequests(legacyData);
+      setDynamicSwapRequests(dynamicData);
     } catch (error) {
       setRequestsError(getErrorMessage(error));
     } finally {
       setRequestsLoading(false);
     }
+  };
+
+  const reviewDynamicSwap = async (requestId: string, approve: boolean): Promise<void> => {
+    setBusyRequestId(`dynamic:${requestId}`);
+    setRequestsError(null);
+    setRequestsSuccess(null);
+    try {
+      await dynamicSchedulingService.reviewDynamicShiftExchangeRequest(requestId, approve);
+      setRequestsSuccess(
+        approve
+          ? 'החילוף הדינמי אושר ולוח השיבוצים עודכן.'
+          : 'בקשת החילוף הדינמית נדחתה.',
+      );
+      await Promise.all([refreshRequests(), refreshActivity()]);
+    } catch (error) {
+      setRequestsError(getErrorMessage(error));
+    } finally {
+      setBusyRequestId(null);
+    }
+  };
+
+  const formatDynamicSwapShift = (
+    date: string | null,
+    shiftName: string | null,
+    startTime: string | null,
+    endTime: string | null,
+  ): string => {
+    if (!date || !startTime || !endTime) return '—';
+    const [year, month, day] = date.slice(0, 10).split('-');
+    const name = shiftName ? `${shiftName} · ` : '';
+    return `${name}${day}/${month}/${year} · \u2066${startTime.slice(0, 5)}–${endTime.slice(0, 5)}\u2069`;
   };
 
   const reviewSwap = async (requestId: string, approve: boolean): Promise<void> => {
@@ -252,7 +316,7 @@ function NotificationsPage() {
             onClick={() => selectWorkspaceTab('requests')}
           >
             בקשות
-            <span>{pendingManagerRequests.length}</span>
+            <span>{pendingManagerRequests.length + pendingDynamicManagerRequests.length}</span>
           </button>
         ) : null}
       </div>
@@ -317,17 +381,45 @@ function NotificationsPage() {
       {activeTab === 'requests' && canApproveSwaps ? (
         <>
           <div className="notifications-requests-toolbar">
-            <div><strong>בקשות שממתינות לאישור</strong><span>{pendingManagerRequests.length} בקשות</span></div>
+            <div><strong>בקשות שממתינות לאישור</strong><span>{pendingManagerRequests.length + pendingDynamicManagerRequests.length} בקשות</span></div>
             <button type="button" className="notifications-toolbar-button" disabled={requestsLoading} onClick={() => void refreshRequests()}><RefreshCw size={17} aria-hidden="true" />רענון</button>
           </div>
           {requestsError ? <div className="notifications-page-message notifications-page-error">{requestsError}</div> : null}
           {requestsSuccess ? <div className="notifications-page-message notifications-page-success">{requestsSuccess}</div> : null}
           {requestsLoading ? <div className="notifications-page-state"><RefreshCw className="notifications-page-spinner" size={24} aria-hidden="true" />טוען בקשות...</div> : null}
-          {!requestsLoading && pendingManagerRequests.length === 0 ? (
+          {!requestsLoading && pendingManagerRequests.length === 0 && pendingDynamicManagerRequests.length === 0 ? (
             <div className="notifications-empty-state"><ArrowLeftRight size={34} aria-hidden="true" /><h2>אין בקשות שממתינות לאישור</h2><p>בקשות חדשות שאושרו על ידי המוקדן השני יופיעו כאן.</p></div>
           ) : null}
-          {!requestsLoading && pendingManagerRequests.length > 0 ? (
+          {!requestsLoading && (pendingManagerRequests.length > 0 || pendingDynamicManagerRequests.length > 0) ? (
             <div className="notifications-requests-list">
+              {pendingDynamicManagerRequests.map((request) => (
+                <article key={`dynamic:${request.id}`} className="notifications-request-card">
+                  <header>
+                    <div>
+                      <strong>{request.swapType === 'one_way' ? 'חילוף דינמי חד-כיווני' : 'חילוף דינמי דו-כיווני'}</strong>
+                      <span>{request.jobTypeName} · {request.requesterName} ↔ {request.counterpartyName}</span>
+                    </div>
+                    <ArrowLeftRight size={21} aria-hidden="true" />
+                  </header>
+                  <div className="notifications-request-flow">
+                    <div>
+                      <span>{request.requesterName}</span>
+                      <strong>{formatDynamicSwapShift(request.requesterShiftDate, request.requesterShiftName, request.requesterStartTime, request.requesterEndTime)}</strong>
+                    </div>
+                    <ArrowLeftRight size={18} aria-hidden="true" />
+                    <div>
+                      <span>{request.counterpartyName}</span>
+                      <strong>{request.swapType === 'two_way'
+                        ? formatDynamicSwapShift(request.counterpartyShiftDate, request.counterpartyShiftName, request.counterpartyStartTime, request.counterpartyEndTime)
+                        : 'מקבל/ת את המשמרת'}</strong>
+                    </div>
+                  </div>
+                  <div className="notifications-request-actions">
+                    <button type="button" className="notifications-request-approve" disabled={busyRequestId === `dynamic:${request.id}`} onClick={() => void reviewDynamicSwap(request.id, true)}><Check size={17} aria-hidden="true" />אישור</button>
+                    <button type="button" className="notifications-request-reject" disabled={busyRequestId === `dynamic:${request.id}`} onClick={() => void reviewDynamicSwap(request.id, false)}><X size={17} aria-hidden="true" />דחייה</button>
+                  </div>
+                </article>
+              ))}
               {pendingManagerRequests.map((request) => (
                 <article key={request.id} className="notifications-request-card">
                   <header><div><strong>{request.swapType === 'one_way' ? 'חילוף חד-כיווני' : 'חילוף דו-כיווני'}</strong><span>{request.requesterName} ↔ {request.counterpartyName}</span></div><ArrowLeftRight size={21} aria-hidden="true" /></header>
@@ -362,7 +454,7 @@ function NotificationsPage() {
               <span>בקשות שכבר התקבלה לגביהן החלטה</span>
             </div>
             <div className="notifications-request-history-heading-actions">
-              <span>{reviewedManagerRequests.length}</span>
+              <span>{reviewedManagerRequests.length + reviewedDynamicManagerRequests.length}</span>
               <ChevronDown
                 size={20}
                 aria-hidden="true"
@@ -373,7 +465,7 @@ function NotificationsPage() {
 
           {isRequestHistoryOpen &&
           !requestsLoading &&
-          reviewedManagerRequests.length === 0 ? (
+          reviewedManagerRequests.length === 0 && reviewedDynamicManagerRequests.length === 0 ? (
             <div className="notifications-request-history-empty">
               עדיין אין בקשות שטופלו.
             </div>
@@ -381,8 +473,28 @@ function NotificationsPage() {
 
           {isRequestHistoryOpen &&
           !requestsLoading &&
-          reviewedManagerRequests.length > 0 ? (
+          (reviewedManagerRequests.length > 0 || reviewedDynamicManagerRequests.length > 0) ? (
             <div className="notifications-requests-list notifications-request-history-list">
+              {reviewedDynamicManagerRequests.map((request) => {
+                const approved = request.status === 'approved';
+                return (
+                  <article key={`dynamic:${request.id}`} className="notifications-request-card notifications-request-history-card">
+                    <header>
+                      <div>
+                        <strong>{request.swapType === 'one_way' ? 'חילוף דינמי חד-כיווני' : 'חילוף דינמי דו-כיווני'}</strong>
+                        <span>{request.jobTypeName} · {request.requesterName} ↔ {request.counterpartyName}</span>
+                      </div>
+                      <span className={approved ? 'notifications-request-decision notifications-request-decision-approved' : 'notifications-request-decision notifications-request-decision-rejected'}>{approved ? 'אושר' : 'נדחה'}</span>
+                    </header>
+                    <div className="notifications-request-flow">
+                      <div><span>{request.requesterName}</span><strong>{formatDynamicSwapShift(request.requesterShiftDate, request.requesterShiftName, request.requesterStartTime, request.requesterEndTime)}</strong></div>
+                      <ArrowLeftRight size={18} aria-hidden="true" />
+                      <div><span>{request.counterpartyName}</span><strong>{request.swapType === 'two_way' ? formatDynamicSwapShift(request.counterpartyShiftDate, request.counterpartyShiftName, request.counterpartyStartTime, request.counterpartyEndTime) : 'מקבל/ת את המשמרת'}</strong></div>
+                    </div>
+                    <div className="notifications-request-history-meta"><Clock3 size={14} aria-hidden="true" />{request.managerReviewedAt ? `החלטה: ${formatNotificationDate(request.managerReviewedAt)}` : 'הבקשה טופלה'}{request.rejectionReason ? ` · סיבה: ${request.rejectionReason}` : ''}</div>
+                  </article>
+                );
+              })}
               {reviewedManagerRequests.map((request) => {
                 const approved = request.status === 'approved';
 

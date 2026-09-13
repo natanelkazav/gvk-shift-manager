@@ -12,10 +12,12 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -b --pretty false",
     "test:contracts": "node scripts/testing/check-project-contracts.mjs",
-"test:smoke": "node --env-file=.env.local scripts/testing/remote-smoke.mjs",
-"test:quality": "npm run lint && npm run build && npm run test:contracts",    "test:db": "npx supabase test db",
+    "test:smoke": "node --env-file=.env.local scripts/testing/remote-smoke.mjs",
+    "test:quality": "npm run lint && npm run build && npm run test:contracts && npm run audit:dynamic-runtime",
+    "test:db": "npx supabase test db",
     "test:db:reset": "npx supabase db reset && npx supabase test db",
-    "test:full": "npm run test:quality && npm run test:db:reset"
+    "test:full": "npm run test:quality && npm run test:db:reset",
+    "audit:dynamic-runtime": "node scripts/testing/audit-dynamic-runtime.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",

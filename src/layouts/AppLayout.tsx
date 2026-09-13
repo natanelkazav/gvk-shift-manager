@@ -26,6 +26,7 @@ import NotificationClickHandler
   from '../features/notifications/components/NotificationClickHandler';
 
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -58,7 +59,14 @@ import type {
   UserRole,
 } from '../types/auth';
 
+import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
+import { dynamicRuntimeService } from '../services/dynamicRuntimeService';
+import { dynamicCutoverService } from '../services/dynamicCutoverService';
+import type { DynamicRuntimeContext } from '../types/dynamicRuntime';
+
 import '../styles/layout.css';
+import { DevelopmentModeProvider } from '../features/developmentMode/DevelopmentModeProvider';
+import DevelopmentModeBanner from '../features/developmentMode/DevelopmentModeBanner';
 
 interface NavigationItem {
   label: string;
@@ -71,6 +79,8 @@ interface NavigationItem {
 
   requiredPermissions:
     readonly PermissionKey[];
+
+  runtimeMode?: 'dynamic' | 'legacy' | 'all';
 
 }
 
@@ -94,7 +104,46 @@ const navigationItems:
     },
     {
       label:
-        'משמרות',
+        'האילוצים שלי',
+
+      path:
+        '/my-availability',
+
+      icon:
+        ClipboardList,
+
+      requiredPermissions: [],
+      runtimeMode: 'dynamic',
+    },
+    {
+      label:
+        'המשמרות שלי',
+
+      path:
+        '/my-shifts',
+
+      icon:
+        CalendarDays,
+
+      requiredPermissions: [],
+      runtimeMode: 'dynamic',
+    },
+    {
+      label:
+        'חילופי משמרות',
+
+      path:
+        '/my-shift-exchanges',
+
+      icon:
+        Repeat2,
+
+      requiredPermissions: [],
+      runtimeMode: 'dynamic',
+    },
+    {
+      label:
+        'שיבוצים',
 
       path:
         '/shifts',
@@ -102,11 +151,8 @@ const navigationItems:
       icon:
         CalendarDays,
 
-      requiredPermissions: [
-        'availability.manage',
-        'driver_availability.manage',
-        'morning_driver_availability.manage',
-      ],
+      requiredPermissions: [],
+      runtimeMode: 'dynamic',
     },
     {
       label:
@@ -120,6 +166,7 @@ const navigationItems:
 
       requiredPermissions: [
         'schedule.view'],
+      runtimeMode: 'legacy',
 
     },
 
@@ -132,6 +179,7 @@ const navigationItems:
     'availability.view',
     'availability.manage',
   ],
+  runtimeMode: 'legacy',
 },
 
     {
@@ -150,6 +198,7 @@ const navigationItems:
     'driver_schedule.edit',
     'driver_schedule.edit_any',
   ],
+      runtimeMode: 'legacy',
     },
 
 {
@@ -161,6 +210,7 @@ const navigationItems:
     'morning_driver_availability.view',
     'morning_driver_availability.manage',
   ],
+  runtimeMode: 'legacy',
 },
     {
       label: 'לוח כוננויות בוקר',
@@ -173,6 +223,7 @@ const navigationItems:
         'morning_driver_schedule.edit',
         'morning_driver_schedule.edit_any',
       ],
+      runtimeMode: 'legacy',
       },
     {
       label:
@@ -247,6 +298,7 @@ requiredPermissions: [
 requiredPermissions: [
   'shift_swaps.view',
 ],
+      runtimeMode: 'legacy',
     },
 
     {
@@ -348,7 +400,7 @@ const roleLabels:
       'מנהל מערכת',
 
     manager:
-      'מנהל מוקד',
+      'מנהל',
 
     dispatcher:
       'מוקדן',
@@ -406,64 +458,171 @@ function AppLayout() {
       false,
     );
 
+    const [dynamicFirstActive, setDynamicFirstActive] = useState(false);
+
+const [
+    dynamicRuntimeContext,
+    setDynamicRuntimeContext,
+  ] = useState<DynamicRuntimeContext | null>(null);
+
+  const [
+    hasDynamicAvailability,
+    setHasDynamicAvailability,
+  ] = useState(false);
+
+
+  const [
+    hasDynamicPublishedSchedule,
+    setHasDynamicPublishedSchedule,
+  ] = useState(false);
+
+  const [
+    hasDynamicShiftExchange,
+    setHasDynamicShiftExchange,
+  ] = useState(false);
+
+  const [
+    hasDynamicManagementWorkspace,
+    setHasDynamicManagementWorkspace,
+  ] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([dynamicRuntimeService.getMyRuntimeContext(), dynamicCutoverService.getState()])
+      .then(([context, cutover]) => {
+        if (!active) return;
+
+        // Dynamic-first is also the default operational shell for system
+        // administrators and Job Type managers. They do not need to be members
+        // of an employee Job Type just to receive the new management navigation.
+        const canUseDynamicManagement =
+          profile?.role === 'admin' ||
+          context.canManageDynamicScheduling ||
+          context.managedRoles.length > 0;
+
+        setDynamicRuntimeContext(context);
+        setDynamicFirstActive(
+          cutover.dynamicFirstEnabled &&
+          (cutover.useDynamicRuntime || canUseDynamicManagement),
+        );
+      })
+      .catch(() => { if (active) { setDynamicRuntimeContext(null); setDynamicFirstActive(false); } });
+    return () => { active = false; };
+  }, [profile?.id, profile?.role]);
+
+  useEffect(() => {
+    let active = true;
+    const now = new Date();
+
+    void dynamicSchedulingService
+      .getShiftsManagementWorkspace(now.getFullYear(), now.getMonth() + 1)
+      .then((workspace) => {
+        if (active) setHasDynamicManagementWorkspace(workspace.roles.length > 0);
+      })
+      .catch(() => {
+        if (active) setHasDynamicManagementWorkspace(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [profile?.id, dynamicFirstActive]);
+
+  useEffect(() => {
+    let active = true;
+    void dynamicSchedulingService.getMyDynamicAvailabilityPeriods()
+      .then((periods) => { if (active) setHasDynamicAvailability(periods.length > 0); })
+      .catch(() => { if (active) setHasDynamicAvailability(false); });
+    return () => { active = false; };
+  }, [profile?.id]);
+
+
+  useEffect(() => {
+    let active = true;
+    void dynamicSchedulingService.getMyDynamicSchedulePeriods()
+      .then((periods) => {
+        if (!active) return;
+        setHasDynamicPublishedSchedule(periods.length > 0);
+        // Navigation capability must be derived from the published dynamic
+        // schedules the user can actually see, not from the exchange-options
+        // RPC. The options RPC intentionally filters to current/next-month
+        // requestable data and can therefore return an empty result while a
+        // valid published dynamic schedule is already visible in "המשמרות שלי".
+        // That mismatch caused users to stay on the legacy /shift-swaps page.
+        setHasDynamicShiftExchange(
+          periods.some((period) => period.scheduleChangeMode === 'shift_exchange'),
+        );
+      })
+      .catch(() => {
+        if (!active) return;
+        setHasDynamicPublishedSchedule(false);
+        setHasDynamicShiftExchange(false);
+      });
+    return () => { active = false; };
+  }, [profile?.id]);
+
 const visibleNavigationItems =
   useMemo(
-    () => {
-      const hasManagementWorkspaceAccess =
-        [
-          'availability.manage',
-          'driver_availability.manage',
-          'morning_driver_availability.manage',
-        ].some(
-          (permission) =>
-            hasPermission(
-              permission as
-                PermissionKey,
-            ),
-        );
-
-      const legacyManagementPaths =
-        new Set([
-          '/schedule',
-          '/availability',
-          '/driver-schedule',
-          '/morning-driver-availability',
-          '/morning-driver-schedule',
-        ]);
-
-      return navigationItems.filter(
+    () =>
+      navigationItems.filter(
         (item) => {
+          const mode = item.runtimeMode ?? 'all';
+
+          // Phase 10.5 creates a hard UX boundary: a user sees either the
+          // Dynamic-first navigation or the Legacy-first navigation, never a
+          // mixture of both. The legacy pages are still available under
+          // /legacy/* for explicit recovery by administrators.
+          if (mode === 'dynamic' && !dynamicFirstActive) return false;
+          if (mode === 'legacy' && dynamicFirstActive) return false;
+
           const hasRequiredPermission =
-            item.requiredPermissions.length ===
-              0 ||
-            item.requiredPermissions.some(
-              (permission) =>
-                hasPermission(
-                  permission,
-                ),
+            item.requiredPermissions.length === 0 ||
+            item.requiredPermissions.some((permission) =>
+              hasPermission(permission),
             );
 
-          if (
-            !hasRequiredPermission
-          ) {
+          if (!hasRequiredPermission) return false;
+
+          // Account-level access and employee relevance are intentionally
+          // different concepts. A system administrator may be allowed to
+          // inspect every capability, but that must not fill the sidebar with
+          // personal employee workspaces.
+          const isPersonalDynamicWorkspace =
+            item.path === '/my-availability' ||
+            item.path === '/my-shifts' ||
+            item.path === '/my-shift-exchanges';
+
+          if (profile?.role === 'admin' && isPersonalDynamicWorkspace) {
             return false;
           }
 
-          if (
-            hasManagementWorkspaceAccess &&
-            legacyManagementPaths.has(
-              item.path,
-            )
-          ) {
+          if (item.path === '/my-availability' && !hasDynamicAvailability) {
+            return false;
+          }
+
+          if (item.path === '/my-shifts' && !hasDynamicPublishedSchedule) {
+            return false;
+          }
+
+          if (item.path === '/my-shift-exchanges' && !hasDynamicShiftExchange) {
+            return false;
+          }
+
+          if (item.path === '/shifts' && !hasDynamicManagementWorkspace) {
             return false;
           }
 
           return true;
         },
-      );
-    },
+      ),
     [
       hasPermission,
+      hasDynamicAvailability,
+      hasDynamicPublishedSchedule,
+      hasDynamicShiftExchange,
+      hasDynamicManagementWorkspace,
+      dynamicFirstActive,
+      profile?.role,
     ],
   );
 
@@ -508,17 +667,19 @@ const handleSignOut =
     'משתמש';
 
   const roleLabel =
-    profile
-      ? roleLabels[
-          profile.role
-        ]
-      : '';
+    dynamicRuntimeContext?.hasDynamicMemberships
+      ? dynamicRuntimeContext.primaryJobTypeName ?? 'תפקיד דינמי'
+      : profile
+        ? roleLabels[profile.role]
+        : '';
 
 return (
+<DevelopmentModeProvider>
 <PushStatusProvider>
   <NotificationProvider>
     <NotificationClickHandler />
     <div className="app-layout">
+      <DevelopmentModeBanner />
       {isSidebarOpen ? (
         <button
           type="button"
@@ -613,15 +774,17 @@ return (
                     />
 
                     <span>
-                      {
-                        getNavigationLabel(
-                          item,
-                          hasPermission(
-                            'shift_swaps.approve',
-                          ),
-                          hasPermission,
-                        )
-                      }
+                      {item.path === '/shift-swaps' && hasDynamicShiftExchange
+                        ? 'החלפות משמרת (מערכת ישנה)'
+                        : item.path === '/my-shift-exchanges'
+                          ? 'חילופי משמרות'
+                          : getNavigationLabel(
+                              item,
+                              hasPermission(
+                                'shift_swaps.approve',
+                              ),
+                              hasPermission,
+                            )}
                     </span>
                   </NavLink>
                 );
@@ -723,6 +886,7 @@ return (
     </div>
      </NotificationProvider>
   </PushStatusProvider>
+</DevelopmentModeProvider>
   );
 }
 
