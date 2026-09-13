@@ -737,6 +737,7 @@ export interface DynamicAvailabilityLegacyComparison {
 
 export interface MyDynamicSchedulePeriod {
   publicationId: string;
+  periodSource: 'publication' | 'history';
   jobTypeId: string;
   jobTypeName: string;
   year: number;
@@ -758,10 +759,16 @@ export interface MyDynamicScheduleAssignment {
   assignmentTier: string;
   managerEdited: boolean;
   managerOverrideNote: string | null;
+  holidayName: string | null;
+  sourceDayKind: string | null;
+  contains200Percent: boolean;
+  premium200Hours: number;
 }
 
 export interface MyDynamicScheduleWorkspace {
   publicationId: string;
+  periodSource: 'publication' | 'history';
+  readOnly: boolean;
   jobTypeId: string;
   jobTypeName: string;
   year: number;

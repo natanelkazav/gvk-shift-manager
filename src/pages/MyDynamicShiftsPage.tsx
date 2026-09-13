@@ -2,6 +2,7 @@ import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, List, LoaderCirc
 import { useEffect, useMemo, useState } from 'react';
 import MonthCalendar from '../components/calendar/MonthCalendar';
 import Button from '../components/ui/Button';
+import { calendarHolidayService, type CalendarHoliday } from '../services/calendarHolidayService';
 import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
 import type {
   MyDynamicSchedulePeriod,
@@ -45,6 +46,7 @@ function MyDynamicShiftsPage() {
   const [selectedJobTypeId, setSelectedJobTypeId] = useState<string>('');
   const [workspace, setWorkspace] = useState<MyDynamicScheduleWorkspace | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const [holidays, setHolidays] = useState<CalendarHoliday[]>([]);
   const [loading, setLoading] = useState(true);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +143,34 @@ function MyDynamicShiftsPage() {
     return () => { active = false; };
   }, [selectedId]);
 
+  useEffect(() => {
+    if (!workspace) {
+      setHolidays([]);
+      return;
+    }
+
+    let active = true;
+    void calendarHolidayService.getCalendarHolidays(workspace.year, workspace.month)
+      .then((items) => {
+        if (active) setHolidays(items);
+      })
+      .catch(() => {
+        if (active) setHolidays([]);
+      });
+
+    return () => { active = false; };
+  }, [workspace?.year, workspace?.month]);
+
+  const holidayLabels = useMemo(() => {
+    const labels = new Map<string, string[]>();
+    holidays.forEach((holiday) => {
+      const current = labels.get(holiday.date) ?? [];
+      if (!current.includes(holiday.name)) current.push(holiday.name);
+      labels.set(holiday.date, current);
+    });
+    return labels;
+  }, [holidays]);
+
   const availableRoles = useMemo(() => {
     const byId = new Map<string, MyDynamicSchedulePeriod>();
     for (const period of periods) {
@@ -212,7 +242,7 @@ function MyDynamicShiftsPage() {
       <header className="my-shifts-header">
         <div>
           <h1><CalendarDays size={27} /> {pageTitle}</h1>
-          <p>הלוחות כאן מגיעים מהמערכת הדינמית לאחר פרסום על ידי מנהל.</p>
+          <p>הלוחות כאן כוללים פרסומים דינמיים וגם היסטוריה שיובאה מחודשים קודמים.</p>
         </div>
         <Button variant="secondary" onClick={() => void loadPeriods()}><RefreshCw size={16} /> רענן</Button>
       </header>
@@ -223,7 +253,7 @@ function MyDynamicShiftsPage() {
         <section className="my-shifts-empty">
           <CalendarDays size={34} />
           <h2>אין עדיין לוח דינמי שפורסם עבורך</h2>
-          <p>לאחר שמנהל יפרסם לוח לתפקיד דינמי שאליו אתה משויך, הוא יופיע כאן.</p>
+          <p>לא נמצאו עבורך לוחות שפורסמו או חודשים היסטוריים שיובאו לתפקידים הדינמיים שלך.</p>
         </section>
       ) : (
         <>
@@ -247,7 +277,7 @@ function MyDynamicShiftsPage() {
                 disabled={!previousPeriod}
                 onClick={() => previousPeriod && setSelectedId(previousPeriod.publicationId)}
                 aria-label="חודש קודם"
-                title={previousPeriod ? 'חודש קודם' : 'אין לוח דינמי קודם זמין'}
+                title={previousPeriod ? 'חודש קודם' : 'אין חודש קודם זמין'}
               >
                 <ChevronRight size={18} />
               </button>
@@ -272,7 +302,7 @@ function MyDynamicShiftsPage() {
                 disabled={!nextPeriod}
                 onClick={() => nextPeriod && setSelectedId(nextPeriod.publicationId)}
                 aria-label="חודש הבא"
-                title={nextPeriod ? 'חודש הבא' : 'אין לוח דינמי הבא זמין'}
+                title={nextPeriod ? 'חודש הבא' : 'אין חודש הבא זמין'}
               >
                 <ChevronLeft size={18} />
               </button>
@@ -283,7 +313,7 @@ function MyDynamicShiftsPage() {
                 <>
                   <strong>{selectedPeriod.jobTypeName}</strong>
                   <span dir="ltr">{String(selectedPeriod.month).padStart(2, '0')}/{selectedPeriod.year}</span>
-                  <small>{selectedPeriod.assignmentCount} {selectedPeriod.workMode === 'shifts' ? 'משמרות' : 'כוננויות'}</small>
+                  <small>{selectedPeriod.assignmentCount} {selectedPeriod.workMode === 'shifts' ? 'משמרות' : 'כוננויות'} · {selectedPeriod.periodSource === 'history' ? 'היסטוריה מיובאת' : 'לוח שפורסם'}</small>
                 </>
               ) : null}
             </div>
@@ -295,7 +325,7 @@ function MyDynamicShiftsPage() {
             <section className="my-shifts-card">
               <div className="my-shifts-toolbar">
                 <div className="my-shifts-summary">
-                  <span className="my-shifts-published"><CheckCircle2 size={16} /> פורסם</span>
+                  <span className={workspace.periodSource === 'history' ? 'my-shifts-history' : 'my-shifts-published'}><CheckCircle2 size={16} /> {workspace.periodSource === 'history' ? 'היסטוריה מיובאת' : 'פורסם'}</span>
                   <strong>{workspace.assignments.length}</strong>
                   <span>{workspace.workMode === 'shifts' ? 'משמרות בחודש' : 'כוננויות בחודש'}</span>
                 </div>
@@ -305,7 +335,7 @@ function MyDynamicShiftsPage() {
                 </div>
               </div>
 
-              {workspace.scheduleChangeMode === 'self_edit' ? (
+              {!workspace.readOnly && workspace.scheduleChangeMode === 'self_edit' ? (
                 <div className="my-shifts-self-edit-entry">
                   <div>
                     <strong>שינוי שיבוץ עצמי פעיל לתפקיד הזה</strong>
@@ -324,7 +354,9 @@ function MyDynamicShiftsPage() {
                 </div>
               ) : null}
 
-              {changeModeText(workspace.scheduleChangeMode) ? (
+              {workspace.readOnly ? (
+                <div className="my-shifts-transition-note">זהו חודש היסטורי שיובא מהמערכת הקודמת ולכן הוא מוצג לקריאה בלבד.</div>
+              ) : changeModeText(workspace.scheduleChangeMode) ? (
                 <div className="my-shifts-transition-note">{changeModeText(workspace.scheduleChangeMode)}</div>
               ) : null}
 
@@ -397,6 +429,7 @@ function MyDynamicShiftsPage() {
                   year={workspace.year}
                   month={workspace.month}
                   emptyMessage="אין משמרות להצגה בחודש הזה."
+                  dayLabels={holidayLabels}
                   getDayClassName={({ date }) => assignmentsByDate.has(date) ? 'my-shifts-calendar-has-assignment' : null}
                   renderDayContent={({ date }) => {
                     const dayAssignments = assignmentsByDate.get(date) ?? [];
@@ -405,8 +438,12 @@ function MyDynamicShiftsPage() {
                       <div className="my-shifts-calendar-items">
                         {dayAssignments.map((assignment) => (
                           <div key={assignment.id} className="my-shifts-calendar-item">
-                            <strong>{assignment.shiftName}</strong>
+                            <div className="my-shifts-assignment-title">
+                              <strong>{assignment.shiftName}</strong>
+                              {assignment.contains200Percent ? <span className="my-shifts-premium-badge">200%</span> : null}
+                            </div>
                             <span className="my-shifts-time" dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
+                            {assignment.holidayName ? <small className="my-shifts-holiday-note">{assignment.holidayName}</small> : null}
                           </div>
                         ))}
                       </div>
@@ -427,7 +464,11 @@ function MyDynamicShiftsPage() {
                           {dayAssignments.map((assignment) => (
                             <article key={assignment.id} className="my-shifts-row">
                               <div>
-                                <strong>{assignment.shiftName}</strong>
+                                <div className="my-shifts-assignment-title">
+                                  <strong>{assignment.shiftName}</strong>
+                                  {assignment.contains200Percent ? <span className="my-shifts-premium-badge">200%</span> : null}
+                                </div>
+                                {assignment.holidayName ? <small className="my-shifts-holiday-note">{assignment.holidayName}</small> : null}
                                 {assignment.managerEdited ? <small>השיבוץ עודכן ידנית על ידי מנהל</small> : null}
                               </div>
                               <span className="my-shifts-time" dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
