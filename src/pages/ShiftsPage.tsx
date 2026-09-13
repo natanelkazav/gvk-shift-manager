@@ -355,6 +355,7 @@ function ShiftsPage() {
               <Card>
                 <CardBody>
                   <DynamicPeriodWorkflowPanel
+                    key={`${selectedRole.jobType.id}-${year}-${month}`}
                     jobType={selectedRole.jobType}
                     selectedYear={year}
                     selectedMonth={month}

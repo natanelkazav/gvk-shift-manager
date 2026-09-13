@@ -9,6 +9,12 @@ export interface HelpWhatsNewItem {
 
 export const helpWhatsNewItems: readonly HelpWhatsNewItem[] = [
   {
+    id: 'dynamic-scheduling-phase-10-5-13-role-switch-stability',
+    title: 'מעבר יציב בין תפקידים בניהול החודשי',
+    description:
+      'מעבר בין תפקידים או חודשים בניהול החודשי מאפס כעת מיד את נתוני התפקיד הקודם ומתעלם מתשובות רשת ישנות. סביבת האילוצים גם מתמודדת בבטחה עם משמרת שעדיין לא קיבלה רשומת אילוץ, כך שהמסך אינו קורס בזמן מעבר מהיר בין תפקידים.',
+  },
+  {
     id: 'dynamic-scheduling-phase-10-5-12-calendar-time-premium-fix',
     title: 'תיקון שעות ורכיב 200% בלוח השיבוצים',
     description:

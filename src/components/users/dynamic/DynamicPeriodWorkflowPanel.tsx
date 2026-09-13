@@ -1,5 +1,5 @@
 import { CalendarClock, CheckCircle2, ChevronUp, LoaderCircle, LockKeyhole, PencilLine, Play, Send, Sparkles } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
 import type { DynamicJobType, DynamicPeriodWorkflowState } from '../../../types/dynamicScheduling';
 import { Button } from '../../ui';
@@ -51,20 +51,29 @@ function DynamicPeriodWorkflowPanel({
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDraftEditor, setShowDraftEditor] = useState(false);
   const [showPublishedEditor, setShowPublishedEditor] = useState(false);
+  const loadGenerationRef = useRef(0);
 
   const load = async (): Promise<void> => {
+    const generation = ++loadGenerationRef.current;
     setBusy(true);
     setError(null);
     try {
-      setState(await dynamicSchedulingService.getPeriodWorkflow(jobType.id, year, month));
+      const nextState = await dynamicSchedulingService.getPeriodWorkflow(jobType.id, year, month);
+      if (generation !== loadGenerationRef.current) return;
+      setState(nextState);
     } catch (loadError) {
+      if (generation !== loadGenerationRef.current) return;
       setError(loadError instanceof Error ? loadError.message : 'טעינת ניהול התקופה נכשלה.');
     } finally {
-      setBusy(false);
+      if (generation === loadGenerationRef.current) setBusy(false);
     }
   };
 
   useEffect(() => {
+    loadGenerationRef.current += 1;
+    setState(null);
+    setMessage(null);
+    setError(null);
     setShowDraftEditor(false);
     setShowPublishedEditor(false);
     void load();

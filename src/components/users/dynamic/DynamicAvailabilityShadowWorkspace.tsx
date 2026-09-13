@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import { Check, GitCompareArrows, LoaderCircle, Save, Sparkles } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
 import type {
   DynamicAvailabilityLegacyComparison,
@@ -49,18 +49,34 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
   const [bulkStatus, setBulkStatus] = useState<Status>('available');
   const [bulkWeekday, setBulkWeekday] = useState<number>(0);
   const [bulkShiftKeys, setBulkShiftKeys] = useState<string[] | null>(null);
+  const loadGenerationRef = useRef(0);
 
   const load = async () => {
+    const generation = ++loadGenerationRef.current;
     setBusy(true); setError(null);
     try {
       const data = await dynamicSchedulingService.getAvailabilityShadowWorkspace(jobType.id, year, month);
+      if (generation !== loadGenerationRef.current) return;
       setWorkspace(data);
       setSelectedUserId((current) => current && data.members.some((m) => m.userId === current) ? current : (data.members[0]?.userId ?? ''));
-    } catch (err) { setError(err instanceof Error ? err.message : 'טעינת סביבת האילוצים נכשלה.'); }
-    finally { setBusy(false); }
+    } catch (err) {
+      if (generation !== loadGenerationRef.current) return;
+      setError(err instanceof Error ? err.message : 'טעינת סביבת האילוצים נכשלה.');
+    } finally {
+      if (generation === loadGenerationRef.current) setBusy(false);
+    }
   };
 
-  useEffect(() => { void load(); }, [jobType.id, year, month, refreshKey]);
+  useEffect(() => {
+    loadGenerationRef.current += 1;
+    setWorkspace(null);
+    setSelectedUserId('');
+    setForm(null);
+    setComparison(null);
+    setMessage(null);
+    setBulkShiftKeys(null);
+    void load();
+  }, [jobType.id, year, month, refreshKey]);
 
   const member = useMemo(() => workspace?.members.find((item) => item.userId === selectedUserId) ?? null, [workspace, selectedUserId]);
 
@@ -257,7 +273,8 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
       </div>
       <div className="dynamic-availability-grid">
         {workspace.slots.map((slot) => {
-          const entry = form.entries.find((item) => item.slotId === slot.id)!;
+          const entry = form.entries.find((item) => item.slotId === slot.id);
+          if (!entry) return null;
           return <div className="dynamic-availability-slot" key={slot.id}>
             <div><strong>{new Date(`${slot.date}T12:00:00`).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',weekday:'short'})}</strong><span>{slot.shiftName} · {slot.startTime.slice(0,5)}–{slot.endTime.slice(0,5)}</span>{slot.holidayName ? <small>{slot.holidayName}</small> : null}</div>
             <select value={entry.status} onChange={(e) => setEntry(slot.id,e.target.value as Status)}>{statuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}</select>
