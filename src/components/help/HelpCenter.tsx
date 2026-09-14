@@ -32,10 +32,6 @@ import {
   helpTopics,
 } from '../../help/helpRegistry';
 
-import {
-  helpWhatsNewItems,
-} from '../../help/helpWhatsNew';
-
 import type {
   HelpTopic,
 } from '../../help/helpTypes';
@@ -235,30 +231,6 @@ function HelpCenter() {
               topic,
               hasPermission,
             ),
-        ),
-      [
-        hasPermission,
-      ],
-    );
-
-  const visibleWhatsNewItems =
-    useMemo(
-      () =>
-        helpWhatsNewItems.filter(
-          (
-            item,
-          ) =>
-            !item.requiredAnyPermissions
-              ?.length ||
-            item.requiredAnyPermissions
-              .some(
-                (
-                  permission,
-                ) =>
-                  hasPermission(
-                    permission,
-                  ),
-              ),
         ),
       [
         hasPermission,
@@ -682,44 +654,6 @@ function HelpCenter() {
               ref={contentRef}
               className="help-center-content"
             >
-              {!normalizedSearch &&
-              visibleWhatsNewItems.length >
-                0 ? (
-                  <section className="help-center-whats-new">
-                    <div className="help-center-section-heading">
-                      <strong>
-                        חדש במערכת
-                      </strong>
-
-                      <span>
-                        עדכונים שרלוונטיים להרשאות שלך
-                      </span>
-                    </div>
-
-                    <div className="help-center-whats-new-list">
-                      {visibleWhatsNewItems.map(
-                        (
-                          item,
-                        ) => (
-                          <article
-                            key={
-                              item.id
-                            }
-                          >
-                            <strong>
-                              {item.title}
-                            </strong>
-
-                            <span>
-                              {item.description}
-                            </span>
-                          </article>
-                        ),
-                      )}
-                    </div>
-                  </section>
-                ) : null}
-
               {!normalizedSearch ? (
                 <aside className="help-center-permission-hint">
                   <strong>
