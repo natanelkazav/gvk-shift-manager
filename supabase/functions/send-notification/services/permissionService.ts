@@ -366,6 +366,53 @@ async function validateScheduleEditWorkflowNotification(
   );
 }
 
+async function validateDynamicSchedulePublicationNotification(
+  adminClient: SupabaseClient,
+  userId: string,
+  notificationId: string,
+): Promise<boolean> {
+  const { data, error } = await adminClient
+    .from('notifications')
+    .select('type, source, created_by, data')
+    .eq('id', notificationId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return false;
+
+  if (
+    data.type !== 'schedule_published' ||
+    data.source !== 'dynamic_schedule_publish' ||
+    data.created_by !== userId ||
+    typeof data.data !== 'object' ||
+    data.data === null
+  ) {
+    return false;
+  }
+
+  const metadata = data.data as Record<string, unknown>;
+  const jobTypeId = metadata.jobTypeId;
+  if (
+    metadata.workflow !== 'dynamic_schedule' ||
+    metadata.event !== 'publication_published' ||
+    typeof jobTypeId !== 'string'
+  ) {
+    return false;
+  }
+
+  const { data: allowed, error: permissionError } = await adminClient.rpc(
+    'has_dynamic_job_type_permission',
+    {
+      requested_permission_key: 'schedule.publish',
+      requested_job_type_id: jobTypeId,
+      requested_user_id: userId,
+    },
+  );
+
+  if (permissionError) throw permissionError;
+  return allowed === true;
+}
+
 export async function authenticateNotificationManager(
   request:
     Request,
@@ -441,9 +488,19 @@ export async function authenticateNotificationManager(
             notificationId,
           );
 
+    const isAuthorizedDynamicPublicationDelivery =
+      isAuthorizedShiftSwapDelivery || isAuthorizedScheduleEditDelivery
+        ? false
+        : await validateDynamicSchedulePublicationNotification(
+            adminClient,
+            userId,
+            notificationId,
+          );
+
     if (
       !isAuthorizedShiftSwapDelivery &&
-      !isAuthorizedScheduleEditDelivery
+      !isAuthorizedScheduleEditDelivery &&
+      !isAuthorizedDynamicPublicationDelivery
     ) {
       throw new Error(
         'אין לך הרשאה לבצע פעולה זו.',

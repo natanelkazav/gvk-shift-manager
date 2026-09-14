@@ -15,6 +15,7 @@ import EditUserModal from '../components/users/EditUserModal';
 import UsersFilters from '../components/users/UsersFilters';
 import UsersStatistics from '../components/users/UsersStatistics';
 import DynamicJobTypesPanel from '../components/users/dynamic/DynamicJobTypesPanel';
+import ClientVersionAdminPanel from '../components/users/ClientVersionAdminPanel';
 import UsersTable from '../components/users/UsersTable';
 import {
   Button,
@@ -66,6 +67,11 @@ function UsersPage() {
   const canManagePayroll =
     hasPermission(
       'payroll.manage',
+    );
+
+  const canSendUpdateNotifications =
+    hasPermission(
+      'notifications.manage',
     );
 
   const canResetPasswords =
@@ -522,6 +528,11 @@ function UsersPage() {
         />
       ) : (
         <>
+          {canManageUsers ? (
+            <ClientVersionAdminPanel
+              canSendUpdateNotifications={canSendUpdateNotifications}
+            />
+          ) : null}
       {!canManageUsers ? (
         <div
           className="users-error"

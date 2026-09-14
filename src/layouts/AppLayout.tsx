@@ -22,6 +22,8 @@ import PushPermissionPrompt
 import PwaUpdatePrompt
   from '../features/pwa/components/PwaUpdatePrompt';
 
+import AppVersionReporter from '../features/appVersion/components/AppVersionReporter';
+
 import NotificationClickHandler
   from '../features/notifications/components/NotificationClickHandler';
 
@@ -678,6 +680,7 @@ return (
 <PushStatusProvider>
   <NotificationProvider>
     <NotificationClickHandler />
+    <AppVersionReporter />
     <div className="app-layout">
       <DevelopmentModeBanner />
       {isSidebarOpen ? (

@@ -684,6 +684,299 @@ Deno.serve(
           };
         };
 
+      const dynamicShiftLogicalKeys =
+        new Set<string>();
+      const dynamicDailyLogicalKeys =
+        new Set<string>();
+
+      if (
+        shiftPreferenceMap.size > 0 ||
+        driverDutyPreferenceMap.size > 0
+      ) {
+        const startDate = jerusalemNow.date;
+        const endDate = addDaysToIsoDate(startDate, 2);
+
+        const {
+          data: dynamicPublications,
+          error: dynamicPublicationsError,
+        } = await adminClient
+          .from('dynamic_schedule_publications')
+          .select('id,job_type_id,year,month,status')
+          .eq('status', 'published');
+
+        if (dynamicPublicationsError) {
+          errors.push(
+            `dynamic publications: ${dynamicPublicationsError.message}`,
+          );
+        } else {
+          const publicationRows = dynamicPublications ?? [];
+          const publicationIds = publicationRows
+            .map((row) => typeof row.id === 'string' ? row.id : null)
+            .filter((id): id is string => Boolean(id));
+          const publicationById = new Map(
+            publicationRows
+              .filter((row) => typeof row.id === 'string')
+              .map((row) => [row.id as string, row]),
+          );
+          const jobTypeIds = Array.from(new Set(
+            publicationRows
+              .map((row) => typeof row.job_type_id === 'string' ? row.job_type_id : null)
+              .filter((id): id is string => Boolean(id)),
+          ));
+
+          if (publicationIds.length > 0 && jobTypeIds.length > 0) {
+            const [assignmentsResult, jobTypesResult, materializationsResult] =
+              await Promise.all([
+                adminClient
+                  .from('dynamic_schedule_published_assignments')
+                  .select('id,publication_id,shift_date,shift_code,shift_name,start_time,end_time,user_id')
+                  .in('publication_id', publicationIds)
+                  .gte('shift_date', startDate)
+                  .lte('shift_date', endDate),
+                adminClient
+                  .from('job_types')
+                  .select('id,name,is_active,legacy_role')
+                  .in('id', jobTypeIds),
+                adminClient
+                  .from('job_type_schedule_materializations')
+                  .select('job_type_id,effective_month,work_mode')
+                  .in('job_type_id', jobTypeIds)
+                  .order('effective_month', { ascending: false }),
+              ]);
+
+            if (assignmentsResult.error) {
+              errors.push(`dynamic assignments: ${assignmentsResult.error.message}`);
+            }
+            if (jobTypesResult.error) {
+              errors.push(`dynamic job types: ${jobTypesResult.error.message}`);
+            }
+            if (materializationsResult.error) {
+              errors.push(`dynamic materializations: ${materializationsResult.error.message}`);
+            }
+
+            if (
+              !assignmentsResult.error &&
+              !jobTypesResult.error &&
+              !materializationsResult.error
+            ) {
+              const jobTypeById = new Map(
+                (jobTypesResult.data ?? [])
+                  .filter((row) =>
+                    typeof row.id === 'string' &&
+                    row.is_active === true &&
+                    row.legacy_role === null)
+                  .map((row) => [row.id as string, row]),
+              );
+
+              const materializationsByJob = new Map<
+                string,
+                Array<{ effectiveMonth: string; workMode: string }>
+              >();
+
+              for (const row of materializationsResult.data ?? []) {
+                if (
+                  typeof row.job_type_id !== 'string' ||
+                  typeof row.effective_month !== 'string' ||
+                  typeof row.work_mode !== 'string'
+                ) {
+                  continue;
+                }
+                const list = materializationsByJob.get(row.job_type_id) ?? [];
+                list.push({
+                  effectiveMonth: row.effective_month,
+                  workMode: row.work_mode,
+                });
+                materializationsByJob.set(row.job_type_id, list);
+              }
+
+              checked += assignmentsResult.data?.length ?? 0;
+
+              for (const assignment of assignmentsResult.data ?? []) {
+                if (
+                  typeof assignment.id !== 'string' ||
+                  typeof assignment.publication_id !== 'string' ||
+                  typeof assignment.shift_date !== 'string' ||
+                  typeof assignment.start_time !== 'string' ||
+                  typeof assignment.end_time !== 'string' ||
+                  typeof assignment.user_id !== 'string'
+                ) {
+                  continue;
+                }
+
+                const publication = publicationById.get(assignment.publication_id);
+                const jobTypeId =
+                  publication && typeof publication.job_type_id === 'string'
+                    ? publication.job_type_id
+                    : null;
+                if (!jobTypeId) continue;
+
+                const jobType = jobTypeById.get(jobTypeId);
+                if (!jobType) continue;
+
+                const effectiveMonth = `${assignment.shift_date.slice(0, 7)}-01`;
+                const workMode =
+                  (materializationsByJob.get(jobTypeId) ?? [])
+                    .find((row) => row.effectiveMonth <= effectiveMonth)
+                    ?.workMode ?? 'shifts';
+                const jobTypeName =
+                  typeof jobType.name === 'string' ? jobType.name : 'התפקיד';
+                const startTime = assignment.start_time.slice(0, 5);
+                const logicalShiftKey =
+                  `${assignment.user_id}|${assignment.shift_date}|${startTime}`;
+                dynamicShiftLogicalKeys.add(logicalShiftKey);
+
+                if (workMode === 'on_call_daily') {
+                  dynamicDailyLogicalKeys.add(
+                    `${assignment.user_id}|${assignment.shift_date}`,
+                  );
+
+                  if (assignment.shift_date !== jerusalemNow.date) continue;
+                  const reminderTime =
+                    driverDutyPreferenceMap.get(assignment.user_id);
+                  if (!reminderTime) continue;
+
+                  const [hour, minute] = reminderTime
+                    .slice(0, 5)
+                    .split(':')
+                    .map(Number);
+                  const reminderMinutes = hour * 60 + minute;
+                  const ageMinutes = jerusalemNow.minutesOfDay - reminderMinutes;
+                  if (ageMinutes < 0 || ageMinutes > 5) continue;
+
+                  const reminderKey =
+                    `${assignment.id}:${assignment.shift_date}:${reminderTime.slice(0, 5)}`;
+                  const { data: claimed, error: claimError } = await adminClient
+                    .from('dynamic_schedule_reminder_deliveries')
+                    .insert({
+                      assignment_id: assignment.id,
+                      user_id: assignment.user_id,
+                      reminder_kind: 'daily_duty',
+                      reminder_key: reminderKey,
+                    })
+                    .select('id')
+                    .maybeSingle();
+
+                  if (claimError) {
+                    if (claimError.code === '23505') continue;
+                    errors.push(`dynamic daily claim ${assignment.id}: ${claimError.message}`);
+                    continue;
+                  }
+                  if (!claimed) continue;
+
+                  const result = await deliverNotification({
+                    userId: assignment.user_id,
+                    title: `תזכורת לכוננות היום – ${jobTypeName}`,
+                    body: `היום אתה משובץ ל${assignment.shift_name || 'כוננות'} במסגרת ${jobTypeName}.`,
+                    url: `/my-shifts?jobTypeId=${jobTypeId}`,
+                    data: {
+                      workflow: 'dynamic_schedule',
+                      event: 'daily_duty_reminder',
+                      assignmentId: assignment.id,
+                      publicationId: assignment.publication_id,
+                      jobTypeId,
+                      dutyDate: assignment.shift_date,
+                      reminderTime: reminderTime.slice(0, 5),
+                    },
+                    expiresAt: jerusalemLocalToUtc(
+                      addDaysToIsoDate(assignment.shift_date, 1),
+                      '03:00',
+                    ).toISOString(),
+                  });
+
+                  if (result.notificationId) {
+                    await adminClient
+                      .from('dynamic_schedule_reminder_deliveries')
+                      .update({
+                        notification_id: result.notificationId,
+                        delivered_at: result.delivered ? new Date().toISOString() : null,
+                      })
+                      .eq('id', claimed.id);
+                  } else {
+                    await adminClient
+                      .from('dynamic_schedule_reminder_deliveries')
+                      .delete()
+                      .eq('id', claimed.id);
+                  }
+                  continue;
+                }
+
+                const minutesBefore = shiftPreferenceMap.get(assignment.user_id);
+                if (minutesBefore === undefined) continue;
+
+                const startsAt = jerusalemLocalToUtc(
+                  assignment.shift_date,
+                  assignment.start_time,
+                );
+                const reminderAt = new Date(
+                  startsAt.getTime() - minutesBefore * 60_000,
+                );
+                const ageMs = now.getTime() - reminderAt.getTime();
+                if (ageMs < 0 || ageMs > 2 * 60_000) continue;
+
+                const reminderKey = `${assignment.id}:${minutesBefore}`;
+                const { data: claimed, error: claimError } = await adminClient
+                  .from('dynamic_schedule_reminder_deliveries')
+                  .insert({
+                    assignment_id: assignment.id,
+                    user_id: assignment.user_id,
+                    reminder_kind: 'shift_start',
+                    reminder_key: reminderKey,
+                  })
+                  .select('id')
+                  .maybeSingle();
+
+                if (claimError) {
+                  if (claimError.code === '23505') continue;
+                  errors.push(`dynamic shift claim ${assignment.id}: ${claimError.message}`);
+                  continue;
+                }
+                if (!claimed) continue;
+
+                const formatted = formatJerusalemDateTime(startsAt.toISOString());
+                const scheduleNoun = workMode === 'on_call_hourly' ? 'הכוננות' : 'המשמרת';
+                const result = await deliverNotification({
+                  userId: assignment.user_id,
+                  title: `תזכורת ל${scheduleNoun} – ${jobTypeName}`,
+                  body:
+                    minutesBefore === 0
+                      ? `${scheduleNoun} שלך מתחילה עכשיו (${formatted.date} בשעה ${formatted.time}).`
+                      : `${scheduleNoun} שלך מתחילה בעוד ${minutesBefore} דקות (${formatted.date} בשעה ${formatted.time}).`,
+                  url: `/my-shifts?jobTypeId=${jobTypeId}`,
+                  data: {
+                    workflow: 'dynamic_schedule',
+                    event: 'shift_start_reminder',
+                    assignmentId: assignment.id,
+                    publicationId: assignment.publication_id,
+                    jobTypeId,
+                    startsAt: startsAt.toISOString(),
+                    minutesBefore,
+                    workMode,
+                  },
+                  expiresAt: new Date(
+                    startsAt.getTime() + 24 * 60 * 60_000,
+                  ).toISOString(),
+                });
+
+                if (result.notificationId) {
+                  await adminClient
+                    .from('dynamic_schedule_reminder_deliveries')
+                    .update({
+                      notification_id: result.notificationId,
+                      delivered_at: result.delivered ? new Date().toISOString() : null,
+                    })
+                    .eq('id', claimed.id);
+                } else {
+                  await adminClient
+                    .from('dynamic_schedule_reminder_deliveries')
+                    .delete()
+                    .eq('id', claimed.id);
+                }
+              }
+            }
+          }
+        }
+      }
+
       if (
         shiftPreferenceMap.size >
         0
@@ -743,6 +1036,17 @@ Deno.serve(
                 'string' ||
               typeof shift.starts_at !==
                 'string'
+            ) {
+              continue;
+            }
+
+            const shiftLocal = getJerusalemDateTimeParts(
+              new Date(shift.starts_at),
+            );
+            if (
+              dynamicShiftLogicalKeys.has(
+                `${shift.assigned_user_id}|${shiftLocal.date}|${shiftLocal.time}`
+              )
             ) {
               continue;
             }
@@ -1087,6 +1391,14 @@ Deno.serve(
                     continue;
                   }
 
+                  if (
+                    dynamicShiftLogicalKeys.has(
+                      `${assignment.assigned_user_id}|${shift.shiftDate}|${shift.startTime.slice(0, 5)}`
+                    )
+                  ) {
+                    continue;
+                  }
+
                   const startsAt =
                     jerusalemLocalToUtc(
                       shift.shiftDate,
@@ -1364,6 +1676,14 @@ Deno.serve(
                       'string' ||
                     typeof dutyDay.duty_date !==
                       'string'
+                  ) {
+                    continue;
+                  }
+
+                  if (
+                    dynamicDailyLogicalKeys.has(
+                      `${dutyDay.assigned_user_id}|${dutyDay.duty_date}`
+                    )
                   ) {
                     continue;
                   }

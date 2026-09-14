@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import {
   defineConfig,
 } from 'vite';
@@ -9,7 +11,22 @@ import {
   VitePWA,
 } from 'vite-plugin-pwa';
 
+const packageJson = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+) as { version?: string };
+
+const appVersion = packageJson.version?.trim() || 'dev';
+const appBuildId =
+  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ||
+  process.env.GITHUB_SHA?.slice(0, 8) ||
+  process.env.VITE_APP_BUILD_ID?.trim() ||
+  appVersion;
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+    __APP_BUILD_ID__: JSON.stringify(appBuildId),
+  },
   plugins: [
     react(),
 

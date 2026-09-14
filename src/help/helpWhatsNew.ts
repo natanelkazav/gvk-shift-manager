@@ -9,6 +9,19 @@ export interface HelpWhatsNewItem {
 
 export const helpWhatsNewItems: readonly HelpWhatsNewItem[] = [
   {
+    id: 'dynamic-notifications-phase-10-6-2',
+    title: 'התראות ו־Push לפי תפקיד דינמי',
+    description:
+      'פרסום לוח דינמי שולח כעת התראה ו־Push לכל העובדים הפעילים בתפקיד, ותזכורות למשמרות ולכוננויות נשלחות מתוך הלוח הדינמי שפורסם. כוננות יומית משתמשת בשעת תזכורת יומית, ומשמרות וכוננות שעתית משתמשות במספר הדקות לפני תחילת השיבוץ. מנגנוני Legacy נשארו רק כגיבוי ונמנעת שליחה כפולה כאשר קיים שיבוץ דינמי מקביל.',
+  },
+  {
+    id: 'notifications-phase-10-6-1-client-version-tracking',
+    title: 'מעקב גרסאות ושליחת בקשת עדכון',
+    description:
+      'ניהול המשתמשים מציג למנהלים את גרסת המערכת וה-Build האחרון שדווח מכל משתמש ומכשיר. ניתן לזהות משתמשים שנשארו על גרסה ישנה ולשלוח להם התראת מערכת ו-Push לעדכון, לכל המשתמשים הפעילים או לפי תפקיד דינמי. הדיווח מתבצע אוטומטית בעת שימוש במערכת ואינו כולל מידע תוכן אישי.',
+    requiredAnyPermissions: ['users.manage', 'notifications.manage'],
+  },
+  {
     id: 'dynamic-personal-calendar-edit-phase-10-5-17',
     title: 'עריכת שיבוץ ישירות מהלוח החודשי',
     description:

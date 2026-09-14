@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { PerformanceDebugService } from './performanceDebugService';
+import { schedulePublicationNotificationService } from './schedulePublicationNotificationService';
 import type {
   DynamicAvailabilityShadowSummary,
   DynamicAvailabilityWorkspace,
@@ -429,7 +430,13 @@ export const dynamicSchedulingService = {
         requested_draft_id: draftId,
       });
       if (error) throwSupabaseError('Publish dynamic schedule draft', error);
-      return data as DynamicSchedulePublicationResult;
+      const result = data as DynamicSchedulePublicationResult;
+      if (result?.publicationId) {
+        await schedulePublicationNotificationService.notifyDynamicPublished(
+          result.publicationId,
+        );
+      }
+      return result;
     });
   },
 

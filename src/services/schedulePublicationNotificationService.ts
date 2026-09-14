@@ -59,6 +59,49 @@ class SchedulePublicationNotificationService {
       );
     }
   }
+  async notifyDynamicPublished(
+    publicationId: string,
+  ): Promise<void> {
+    try {
+      const { data, error } = await supabase.rpc(
+        'create_dynamic_schedule_publication_notification',
+        {
+          requested_publication_id: publicationId,
+        },
+      );
+
+      if (error) {
+        throw error;
+      }
+
+      const response = data as PublicationNotificationResponse | null;
+      if (!response?.notificationId || response.recipientCount <= 0) {
+        return;
+      }
+
+      const { error: deliveryError } = await supabase.functions.invoke(
+        'send-notification',
+        {
+          body: {
+            notificationId: response.notificationId,
+          },
+        },
+      );
+
+      if (deliveryError) {
+        console.warn(
+          'Dynamic schedule was published, but push delivery failed:',
+          deliveryError,
+        );
+      }
+    } catch (error) {
+      console.warn(
+        'Dynamic schedule was published, but publication notification creation failed:',
+        error,
+      );
+    }
+  }
+
 }
 
 export const schedulePublicationNotificationService =
