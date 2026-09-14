@@ -9,6 +9,12 @@ export interface HelpWhatsNewItem {
 
 export const helpWhatsNewItems: readonly HelpWhatsNewItem[] = [
   {
+    id: 'dynamic-availability-phase-10-6-4-live-membership',
+    title: 'עובד חדש מצטרף אוטומטית לתקופת אילוצים פתוחה',
+    description:
+      'זכאות להגשת אילוצים מחושבת כעת מול החברות הפעילה בתפקיד בזמן אמת. עובד שמצורף לתפקיד לאחר שכבר נפתחה תקופת אילוצים יראה אותה מיד וייכלל במונה ההגשות; עובד שמוסר מהתפקיד מפסיק להיכלל במונה, בלי למחוק את ההגשה ההיסטורית שלו. עובד חדש שמצורף בזמן שהתקופה פתוחה מקבל גם התראה בתוך המערכת.',
+  },
+  {
     id: 'dynamic-notifications-phase-10-6-2',
     title: 'התראות ו־Push לפי תפקיד דינמי',
     description:
