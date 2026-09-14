@@ -26,6 +26,7 @@ type ScheduleDisplayMode = 'calendar' | 'list';
 interface DynamicAllSchedulesCalendarProps {
   workspace: DynamicScheduleCalendarWorkspace;
   displayMode?: ScheduleDisplayMode;
+  defaultAssignmentFilter?: AssignmentFilter;
   onChanged?: () => void | Promise<void>;
 }
 
@@ -55,11 +56,12 @@ const formatScheduleDate = (value: string): string => {
 function DynamicAllSchedulesCalendar({
   workspace,
   displayMode = 'calendar',
+  defaultAssignmentFilter = 'all',
   onChanged,
 }: DynamicAllSchedulesCalendarProps) {
   const holidayLabels = useCalendarHolidays(workspace.year, workspace.month);
   const [selectedJobTypeIds, setSelectedJobTypeIds] = useState<string[]>([]);
-  const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>('all');
+  const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>(defaultAssignmentFilter);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<DynamicScheduleCalendarSlot | null>(null);
   const [editor, setEditor] = useState<DynamicPublishedEditorWorkspace | null>(null);
@@ -73,9 +75,9 @@ function DynamicAllSchedulesCalendar({
 
   useEffect(() => {
     setSelectedJobTypeIds(workspace.jobTypes.map((jobType) => jobType.id));
-    setAssignmentFilter('all');
+    setAssignmentFilter(defaultAssignmentFilter);
     setSelectedSlot(null);
-  }, [workspace.year, workspace.month, workspace.jobTypes]);
+  }, [defaultAssignmentFilter, workspace.year, workspace.month, workspace.jobTypes]);
 
   const roleToneById = useMemo(() => new Map(
     workspace.jobTypes.map((jobType, index) => [jobType.id, index % ROLE_TONE_COUNT]),

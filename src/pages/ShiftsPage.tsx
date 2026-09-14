@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 import DynamicAllSchedulesCalendar from '../components/shifts/DynamicAllSchedulesCalendar';
 import DynamicPeriodWorkflowPanel from '../components/users/dynamic/DynamicPeriodWorkflowPanel';
 import { Button, Card, CardBody, PageHeader } from '../components/ui';
@@ -83,6 +84,7 @@ const getRoleStage = (role: DynamicShiftsWorkspaceRole): {
 };
 
 function ShiftsPage() {
+  const { profile } = useAuth();
   const initial = useMemo(getCurrentMonth, []);
   const [searchParams, setSearchParams] = useSearchParams();
   const [year, setYear] = useState(() => Number(searchParams.get('year')) || initial.year);
@@ -261,6 +263,7 @@ function ShiftsPage() {
             <DynamicAllSchedulesCalendar
               workspace={calendarWorkspace}
               displayMode={displayMode}
+              defaultAssignmentFilter={profile?.role === 'admin' ? 'assigned' : 'all'}
               onChanged={loadCalendarWorkspace}
             />
           ) : (
