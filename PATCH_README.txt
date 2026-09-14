@@ -1,25 +1,21 @@
-GVK Shift Manager - Phase 10.6.1
-Client version tracking + update notifications
+Phase 10.6.9 - PWA stale asset recovery
 
-What this patch adds:
-- Reports the actual frontend version/build used by each signed-in browser/PWA installation.
-- Admin panel in Users -> Users: current/outdated/mixed/unknown version status.
-- Shows last reported version, build id, device count, last seen time, and dynamic Job Types.
-- Sends a system + Push update request to outdated users, all active users, or a selected dynamic Job Type.
-- Version is 2.0.0-rc.7. On Vercel the build id uses VERCEL_GIT_COMMIT_SHA automatically.
-- Help / What's New updated.
+מטרה:
+למנוע מצב שבו index.html או sw.js ישנים נשמרים ב-cache אחרי deploy חדש,
+ומפנים לקובץ JS hashed שכבר לא קיים בפריסה הנוכחית. במצב כזה Vercel
+מחזיר index.html עבור כתובת ה-JS והדפדפן מציג:
+Expected a JavaScript-or-Wasm module script but the server responded with MIME type text/html.
 
-After copying:
-1. npx supabase db push
-2. npm run typecheck
-3. npm run test:contracts
-4. npm run audit:dynamic-runtime
-5. npm run build
+שינוי:
+- index.html: no-store/no-cache
+- sw.js: no-store/no-cache
+- manifest.webmanifest: revalidate
+- assets hashed: cache ארוך immutable
 
-Migration:
-20260914150000_phase10_6_1_client_version_tracking.sql
+אין migration למסד.
 
-Notes:
-- Version data starts filling only after users open the app with this patch deployed.
-- A user can have more than one browser/PWA installation, so the overview tracks devices separately.
-- Sending update notifications requires notifications.manage.
+בדיקה לאחר deploy:
+1. פתח DevTools > Application > Service Workers ובצע Unregister לגרסה התקועה (פעם אחת).
+2. Application > Storage > Clear site data.
+3. בצע Hard Reload.
+4. ודא שב-Network קבצי /assets/*.js חוזרים עם Content-Type: application/javascript ולא text/html.
