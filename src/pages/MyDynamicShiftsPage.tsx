@@ -2,6 +2,7 @@ import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, List, LoaderCirc
 import { useEffect, useMemo, useState } from 'react';
 import MonthCalendar from '../components/calendar/MonthCalendar';
 import Button from '../components/ui/Button';
+import Modal from '../components/ui/Modal';
 import { calendarHolidayService, type CalendarHoliday } from '../services/calendarHolidayService';
 import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
 import type {
@@ -54,6 +55,8 @@ function MyDynamicShiftsPage() {
   const [selfEditWorkspace, setSelfEditWorkspace] = useState<DynamicSelfEditWorkspace | null>(null);
   const [selfEditLoading, setSelfEditLoading] = useState(false);
   const [selfEditSavingId, setSelfEditSavingId] = useState<string | null>(null);
+  const [selectedCalendarAssignmentId, setSelectedCalendarAssignmentId] = useState<string | null>(null);
+  const [selfEditPermissionState, setSelfEditPermissionState] = useState({ canSelfEdit: false, canViewOthers: false, canEditAll: false });
 
   const loadPeriods = async () => {
     setLoading(true);
@@ -122,6 +125,7 @@ function MyDynamicShiftsPage() {
   useEffect(() => {
     setSelfEditOpen(false);
     setSelfEditWorkspace(null);
+    setSelectedCalendarAssignmentId(null);
     if (!selectedId) {
       setWorkspace(null);
       return;
@@ -142,6 +146,26 @@ function MyDynamicShiftsPage() {
       });
     return () => { active = false; };
   }, [selectedId]);
+
+  useEffect(() => {
+    if (!workspace || workspace.periodSource !== 'publication' || workspace.scheduleChangeMode !== 'self_edit') {
+      setSelfEditPermissionState({ canSelfEdit: false, canViewOthers: false, canEditAll: false });
+      return;
+    }
+
+    let active = true;
+    void Promise.all([
+      dynamicSchedulingService.hasMyDynamicJobTypePermission('schedule.self_edit', workspace.jobTypeId),
+      dynamicSchedulingService.hasMyDynamicJobTypePermission('schedule.view_others', workspace.jobTypeId),
+      dynamicSchedulingService.hasMyDynamicJobTypePermission('schedule.edit_all', workspace.jobTypeId),
+    ]).then(([canSelfEdit, canViewOthers, canEditAll]) => {
+      if (active) setSelfEditPermissionState({ canSelfEdit, canViewOthers, canEditAll });
+    }).catch(() => {
+      if (active) setSelfEditPermissionState({ canSelfEdit: false, canViewOthers: false, canEditAll: false });
+    });
+
+    return () => { active = false; };
+  }, [workspace?.jobTypeId, workspace?.periodSource, workspace?.scheduleChangeMode]);
 
   useEffect(() => {
     if (!workspace) {
@@ -232,6 +256,30 @@ function MyDynamicShiftsPage() {
     }
     return [...map.entries()].sort(([first], [second]) => first.localeCompare(second));
   }, [selfEditWorkspace]);
+
+  const selectedCalendarAssignment = useMemo(
+    () => workspace?.assignments.find((assignment) => assignment.id === selectedCalendarAssignmentId) ?? null,
+    [workspace, selectedCalendarAssignmentId],
+  );
+
+  const selectedCalendarEditorAssignment = useMemo(
+    () => selfEditWorkspace?.assignments.find((assignment) => assignment.id === selectedCalendarAssignmentId) ?? null,
+    [selfEditWorkspace, selectedCalendarAssignmentId],
+  );
+
+  const canEditAssignment = (assignment: MyDynamicScheduleAssignment): boolean => {
+    if (!workspace || workspace.readOnly || workspace.scheduleChangeMode !== 'self_edit') return false;
+    if (selfEditPermissionState.canEditAll) return true;
+    return assignment.isMine && selfEditPermissionState.canSelfEdit;
+  };
+
+  const openCalendarAssignmentEditor = (assignment: MyDynamicScheduleAssignment) => {
+    if (!canEditAssignment(assignment)) return;
+    setSelectedCalendarAssignmentId(assignment.id);
+    if (!selfEditWorkspace || selfEditWorkspace.publicationId !== workspace?.publicationId) {
+      void loadSelfEditWorkspace(workspace!.publicationId);
+    }
+  };
 
   if (loading) {
     return <main className="my-dynamic-shifts page-shell" dir="rtl"><div className="my-shifts-loading"><LoaderCircle className="spin" /> טוען לוחות שפורסמו…</div></main>;
@@ -327,7 +375,9 @@ function MyDynamicShiftsPage() {
                 <div className="my-shifts-summary">
                   <span className={workspace.periodSource === 'history' ? 'my-shifts-history' : 'my-shifts-published'}><CheckCircle2 size={16} /> {workspace.periodSource === 'history' ? 'היסטוריה מיובאת' : 'פורסם'}</span>
                   <strong>{workspace.assignments.length}</strong>
-                  <span>{workspace.workMode === 'shifts' ? 'משמרות בחודש' : 'כוננויות בחודש'}</span>
+                  <span>{workspace.canViewOthers
+                    ? (workspace.workMode === 'shifts' ? 'משמרות התפקיד בחודש' : 'כוננויות התפקיד בחודש')
+                    : (workspace.workMode === 'shifts' ? 'המשמרות שלי בחודש' : 'הכוננויות שלי בחודש')}</span>
                 </div>
                 <div className="my-shifts-view-toggle" role="group" aria-label="תצוגת לוח">
                   <button type="button" className={viewMode === 'calendar' ? 'is-active' : ''} onClick={() => setViewMode('calendar')}><CalendarDays size={16} /> טבלה חודשית</button>
@@ -335,7 +385,11 @@ function MyDynamicShiftsPage() {
                 </div>
               </div>
 
-              {!workspace.readOnly && workspace.scheduleChangeMode === 'self_edit' ? (
+              {viewMode === 'list'
+                && !workspace.readOnly
+                && workspace.scheduleChangeMode === 'self_edit'
+                && (selfEditPermissionState.canSelfEdit || selfEditPermissionState.canEditAll)
+                && (workspace.assignments.length > 0 || selfEditPermissionState.canViewOthers || selfEditPermissionState.canEditAll) ? (
                 <div className="my-shifts-self-edit-entry">
                   <div>
                     <strong>שינוי שיבוץ עצמי פעיל לתפקיד הזה</strong>
@@ -381,6 +435,11 @@ function MyDynamicShiftsPage() {
                       {!selfEditWorkspace.editable && selfEditWorkspace.editabilityReason ? (
                         <div className="my-shifts-self-edit-warning">{selfEditWorkspace.editabilityReason}</div>
                       ) : null}
+                      <div className="my-shifts-transition-note">
+                        {selfEditWorkspace.canViewOthers
+                          ? 'מוצג הלוח המלא של התפקיד, כולל משמרות/כוננויות של עובדים אחרים.'
+                          : 'מוצגים רק השיבוצים שלך. הרשאת „הצגת משמרות/כוננויות של משתמשים אחרים” כבויה לתפקיד הזה.'}
+                      </div>
                       <div className="my-shifts-self-edit-list">
                         {selfEditGroupedDates.map(([date, assignments]) => {
                           const dateObject = localDate(date);
@@ -401,7 +460,7 @@ function MyDynamicShiftsPage() {
                                       <span>משובץ</span>
                                       <select
                                         value={assignment.userId}
-                                        disabled={!selfEditWorkspace.editable || selfEditSavingId === assignment.id}
+                                        disabled={!selfEditWorkspace.editable || (!assignment.isMine && !selfEditWorkspace.canEditAll) || selfEditSavingId === assignment.id}
                                         onChange={(event) => void handleSelfEditAssignment(assignment.id, event.target.value)}
                                       >
                                         {selfEditWorkspace.members.map((member) => (
@@ -423,7 +482,11 @@ function MyDynamicShiftsPage() {
               ) : null}
 
               {!workspace.assignments.length ? (
-                <div className="my-shifts-no-assignments">הלוח פורסם, אך לא שובצת למשמרות בחודש זה.</div>
+                <div className="my-shifts-no-assignments">
+                  {workspace.canViewOthers
+                    ? 'הלוח פורסם, אך אין שיבוצים להצגה לתפקיד בחודש זה.'
+                    : `הלוח פורסם, אך לא שובצת ${workspace.workMode === 'shifts' ? 'למשמרות' : 'לכוננויות'} בחודש זה.`}
+                </div>
               ) : viewMode === 'calendar' ? (
                 <MonthCalendar
                   year={workspace.year}
@@ -436,16 +499,29 @@ function MyDynamicShiftsPage() {
                     if (!dayAssignments.length) return null;
                     return (
                       <div className="my-shifts-calendar-items">
-                        {dayAssignments.map((assignment) => (
-                          <div key={assignment.id} className="my-shifts-calendar-item">
-                            <div className="my-shifts-assignment-title">
-                              <strong>{assignment.shiftName}</strong>
-                              {assignment.contains200Percent ? <span className="my-shifts-premium-badge">200%</span> : null}
-                            </div>
-                            <span className="my-shifts-time" dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
-                            {assignment.holidayName ? <small className="my-shifts-holiday-note">{assignment.holidayName}</small> : null}
-                          </div>
-                        ))}
+                        {dayAssignments.map((assignment) => {
+                          const editable = canEditAssignment(assignment);
+                          return (
+                            <button
+                              key={assignment.id}
+                              type="button"
+                              className={`my-shifts-calendar-item${editable ? ' is-editable' : ''}`}
+                              onClick={() => openCalendarAssignmentEditor(assignment)}
+                              disabled={!editable}
+                              title={editable ? 'לחץ לעריכת השיבוץ' : undefined}
+                            >
+                              <div className="my-shifts-assignment-title">
+                                <strong>{assignment.shiftName}</strong>
+                                {assignment.contains200Percent ? <span className="my-shifts-premium-badge">200%</span> : null}
+                              </div>
+                              <span className="my-shifts-time" dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
+                              {workspace.canViewOthers && assignment.displayName ? (
+                                <small className="my-shifts-assignee">{assignment.displayName}{assignment.isMine ? ' · אני' : ''}</small>
+                              ) : null}
+                              {assignment.holidayName ? <small className="my-shifts-holiday-note">{assignment.holidayName}</small> : null}
+                            </button>
+                          );
+                        })}
                       </div>
                     );
                   }}
@@ -468,6 +544,9 @@ function MyDynamicShiftsPage() {
                                   <strong>{assignment.shiftName}</strong>
                                   {assignment.contains200Percent ? <span className="my-shifts-premium-badge">200%</span> : null}
                                 </div>
+                                {workspace.canViewOthers && assignment.displayName ? (
+                                  <small className="my-shifts-assignee">משובץ: {assignment.displayName}{assignment.isMine ? ' · אני' : ''}</small>
+                                ) : null}
                                 {assignment.holidayName ? <small className="my-shifts-holiday-note">{assignment.holidayName}</small> : null}
                                 {assignment.managerEdited ? <small>השיבוץ עודכן ידנית על ידי מנהל</small> : null}
                               </div>
@@ -484,6 +563,48 @@ function MyDynamicShiftsPage() {
           ) : null}
         </>
       )}
+
+      <Modal
+        isOpen={Boolean(selectedCalendarAssignmentId)}
+        title={selectedCalendarAssignment ? `עריכת ${workspace?.workMode === 'shifts' ? 'משמרת' : 'כוננות'} · ${selectedCalendarAssignment.shiftName}` : 'עריכת שיבוץ'}
+        onClose={() => setSelectedCalendarAssignmentId(null)}
+        footer={<Button variant="secondary" onClick={() => setSelectedCalendarAssignmentId(null)}>סגור</Button>}
+        className="my-shifts-calendar-edit-modal"
+      >
+        {selectedCalendarAssignment ? (
+          <div className="my-shifts-calendar-edit-content">
+            <div className="my-shifts-calendar-edit-meta">
+              <span><strong>תאריך:</strong> <bdi dir="ltr">{formatDate(selectedCalendarAssignment.shiftDate)}</bdi></span>
+              <span><strong>שעות:</strong> <bdi dir="ltr">{formatTime(selectedCalendarAssignment.startTime)}–{formatTime(selectedCalendarAssignment.endTime)}</bdi></span>
+              {selectedCalendarAssignment.holidayName ? <span><strong>מועד:</strong> {selectedCalendarAssignment.holidayName}</span> : null}
+            </div>
+
+            {selfEditLoading ? (
+              <div className="my-shifts-loading"><LoaderCircle className="spin" /> טוען אפשרויות שיבוץ…</div>
+            ) : selfEditWorkspace && selectedCalendarEditorAssignment ? (
+              <label className="my-shifts-calendar-edit-select">
+                <span>משובץ</span>
+                <select
+                  value={selectedCalendarEditorAssignment.userId}
+                  disabled={!selfEditWorkspace.editable || (!selectedCalendarEditorAssignment.isMine && !selfEditWorkspace.canEditAll) || selfEditSavingId === selectedCalendarEditorAssignment.id}
+                  onChange={(event) => void handleSelfEditAssignment(selectedCalendarEditorAssignment.id, event.target.value)}
+                >
+                  {selfEditWorkspace.members.map((member) => (
+                    <option key={member.userId} value={member.userId}>{member.displayName}</option>
+                  ))}
+                </select>
+                {selfEditSavingId === selectedCalendarEditorAssignment.id ? <small><LoaderCircle className="spin" size={15} /> שומר…</small> : null}
+              </label>
+            ) : (
+              <div className="my-shifts-self-edit-warning">לא ניתן לטעון את פרטי העריכה של השיבוץ.</div>
+            )}
+
+            {selfEditWorkspace && !selfEditWorkspace.editable && selfEditWorkspace.editabilityReason ? (
+              <div className="my-shifts-self-edit-warning">{selfEditWorkspace.editabilityReason}</div>
+            ) : null}
+          </div>
+        ) : null}
+      </Modal>
     </main>
   );
 }

@@ -23,6 +23,7 @@ import type {
   DynamicRoleWorkspace,
   DynamicPeriodWorkflowState,
   DynamicPublishedEditorWorkspace,
+  DynamicHistoricalSlotEditorWorkspace,
   DynamicSchedulePublicationResult,
   MyDynamicAvailabilityPeriod,
   MyDynamicSchedulePeriod,
@@ -55,6 +56,52 @@ export const dynamicSchedulingService = {
       });
       if (error) throwSupabaseError('Dynamic schedule calendar workspace', error);
       return data as DynamicScheduleCalendarWorkspace;
+    });
+  },
+
+  async hasMyDynamicJobTypePermission(permissionKey: string, jobTypeId: string): Promise<boolean> {
+    const { data, error } = await supabase.rpc('has_dynamic_job_type_permission', {
+      requested_permission_key: permissionKey,
+      requested_job_type_id: jobTypeId,
+    });
+    if (error) throwSupabaseError('Dynamic job type permission check', error);
+    return Boolean(data);
+  },
+
+  async getHistoricalSlotEditor(input: {
+    historicalPeriodId: string;
+    workDate: string;
+    shiftCode: string;
+    startTime: string;
+    endTime: string;
+  }): Promise<DynamicHistoricalSlotEditorWorkspace> {
+    return PerformanceDebugService.measureAsync('dynamic-scheduling.phase10.5.15.history-editor', async () => {
+      const { data, error } = await supabase.rpc('get_dynamic_historical_slot_editor', {
+        requested_historical_period_id: input.historicalPeriodId,
+        requested_work_date: input.workDate,
+        requested_shift_code: input.shiftCode,
+        requested_start_time: input.startTime,
+        requested_end_time: input.endTime,
+      });
+      if (error) throwSupabaseError('Dynamic historical slot editor', error);
+      return data as DynamicHistoricalSlotEditorWorkspace;
+    });
+  },
+
+  async setHistoricalAssignment(input: {
+    historicalPeriodId: string;
+    assignmentId: string;
+    userId: string | null;
+    reason: string | null;
+  }): Promise<void> {
+    await PerformanceDebugService.measureAsync('dynamic-scheduling.phase10.5.15.history-edit', async () => {
+      const { error } = await supabase.rpc('set_dynamic_historical_assignment', {
+        requested_historical_period_id: input.historicalPeriodId,
+        requested_assignment_id: input.assignmentId,
+        requested_user_id: input.userId,
+        requested_reason: input.reason?.trim() || null,
+      });
+      if (error) throwSupabaseError('Set dynamic historical assignment', error);
     });
   },
 

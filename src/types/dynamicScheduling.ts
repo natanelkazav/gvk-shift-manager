@@ -716,6 +716,27 @@ export interface DynamicPublishedEditorWorkspace {
   slots: DynamicPublishedEditorSlot[];
 }
 
+export interface DynamicHistoricalEditorAssignment {
+  id: string;
+  userId: string | null;
+  displayName: string | null;
+  originalUserId: string | null;
+  originalDisplayName: string | null;
+  isIntentionallyUnassigned: boolean;
+}
+
+export interface DynamicHistoricalSlotEditorWorkspace {
+  historicalPeriodId: string;
+  jobTypeId: string;
+  jobTypeName: string;
+  year: number;
+  month: number;
+  editable: boolean;
+  editabilityReason: string | null;
+  members: DynamicPublishedEditorMember[];
+  assignments: DynamicHistoricalEditorAssignment[];
+}
+
 export interface DynamicSchedulePublicationResult {
   publicationId: string;
   published: boolean;
@@ -763,6 +784,9 @@ export interface MyDynamicScheduleAssignment {
   sourceDayKind: string | null;
   contains200Percent: boolean;
   premium200Hours: number;
+  userId: string | null;
+  displayName: string | null;
+  isMine: boolean;
 }
 
 export interface MyDynamicScheduleWorkspace {
@@ -777,6 +801,7 @@ export interface MyDynamicScheduleWorkspace {
   publishedAt: string;
   workMode: DynamicWorkStructureMode;
   scheduleChangeMode: DynamicScheduleChangeMode;
+  canViewOthers: boolean;
   assignments: MyDynamicScheduleAssignment[];
 }
 
@@ -807,6 +832,8 @@ export interface DynamicSelfEditWorkspace {
   month: number;
   editable: boolean;
   editabilityReason: string | null;
+  canViewOthers: boolean;
+  canEditAll: boolean;
   members: DynamicSelfEditMember[];
   assignments: DynamicSelfEditAssignment[];
 }

@@ -11,7 +11,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useCalendarHolidays } from '../../hooks/useCalendarHolidays';
 import { dynamicSchedulingService } from '../../services/dynamicSchedulingService';
-import type { DynamicPublishedEditorWorkspace } from '../../types/dynamicScheduling';
+import type { DynamicHistoricalSlotEditorWorkspace, DynamicPublishedEditorWorkspace } from '../../types/dynamicScheduling';
 import type {
   DynamicScheduleCalendarSlot,
   DynamicScheduleCalendarWorkspace,
@@ -63,6 +63,7 @@ function DynamicAllSchedulesCalendar({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<DynamicScheduleCalendarSlot | null>(null);
   const [editor, setEditor] = useState<DynamicPublishedEditorWorkspace | null>(null);
+  const [historyEditor, setHistoryEditor] = useState<DynamicHistoricalSlotEditorWorkspace | null>(null);
   const [editorLoading, setEditorLoading] = useState(false);
   const [editorError, setEditorError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -131,21 +132,35 @@ function DynamicAllSchedulesCalendar({
   const openSlot = async (slot: DynamicScheduleCalendarSlot): Promise<void> => {
     setSelectedSlot(slot);
     setEditor(null);
+    setHistoryEditor(null);
     setEditorError(null);
     setAssignmentSelection({});
     setEmptySelection('');
     setChangeReason('');
 
-    if (slot.periodSource !== 'publication' || !slot.sourceSlotId) return;
-
     setEditorLoading(true);
     try {
-      const data = await dynamicSchedulingService.getPublishedScheduleEditor(slot.sourcePeriodId);
-      setEditor(data);
-      const matchingSlot = data.slots.find((candidate) => candidate.slotId === slot.sourceSlotId);
-      if (matchingSlot) {
+      if (slot.periodSource === 'publication') {
+        if (!slot.sourceSlotId) return;
+        const data = await dynamicSchedulingService.getPublishedScheduleEditor(slot.sourcePeriodId);
+        setEditor(data);
+        const matchingSlot = data.slots.find((candidate) => candidate.slotId === slot.sourceSlotId);
+        if (matchingSlot) {
+          setAssignmentSelection(Object.fromEntries(
+            matchingSlot.assignments.map((assignment) => [assignment.id, assignment.userId]),
+          ));
+        }
+      } else {
+        const data = await dynamicSchedulingService.getHistoricalSlotEditor({
+          historicalPeriodId: slot.sourcePeriodId,
+          workDate: slot.shiftDate,
+          shiftCode: slot.shiftCode,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+        });
+        setHistoryEditor(data);
         setAssignmentSelection(Object.fromEntries(
-          matchingSlot.assignments.map((assignment) => [assignment.id, assignment.userId]),
+          data.assignments.map((assignment) => [assignment.id, assignment.userId ?? UNASSIGNED_VALUE]),
         ));
       }
     } catch (error) {
@@ -204,11 +219,57 @@ function DynamicAllSchedulesCalendar({
     }
   };
 
+  const saveHistoricalChanges = async (): Promise<void> => {
+    if (!selectedSlot || !historyEditor || !historyEditor.editable) return;
+
+    const changes = historyEditor.assignments
+      .map((assignment) => ({
+        assignment,
+        selected: assignmentSelection[assignment.id] ?? assignment.userId ?? UNASSIGNED_VALUE,
+      }))
+      .filter(({ assignment, selected }) => selected !== (assignment.userId ?? UNASSIGNED_VALUE));
+
+    setSaving(true);
+    setEditorError(null);
+    try {
+      for (const { assignment, selected } of changes) {
+        await dynamicSchedulingService.setHistoricalAssignment({
+          historicalPeriodId: historyEditor.historicalPeriodId,
+          assignmentId: assignment.id,
+          userId: selected === UNASSIGNED_VALUE ? null : selected,
+          reason: changeReason.trim() || null,
+        });
+      }
+
+      const refreshed = await dynamicSchedulingService.getHistoricalSlotEditor({
+        historicalPeriodId: selectedSlot.sourcePeriodId,
+        workDate: selectedSlot.shiftDate,
+        shiftCode: selectedSlot.shiftCode,
+        startTime: selectedSlot.startTime,
+        endTime: selectedSlot.endTime,
+      });
+      setHistoryEditor(refreshed);
+      setAssignmentSelection(Object.fromEntries(
+        refreshed.assignments.map((assignment) => [assignment.id, assignment.userId ?? UNASSIGNED_VALUE]),
+      ));
+      setChangeReason('');
+      await onChanged?.();
+    } catch (error) {
+      setEditorError(error instanceof Error ? error.message : 'שמירת השינוי בשיבוץ ההיסטורי נכשלה.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const hasPendingChanges = Boolean(selectedEditorSlot && (
     selectedEditorSlot.assignments.some((assignment) =>
       (assignmentSelection[assignment.id] ?? assignment.userId) !== assignment.userId)
     || emptySelection
   ));
+
+  const hasPendingHistoricalChanges = Boolean(historyEditor?.assignments.some((assignment) =>
+    (assignmentSelection[assignment.id] ?? assignment.userId ?? UNASSIGNED_VALUE)
+      !== (assignment.userId ?? UNASSIGNED_VALUE)));
 
   const renderSlotCard = (slot: DynamicScheduleCalendarSlot, key: string) => {
     const isUnassigned = slot.unassignedCount > 0 || slot.assignments.length === 0;
@@ -386,12 +447,19 @@ function DynamicAllSchedulesCalendar({
         title={selectedSlot ? `${selectedSlot.jobTypeName} · ${selectedSlot.shiftName}` : 'פרטי משמרת'}
         onClose={() => setSelectedSlot(null)}
         className="dynamic-calendar-slot-modal"
-        footer={selectedSlot?.periodSource === 'publication' && editor?.editable ? (
+        footer={(selectedSlot?.periodSource === 'publication' && editor?.editable)
+          || (selectedSlot?.periodSource === 'history' && historyEditor?.editable) ? (
           <>
             <Button variant="secondary" onClick={() => setSelectedSlot(null)}>סגור</Button>
-            <Button disabled={saving || !hasPendingChanges} onClick={() => void saveSlotChanges()}>
-              {saving ? <LoaderCircle className="spin" size={16} /> : <Save size={16} />} שמור שינויים
-            </Button>
+            {selectedSlot?.periodSource === 'history' ? (
+              <Button disabled={saving || !hasPendingHistoricalChanges} onClick={() => void saveHistoricalChanges()}>
+                {saving ? <LoaderCircle className="spin" size={16} /> : <Save size={16} />} שמור שינוי היסטורי
+              </Button>
+            ) : (
+              <Button disabled={saving || !hasPendingChanges} onClick={() => void saveSlotChanges()}>
+                {saving ? <LoaderCircle className="spin" size={16} /> : <Save size={16} />} שמור שינויים
+              </Button>
+            )}
           </>
         ) : undefined}
       >
@@ -407,12 +475,50 @@ function DynamicAllSchedulesCalendar({
             {selectedSlot.holidayName ? <div className="dynamic-calendar-slot-note">חג / מועד: {selectedSlot.holidayName}</div> : null}
             {selectedSlot.contains200Percent ? <div className="dynamic-calendar-slot-note is-premium">כולל רכיב 200%{selectedSlot.premium200Hours ? ` · ${selectedSlot.premium200Hours} שעות` : ''}</div> : null}
 
-            {selectedSlot.periodSource === 'history' ? (
-              <div className="dynamic-period-workflow-note">חודש היסטורי מיובא מוצג לקריאה בלבד. שינויי שיבוץ מבוצעים רק בלוחות Dynamic שפורסמו.</div>
-            ) : editorLoading ? (
+            {editorLoading ? (
               <div className="dynamic-shifts-loading"><LoaderCircle className="spin" size={18} /> טוען אפשרויות עריכה…</div>
             ) : editorError ? (
               <div className="users-error" role="alert">{editorError}</div>
+            ) : selectedSlot.periodSource === 'history' && historyEditor ? (
+              <div className="dynamic-calendar-slot-editor">
+                {!historyEditor.editable ? (
+                  <div className="dynamic-period-workflow-note">
+                    {historyEditor.editabilityReason ?? 'החודש ההיסטורי מוצג לקריאה בלבד.'}
+                  </div>
+                ) : (
+                  <div className="dynamic-period-workflow-note is-warning">
+                    זהו שיבוץ עבר מיובא. כל שינוי נשמר בהיסטוריה ומתועד ביומן המערכת, בעוד נתון המקור המקורי נשמר.
+                  </div>
+                )}
+
+                {historyEditor.assignments.map((assignment, index) => (
+                  <label key={assignment.id} className="dynamic-calendar-slot-assignment-row">
+                    <span>{historyEditor.assignments.length > 1 ? `שיבוץ ${index + 1}` : 'עובד משובץ'}</span>
+                    <select
+                      value={assignmentSelection[assignment.id] ?? assignment.userId ?? UNASSIGNED_VALUE}
+                      disabled={!historyEditor.editable || saving}
+                      onChange={(event) => setAssignmentSelection((current) => ({ ...current, [assignment.id]: event.target.value }))}
+                    >
+                      {assignment.userId && assignment.displayName ? (
+                        <option value={assignment.userId}>{assignment.displayName} (נוכחי)</option>
+                      ) : null}
+                      <option value={UNASSIGNED_VALUE}>— השאר לא משובץ —</option>
+                      {historyEditor.members
+                        .filter((member) => member.userId !== assignment.userId)
+                        .map((member) => <option key={member.userId} value={member.userId}>{member.displayName}</option>)}
+                    </select>
+                  </label>
+                ))}
+
+                {historyEditor.editable ? (
+                  <label className="dynamic-calendar-slot-reason">
+                    <span>סיבת שינוי (מומלץ)</span>
+                    <input value={changeReason} onChange={(event) => setChangeReason(event.target.value)} placeholder="לדוגמה: תיקון שיבוץ היסטורי" />
+                  </label>
+                ) : null}
+              </div>
+            ) : selectedSlot.periodSource === 'history' ? (
+              <div className="dynamic-period-workflow-note">לא נמצאו פרטי עריכה עבור השיבוץ ההיסטורי.</div>
             ) : selectedEditorSlot && editor ? (
               <div className="dynamic-calendar-slot-editor">
                 {!editor.editable ? <div className="dynamic-period-workflow-note is-warning">{editor.editabilityReason ?? 'המשמרת אינה פתוחה לעריכה.'}</div> : null}

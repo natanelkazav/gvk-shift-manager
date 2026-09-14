@@ -306,6 +306,7 @@ type PermissionBlueprintItem = {
   audience: 'member' | 'manager';
   label: string;
   description: string;
+  defaultEnabled?: boolean;
 };
 
 const permissionFeatureLabels: Record<string, string> = {
@@ -320,11 +321,14 @@ const permissionFeatureLabels: Record<string, string> = {
 
 const permissionBlueprint: PermissionBlueprintItem[] = [
   { permissionKey: 'schedule.view_own', featureKey: 'schedule', audience: 'member', label: 'צפייה במשמרות שלי', description: 'צפייה בלוח האישי של התפקיד.' },
+  { permissionKey: 'schedule.view_others', featureKey: 'schedule', audience: 'member', label: 'הצגת משמרות/כוננויות של משתמשים אחרים', description: 'מאפשר לעובד לראות בלוח החודשי וברשימה את השיבוצים של עובדים אחרים באותו תפקיד.', defaultEnabled: false },
+  { permissionKey: 'schedule.edit_all', featureKey: 'schedule', audience: 'member', label: 'עריכת כל המשמרות/כוננויות בתפקיד', description: 'מאפשר לעובד לערוך שיבוץ של כל עובד בתפקיד. עריכת שיבוץ אישי בלבד נשלטת בנפרד על ידי „עריכת השיבוץ שלי”.', defaultEnabled: false },
   { permissionKey: 'schedule.view_team', featureKey: 'schedule', audience: 'manager', label: 'צפייה בלוח התפקיד', description: 'צפייה בכל השיבוצים של התפקיד.' },
   { permissionKey: 'schedule.create_draft', featureKey: 'schedule', audience: 'manager', label: 'יצירת טיוטת שיבוץ', description: 'יצירת טיוטה חדשה לתקופה.' },
   { permissionKey: 'schedule.edit_draft', featureKey: 'schedule', audience: 'manager', label: 'עריכת טיוטת שיבוץ', description: 'עריכת הקצאות לפני פרסום.' },
   { permissionKey: 'schedule.publish', featureKey: 'schedule', audience: 'manager', label: 'פרסום שיבוץ', description: 'פרסום הלוח לעובדי התפקיד.' },
   { permissionKey: 'schedule.edit_published', featureKey: 'schedule', audience: 'manager', label: 'עריכת לוח שפורסם', description: 'תיקון שיבוץ לאחר פרסום.' },
+  { permissionKey: 'schedule.edit_history', featureKey: 'schedule', audience: 'manager', label: 'עריכת שיבוצי עבר', description: 'תיקון שיבוצים בחודשים היסטוריים שיובאו, תוך שמירת תיעוד מלא ביומן המערכת.', defaultEnabled: false },
   { permissionKey: 'availability.view_own', featureKey: 'availability', audience: 'member', label: 'צפייה באילוצים שלי', description: 'צפייה באילוצים האישיים.' },
   { permissionKey: 'availability.submit_own', featureKey: 'availability', audience: 'member', label: 'הגשת אילוצים', description: 'הגשת אילוצים לתקופה פתוחה.' },
   { permissionKey: 'availability.edit_own', featureKey: 'availability', audience: 'member', label: 'עריכת אילוצים בזמן פתוח', description: 'שינוי אילוצים כל עוד התקופה פתוחה.' },
@@ -473,8 +477,8 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     setEffectiveTiming('current');
     setForm(nextForm);
     setPermissionEditorError(null);
-    setMemberPermissionKeys(defaults.filter((item) => item.audience === 'member').map((item) => item.permissionKey));
-    setManagerPermissionKeys(defaults.filter((item) => item.audience === 'manager').map((item) => item.permissionKey));
+    setMemberPermissionKeys(defaults.filter((item) => item.audience === 'member' && item.defaultEnabled !== false).map((item) => item.permissionKey));
+    setManagerPermissionKeys(defaults.filter((item) => item.audience === 'manager' && item.defaultEnabled !== false).map((item) => item.permissionKey));
     setFormError(null);
     setIsModalOpen(true);
   };
