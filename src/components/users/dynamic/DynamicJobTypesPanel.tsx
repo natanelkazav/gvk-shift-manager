@@ -15,6 +15,7 @@ import {
   Settings2,
   FlaskConical,
   ShieldCheck,
+  LayoutDashboard,
   UsersRound,
 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
@@ -102,6 +103,7 @@ const defaultSchedulingConfig = (): DynamicSchedulingConfig => ({
   shiftPattern: {
     enabled: true,
     workMode: 'shifts',
+    dailyOnCallWindow: { startTime: '00:00', endTime: '00:00' },
     weekday: { works: true, shifts: [{ id: 'weekday-1', name: 'משמרת 1', startTime: '08:00', endTime: '17:00', contains200Percent: false, premium200Hours: 0 }] },
     friday: { works: true, shifts: [{ id: 'friday-1', name: 'משמרת 1', startTime: '08:00', endTime: '14:00', contains200Percent: false, premium200Hours: 0 }], applyToHolidayEve: false },
     saturday: { works: false, shifts: [], applyToHolidayEnd: false },
@@ -185,6 +187,16 @@ const normalizeShiftPattern = (value: unknown): DynamicShiftPatternDefinition =>
         : source.workMode === 'on_call_hourly' || source.workMode === 'on_call'
           ? 'on_call_hourly'
           : 'shifts',
+    dailyOnCallWindow: {
+      startTime:
+        typeof (source.dailyOnCallWindow as Record<string, unknown> | undefined)?.startTime === 'string'
+          ? String((source.dailyOnCallWindow as Record<string, unknown>).startTime)
+          : '00:00',
+      endTime:
+        typeof (source.dailyOnCallWindow as Record<string, unknown> | undefined)?.endTime === 'string'
+          ? String((source.dailyOnCallWindow as Record<string, unknown>).endTime)
+          : '00:00',
+    },
     weekday: normalizeWorkDay('weekday', source.weekday),
     friday: normalizeWorkDay('friday', source.friday),
     saturday: normalizeWorkDay('saturday', source.saturday),
@@ -396,6 +408,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
   const [permissionEditorError, setPermissionEditorError] = useState<string | null>(null);
   const [memberPermissionKeys, setMemberPermissionKeys] = useState<string[]>([]);
   const [managerPermissionKeys, setManagerPermissionKeys] = useState<string[]>([]);
+  const [dashboardContextJobTypeIds, setDashboardContextJobTypeIds] = useState<string[]>([]);
   const [managerSavingUserId, setManagerSavingUserId] = useState<string | null>(null);
   const [selectedMembershipUserIds, setSelectedMembershipUserIds] = useState<string[]>([]);
   const [membershipBulkSaving, setMembershipBulkSaving] = useState(false);
@@ -460,9 +473,13 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     setPermissionEditorLoading(true);
     setPermissionEditorError(null);
     try {
-      const editor = await dynamicPermissionEngineService.getJobTypeEditor(jobTypeId);
+      const [editor, dashboardContextPolicy] = await Promise.all([
+        dynamicPermissionEngineService.getJobTypeEditor(jobTypeId),
+        dynamicPermissionEngineService.getDashboardContextPolicy(jobTypeId),
+      ]);
       setMemberPermissionKeys(editor.memberPermissions.filter((item) => item.enabled).map((item) => item.permissionKey));
       setManagerPermissionKeys(editor.managerPermissions.filter((item) => item.enabled).map((item) => item.permissionKey));
+      setDashboardContextJobTypeIds(dashboardContextPolicy.targetJobTypeIds);
     } catch (error) {
       setPermissionEditorError(error instanceof Error ? error.message : 'טעינת הרשאות התפקיד נכשלה.');
     } finally {
@@ -479,6 +496,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     setPermissionEditorError(null);
     setMemberPermissionKeys(defaults.filter((item) => item.audience === 'member' && item.defaultEnabled !== false).map((item) => item.permissionKey));
     setManagerPermissionKeys(defaults.filter((item) => item.audience === 'manager' && item.defaultEnabled !== false).map((item) => item.permissionKey));
+    setDashboardContextJobTypeIds([]);
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -567,6 +585,10 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
         savedJobTypeId,
         memberPermissionKeys.filter((key) => relevantMemberKeys.has(key)),
         managerPermissionKeys.filter((key) => relevantManagerKeys.has(key)),
+      );
+      await dynamicPermissionEngineService.saveDashboardContextPolicy(
+        savedJobTypeId,
+        dashboardContextJobTypeIds.filter((jobTypeId) => jobTypeId !== savedJobTypeId),
       );
 
       setIsModalOpen(false);
@@ -1402,6 +1424,45 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                           : 'במשמרות כל חלון הוא משמרת נפרדת. ניתן להוסיף כמה משמרות לכל סוג יום ולתת לכל אחת שם ושעות.'}
                     </small>
 
+                    {pattern.workMode === 'on_call_daily' ? (
+                      <div className="dynamic-daily-on-call-window">
+                        <div>
+                          <strong>טווח תפעולי לכוננות יומית</strong>
+                          <small>
+                            השעות אינן מוצגות לעובדים ואינן הופכות את הכוננות לשעתית. הן משמשות את המערכת
+                            לחישוב חפיפה בין תפקידים, למשל כדי להציג למוקדן את הכונן שעובד במקביל אליו.
+                            כאשר שעת הסיום מוקדמת או זהה לשעת ההתחלה, הסיום נחשב ליום הבא.
+                          </small>
+                        </div>
+                        <div className="dynamic-daily-on-call-window-fields">
+                          <Input
+                            label="שעת התחלה"
+                            type="time"
+                            value={pattern.dailyOnCallWindow?.startTime ?? '00:00'}
+                            onChange={(event) => updatePattern({
+                              ...pattern,
+                              dailyOnCallWindow: {
+                                startTime: event.target.value,
+                                endTime: pattern.dailyOnCallWindow?.endTime ?? '00:00',
+                              },
+                            })}
+                          />
+                          <Input
+                            label="שעת סיום"
+                            type="time"
+                            value={pattern.dailyOnCallWindow?.endTime ?? '00:00'}
+                            onChange={(event) => updatePattern({
+                              ...pattern,
+                              dailyOnCallWindow: {
+                                startTime: pattern.dailyOnCallWindow?.startTime ?? '00:00',
+                                endTime: event.target.value,
+                              },
+                            })}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+
                     <div className="dynamic-schedule-change-mode">
                       <div>
                         <strong>ניהול שינויים בשיבוץ</strong>
@@ -2064,6 +2125,45 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                       </section>
                     );
                   })}
+                </div>
+
+
+                <div className="dynamic-dashboard-context-policy">
+                  <div className="dynamic-dashboard-context-policy-heading">
+                    <LayoutDashboard size={18} aria-hidden="true" />
+                    <div>
+                      <strong>מידע נוסף בלוח הבקרה</strong>
+                      <span>בחר אילו תפקידים יוצגו לבעלי התפקיד כאשר השיבוץ שלהם מתרחש במקביל למשמרת או לכוננות של התפקיד הנוכחי.</span>
+                    </div>
+                  </div>
+
+                  <div className="dynamic-dashboard-context-options">
+                    {(state.data?.jobTypes ?? [])
+                      .filter((jobType) => jobType.isActive && jobType.legacyRole === null && jobType.id !== form.id)
+                      .map((jobType) => {
+                        const checked = dashboardContextJobTypeIds.includes(jobType.id);
+                        return (
+                          <label key={jobType.id} className="dynamic-dashboard-context-option">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(event) => setDashboardContextJobTypeIds((current) => event.target.checked
+                                ? Array.from(new Set([...current, jobType.id]))
+                                : current.filter((id) => id !== jobType.id))}
+                            />
+                            <span>
+                              <strong>הצג שיבוצים של {jobType.name}</strong>
+                              <small>רק כאשר קיימת חפיפה בפועל עם המשמרת/כוננות הנוכחית או הבאה של בעל התפקיד.</small>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    {(state.data?.jobTypes ?? []).filter((jobType) => jobType.isActive && jobType.legacyRole === null && jobType.id !== form.id).length === 0 ? (
+                      <span className="dynamic-empty-note">אין כרגע תפקיד דינמי נוסף שניתן להציג.</span>
+                    ) : null}
+                  </div>
+
+                  <small className="dynamic-permission-footnote">ההגדרה חד-כיוונית. לדוגמה, אפשר להציג לכונן את המוקדנים בלי להציג אוטומטית למוקדנים את הכונן; את הכיוון ההפוך מגדירים בתפקיד השני.</small>
                 </div>
 
                 <small className="dynamic-permission-footnote">הרשאות מערכת כלליות כגון ניהול משתמשים, הגדרות ויומן מערכת נשארות נפרדות ואינן תלויות בתפקיד עבודה.</small>

@@ -16,6 +16,21 @@ export interface DynamicRuntimeUpcomingAssignment {
   endTime: string;
 }
 
+
+export interface DynamicRuntimeParallelAssignment {
+  jobTypeId: string;
+  jobTypeName: string;
+  workMode: DynamicWorkStructureMode;
+  assignmentId: string;
+  shiftDate: string;
+  shiftCode: string;
+  shiftName: string;
+  startTime: string;
+  endTime: string;
+  userId: string | null;
+  displayName: string | null;
+}
+
 export interface DynamicRuntimeAvailabilityState {
   periodId: string;
   year: number;
@@ -38,6 +53,7 @@ export interface DynamicRuntimeRole {
   availabilityEnabled: boolean;
   publishedAssignmentCount: number;
   nextAssignment: DynamicRuntimeUpcomingAssignment | null;
+  parallelAssignments: DynamicRuntimeParallelAssignment[];
   availability: DynamicRuntimeAvailabilityState | null;
 }
 

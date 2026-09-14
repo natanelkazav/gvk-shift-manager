@@ -32,6 +32,15 @@ export interface DynamicWorkDayDefinition {
 export interface DynamicShiftPatternDefinition {
   enabled: boolean;
   workMode: DynamicWorkStructureMode;
+  /**
+   * Operational coverage window for daily on-call roles.
+   * This does not turn the assignment into an hourly shift and is not shown to employees.
+   * It is used when the system needs a real interval, e.g. cross-role dashboard overlap.
+   */
+  dailyOnCallWindow?: {
+    startTime: string;
+    endTime: string;
+  };
   weekday: DynamicWorkDayDefinition;
   friday: DynamicWorkDayDefinition;
   saturday: DynamicWorkDayDefinition;

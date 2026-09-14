@@ -649,3 +649,60 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Phase 10.6.7 - cross Job Type dashboard context */
+.dynamic-dashboard-parallel {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 12px;
+  background: var(--color-white);
+}
+
+.dynamic-dashboard-parallel-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.dynamic-dashboard-parallel-heading > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--color-primary-700);
+}
+
+.dynamic-dashboard-parallel-heading > div,
+.dynamic-dashboard-parallel-row > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dynamic-dashboard-parallel-heading span,
+.dynamic-dashboard-parallel-row span {
+  color: var(--color-gray-600);
+  font-size: 0.8rem;
+}
+
+.dynamic-dashboard-parallel-list {
+  display: grid;
+  gap: 7px;
+}
+
+.dynamic-dashboard-parallel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: var(--color-gray-50);
+}
+
+.dynamic-dashboard-parallel-row bdi {
+  flex: 0 0 auto;
+  color: var(--color-gray-600);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}

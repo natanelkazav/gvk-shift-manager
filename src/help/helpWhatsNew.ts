@@ -9,10 +9,11 @@ export interface HelpWhatsNewItem {
 
 export const helpWhatsNewItems: readonly HelpWhatsNewItem[] = [
   {
-    id: 'dynamic-scheduling-phase-10-6-6-admin-default-assigned-filter',
-    title: 'מנהלי מערכת רואים כברירת מחדל שיבוצים מאוישים',
+    id: 'dynamic-daily-on-call-window-phase-10-6-8',
+    title: 'טווח תפעולי לכוננות יומית',
     description:
-      'במרכז השיבוצים, מנהל מערכת נכנס כברירת מחדל לתצוגת משמרות מאוישות בלבד. ניתן עדיין לשנות את מסנן מצב האיוש להצגת הכול או רק שיבוצים לא מאוישים.',
+      'מנהלי מערכת יכולים להגדיר לתפקיד מסוג כוננות יומית שעת התחלה ושעת סיום תפעוליות, למשל 16:00 עד 06:00 למחרת. הטווח אינו מוצג לעובדים ואינו הופך את הכוננות לשעתית; הוא משמש את המערכת לחישוב חפיפה אמיתי בין תפקידים, כך שמידע נוסף בלוח הבקרה מציג את העובד המקביל הנכון.',
+    requiredAnyPermissions: ['users.manage'],
   },
   {
     id: 'dynamic-notifications-phase-10-6-2',

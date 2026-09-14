@@ -82,14 +82,43 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
                   {role.nextAssignment ? (
                     <span>
                       {formatDate(role.nextAssignment.shiftDate)} · {role.nextAssignment.shiftName}
-                      {' · '}
-                      <bdi dir="ltr">{formatTime(role.nextAssignment.startTime)}–{formatTime(role.nextAssignment.endTime)}</bdi>
+                      {role.workMode !== 'on_call_daily' ? (
+                        <>
+                          {' · '}
+                          <bdi dir="ltr">{formatTime(role.nextAssignment.startTime)}–{formatTime(role.nextAssignment.endTime)}</bdi>
+                        </>
+                      ) : null}
                     </span>
                   ) : (
                     <span>אין כרגע שיבוץ עתידי מפורסם</span>
                   )}
                 </div>
               </div>
+
+              {role.parallelAssignments.length > 0 ? (
+                <div className="dynamic-dashboard-parallel">
+                  <div className="dynamic-dashboard-parallel-heading">
+                    <Users size={18} aria-hidden="true" />
+                    <div>
+                      <strong>מי עובד במקביל</strong>
+                      <span>לפי התפקידים שהוגדרו להצגה בלוח הבקרה</span>
+                    </div>
+                  </div>
+                  <div className="dynamic-dashboard-parallel-list">
+                    {role.parallelAssignments.map((assignment) => (
+                      <div className="dynamic-dashboard-parallel-row" key={`${assignment.jobTypeId}-${assignment.assignmentId}`}>
+                        <div>
+                          <strong>{assignment.jobTypeName}</strong>
+                          <span>{assignment.displayName ?? 'לא משובץ'} · {assignment.shiftName}</span>
+                        </div>
+                        {assignment.workMode !== 'on_call_daily' ? (
+                          <bdi dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</bdi>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="dynamic-dashboard-fact">
                 <CheckCircle2 size={18} aria-hidden="true" />

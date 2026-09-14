@@ -10,6 +10,13 @@ export interface DynamicPermissionDefinition {
   defaultEnabled: boolean;
 }
 
+
+export interface DynamicDashboardContextPolicy {
+  jobTypeId: string;
+  jobTypeName: string;
+  targetJobTypeIds: string[];
+}
+
 export interface DynamicJobTypePermissionManager {
   userId: string;
   displayName: string;

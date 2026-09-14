@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type {
+  DynamicDashboardContextPolicy,
   DynamicJobTypePermissionEditor,
   DynamicUserJobTypePermissionEditor,
   DynamicUserJobTypePermissionSelection,
@@ -18,6 +19,18 @@ const normalizeEditor = (data: unknown): DynamicJobTypePermissionEditor => {
   };
 };
 
+
+const normalizeDashboardContextPolicy = (data: unknown): DynamicDashboardContextPolicy => {
+  const value = (data ?? {}) as Partial<DynamicDashboardContextPolicy>;
+  return {
+    jobTypeId: String(value.jobTypeId ?? ''),
+    jobTypeName: String(value.jobTypeName ?? ''),
+    targetJobTypeIds: Array.isArray(value.targetJobTypeIds)
+      ? value.targetJobTypeIds.filter((item): item is string => typeof item === 'string')
+      : [],
+  };
+};
+
 const normalizeUserEditor = (data: unknown): DynamicUserJobTypePermissionEditor => {
   const value = (data ?? {}) as Partial<DynamicUserJobTypePermissionEditor>;
   return {
@@ -33,6 +46,22 @@ export const dynamicPermissionEngineService = {
     });
     if (error) throw new Error(error.message || 'לא ניתן לטעון את הרשאות התפקיד.');
     return normalizeEditor(data);
+  },
+
+  async getDashboardContextPolicy(jobTypeId: string): Promise<DynamicDashboardContextPolicy> {
+    const { data, error } = await supabase.rpc('get_dynamic_dashboard_context_policy', {
+      requested_job_type_id: jobTypeId,
+    });
+    if (error) throw new Error(error.message || 'לא ניתן לטעון את הגדרות המידע הנוסף בלוח הבקרה.');
+    return normalizeDashboardContextPolicy(data);
+  },
+
+  async saveDashboardContextPolicy(jobTypeId: string, targetJobTypeIds: string[]): Promise<void> {
+    const { error } = await supabase.rpc('save_dynamic_dashboard_context_policy', {
+      requested_job_type_id: jobTypeId,
+      requested_target_job_type_ids: targetJobTypeIds,
+    });
+    if (error) throw new Error(error.message || 'לא ניתן לשמור את הגדרות המידע הנוסף בלוח הבקרה.');
   },
 
   async saveJobTypePolicy(
