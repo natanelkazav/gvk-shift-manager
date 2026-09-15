@@ -162,12 +162,31 @@
 
 @media (max-width: 900px) {
   .month-calendar {
+    /*
+     * Keep horizontal scrolling for the wide monthly table.
+     * `overflow-y: clip` prevents this element from becoming the vertical
+     * scrolling ancestor, so the weekday header can remain sticky while the
+     * page itself scrolls vertically.
+     */
     overflow-x: auto;
+    overflow-y: clip;
   }
 
   .month-calendar-weekdays,
   .month-calendar-grid {
     min-width: 760px;
+  }
+
+  .month-calendar-weekdays {
+    position: sticky;
+    top: var(--mobile-sticky-calendar-top, 0px);
+    z-index: 20;
+    background: #f8fafc;
+    box-shadow: 0 2px 6px rgb(15 23 42 / 10%);
+  }
+
+  .month-calendar-weekday {
+    background: #f8fafc;
   }
 }
 

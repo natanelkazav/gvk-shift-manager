@@ -1,5 +1,6 @@
 import {
   BellRing,
+  LayoutDashboard,
   FileSpreadsheet,
   Settings,
   ShieldCheck,
@@ -7,6 +8,7 @@ import {
 } from 'lucide-react';
 
 import {
+  useEffect,
   useState,
 } from 'react';
 
@@ -36,6 +38,8 @@ import GvkLegacyMigrationPanel from '../components/settings/GvkLegacyMigrationPa
 import DynamicCutoverSettings from '../components/settings/DynamicCutoverSettings';
 import DynamicPilotQaPanel from '../components/settings/DynamicPilotQaPanel';
 import LegacyCompatibilityPanel from '../components/settings/LegacyCompatibilityPanel';
+import DashboardWidgetSettings from '../components/settings/DashboardWidgetSettings';
+import { dashboardWidgetService } from '../services/dashboardWidgetService';
 
 type FileToolTab =
   | 'import'
@@ -100,6 +104,15 @@ function SettingsPage() {
     canManageNotifications ||
     isSystemAdmin;
 
+  const [canConfigureDashboard, setCanConfigureDashboard] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void dashboardWidgetService.canConfigure()
+      .then((allowed) => { if (active) setCanConfigureDashboard(allowed); });
+    return () => { active = false; };
+  }, []);
+
   return (
     <section className="settings-page">
       <PageHeader
@@ -133,6 +146,19 @@ function SettingsPage() {
             }
           />
         </section>
+
+        {canConfigureDashboard ? (
+          <section className="settings-section settings-section-card">
+            <div className="settings-section-header">
+              <LayoutDashboard size={22} aria-hidden="true" />
+              <div>
+                <h2>לוח הבקרה</h2>
+                <p>התאם את המידע התפעולי שמופיע בלוח הבקרה האישי שלך.</p>
+              </div>
+            </div>
+            <DashboardWidgetSettings />
+          </section>
+        ) : null}
 
         {canUseFileTools ? (
           <section className="settings-section settings-section-card">

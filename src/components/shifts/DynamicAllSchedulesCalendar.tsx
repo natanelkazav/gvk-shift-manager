@@ -19,6 +19,7 @@ import type {
 import MonthCalendar from '../calendar/MonthCalendar';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
+import { dynamicShiftDisplayName } from '../../utils/dynamicShiftDisplayName';
 
 type AssignmentFilter = 'all' | 'assigned' | 'unassigned';
 type ScheduleDisplayMode = 'calendar' | 'list';
@@ -287,7 +288,7 @@ function DynamicAllSchedulesCalendar({
           <span className="dynamic-all-calendar-role">{slot.jobTypeName}</span>
           {slot.contains200Percent ? <span className="dynamic-all-calendar-premium">200%</span> : null}
         </div>
-        <strong>{slot.shiftName}</strong>
+        <strong>{dynamicShiftDisplayName(slot.shiftName, 'משמרת')}</strong>
         <span className="dynamic-all-calendar-time">
           <bdi dir="ltr">{slot.startTime.slice(0, 5)}–{slot.endTime.slice(0, 5)}</bdi>
         </span>
@@ -425,7 +426,7 @@ function DynamicAllSchedulesCalendar({
                     >
                       <span className="dynamic-all-schedules-list-role"><i aria-hidden="true" />{slot.jobTypeName}</span>
                       <span className="dynamic-all-schedules-list-shift">
-                        <strong>{slot.shiftName}</strong>
+                        <strong>{dynamicShiftDisplayName(slot.shiftName, 'משמרת')}</strong>
                         <small>{slot.startTime.slice(0, 5)}–{slot.endTime.slice(0, 5)}</small>
                       </span>
                       <span className="dynamic-all-schedules-list-workers">
@@ -446,7 +447,7 @@ function DynamicAllSchedulesCalendar({
 
       <Modal
         isOpen={Boolean(selectedSlot)}
-        title={selectedSlot ? `${selectedSlot.jobTypeName} · ${selectedSlot.shiftName}` : 'פרטי משמרת'}
+        title={selectedSlot ? `${selectedSlot.jobTypeName} · ${dynamicShiftDisplayName(selectedSlot.shiftName, 'משמרת')}` : 'פרטי משמרת'}
         onClose={() => setSelectedSlot(null)}
         className="dynamic-calendar-slot-modal"
         footer={(selectedSlot?.periodSource === 'publication' && editor?.editable)

@@ -964,3 +964,14 @@
   display: inline-flex;
   align-items: center;
 }
+
+/* Phase 10.11 — configurable manager dashboard */
+.dashboard-widget-settings { display:grid; gap:16px; }
+.dashboard-widget-settings-list { display:grid; gap:10px; }
+.dashboard-widget-settings-row { display:grid; grid-template-columns:auto 130px auto minmax(180px,1fr) 42px; gap:10px; align-items:center; padding:12px; border:1px solid #e2e8f0; border-radius:12px; background:#fff; }
+.dashboard-widget-settings-row select { min-height:42px; border:1px solid #cbd5e1; border-radius:9px; padding:0 10px; background:#fff; }
+.dashboard-widget-remove { height:40px; width:40px; display:grid; place-items:center; border:1px solid #fecaca; color:#b91c1c; background:#fff; border-radius:9px; cursor:pointer; }
+.dashboard-widget-settings-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.dashboard-widget-settings-success { padding:11px 13px; border:1px solid #86efac; background:#ecfdf5; color:#166534; border-radius:10px; font-weight:700; }
+.settings-empty-note { color:#64748b; margin:0; }
+@media(max-width:760px){ .dashboard-widget-settings-row{grid-template-columns:1fr 1fr}.dashboard-widget-settings-row>span{display:none}.dashboard-widget-remove{justify-self:end} }

@@ -5,6 +5,7 @@ import {
   RefreshCw,
   Table2,
   Users,
+  WalletCards,
 } from 'lucide-react';
 import {
   useEffect,
@@ -24,7 +25,7 @@ import '../styles/statistics.css';
 
 import LegacyStatisticsPage from './LegacyStatisticsPage';
 
-type WorkspaceView = 'overview' | 'availability' | 'charts' | 'tables';
+type WorkspaceView = 'overview' | 'availability' | 'charts' | 'tables' | 'payroll';
 
 const hebrewMonths = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -174,13 +175,16 @@ function StatisticsPage() {
       : []),
     { value: 'charts', label: 'גרפים', icon: BarChart3 },
     { value: 'tables', label: 'טבלאות', icon: Table2 },
+    ...(selectedJobType?.payrollEnabled
+      ? [{ value: 'payroll' as const, label: 'שכר', icon: WalletCards }]
+      : []),
   ];
 
   return (
     <section className="statistics-page">
       <PageHeader
         title="סטטיסטיקות"
-        description="סטטיסטיקות לפי תפקיד דינמי — ללא תלות במוקדן, כונן או כל תפקיד קבוע אחר."
+        description="ניתוח שיבוצים, אילוצים, עומסי עבודה ושכר לפי תפקיד, עובדים ותקופות."
         actions={(
           <Button
             type="button"
@@ -205,7 +209,7 @@ function StatisticsPage() {
           <span>שלב 1</span>
           <div>
             <h2>איזה תפקיד לנתח?</h2>
-            <p>כל תפקיד שנוצר במערכת יכול לקבל סטטיסטיקות, בלי להוסיף עבורו קוד ייעודי.</p>
+            <p>מוצגים רק תפקידים שבהגדרתם הופעלה יכולת הסטטיסטיקות.</p>
           </div>
         </header>
 

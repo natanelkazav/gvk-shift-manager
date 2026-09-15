@@ -4,13 +4,14 @@ import {
   Edit3,
   Users,
   UserX,
+  WalletCards,
 } from 'lucide-react';
 
 import type { DynamicStatisticsWorkspace } from '../../../types/dynamicStatistics';
 import StatisticsBarChart from '../components/StatisticsBarChart';
 import StatisticsPieChart from '../components/StatisticsPieChart';
 
-type ViewMode = 'overview' | 'charts' | 'tables' | 'availability';
+type ViewMode = 'overview' | 'charts' | 'tables' | 'availability' | 'payroll';
 
 interface Props {
   data: DynamicStatisticsWorkspace;
@@ -157,14 +158,6 @@ function DynamicJobTypeStatisticsView({
         />
 
         <StatisticsBarChart
-          title="שיבוצים לפי סוג משמרת"
-          items={data.shifts.map((row) => ({
-            label: row.shiftName || row.shiftCode,
-            value: row.assignmentCount,
-          }))}
-        />
-
-        <StatisticsBarChart
           title="שיבוצים לפי חודש"
           items={data.monthly.map((row) => ({
             label: `${String(row.month).padStart(2, '0')}/${row.year}`,
@@ -172,6 +165,71 @@ function DynamicJobTypeStatisticsView({
           }))}
         />
       </div>
+    );
+  }
+
+  if (mode === 'payroll') {
+    const visiblePayroll = selected.size === 0
+      ? data.payrollPeople
+      : data.payrollPeople.filter((row) => selected.has(row.userId));
+    const totalPay = visiblePayroll.reduce((sum, row) => sum + row.projectedPay, 0);
+    const formatCurrency = (value: number): string => new Intl.NumberFormat('he-IL', {
+      style: 'currency',
+      currency: 'ILS',
+      maximumFractionDigits: 2,
+    }).format(value);
+
+    return (
+      <>
+        <section className="statistics-section">
+          <header>
+            <div>
+              <h2>שכר צפוי · {data.jobType.name}</h2>
+              <p>מחושב מהשיבוצים שנבחרו: התפקיד קובע את שיטת החישוב, והתעריף נלקח מהגדרת השכר האישית של כל עובד.</p>
+            </div>
+          </header>
+          <div className="statistics-summary-grid">
+            <article>
+              <WalletCards size={22} aria-hidden="true" />
+              <div><span>שכר צפוי</span><strong>{formatCurrency(totalPay)}</strong></div>
+            </article>
+            <article>
+              <Clock3 size={22} aria-hidden="true" />
+              <div><span>שעות מתוזמנות</span><strong>{formatHours(visiblePayroll.reduce((sum,row)=>sum+row.timedHours,0))}</strong></div>
+            </article>
+          </div>
+        </section>
+
+        <div className="statistics-charts-grid">
+          <StatisticsBarChart
+            title="שכר צפוי לפי עובד"
+            items={visiblePayroll.filter((row) => row.projectedPay > 0).map((row) => ({
+              label: displayName(row.displayName, row.scheduleName),
+              value: Math.round(row.projectedPay * 100) / 100,
+            }))}
+          />
+        </div>
+
+        <section className="statistics-section">
+          <div className="statistics-table-wrapper">
+            <table className="statistics-table">
+              <thead><tr><th>עובד</th><th>תעריף אישי</th><th>שיבוצים</th><th>ימי עבודה</th><th>שעות</th><th>שכר צפוי</th></tr></thead>
+              <tbody>
+                {visiblePayroll.map((row) => (
+                  <tr key={row.userId}>
+                    <td><strong>{displayName(row.displayName, row.scheduleName)}</strong></td>
+                    <td>{row.compensationRate == null ? 'לא הוגדר' : formatCurrency(row.compensationRate)}</td>
+                    <td>{row.assignmentCount}</td>
+                    <td>{row.workDayCount}</td>
+                    <td>{formatHours(row.timedHours)}</td>
+                    <td>{formatCurrency(row.projectedPay)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </>
     );
   }
 

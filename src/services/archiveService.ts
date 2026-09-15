@@ -3,7 +3,10 @@ import {
 } from '../lib/supabase';
 
 import type {
+  ArchivePeriod,
   ArchivePeriodsResponse,
+  DynamicArchivePeriodsResponse,
+  UnifiedArchivePeriod,
 } from '../types/archive';
 
 interface MorningDriverArchiveSummary {
@@ -122,7 +125,7 @@ function isArchivePeriodsResponse(
 }
 
 class ArchiveService {
-  async getPeriods():
+  private async getLegacyPeriods():
     Promise<ArchivePeriodsResponse> {
     const [
       archiveResult,
@@ -360,6 +363,93 @@ class ArchiveService {
         periods.length,
     };
   }
+  async getPeriods(): Promise<{ periods: UnifiedArchivePeriod[]; count: number; generatedAt: string }> {
+    const [legacyResult, dynamicResult] = await Promise.all([
+      this.getLegacyPeriods().catch((error) => {
+        console.warn('Legacy archive read failed; Dynamic archive remains available.', error);
+        return { periods: [], count: 0, generatedAt: new Date().toISOString() } as ArchivePeriodsResponse;
+      }),
+      supabase.rpc('get_dynamic_archive_periods'),
+    ]);
+
+    if (dynamicResult.error) {
+      throw normalizeArchiveError(dynamicResult.error);
+    }
+
+    const dynamic = (
+      dynamicResult.data ?? {
+        periods: [],
+        generatedAt: new Date().toISOString(),
+      }
+    ) as unknown as DynamicArchivePeriodsResponse;
+
+    const byMonth = new Map<string, UnifiedArchivePeriod>();
+
+    for (const period of legacyResult.periods) {
+      byMonth.set(`${period.year}-${period.month}`, {
+        ...period,
+        dynamicJobTypes: [],
+        dynamicArchivedAt: null,
+        hasDynamicArchive: false,
+        archiveRun: null,
+      });
+    }
+
+    for (const dynamicPeriod of dynamic.periods ?? []) {
+      const key = `${dynamicPeriod.year}-${dynamicPeriod.month}`;
+      const existing = byMonth.get(key);
+      const emptyLegacy: ArchivePeriod = {
+        year: dynamicPeriod.year,
+        month: dynamicPeriod.month,
+        dispatcherPeriodId: null,
+        driverPeriodId: null,
+        morningDriverPeriodId: null,
+        dispatcherStatus: null,
+        driverStatus: null,
+        morningDriverStatus: null,
+        dispatcherShiftCount: 0,
+        driverDutyCount: 0,
+        morningDriverAssignmentCount: 0,
+        dispatcherCount: 0,
+        driverCount: 0,
+        morningDriverCount: 0,
+        dispatcherPublishedAt: null,
+        driverPublishedAt: null,
+        dispatcherArchivedAt: null,
+        driverArchivedAt: null,
+        morningDriverArchivedAt: null,
+        importRunId: null,
+        importFileName: null,
+        importedAt: null,
+        importedBy: null,
+        isFullyArchived: dynamicPeriod.isFullyArchived,
+        hasDispatcherSchedule: false,
+        hasDriverSchedule: false,
+        hasMorningDriverSchedule: false,
+      };
+
+      byMonth.set(key, {
+        ...(existing ?? emptyLegacy),
+        isFullyArchived: dynamicPeriod.isFullyArchived &&
+          (existing ? existing.isFullyArchived : true),
+        dynamicJobTypes: dynamicPeriod.jobTypes ?? [],
+        dynamicArchivedAt: dynamicPeriod.archivedAt,
+        hasDynamicArchive: (dynamicPeriod.jobTypes?.length ?? 0) > 0,
+        archiveRun: dynamicPeriod.archiveRun ?? null,
+      });
+    }
+
+    const periods = Array.from(byMonth.values()).sort(
+      (a,b) => b.year-a.year || b.month-a.month,
+    );
+
+    return {
+      periods,
+      count: periods.length,
+      generatedAt: dynamic.generatedAt ?? legacyResult.generatedAt,
+    };
+  }
+
 }
 
 export const archiveService =

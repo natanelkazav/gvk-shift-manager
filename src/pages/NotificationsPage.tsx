@@ -32,6 +32,7 @@ import type { DailyReportDetail } from '../types/dailyReports';
 import type { DynamicShiftExchangeRequest } from '../types/dynamicScheduling';
 import type { ShiftSwapRequest } from '../types/shiftSwap';
 import '../styles/notifications.css';
+import { dynamicShiftDisplayName } from '../utils/dynamicShiftDisplayName';
 
 type NotificationFilter = 'all' | 'unread' | 'read';
 type WorkspaceTab = 'notifications' | 'requests';
@@ -278,7 +279,8 @@ function NotificationsPage() {
   ): string => {
     if (!date || !startTime || !endTime) return '—';
     const [year, month, day] = date.slice(0, 10).split('-');
-    const name = shiftName ? `${shiftName} · ` : '';
+    const displayName = shiftName ? dynamicShiftDisplayName(shiftName, '') : '';
+    const name = displayName ? `${displayName} · ` : '';
     return `${name}${day}/${month}/${year} · \u2066${startTime.slice(0, 5)}–${endTime.slice(0, 5)}\u2069`;
   };
 

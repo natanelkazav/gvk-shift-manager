@@ -13,6 +13,7 @@ import {
   PlayCircle,
   Trash2,
   Settings2,
+  FlaskConical,
   ShieldCheck,
   LayoutDashboard,
   UsersRound,
@@ -38,6 +39,7 @@ import type {
   DynamicLegacySourceKind,
   DynamicLegacyImportPreview,
 } from '../../../types/dynamicScheduling';
+import DynamicSchedulingShadowTester from './DynamicSchedulingShadowTester';
 import DynamicRoleWorkspaceModal from './DynamicRoleWorkspaceModal';
 import { dailyReportService } from '../../../services/dailyReportService';
 import type { DailyReportAdminUser } from '../../../types/dailyReports';
@@ -413,6 +415,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
   const [effectiveTiming, setEffectiveTiming] = useState<'current' | 'next'>('current');
   const [isLoadingEffectiveConfig, setIsLoadingEffectiveConfig] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [testingJobType, setTestingJobType] = useState<DynamicJobType | null>(null);
   const [workspaceJobType, setWorkspaceJobType] = useState<DynamicJobType | null>(null);
   const [ruleProposal, setRuleProposal] = useState('');
   const [ruleProposalStatus, setRuleProposalStatus] = useState<string | null>(null);
@@ -822,7 +825,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
   if (state.error || !state.data) {
     return (
       <div className="users-error" role="alert">
-        {state.error ?? 'לא ניתן לטעון את סוגי התפקידים.'}
+        {state.error ?? 'לא ניתן לטעון את המודל החדש.'}
         <Button variant="secondary" onClick={() => void loadData()}>
           <RefreshCw size={16} /> נסה שוב
         </Button>
@@ -834,11 +837,20 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     <section className="dynamic-job-types-panel">
       <div className="dynamic-job-types-intro">
         <div>
-          <h2>סוגי תפקידים</h2>
-          <p>הגדרת תפקידים, מבנה עבודה, עובדים, הרשאות ויכולות תפעוליות.</p>
+          <div className="dynamic-job-types-kicker">
+            <Bot size={18} /> Dynamic Scheduling Foundation
+          </div>
+          <h2>סוגי תפקידים דינמיים</h2>
+          <p>
+            המודל החדש נמצא כרגע ב־Shadow Mode. ניתן להגדיר ולערוך אותו, אבל הוא עדיין לא משנה את
+            מנוע השיבוץ הפעיל.
+          </p>
         </div>
 
         <div className="dynamic-job-types-intro-actions">
+          <span className={`dynamic-feature-status ${state.data.featureEnabled ? 'is-on' : ''}`}>
+            {state.data.featureEnabled ? 'פעיל' : `כבוי · ${state.data.featureMode}`}
+          </span>
           {canManage ? (
             <Button onClick={openCreate}>
               <Plus size={17} /> סוג תפקיד חדש
@@ -886,11 +898,19 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
             {canManage ? (
               <div className="dynamic-role-card-actions">
                 <Button variant="secondary" onClick={() => setWorkspaceJobType(jobType)}>
-                  <DatabaseBackup size={16} /> ניהול תפקיד
+                  <DatabaseBackup size={16} /> סביבת תפקיד
                 </Button>
                 <Button variant="secondary" onClick={() => void openMemberships(jobType)}>
                   <UsersRound size={16} /> ניהול עובדים
                 </Button>
+                <button
+                  type="button"
+                  onClick={() => setTestingJobType(jobType)}
+                  aria-label={`בדיקת מנוע ${jobType.name}`}
+                  title="בדיקת מנוע"
+                >
+                  <FlaskConical size={16} />
+                </button>
                 <button
                   type="button"
                   disabled={jobTypeActionId === jobType.id}
@@ -1177,6 +1197,14 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
         />
       ) : null}
 
+      {testingJobType ? (
+        <DynamicSchedulingShadowTester
+          jobType={testingJobType}
+          isOpen
+          onClose={() => setTestingJobType(null)}
+        />
+      ) : null}
+
       {form ? (
         <Modal
           isOpen={isModalOpen}
@@ -1341,6 +1369,20 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                     </option>
                   ))}
                 </select>
+              </label>
+              <label className="dynamic-choice-chip">
+                <input
+                  type="checkbox"
+                  checked={form.statisticsConfig.enabled !== false}
+                  onChange={(event) => setForm({
+                    ...form,
+                    statisticsConfig: {
+                      ...form.statisticsConfig,
+                      enabled: event.target.checked,
+                    },
+                  })}
+                />
+                <span>הפעל סטטיסטיקות לתפקיד</span>
               </label>
               </div>
               <div className="dynamic-employment-inline">
@@ -1726,7 +1768,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
             <div className="dynamic-config-section dynamic-availability-config dynamic-form-section" style={{ display: form.schedulingStrategy === 'none' ? 'none' : undefined }}>
               <div className="dynamic-section-heading"><span>4</span><div><h3>מערכת אילוצים דינמית</h3><small>הגדר אילו תשובות וחוקי קיבולת זמינים לעובדים.</small></div></div>
               <p>
-                הגדר אילו אפשרויות אילוצים וחוקי קיבולת יחולו על העובדים המשויכים לתפקיד.
+                ההגדרות נשמרות ב־Shadow Mode בלבד. הן עדיין לא מחליפות את מסכי האילוצים הפעילים.
               </p>
               <label className="dynamic-choice-chip dynamic-availability-master">
                 <input

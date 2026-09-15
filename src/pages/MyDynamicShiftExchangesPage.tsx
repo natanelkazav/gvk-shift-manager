@@ -10,6 +10,7 @@ import type {
   DynamicShiftExchangeStatus,
   DynamicShiftExchangeType,
 } from '../types/dynamicScheduling';
+import { dynamicShiftDisplayName } from '../utils/dynamicShiftDisplayName';
 import '../styles/dynamicShiftExchanges.css';
 
 const EMPTY_OPTIONS: DynamicShiftExchangeOptions = {
@@ -41,7 +42,7 @@ function formatTime(value: string | null): string {
 }
 
 function shiftLabel(shift: DynamicShiftExchangeShiftOption): string {
-  return `${formatDate(shift.shiftDate)} · ${shift.shiftName} · ${formatTime(shift.startTime)}–${formatTime(shift.endTime)}`;
+  return `${formatDate(shift.shiftDate)} · ${dynamicShiftDisplayName(shift.shiftName, 'משמרת')} · ${formatTime(shift.startTime)}–${formatTime(shift.endTime)}`;
 }
 
 function monthKey(year: number, month: number): string {

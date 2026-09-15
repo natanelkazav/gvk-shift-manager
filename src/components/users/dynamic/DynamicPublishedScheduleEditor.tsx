@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
 import type { DynamicPublishedEditorWorkspace } from '../../../types/dynamicScheduling';
 import { Button } from '../../ui';
+import { dynamicShiftDisplayName } from '../../../utils/dynamicShiftDisplayName';
 
 interface Props {
   publicationId: string;
@@ -168,7 +169,7 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
           <section className="dynamic-published-editor-slot" key={slot.slotId}>
             <header>
               <div>
-                <strong>{slot.shiftName}</strong>
+                <strong>{dynamicShiftDisplayName(slot.shiftName, 'משמרת')}</strong>
                 <span><bdi dir="ltr">{formatDate(slot.shiftDate)}</bdi> · <bdi dir="ltr">{formatTime(slot.startTime)}–{formatTime(slot.endTime)}</bdi></span>
               </div>
               {slot.intentionallyUnassignedCount > 0 ? <span className="is-unassigned">לא מאויש בכוונה × {slot.intentionallyUnassignedCount}</span> : null}

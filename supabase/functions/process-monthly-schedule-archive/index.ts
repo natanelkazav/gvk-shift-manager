@@ -1826,6 +1826,22 @@ async function sendArchiveEmail(
   }
 }
 
+
+const archiveDynamicPublications = async (
+  adminClient: ReturnType<typeof createClient>,
+  year: number,
+  month: number,
+) => {
+  const archivedAt = new Date().toISOString();
+  const { data, error } = await adminClient
+    .from('dynamic_schedule_publications')
+    .update({ status: 'archived', updated_at: archivedAt })
+    .eq('year', year).eq('month', month).eq('status', 'published')
+    .select('id, job_type_id');
+  if (error) throw new Error(`Dynamic archive finalization failed: ${error.message}`);
+  return { archivedAt, archivedPublications: data?.length ?? 0 };
+};
+
 Deno.serve(
   async (
     request:
@@ -1978,19 +1994,10 @@ Deno.serve(
           ?.status ===
           'sent'
       ) {
+        const dynamicArchive = await archiveDynamicPublications(adminClient, year, month);
         return jsonResponse({
-          skipped:
-            true,
-          reason:
-            'already_sent',
-          year,
-          month,
-          emailId:
-            existingRun
-              .email_id,
-          sentAt:
-            existingRun
-              .sent_at,
+          skipped: true, reason: 'already_sent', year, month,
+          emailId: existingRun.email_id, sentAt: existingRun.sent_at, dynamicArchive,
         });
       }
 
@@ -2176,6 +2183,8 @@ Deno.serve(
           );
         }
 
+        const dynamicArchive = await archiveDynamicPublications(adminClient, year, month);
+
         const {
           error:
             auditError,
@@ -2219,6 +2228,7 @@ Deno.serve(
                 subject:
                   archiveSubject,
                 recipientEmail,
+                dynamicArchive,
               },
             });
 
@@ -2240,6 +2250,7 @@ Deno.serve(
           emailId,
           auditLogged:
             !auditError,
+          dynamicArchive,
         });
       } catch (
         processError

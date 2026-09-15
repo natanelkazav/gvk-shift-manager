@@ -8,6 +8,7 @@ export interface DynamicStatisticsJobTypeOption {
   availabilityEnabled: boolean;
   memberCount: number;
   dataPeriodCount: number;
+  payrollEnabled: boolean;
 }
 
 export interface DynamicStatisticsPersonRow {
@@ -35,8 +36,23 @@ export interface DynamicStatisticsMonthlyRow {
 export interface DynamicStatisticsShiftRow {
   shiftCode: string;
   shiftName: string;
+  timeLabel: string;
   assignmentCount: number;
   timedHours: number;
+}
+
+export interface DynamicStatisticsPayrollPersonRow {
+  userId: string;
+  displayName: string;
+  scheduleName: string | null;
+  assignmentCount: number;
+  timedHours: number;
+  workDayCount: number;
+  hourlyRate: number | null;
+  dailyDutyRate: number | null;
+  shiftRate: number | null;
+  compensationRate: number | null;
+  projectedPay: number;
 }
 
 export interface DynamicStatisticsAvailabilityPersonRow {
@@ -81,6 +97,9 @@ export interface DynamicStatisticsWorkspace {
     payModel: string;
     workMode: string | null;
     availabilityEnabled: boolean;
+    payrollEnabled: boolean;
+    baseRate: number;
+    shiftRate: number;
   };
   filters: {
     years: number[];
@@ -91,6 +110,8 @@ export interface DynamicStatisticsWorkspace {
   people: DynamicStatisticsPersonRow[];
   monthly: DynamicStatisticsMonthlyRow[];
   shifts: DynamicStatisticsShiftRow[];
+  payrollPeople: DynamicStatisticsPayrollPersonRow[];
+  payrollTotal: number;
   availabilitySummary: DynamicStatisticsAvailabilitySummary;
   availabilityPeople: DynamicStatisticsAvailabilityPersonRow[];
   generatedAt: string;

@@ -356,6 +356,16 @@ function parseTimeToMinutes(
     minute;
 }
 
+
+const isTechnicalDynamicShiftName = (value: unknown): boolean => {
+  if (typeof value !== 'string') return true;
+  const normalized = value.trim();
+  if (!normalized) return true;
+  return /^\d{8}-\d{4}$/i.test(normalized) ||
+    /^\d{4}-\d{2}-\d{2}[-_T ]\d{2}:?\d{2}$/i.test(normalized) ||
+    /^slot[-_:]/i.test(normalized);
+};
+
 Deno.serve(
   async (
     request: Request,
@@ -866,7 +876,7 @@ Deno.serve(
                   const result = await deliverNotification({
                     userId: assignment.user_id,
                     title: `תזכורת לכוננות היום – ${jobTypeName}`,
-                    body: `היום אתה משובץ ל${assignment.shift_name || 'כוננות'} במסגרת ${jobTypeName}.`,
+                    body: `היום אתה משובץ ל${isTechnicalDynamicShiftName(assignment.shift_name) ? 'כוננות' : assignment.shift_name} במסגרת ${jobTypeName}.`,
                     url: `/my-shifts?jobTypeId=${jobTypeId}`,
                     data: {
                       workflow: 'dynamic_schedule',

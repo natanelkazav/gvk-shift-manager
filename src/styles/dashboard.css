@@ -731,3 +731,14 @@
 
 .daily-report-success-banner{display:flex;align-items:center;gap:9px;margin-bottom:14px;padding:12px 14px;border-radius:12px;background:#ecfdf5;border:1px solid #a7f3d0;font-weight:700}
 .daily-report-success-banner span{flex:1}.daily-report-success-banner button{border:0;background:transparent;cursor:pointer}
+
+/* Phase 10.11 — manager-selected staffing widgets */
+.dynamic-manager-widget-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+.dynamic-manager-widgets-loading { display:flex; align-items:center; gap:8px; color:#64748b; padding:8px 2px; }
+.dynamic-manager-staffing-body { display:grid; gap:9px; }
+.dynamic-manager-staffing-row { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid #eef2f7; }
+.dynamic-manager-staffing-row:last-child { border-bottom:0; }
+.dynamic-manager-staffing-row>div { display:grid; gap:3px; }
+.dynamic-manager-staffing-row span { color:#64748b; }
+.dynamic-manager-staffing-time { display:flex; align-items:center; gap:6px; white-space:nowrap; }
+.dynamic-manager-staffing-empty { color:#64748b; padding:10px 0; }

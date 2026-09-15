@@ -4,6 +4,7 @@ import { dynamicSchedulingService } from '../../../services/dynamicSchedulingSer
 import type { DynamicDraftEditorCandidate, DynamicDraftEditorWorkspace } from '../../../types/dynamicScheduling';
 import { Button } from '../../ui';
 import MonthCalendar from '../../calendar/MonthCalendar';
+import { dynamicShiftDisplayName } from '../../../utils/dynamicShiftDisplayName';
 
 interface Props {
   draftId: string;
@@ -111,7 +112,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
                     return (
                       <div key={slot.slotId} className={`dynamic-draft-calendar-shift ${effectiveSlotMissing > 0 ? 'has-missing' : ''}`}>
                         <div className="dynamic-draft-calendar-shift-head">
-                          <strong>{slot.shiftName}</strong>
+                          <strong>{dynamicShiftDisplayName(slot.shiftName, 'משמרת')}</strong>
                           <bdi dir="ltr">{formatTime(slot.startTime)}–{formatTime(slot.endTime)}</bdi>
                         </div>
                         {slot.assignments.length > 0 ? slot.assignments.map((assignment) => (
@@ -119,7 +120,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
                             key={assignment.id}
                             value={assignment.userId}
                             disabled={busy}
-                            aria-label={`${slot.shiftName} - עובד משובץ`}
+                            aria-label={`${dynamicShiftDisplayName(slot.shiftName, 'משמרת')} - עובד משובץ`}
                             onChange={(event) => {
                               const nextUserId = event.target.value;
                               if (!nextUserId || nextUserId === assignment.userId) return;
@@ -150,7 +151,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
             <section className={`dynamic-draft-slot ${effectiveSlotMissing > 0 ? 'has-missing' : ''}`} key={slot.slotId}>
               <header>
                 <div>
-                  <strong>{slot.shiftName}</strong>
+                  <strong>{dynamicShiftDisplayName(slot.shiftName, 'משמרת')}</strong>
                   <span><bdi dir="ltr">{formatDate(slot.date)}</bdi> · <bdi dir="ltr">{formatTime(slot.startTime)}–{formatTime(slot.endTime)}</bdi></span>
                 </div>
                 <span className="dynamic-draft-slot-coverage">{requiredAssigned}/{slot.minWorkers} חובה</span>

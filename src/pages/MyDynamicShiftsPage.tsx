@@ -12,6 +12,7 @@ import type {
   DynamicSelfEditWorkspace,
 } from '../types/dynamicScheduling';
 import '../styles/myDynamicShifts.css';
+import { dynamicShiftDisplayName } from '../utils/dynamicShiftDisplayName';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -453,7 +454,7 @@ function MyDynamicShiftsPage() {
                                 {assignments.map((assignment) => (
                                   <article key={assignment.id} className={assignment.isMine ? 'is-mine' : ''}>
                                     <div className="my-shifts-self-edit-shift">
-                                      <strong>{assignment.shiftName}</strong>
+                                      <strong>{dynamicShiftDisplayName(assignment.shiftName, workspace?.workMode === 'on_call_daily' ? 'כוננות' : 'משמרת')}</strong>
                                       <span dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
                                     </div>
                                     <label>
@@ -511,7 +512,7 @@ function MyDynamicShiftsPage() {
                               title={editable ? 'לחץ לעריכת השיבוץ' : undefined}
                             >
                               <div className="my-shifts-assignment-title">
-                                <strong>{assignment.shiftName}</strong>
+                                <strong>{dynamicShiftDisplayName(assignment.shiftName, workspace?.workMode === 'on_call_daily' ? 'כוננות' : 'משמרת')}</strong>
                                 {assignment.contains200Percent ? <span className="my-shifts-premium-badge">200%</span> : null}
                               </div>
                               <span className="my-shifts-time" dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
@@ -541,7 +542,7 @@ function MyDynamicShiftsPage() {
                             <article key={assignment.id} className="my-shifts-row">
                               <div>
                                 <div className="my-shifts-assignment-title">
-                                  <strong>{assignment.shiftName}</strong>
+                                  <strong>{dynamicShiftDisplayName(assignment.shiftName, workspace?.workMode === 'on_call_daily' ? 'כוננות' : 'משמרת')}</strong>
                                   {assignment.contains200Percent ? <span className="my-shifts-premium-badge">200%</span> : null}
                                 </div>
                                 {workspace.canViewOthers && assignment.displayName ? (

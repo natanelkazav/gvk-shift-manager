@@ -356,3 +356,15 @@
       );
   }
 }
+
+/* Phase 10.12 — Dynamic Archive */
+.archive-dynamic-roles { display:grid; gap:10px; margin:14px 0; }
+.archive-dynamic-role { border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; background:#f8fafc; }
+.archive-dynamic-role-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.archive-dynamic-role-heading>strong { font-size:1rem; color:#0f172a; }
+.archive-dynamic-role-stats { display:flex; flex-wrap:wrap; gap:18px; color:#64748b; }
+.archive-dynamic-role-stats>span { display:flex; align-items:center; gap:6px; }
+.archive-dynamic-role-stats strong { color:#0f172a; }
+
+.archive-run-summary{display:flex;align-items:flex-start;gap:12px;margin:14px 0;padding:14px;border:1px solid #dbeafe;border-radius:12px;background:#eff6ff;color:#1e3a8a}
+.archive-run-summary>div{display:grid;gap:3px}.archive-run-summary strong{color:#0f172a}.archive-run-summary span{color:#334155}.archive-run-summary small{color:#64748b}

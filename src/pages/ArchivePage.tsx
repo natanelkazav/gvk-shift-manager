@@ -25,7 +25,7 @@ import {
 } from '../services/archiveService';
 
 import type {
-  ArchivePeriod,
+  UnifiedArchivePeriod,
 } from '../types/archive';
 
 import '../styles/archive.css';
@@ -46,7 +46,7 @@ const hebrewMonths = [
 ];
 
 function getPeriodTitle(
-  period: ArchivePeriod,
+  period: UnifiedArchivePeriod,
 ): string {
   const monthName =
     hebrewMonths[
@@ -94,7 +94,7 @@ function ArchivePage() {
     periods,
     setPeriods,
   ] =
-    useState<ArchivePeriod[]>(
+    useState<UnifiedArchivePeriod[]>(
       [],
     );
 
@@ -414,6 +414,37 @@ function ArchivePage() {
                             </span>
                           </header>
 
+                          {period.hasDynamicArchive ? (
+                            <div className="archive-dynamic-roles">
+                              {period.dynamicJobTypes.map((jobType) => (
+                                <div className="archive-dynamic-role" key={jobType.publicationId}>
+                                  <div className="archive-dynamic-role-heading">
+                                    <strong>{jobType.jobTypeName}</strong>
+                                    <span className={jobType.status === 'archived' ? 'archive-status archive-status-complete' : 'archive-status archive-status-partial'}>
+                                      {jobType.status === 'archived' ? 'בארכיון' : 'פורסם'}
+                                    </span>
+                                  </div>
+                                  <div className="archive-dynamic-role-stats">
+                                    <span><Users size={17} aria-hidden="true" /><strong>{jobType.workerCount}</strong> עובדים</span>
+                                    <span><CalendarDays size={17} aria-hidden="true" /><strong>{jobType.assignmentCount}</strong> שיבוצים</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+
+                          {period.archiveRun && !period.hasDynamicArchive ? (
+                            <div className="archive-run-summary">
+                              <FileSpreadsheet size={20} aria-hidden="true" />
+                              <div>
+                                <strong>ארכוב חודשי הושלם</strong>
+                                <span>{period.archiveRun.fileName ?? 'קובץ הארכיון נשלח בהצלחה'}</span>
+                                <small>{period.archiveRun.sentAt ? `נשלח ב-${formatDateTime(period.archiveRun.sentAt)}` : 'הארכוב נשלח בהצלחה'}</small>
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {!period.hasDynamicArchive && !period.archiveRun ? (
                           <div className="archive-card-statistics">
                             <div>
                               <Users
@@ -517,60 +548,41 @@ function ArchivePage() {
                               </span>
                             </div>
                           </div>
+                          ) : null}
 
                           <dl className="archive-card-details">
-                            <div>
-                              <dt>
-                                לוח מוקדנים
-                              </dt>
-
-                              <dd>
-                                {period.hasDispatcherSchedule
-                                  ? period.dispatcherStatus ??
-                                    'קיים'
-                                  : 'לא קיים'}
-                              </dd>
-                            </div>
-
-                            <div>
-                              <dt>
-                                לוח כוננים
-                              </dt>
-
-                              <dd>
-                                {period.hasDriverSchedule
-                                  ? period.driverStatus ??
-                                    'קיים'
-                                  : 'לא קיים'}
-                              </dd>
-                            </div>
-
-                            <div>
-                              <dt>
-                                לוח כונני בוקר
-                              </dt>
-
-                              <dd>
-                                {period.hasMorningDriverSchedule
-                                  ? period.morningDriverStatus ??
-                                    'קיים'
-                                  : 'לא קיים'}
-                              </dd>
-                            </div>
-
-                            <div>
-                              <dt>
-                                תאריך ארכוב
-                              </dt>
-
-                              <dd>
-                                {formatDateTime(
-                                  period.dispatcherArchivedAt ??
-                                    period.driverArchivedAt ??
-                                    period.morningDriverArchivedAt,
-                                )}
-                              </dd>
-                            </div>
+                            {period.hasDynamicArchive ? (
+                              <>
+                                <div>
+                                  <dt>תפקידים בארכיון</dt>
+                                  <dd>{period.dynamicJobTypes.length}</dd>
+                                </div>
+                                <div>
+                                  <dt>סה״כ שיבוצים</dt>
+                                  <dd>{period.dynamicJobTypes.reduce((sum, item) => sum + item.assignmentCount, 0)}</dd>
+                                </div>
+                                <div>
+                                  <dt>תאריך ארכוב</dt>
+                                  <dd>{formatDateTime(period.dynamicArchivedAt)}</dd>
+                                </div>
+                              </>
+                            ) : period.archiveRun ? (
+                              <>
+                                <div><dt>סטטוס ארכוב</dt><dd>נשלח בהצלחה</dd></div>
+                                <div><dt>קובץ</dt><dd>{period.archiveRun.fileName ?? 'לא זמין'}</dd></div>
+                                <div><dt>תאריך ארכוב</dt><dd>{formatDateTime(period.archiveRun.sentAt)}</dd></div>
+                              </>
+                            ) : (
+                              <>
+                                <div><dt>לוח מוקדנים</dt><dd>{period.hasDispatcherSchedule ? period.dispatcherStatus ?? 'קיים' : 'לא קיים'}</dd></div>
+                                <div><dt>לוח כוננים</dt><dd>{period.hasDriverSchedule ? period.driverStatus ?? 'קיים' : 'לא קיים'}</dd></div>
+                                <div><dt>לוח כונני בוקר</dt><dd>{period.hasMorningDriverSchedule ? period.morningDriverStatus ?? 'קיים' : 'לא קיים'}</dd></div>
+                                <div>
+                                  <dt>תאריך ארכוב</dt>
+                                  <dd>{formatDateTime(period.dispatcherArchivedAt ?? period.driverArchivedAt ?? period.morningDriverArchivedAt)}</dd>
+                                </div>
+                              </>
+                            )}
                           </dl>
 
                           {period.importRunId ? (
