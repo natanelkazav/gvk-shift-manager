@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ClipboardCheck, Paperclip, Plus, Send, Trash2, X } from 'lucide-react';
+import { CircleCheck, ClipboardCheck, Paperclip, Plus, Send, Trash2, X } from 'lucide-react';
 import { dailyReportService } from '../../../services/dailyReportService';
 import type { DailyReportItemInput, DailyReportWorkspace } from '../../../types/dailyReports';
 import { Button, Input, Modal, Textarea } from '../../../components/ui';
@@ -21,12 +21,16 @@ function DailyReportDashboardCards() {
   const [busy, setBusy] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const load = async () => {
     try {
+      setLoadError(null);
       setWorkspace(await dailyReportService.getMyWorkspace());
-    } catch {
+    } catch (error) {
       setWorkspace(null);
+      setLoadError(error instanceof Error ? error.message : 'טעינת אזור הדיווח נכשלה.');
     }
   };
 
@@ -37,6 +41,22 @@ function DailyReportDashboardCards() {
     [workspace, selectedJobTypeId],
   );
 
+  if (loadError) {
+    return (
+      <section className="dashboard-card daily-report-card">
+        <div className="dashboard-card-header">
+          <div className="dashboard-card-title-wrap">
+            <div className="dashboard-card-icon"><ClipboardCheck size={19} /></div>
+            <div><h2>דיווח עבודה יומי</h2><span className="dynamic-dashboard-role-meta">לא ניתן לטעון את אזור הדיווח</span></div>
+          </div>
+        </div>
+        <div className="dashboard-card-body">
+          <p className="dynamic-dashboard-description">{loadError}</p>
+          <Button type="button" variant="secondary" onClick={() => void load()}>נסה שוב</Button>
+        </div>
+      </section>
+    );
+  }
   if (!workspace || workspace.roles.length === 0) return null;
 
   const updateItem = (index: number, patch: Partial<DailyReportItemInput>) => {
@@ -85,9 +105,10 @@ function DailyReportDashboardCards() {
         }
       }
       await dailyReportService.submit(role.jobTypeId, clean, preparedReportId);
-      setMessage('הדיווח נשלח בהצלחה.');
       setItems([emptyItem()]);
       setAttachments([]);
+      setSelectedJobTypeId(null);
+      setSuccessMessage('הדיווח נשלח בהצלחה.');
       await load();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'שליחת הדיווח נכשלה.');
@@ -96,6 +117,12 @@ function DailyReportDashboardCards() {
 
   return (
     <>
+      {successMessage ? (
+        <div className="daily-report-success-banner" role="status">
+          <CircleCheck size={18} /> <span>{successMessage}</span>
+          <button type="button" onClick={() => setSuccessMessage(null)} aria-label="סגור"><X size={15} /></button>
+        </div>
+      ) : null}
       <div className="dynamic-dashboard-role-grid">
         {workspace.roles.map((item) => (
           <section className="dashboard-card daily-report-card" key={item.jobTypeId}>

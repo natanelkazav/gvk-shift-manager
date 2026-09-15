@@ -53,6 +53,7 @@ export interface DailyReportDetail {
   userId: string;
   displayName: string;
   items: DailyReportDetailItem[];
+  attachments: DailyReportAttachment[];
 }
 
 export interface DailyReportAdminUser {

@@ -514,8 +514,21 @@ const [
 
   useEffect(() => {
     let active = true;
-    const now = new Date();
 
+    // Employee-only roles (including "ללא שיבוצים") must not probe a
+    // manager-only RPC. Besides noisy 400/not-allowed responses, that probe
+    // has no value for their navigation.
+    const canProbeManagementWorkspace =
+      profile?.role === 'admin' ||
+      dynamicRuntimeContext?.canManageDynamicScheduling === true ||
+      (dynamicRuntimeContext?.managedRoles.length ?? 0) > 0;
+
+    if (!dynamicFirstActive || !canProbeManagementWorkspace) {
+      setHasDynamicManagementWorkspace(false);
+      return () => { active = false; };
+    }
+
+    const now = new Date();
     void dynamicSchedulingService
       .getShiftsManagementWorkspace(now.getFullYear(), now.getMonth() + 1)
       .then((workspace) => {
@@ -528,7 +541,7 @@ const [
     return () => {
       active = false;
     };
-  }, [profile?.id, dynamicFirstActive]);
+  }, [profile?.id, profile?.role, dynamicFirstActive, dynamicRuntimeContext]);
 
   useEffect(() => {
     let active = true;

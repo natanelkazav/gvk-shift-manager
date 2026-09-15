@@ -59,8 +59,11 @@ export const dailyReportService = {
   },
 
   async uploadAttachment(reportId: string, file: File): Promise<void> {
-    const safeName = file.name.replace(/[^a-zA-Z0-9._()\-\u0590-\u05FF ]/g, '_');
-    const path = `${reportId}/${crypto.randomUUID()}-${safeName}`;
+    // Storage object keys are deliberately ASCII-only. The original Hebrew
+    // filename is preserved separately in daily_report_attachments.file_name.
+    const extensionMatch = file.name.match(/\.([a-zA-Z0-9]{1,10})$/);
+    const safeExtension = extensionMatch ? `.${extensionMatch[1].toLowerCase()}` : '';
+    const path = `${reportId}/${crypto.randomUUID()}${safeExtension}`;
     const { error: uploadError } = await supabase.storage
       .from('daily-report-attachments')
       .upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false });

@@ -78,6 +78,8 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
             <div className="dashboard-card-body dynamic-dashboard-role-body">
               {role.description ? <p className="dynamic-dashboard-description">{role.description}</p> : null}
 
+              {role.schedulingStrategy !== 'none' ? (
+                <>
               <div className="dynamic-dashboard-fact">
                 <CalendarClock size={18} aria-hidden="true" />
                 <div>
@@ -97,6 +99,9 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
                   )}
                 </div>
               </div>
+
+                </>
+              ) : null}
 
               {role.parallelAssignments.length > 0 ? (
                 <div className="dynamic-dashboard-parallel">
@@ -123,6 +128,8 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
                 </div>
               ) : null}
 
+              {role.schedulingStrategy !== 'none' ? (
+                <>
               <div className="dynamic-dashboard-fact">
                 <CheckCircle2 size={18} aria-hidden="true" />
                 <div>
@@ -130,8 +137,11 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
                   <span>{getAvailabilityText(role)}</span>
                 </div>
               </div>
+                </>
+              ) : null}
             </div>
 
+            {role.schedulingStrategy !== 'none' ? (
             <div className="dashboard-card-footer dynamic-dashboard-actions">
               {role.availabilityEnabled && role.availability ? (
                 <Link to="/my-availability">האילוצים שלי</Link>
@@ -143,6 +153,7 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
                 <Link to="/my-shift-exchanges">חילופי משמרות</Link>
               ) : null}
             </div>
+            ) : null}
           </section>
         ))}
       </div>

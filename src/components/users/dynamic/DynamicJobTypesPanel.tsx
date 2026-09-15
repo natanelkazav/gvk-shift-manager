@@ -297,16 +297,29 @@ const toForm = (jobType: DynamicJobType): SaveDynamicJobTypeInput => ({
 const deriveAutomaticCapabilities = (input: SaveDynamicJobTypeInput): string[] => {
   const capabilities = new Set(input.capabilities);
 
-  // Every dynamic scheduled role gets its own schedule and availability workspace.
-  capabilities.add('schedule');
-  capabilities.add('availability');
+  if (input.schedulingStrategy !== 'none') {
+    capabilities.add('schedule');
+    if (input.availabilityConfig.enabled) capabilities.add('availability');
+  } else {
+    capabilities.delete('schedule');
+    capabilities.delete('availability');
+    capabilities.delete('shift_exchange');
+    capabilities.delete('self_edit');
+    capabilities.delete('self_schedule_edit');
+    capabilities.delete('monthly_rotation');
+    capabilities.delete('schedule_publication_notifications');
+  }
 
   if (input.statisticsConfig.enabled) capabilities.add('statistics');
   if (input.schedulingConfig.dailyReports?.enabled) capabilities.add('daily_reports');
   else capabilities.delete('daily_reports');
   if (input.payModel !== 'none') capabilities.add('payroll');
-  if (input.availabilityConfig.monthlyCapacity.enabled) capabilities.add('monthly_shift_capacity');
-  capabilities.add('schedule_publication_notifications');
+  if (input.schedulingStrategy !== 'none' && input.availabilityConfig.monthlyCapacity.enabled) capabilities.add('monthly_shift_capacity');
+  if (input.schedulingStrategy !== 'none') capabilities.add('schedule_publication_notifications');
+  else {
+    capabilities.delete('monthly_shift_capacity');
+    capabilities.delete('schedule_publication_notifications');
+  }
 
   // Operational schedule-change capabilities are mutually exclusive and role-driven.
   capabilities.delete('shift_exchange');
@@ -366,8 +379,11 @@ const permissionBlueprint: PermissionBlueprintItem[] = [
 ];
 
 const derivePermissionFeatures = (input: SaveDynamicJobTypeInput): string[] => {
-  const features = new Set<string>(['schedule']);
-  if (input.availabilityConfig.enabled) features.add('availability');
+  const features = new Set<string>();
+  if (input.schedulingStrategy !== 'none') {
+    features.add('schedule');
+    if (input.availabilityConfig.enabled) features.add('availability');
+  }
   if (input.schedulingConfig.scheduleChangeMode === 'shift_exchange') features.add('shift_exchange');
   if (input.schedulingConfig.scheduleChangeMode === 'self_edit') features.add('self_edit');
   if (input.schedulingStrategy === 'monthly_rotation_constraints') features.add('monthly_rotation');
@@ -2104,8 +2120,10 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                 </div>
               ) : null}
 
-              <div className="dynamic-config-section dynamic-daily-report-config">
-                <div className="dynamic-section-heading"><span>+</span><div><h3>דיווחים וטפסי עבודה</h3><small>Workflow תפעולי שאינו תלוי בשיבוץ.</small></div></div>
+            </div>
+
+              <div className="dynamic-config-section dynamic-daily-report-config" data-independent-workflow="true">
+                <div className="dynamic-section-heading"><span>+</span><div><h3>דיווחים וטפסי עבודה</h3><small>Workflow תפעולי עצמאי — זמין גם לתפקידים ללא שיבוצים.</small></div></div>
                 <label className="dynamic-choice-chip">
                   <input type="checkbox" checked={form.schedulingConfig.dailyReports?.enabled === true}
                     onChange={(event) => setForm({ ...form, schedulingConfig: { ...form.schedulingConfig, dailyReports: {
@@ -2236,7 +2254,6 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
                 <small className="dynamic-permission-footnote">הרשאות מערכת כלליות כגון ניהול משתמשים, הגדרות ויומן מערכת נשארות נפרדות ואינן תלויות בתפקיד עבודה.</small>
               </div>
-            </div>
 
             <div className="dynamic-config-section dynamic-ai-preview">
               <Bot size={20} />

@@ -5,6 +5,9 @@ import {
   CheckCheck,
   CircleCheck,
   Clock3,
+  Download,
+  FileText,
+  Paperclip,
   ChevronDown,
   RefreshCw,
   X,
@@ -23,6 +26,9 @@ import { useNotificationContext } from '../features/notifications/context/useNot
 import type { MyNotification } from '../features/notifications/services/notificationService';
 import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
 import { shiftSwapService } from '../services/shiftSwapService';
+import { dailyReportService } from '../services/dailyReportService';
+import Modal from '../components/ui/Modal';
+import type { DailyReportDetail } from '../types/dailyReports';
 import type { DynamicShiftExchangeRequest } from '../types/dynamicScheduling';
 import type { ShiftSwapRequest } from '../types/shiftSwap';
 import '../styles/notifications.css';
@@ -95,6 +101,9 @@ function NotificationsPage() {
   const [requestsSuccess, setRequestsSuccess] = useState<string | null>(null);
   const [busyRequestId, setBusyRequestId] = useState<string | null>(null);
   const [isRequestHistoryOpen, setIsRequestHistoryOpen] = useState(false);
+  const [dailyReportDetail, setDailyReportDetail] = useState<DailyReportDetail | null>(null);
+  const [dailyReportDetailLoading, setDailyReportDetailLoading] = useState(false);
+  const [dailyReportDetailError, setDailyReportDetailError] = useState<string | null>(null);
 
   const {
     state,
@@ -192,6 +201,24 @@ function NotificationsPage() {
   const handleNotificationClick = async (notification: MyNotification): Promise<void> => {
     if (!notification.isRead) {
       await markAsRead(notification.recipientId);
+    }
+
+    if (notification.source === 'daily_report') {
+      const reportId = typeof notification.data?.reportId === 'string'
+        ? notification.data.reportId
+        : null;
+      if (!reportId) return;
+      setDailyReportDetail(null);
+      setDailyReportDetailError(null);
+      setDailyReportDetailLoading(true);
+      try {
+        setDailyReportDetail(await dailyReportService.getDetail(reportId));
+      } catch (error) {
+        setDailyReportDetailError(getErrorMessage(error));
+      } finally {
+        setDailyReportDetailLoading(false);
+      }
+      return;
     }
 
     if (
@@ -368,6 +395,9 @@ function NotificationsPage() {
                     <span className="notification-list-content">
                       <span className="notification-list-heading"><strong>{notification.title}</strong>{!notification.isRead ? <span className="notification-list-unread-indicator">חדשה</span> : null}</span>
                       <span className="notification-list-body">{notification.body}</span>
+                      {notification.source === 'daily_report' && Number(notification.data?.attachmentCount ?? 0) > 0 ? (
+                        <span className="notification-list-attachment"><Paperclip size={14} /> {Number(notification.data.attachmentCount)} קבצים מצורפים</span>
+                      ) : null}
                       <span className="notification-list-meta"><Clock3 size={14} aria-hidden="true" />{formatNotificationDate(notification.createdAt)}</span>
                     </span>
                   </button>
@@ -377,6 +407,47 @@ function NotificationsPage() {
           ) : null}
         </>
       ) : null}
+
+      <Modal
+        isOpen={dailyReportDetailLoading || Boolean(dailyReportDetail) || Boolean(dailyReportDetailError)}
+        title="דיווח עבודה יומי"
+        onClose={() => {
+          setDailyReportDetail(null);
+          setDailyReportDetailError(null);
+          setDailyReportDetailLoading(false);
+        }}
+        className="daily-report-detail-modal"
+      >
+        {dailyReportDetailLoading ? <div className="notifications-page-state"><RefreshCw className="notifications-page-spinner" size={22} />טוען דיווח...</div> : null}
+        {dailyReportDetailError ? <div className="notifications-page-message notifications-page-error">{dailyReportDetailError}</div> : null}
+        {dailyReportDetail ? (
+          <div className="daily-report-detail">
+            <header>
+              <div><strong>{dailyReportDetail.displayName}</strong><span>{dailyReportDetail.jobTypeName}</span></div>
+              <div><span>{dailyReportDetail.reportDate}</span><small>{formatNotificationDate(dailyReportDetail.submittedAt)}</small></div>
+            </header>
+            <div className="daily-report-detail-items">
+              {dailyReportDetail.items.map((item, index) => (
+                <section key={item.id}>
+                  <h3>פעילות {index + 1} · {item.subjectName}</h3>
+                  {item.customerName ? <div className="daily-report-detail-customer">לקוח: <strong>{item.customerName}</strong></div> : null}
+                  <p>{item.details}</p>
+                </section>
+              ))}
+            </div>
+            <section className="daily-report-detail-attachments">
+              <h3><Paperclip size={17} /> קבצים מצורפים <span>{dailyReportDetail.attachments.length}</span></h3>
+              {dailyReportDetail.attachments.length ? dailyReportDetail.attachments.map((attachment) => (
+                <button key={attachment.id} type="button" onClick={() => void dailyReportService.openAttachment(attachment.id)}>
+                  <FileText size={18} />
+                  <span><strong>{attachment.fileName}</strong><small>{(attachment.fileSize / 1024 / 1024).toFixed(1)}MB</small></span>
+                  <Download size={17} />
+                </button>
+              )) : <p>לא צורפו קבצים לדיווח.</p>}
+            </section>
+          </div>
+        ) : null}
+      </Modal>
 
       {activeTab === 'requests' && canApproveSwaps ? (
         <>

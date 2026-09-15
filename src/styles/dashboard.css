@@ -728,3 +728,6 @@
 .daily-report-file-list { display:grid;gap:6px; }
 .daily-report-file-list > div { display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:9px;background:var(--surface-subtle,#f8fafc); }
 .daily-report-file-list button { border:0;background:transparent;cursor:pointer; }
+
+.daily-report-success-banner{display:flex;align-items:center;gap:9px;margin-bottom:14px;padding:12px 14px;border-radius:12px;background:#ecfdf5;border:1px solid #a7f3d0;font-weight:700}
+.daily-report-success-banner span{flex:1}.daily-report-success-banner button{border:0;background:transparent;cursor:pointer}
