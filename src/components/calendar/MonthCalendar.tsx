@@ -2,8 +2,13 @@ import {
   CalendarDays,
 } from 'lucide-react';
 
+import {
+  useRef,
+} from 'react';
+
 import type {
   ReactNode,
+  UIEvent,
 } from 'react';
 import '../../styles/monthCalendar.css';
 interface MonthCalendarDayContext {
@@ -115,6 +120,34 @@ function MonthCalendar({
     'אין נתונים להצגה בחודש הזה.',
   dayLabels,
 }: MonthCalendarProps) {
+  const weekdaysScrollRef =
+    useRef<HTMLDivElement>(null);
+
+  const gridScrollRef =
+    useRef<HTMLDivElement>(null);
+
+  const syncHorizontalScroll = (
+    event: UIEvent<HTMLDivElement>,
+    target: HTMLDivElement | null,
+  ): void => {
+    if (!target) {
+      return;
+    }
+
+    const nextScrollLeft =
+      event.currentTarget.scrollLeft;
+
+    if (
+      Math.abs(
+        target.scrollLeft -
+          nextScrollLeft,
+      ) > 1
+    ) {
+      target.scrollLeft =
+        nextScrollLeft;
+    }
+  };
+
   const isValidMonth =
     Number.isInteger(
       month,
@@ -191,37 +224,58 @@ function MonthCalendar({
       className="month-calendar"
       aria-label={`לוח חודש ${month}/${year}`}
     >
-      <div className="month-calendar-weekdays">
-        {weekdayLabels.map(
-          (
-            weekdayLabel,
-            index,
-          ) => (
-            <div
-              key={
-                weekdayLabel
-              }
-              className={[
-                'month-calendar-weekday',
-
-                index === 5
-                  ? 'month-calendar-weekday-friday'
-                  : '',
-
-                index === 6
-                  ? 'month-calendar-weekday-saturday'
-                  : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            >
-              {weekdayLabel}
-            </div>
-          ),
-        )}
+      <div
+        ref={weekdaysScrollRef}
+        className="month-calendar-weekdays-scroll"
+        onScroll={(event) =>
+          syncHorizontalScroll(
+            event,
+            gridScrollRef.current,
+          )
+        }
+      >
+        <div className="month-calendar-weekdays">
+          {weekdayLabels.map(
+            (
+              weekdayLabel,
+              index,
+            ) => (
+              <div
+                key={
+                  weekdayLabel
+                }
+                className={[
+                  'month-calendar-weekday',
+  
+                  index === 5
+                    ? 'month-calendar-weekday-friday'
+                    : '',
+  
+                  index === 6
+                    ? 'month-calendar-weekday-saturday'
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                {weekdayLabel}
+              </div>
+            ),
+          )}
+        </div>
       </div>
 
-      <div className="month-calendar-grid">
+      <div
+        ref={gridScrollRef}
+        className="month-calendar-grid-scroll"
+        onScroll={(event) =>
+          syncHorizontalScroll(
+            event,
+            weekdaysScrollRef.current,
+          )
+        }
+      >
+        <div className="month-calendar-grid">
         {Array.from(
           {
             length:
@@ -381,6 +435,7 @@ function MonthCalendar({
             );
           },
         )}
+        </div>
       </div>
 
       {!renderDayContent ? (
