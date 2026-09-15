@@ -285,7 +285,7 @@ function ScheduleGroupEditorModal({
         ...form,
         name: form.name.trim(),
         description: form.description?.trim() || null,
-        changeSummary: form.changeSummary?.trim() || 'עריכת מערך שיבוץ ב־Shadow Mode',
+        changeSummary: form.changeSummary?.trim() || 'עריכת מערך שיבוץ',
       });
       await onSaved();
       onClose();
@@ -334,7 +334,7 @@ function ScheduleGroupEditorModal({
         <div className="dynamic-editor-shadow-note">
           <History size={18} />
           <div>
-            <strong>Shadow Mode · גרסה {group.currentVersion}</strong>
+            <strong>גרסת מערך {group.currentVersion}</strong>
             <span>השינויים נשמרים כהגדרה וגרסה חדשה בלבד. הם לא משנים לוחות, אילוצים או שכר פעילים.</span>
           </div>
         </div>

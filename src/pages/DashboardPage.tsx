@@ -58,16 +58,24 @@ function DashboardPage() {
     dynamicContext,
     setDynamicContext,
   ] = useState<DynamicRuntimeContext | null>(null);
-  const [useDynamicRuntime, setUseDynamicRuntime] = useState(false);
+  const [dynamicFirstActive, setDynamicFirstActive] = useState(false);
 
   useEffect(() => {
     let active = true;
     void Promise.all([dynamicRuntimeService.getMyRuntimeContext(), dynamicCutoverService.getState()])
       .then(([context, cutover]) => {
-        if (active) { setDynamicContext(context); setUseDynamicRuntime(cutover.useDynamicRuntime); }
+        if (!active) return;
+        const canUseDynamicManagement =
+          context.canManageDynamicScheduling ||
+          context.managedRoles.length > 0;
+        setDynamicContext(context);
+        setDynamicFirstActive(
+          cutover.dynamicFirstEnabled &&
+          (cutover.useDynamicRuntime || canUseDynamicManagement),
+        );
       })
       .catch(() => {
-        if (active) { setDynamicContext(null); setUseDynamicRuntime(false); }
+        if (active) { setDynamicContext(null); setDynamicFirstActive(false); }
       });
     return () => { active = false; };
   }, []);
@@ -139,11 +147,19 @@ function DashboardPage() {
         {(
           dashboard,
         ) => {
-          // Dynamic-first: once the user has at least one active dynamic
-          // membership, the dashboard is derived from Job Types rather than
-          // the legacy profile.role. Legacy remains available only as a
-          // transition fallback for users not migrated yet.
-          if (useDynamicRuntime && dynamicContext?.hasDynamicMemberships) {
+          // The active dashboard follows the same Dynamic-first boundary as
+          // the application shell. Employees enter through an active Job Type
+          // membership; Job Type managers can use the management dashboard
+          // without also being employee members of a managed role.
+          if (
+            dynamicFirstActive &&
+            dynamicContext &&
+            (
+              dynamicContext.hasDynamicMemberships ||
+              dynamicContext.canManageDynamicScheduling ||
+              dynamicContext.managedRoles.length > 0
+            )
+          ) {
             return (
               <DynamicDashboard
                 context={dynamicContext}

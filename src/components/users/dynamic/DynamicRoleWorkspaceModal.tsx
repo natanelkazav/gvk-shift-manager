@@ -1,25 +1,23 @@
 import {
   Archive,
   CalendarDays,
-  CheckCircle2,
-  CircleDashed,
   DatabaseBackup,
   LoaderCircle,
-  ShieldAlert,
   UsersRound,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
 import type { DynamicJobType, DynamicRoleWorkspace } from '../../../types/dynamicScheduling';
 import { Button, Modal } from '../../ui';
 import DynamicPeriodWorkflowPanel from './DynamicPeriodWorkflowPanel';
+import DynamicMonthlyRotationPanel from './DynamicMonthlyRotationPanel';
 
 interface DynamicRoleWorkspaceModalProps {
   jobType: DynamicJobType;
   onClose: () => void;
 }
 
-type WorkspaceTab = 'overview' | 'workflow' | 'history' | 'parity';
+type WorkspaceTab = 'overview' | 'workflow' | 'rotation' | 'history';
 
 const monthLabel = (year: number, month: number): string =>
   new Intl.DateTimeFormat('he-IL', { month: 'long', year: 'numeric' }).format(
@@ -38,7 +36,7 @@ function DynamicRoleWorkspaceModal({ jobType, onClose }: DynamicRoleWorkspaceMod
     try {
       setWorkspace(await dynamicSchedulingService.getRoleWorkspace(jobType.id));
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'טעינת סביבת התפקיד נכשלה.');
+      setError(loadError instanceof Error ? loadError.message : 'טעינת ניהול התפקיד נכשלה.');
     } finally {
       setIsLoading(false);
     }
@@ -48,71 +46,28 @@ function DynamicRoleWorkspaceModal({ jobType, onClose }: DynamicRoleWorkspaceMod
     void load();
   }, [jobType.id]);
 
-  const parityItems = useMemo(() => {
-    const items: Array<{
-      label: string;
-      status: 'ready' | 'partial' | 'missing' | 'off';
-      note: string;
-    }> = [
-      { label: 'הגדרת תפקיד ומבנה עבודה', status: 'ready', note: 'נשמר וממומש לפי חודש אפקטיבי.' },
-      { label: 'שיוך עובדים לתפקיד', status: 'ready', note: 'Membership דינמי ללא שינוי role legacy.' },
-      { label: 'היסטוריה וארכיון', status: workspace?.historicalTotals.periods ? 'ready' : 'partial', note: 'היסטוריית Legacy ניתנת לצפייה לפי job_type_id.' },
-    ];
 
-    if (jobType.availabilityConfig.enabled) {
-      items.push({ label: 'אילוצים דינמיים', status: 'partial', note: 'ניהול תקופה גנרי קיים בסביבת התפקיד; מסך הגשה אישי לעובד עדיין לא החליף את מסך ה־Legacy.' });
-    }
-
-    items.push({ label: 'יצירת לוח ופרסום', status: 'ready', note: 'קיים workflow גנרי לפי job_type_id: סגירת אילוצים, יצירת טיוטה ופרסום snapshot דינמי.' });
-
-    const scheduleChangeMode = jobType.schedulingConfig?.scheduleChangeMode ?? 'none';
-    if (scheduleChangeMode === 'shift_exchange') {
-      items.push({ label: 'מערכת חילופי משמרות', status: 'ready', note: 'מחוברת ללוחות הדינמיים לפי job_type_id, עם אישור העובד השני ואישור סופי של בעל הרשאה.' });
-    } else if (scheduleChangeMode === 'self_edit') {
-      items.push({ label: 'שינוי שיבוץ עצמי', status: 'ready', note: 'מחובר ללוחות הדינמיים לפי job_type_id בהתאם למדיניות התפקיד.' });
-    }
-
-    if (jobType.statisticsConfig?.enabled !== false) {
-      items.push({ label: 'סטטיסטיקות לפי תפקיד דינמי', status: 'missing', note: 'מסך הסטטיסטיקות עדיין לא עבר ל־job_type_id.' });
-    }
-
-    if (jobType.capabilities.includes('schedule_publication_notifications')) {
-      items.push({ label: 'התראות ותזכורות', status: 'missing', note: 'היכולת נדרשת לתפקיד אך טרם חוברה ל־job_type_id הדינמי.' });
-    }
-
-    if (jobType.schedulingStrategy === 'monthly_rotation_constraints') {
-      items.push({ label: 'סבב חודשי', status: 'partial', note: 'האסטרטגיה מוגדרת; מנוע הרוטציה הישן טרם חובר לליבה הדינמית.' });
-    }
-
-    return items;
-  }, [jobType, workspace?.historicalTotals.periods]);
 
   return (
     <Modal
       isOpen
-      title={`סביבת תפקיד · ${jobType.name}`}
+      title={`ניהול תפקיד · ${jobType.name}`}
       className="dynamic-role-workspace-modal"
       onClose={onClose}
       footer={<Button variant="secondary" onClick={onClose}>סגור</Button>}
     >
       <div className="dynamic-role-workspace">
-        <div className="dynamic-role-workspace-warning">
-          <ShieldAlert size={18} />
-          <div>
-            <strong>סביבת מעבר בלבד</strong>
-            <span>המסך מציג מה כבר מוכן במערכת הדינמית. הוא עדיין לא מחליף את מסכי ה־Legacy הפעילים.</span>
-          </div>
-        </div>
-
-        <div className="dynamic-role-workspace-tabs" role="tablist" aria-label="סביבת תפקיד">
+        <div className="dynamic-role-workspace-tabs" role="tablist" aria-label="ניהול תפקיד">
           <button type="button" className={tab === 'overview' ? 'is-active' : ''} onClick={() => setTab('overview')}>סקירה</button>
           <button type="button" className={tab === 'workflow' ? 'is-active' : ''} onClick={() => setTab('workflow')}>ניהול תקופה</button>
+          {jobType.schedulingStrategy === 'monthly_rotation_constraints' ? (
+            <button type="button" className={tab === 'rotation' ? 'is-active' : ''} onClick={() => setTab('rotation')}>סבב חודשי</button>
+          ) : null}
           <button type="button" className={tab === 'history' ? 'is-active' : ''} onClick={() => setTab('history')}>היסטוריה</button>
-          <button type="button" className={tab === 'parity' ? 'is-active' : ''} onClick={() => setTab('parity')}>מוכנות למעבר</button>
         </div>
 
         {isLoading ? (
-          <div className="dynamic-job-types-loading"><LoaderCircle className="spin" size={19} /> טוען סביבת תפקיד…</div>
+          <div className="dynamic-job-types-loading"><LoaderCircle className="spin" size={19} /> טוען ניהול תפקיד…</div>
         ) : error ? (
           <div className="users-error" role="alert">{error}<Button variant="secondary" onClick={() => void load()}>נסה שוב</Button></div>
         ) : workspace ? (
@@ -126,14 +81,18 @@ function DynamicRoleWorkspaceModal({ jobType, onClose }: DynamicRoleWorkspaceMod
                   <div><DatabaseBackup size={18} /><strong>{workspace.historicalTotals.assignments}</strong><span>שיבוצים היסטוריים</span></div>
                 </div>
                 <div className="dynamic-role-workspace-summary-card">
-                  <h4>מה אנחנו יודעים כרגע על התפקיד?</h4>
-                  <p>ה־DB מזהה את התפקיד לפי <code>job_type_id</code>, את העובדים המשויכים אליו ואת ההיסטוריה שיובאה אליו. זה הבסיס שעליו נחבר כעת את הלוח, האילוצים, הסטטיסטיקות והפעולות התפעוליות.</p>
+                  <h4>סקירת התפקיד</h4>
+                  <p>כאן ניתן לראות את העובדים המשויכים, התקופות הממומשות וההיסטוריה של התפקיד. ניהול התקופה מתבצע לפי <code>job_type_id</code> ובהתאם להגדרות התפקיד.</p>
                 </div>
               </div>
             ) : null}
 
             {tab === 'workflow' ? (
               <DynamicPeriodWorkflowPanel jobType={jobType} />
+            ) : null}
+
+            {tab === 'rotation' && jobType.schedulingStrategy === 'monthly_rotation_constraints' ? (
+              <DynamicMonthlyRotationPanel jobType={jobType} />
             ) : null}
 
             {tab === 'history' ? (
@@ -161,17 +120,6 @@ function DynamicRoleWorkspaceModal({ jobType, onClose }: DynamicRoleWorkspaceMod
               </div>
             ) : null}
 
-            {tab === 'parity' ? (
-              <div className="dynamic-role-parity-list">
-                {parityItems.map((item) => (
-                  <div className={`dynamic-role-parity-item is-${item.status}`} key={item.label}>
-                    {item.status === 'ready' ? <CheckCircle2 size={18} /> : <CircleDashed size={18} />}
-                    <div><strong>{item.label}</strong><span>{item.note}</span></div>
-                    <em>{item.status === 'ready' ? 'מוכן' : item.status === 'partial' ? 'חלקי' : item.status === 'off' ? 'לא רלוונטי כרגע' : 'חסר'}</em>
-                  </div>
-                ))}
-              </div>
-            ) : null}
           </>
         ) : null}
       </div>

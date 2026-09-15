@@ -196,7 +196,7 @@ function DynamicPeriodWorkflowPanel({
       <div className="dynamic-period-workflow-head">
         <div>
           <h4>ניהול תקופה דינמי</h4>
-          <p>הזרימה כאן מחוברת ל־<code>job_type_id</code>: אילוצים → סגירה → יצירת טיוטה → פרסום.</p>
+          <p>תהליך העבודה החודשי: אילוצים → סגירה → יצירת טיוטה → פרסום.</p>
         </div>
         {showPeriodPicker ? (
           <div className="dynamic-period-workflow-picker">

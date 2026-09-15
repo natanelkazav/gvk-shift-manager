@@ -1,9 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
-import { Check, GitCompareArrows, LoaderCircle, Save, Sparkles } from 'lucide-react';
+import { Check, LoaderCircle, Save } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
 import type {
-  DynamicAvailabilityLegacyComparison,
   DynamicAvailabilityWorkspace,
   DynamicJobType,
   SaveDynamicAvailabilityShadowSubmissionInput,
@@ -13,20 +12,6 @@ import { Button } from '../../ui';
 interface Props { jobType: DynamicJobType; year: number; month: number; refreshKey: number; canEdit?: boolean; }
 
 type Status = 'available' | 'unavailable' | 'preferred' | 'avoid';
-const weekdayOptions = [
-  { value: 0, label: 'ראשון' },
-  { value: 1, label: 'שני' },
-  { value: 2, label: 'שלישי' },
-  { value: 3, label: 'רביעי' },
-  { value: 4, label: 'חמישי' },
-  { value: 5, label: 'שישי' },
-  { value: 6, label: 'שבת' },
-] as const;
-
-const getSlotWeekday = (date: string): number => {
-  const [year, month, day] = date.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-};
 
 const statusLabels: Record<Status, string> = { available: 'זמין', unavailable: 'לא זמין', preferred: 'מעדיף', avoid: 'מעדיף שלא' };
 
@@ -42,13 +27,9 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
   const [workspace, setWorkspace] = useState<DynamicAvailabilityWorkspace | null>(null);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [form, setForm] = useState<SaveDynamicAvailabilityShadowSubmissionInput | null>(null);
-  const [comparison, setComparison] = useState<DynamicAvailabilityLegacyComparison | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [bulkStatus, setBulkStatus] = useState<Status>('available');
-  const [bulkWeekday, setBulkWeekday] = useState<number>(0);
-  const [bulkShiftKeys, setBulkShiftKeys] = useState<string[] | null>(null);
   const loadGenerationRef = useRef(0);
 
   const load = async () => {
@@ -72,9 +53,7 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
     setWorkspace(null);
     setSelectedUserId('');
     setForm(null);
-    setComparison(null);
     setMessage(null);
-    setBulkShiftKeys(null);
     void load();
   }, [jobType.id, year, month, refreshKey]);
 
@@ -100,72 +79,6 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
 
   const setEntry = (slotId: string, status: Status) => setForm((current) => current ? ({ ...current, entries: current.entries.map((entry) => entry.slotId === slotId ? { ...entry, status } : entry) }) : current);
 
-  const getShiftKey = (shiftName: string, startTime: string, endTime: string): string =>
-    `${shiftName}__${startTime.slice(0, 5)}__${endTime.slice(0, 5)}`;
-
-  const bulkShiftOptions = useMemo(() => {
-    if (!workspace) return [];
-    const unique = new Map<string, { key: string; label: string }>();
-    workspace.slots
-      .filter((slot) => getSlotWeekday(slot.date) === bulkWeekday)
-      .forEach((slot) => {
-        const key = getShiftKey(slot.shiftName, slot.startTime, slot.endTime);
-        if (!unique.has(key)) {
-          unique.set(key, {
-            key,
-            label: `${slot.shiftName} · ${slot.startTime.slice(0, 5)}–${slot.endTime.slice(0, 5)}`,
-          });
-        }
-      });
-    return [...unique.values()];
-  }, [workspace, bulkWeekday]);
-
-  const selectedBulkShiftKeys = useMemo(() => {
-    const validKeys = new Set(bulkShiftOptions.map((option) => option.key));
-    if (bulkShiftKeys === null) return bulkShiftOptions.map((option) => option.key);
-    return bulkShiftKeys.filter((key) => validKeys.has(key));
-  }, [bulkShiftKeys, bulkShiftOptions]);
-
-  const toggleBulkShift = (key: string): void => {
-    setBulkShiftKeys((current) => {
-      const selected = current === null ? bulkShiftOptions.map((option) => option.key) : current;
-      return selected.includes(key)
-        ? selected.filter((value) => value !== key)
-        : [...selected, key];
-    });
-  };
-
-  const matchingBulkSlotIds = useMemo(() => {
-    if (!workspace || selectedBulkShiftKeys.length === 0) return new Set<string>();
-    const selectedKeys = new Set(selectedBulkShiftKeys);
-    return new Set(workspace.slots
-      .filter((slot) => getSlotWeekday(slot.date) === bulkWeekday)
-      .filter((slot) => selectedKeys.has(getShiftKey(slot.shiftName, slot.startTime, slot.endTime)))
-      .map((slot) => slot.id));
-  }, [workspace, bulkWeekday, selectedBulkShiftKeys]);
-
-  const applyWholeMonthRule = (): void => {
-    if (!form || !workspace?.slots.length) return;
-    const allSlotIds = new Set(workspace.slots.map((slot) => slot.id));
-    setForm({
-      ...form,
-      entries: form.entries.map((entry) => allSlotIds.has(entry.slotId)
-        ? { ...entry, status: bulkStatus }
-        : entry),
-    });
-    setMessage(`כל ${allSlotIds.size} משמרות החודש סומנו כ${statusLabels[bulkStatus]}. אפשר לשנות כל משמרת ידנית או להחיל כלל נוסף לפני השמירה.`);
-  };
-
-  const applyBulkRule = (): void => {
-    if (!form || matchingBulkSlotIds.size === 0) return;
-    setForm({
-      ...form,
-      entries: form.entries.map((entry) => matchingBulkSlotIds.has(entry.slotId)
-        ? { ...entry, status: bulkStatus }
-        : entry),
-    });
-    setMessage(`הכלל הוחל על ${matchingBulkSlotIds.size} משמרות. אפשר עדיין לשנות משמרות בודדות לפני השמירה.`);
-  };
   const setNumber = (key: 'minimum'|'target'|'maximum', value: string) => setForm((current) => current ? ({ ...current, [key]: value === '' ? null : Number(value) }) : current);
 
   const save = async () => {
@@ -173,20 +86,15 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
     setBusy(true); setError(null); setMessage(null);
     try {
       await dynamicSchedulingService.saveAvailabilityShadowSubmission(jobType.id, year, month, selectedUserId, form);
-      setMessage('האילוצים נשמרו ב־Shadow בלבד.'); await load();
+      setMessage('אילוצי העובד נשמרו בהצלחה.'); await load();
     } catch (err) { setError(err instanceof Error ? err.message : 'שמירת האילוצים נכשלה.'); }
     finally { setBusy(false); }
   };
 
-  const compare = async () => {
-    setBusy(true); setError(null);
-    try { setComparison(await dynamicSchedulingService.compareAvailabilityShadowToLegacy(jobType.id, year, month)); }
-    catch (err) { setError(err instanceof Error ? err.message : 'השוואת Legacy נכשלה.'); }
-    finally { setBusy(false); }
-  };
 
-  if (busy && !workspace) return <div className="dynamic-shadow-loading"><LoaderCircle className="spin" size={18}/> טוען סביבת אילוצים...</div>;
-  if (!workspace?.materialized) return <div className="dynamic-shadow-empty">יש ליצור קודם תקופת Shadow לחודש הנבחר.</div>;
+
+  if (busy && !workspace) return <div className="dynamic-shadow-loading"><LoaderCircle className="spin" size={18}/> טוען אילוצי עובדים...</div>;
+  if (!workspace?.materialized) return <div className="dynamic-shadow-empty">יש ליצור קודם תקופת אילוצים לחודש הנבחר.</div>;
 
   const availabilityConfig = workspace.availabilityConfig ?? fallbackAvailabilityConfig;
   const monthlyCapacity = availabilityConfig.monthlyCapacity ?? fallbackAvailabilityConfig.monthlyCapacity;
@@ -198,78 +106,16 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
     {message ? <div className="dynamic-shadow-success"><Check size={15}/>{message}</div> : null}
     <div className="dynamic-availability-toolbar">
       <label>עובד<select value={selectedUserId} onChange={(e) => setSelectedUserId(e.target.value)}>{workspace.members.map((m) => <option key={m.userId} value={m.userId}>{m.displayName}{m.isActive ? '' : ' · מושבת'}</option>)}</select></label>
-      <Button variant="secondary" disabled={busy} onClick={() => void compare()}><GitCompareArrows size={16}/> השווה למערכת הקיימת</Button>
     </div>
 
     {form && member ? <>
-      <div className="dynamic-availability-bulk-rule">
-        <div className="dynamic-availability-bulk-rule-head">
-          <div>
-            <h4><Sparkles size={17}/> החלת כלל מהירה</h4>
-            <p>במקום לעבור משמרת-משמרת, בנה כלל והחל אותו בבת אחת. לאחר מכן אפשר לתקן חריגים ידנית.</p>
-          </div>
-          <span>{matchingBulkSlotIds.size} משמרות יתעדכנו</span>
-        </div>
-        <div className="dynamic-availability-rule-sentence">
-          <span>סמן</span>
-          <select value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value as Status)} aria-label="סטטוס אילוץ">
-            {statuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
-          </select>
-          <span>במשמרות ביום</span>
-          <select
-            value={bulkWeekday}
-            onChange={(event) => {
-              setBulkWeekday(Number(event.target.value));
-              setBulkShiftKeys(null);
-            }}
-            aria-label="יום בשבוע"
-          >
-            {weekdayOptions.map((day) => <option key={day.value} value={day.value}>{day.label}</option>)}
-          </select>
-          <span>במשמרות</span>
-        </div>
-        <div className="dynamic-availability-shift-picker" aria-label="בחירת משמרות ביום שנבחר">
-          {bulkShiftOptions.length ? bulkShiftOptions.map((shift) => (
-            <label key={shift.key} className={selectedBulkShiftKeys.includes(shift.key) ? 'is-selected' : ''}>
-              <input
-                type="checkbox"
-                checked={selectedBulkShiftKeys.includes(shift.key)}
-                onChange={() => toggleBulkShift(shift.key)}
-              />
-              <span>{shift.label}</span>
-            </label>
-          )) : <small>לא נמצאו משמרות ביום שנבחר.</small>}
-        </div>
-        {bulkShiftOptions.length ? (
-          <div className="dynamic-availability-shift-picker-actions">
-            <button type="button" onClick={() => setBulkShiftKeys(null)}>סמן את כל המשמרות</button>
-            <button type="button" onClick={() => setBulkShiftKeys([])}>נקה בחירה</button>
-          </div>
-        ) : null}
-        <small className="dynamic-availability-rule-help">ברירת המחדל היא כל המשמרות ביום שנבחר. אפשר לבטל משמרות שלא רוצים לכלול בכלל.</small>
-        <div className="dynamic-availability-rule-actions">
-          <Button variant="secondary" disabled={!canEdit || matchingBulkSlotIds.size === 0} onClick={applyBulkRule}>
-            החל כלל על {matchingBulkSlotIds.size} משמרות
-          </Button>
-          {matchingBulkSlotIds.size === 0 ? <small>בחר לפחות משמרת אחת ביום שנבחר כדי להחיל את הכלל.</small> : null}
-        </div>
 
-        <div className="dynamic-availability-whole-month-rule">
-          <div>
-            <strong>החלה על כל החודש</strong>
-            <span>סמן את כל {workspace.slots.length} משמרות החודש כ־{statusLabels[bulkStatus]}, ואז תקן חריגים ידנית או באמצעות החוק שמעל.</span>
-          </div>
-          <Button variant="secondary" disabled={!canEdit || workspace.slots.length === 0} onClick={applyWholeMonthRule}>
-            החל {statusLabels[bulkStatus]} על כל החודש
-          </Button>
-        </div>
-      </div>
 
       <div className="dynamic-capacity-row">
         {monthlyCapacity.minEnabled ? <label>מינימום<input type="number" min="0" value={form.minimum ?? ''} onChange={(e) => setNumber('minimum',e.target.value)}/></label> : null}
         {monthlyCapacity.targetEnabled ? <label>יעד<input type="number" min="0" value={form.target ?? ''} onChange={(e) => setNumber('target',e.target.value)}/></label> : null}
         {monthlyCapacity.maxEnabled ? <label>מקסימום<input type="number" min="0" value={form.maximum ?? ''} onChange={(e) => setNumber('maximum',e.target.value)}/></label> : null}
-        <label>מצב<select disabled={!canEdit} value={form.submissionStatus} onChange={(e) => setForm({ ...form, submissionStatus: e.target.value as SaveDynamicAvailabilityShadowSubmissionInput['submissionStatus'] })}><option value="draft">טיוטה</option><option value="submitted">הוגש</option><option value="reopened">נפתח מחדש</option></select></label>
+        <label>מצב<select className={`dynamic-submission-status is-${form.submissionStatus}`} disabled={!canEdit} value={form.submissionStatus} onChange={(e) => setForm({ ...form, submissionStatus: e.target.value as SaveDynamicAvailabilityShadowSubmissionInput['submissionStatus'] })}><option value="draft">טיוטה</option><option value="submitted">הוגש</option><option value="reopened">נפתח מחדש</option></select></label>
       </div>
       <div className="dynamic-availability-grid">
         {workspace.slots.map((slot) => {
@@ -281,17 +127,9 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
           </div>;
         })}
       </div>
-      <div className="dynamic-availability-save"><Button disabled={busy || !canEdit} onClick={() => void save()}><Save size={16}/> שמור אילוצי Shadow</Button></div>
+      <div className="dynamic-availability-save"><Button disabled={busy || !canEdit} onClick={() => void save()}><Save size={16}/> שמור אילוצי עובד</Button></div>
     </> : <div className="dynamic-shadow-empty">אין עובדים משויכים לסוג התפקיד.</div>}
 
-    {comparison ? <div className="dynamic-legacy-comparison">
-      <h4>השוואה למערכת הקיימת</h4>
-      {comparison.supported ? <div className="dynamic-shadow-metrics">
-        <div><span>משמרות Dynamic / קיים</span><strong>{comparison.dynamic.slots} / {comparison.legacy.slots}</strong></div>
-        <div><span>עובדים Dynamic / קיים</span><strong>{comparison.dynamic.members} / {comparison.legacy.members}</strong></div>
-        <div><span>סימוני אילוצים</span><strong>{comparison.dynamic.entries} / {comparison.legacy.entries}</strong></div>
-      </div> : <p>{comparison.note}</p>}
-    </div> : null}
   </div>;
 }
 

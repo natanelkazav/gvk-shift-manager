@@ -270,6 +270,35 @@ export interface DynamicLegacyImportResult {
 }
 
 
+
+export interface DynamicRotationMember {
+  userId: string;
+  displayName: string;
+  isActive: boolean;
+  rotationIndex: number | null;
+}
+
+export interface DynamicRotationPreviewDay {
+  date: string;
+  originalUserId: string;
+  originalDisplayName: string;
+  actualUserId: string | null;
+  actualDisplayName: string | null;
+  isSubstitution: boolean;
+}
+
+export interface DynamicRotationWorkspace {
+  jobTypeId: string;
+  jobTypeName: string;
+  initialized: boolean;
+  rotationUserIds: string[];
+  anchorDate: string | null;
+  source: 'historical_best_window' | 'membership_fallback' | 'manual' | null;
+  sourceMetadata: Record<string, unknown>;
+  members: DynamicRotationMember[];
+  preview: DynamicRotationPreviewDay[];
+}
+
 export interface DynamicRoleWorkspacePeriodUser {
   userId: string;
   displayName: string;

@@ -54,6 +54,7 @@ import type {
   DynamicLegacyImportPreview,
   DynamicLegacyImportResult,
   DynamicRoleWorkspace,
+  DynamicRotationWorkspace,
   DynamicPeriodWorkflowState,
   DynamicPublishedEditorWorkspace,
   DynamicHistoricalSlotEditorWorkspace,
@@ -489,6 +490,45 @@ export const dynamicSchedulingService = {
       }
       return result;
     });
+  },
+
+
+  async getRotationWorkspace(
+    jobTypeId: string,
+    startDate?: string,
+    days = 35,
+  ): Promise<DynamicRotationWorkspace> {
+    const { data, error } = await supabase.rpc('get_dynamic_job_type_rotation_workspace', {
+      requested_job_type_id: jobTypeId,
+      requested_start_date: startDate ?? null,
+      requested_days: days,
+    });
+    if (error) throwSupabaseError('Dynamic rotation workspace', error);
+    return data as DynamicRotationWorkspace;
+  },
+
+  async initializeRotation(jobTypeId: string): Promise<DynamicRotationWorkspace> {
+    const { data, error } = await supabase.rpc('initialize_dynamic_job_type_rotation_state', {
+      requested_job_type_id: jobTypeId,
+    });
+    if (error) throwSupabaseError('Initialize dynamic rotation', error);
+    return data as DynamicRotationWorkspace;
+  },
+
+  async updateRotation(
+    jobTypeId: string,
+    rotationUserIds: string[],
+    anchorDate: string,
+    reason?: string,
+  ): Promise<DynamicRotationWorkspace> {
+    const { data, error } = await supabase.rpc('update_dynamic_job_type_rotation_state', {
+      requested_job_type_id: jobTypeId,
+      requested_rotation_user_ids: rotationUserIds,
+      requested_anchor_date: anchorDate,
+      requested_reason: reason ?? null,
+    });
+    if (error) throwSupabaseError('Update dynamic rotation', error);
+    return data as DynamicRotationWorkspace;
   },
 
   async getRoleWorkspace(jobTypeId: string): Promise<DynamicRoleWorkspace> {
