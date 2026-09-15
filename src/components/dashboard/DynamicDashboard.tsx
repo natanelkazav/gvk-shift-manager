@@ -6,8 +6,6 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import DailyReportDashboardCards from '../../features/dailyReports/components/DailyReportDashboardCards';
-import ManagerConfigurableWidgets from './ManagerConfigurableWidgets';
-import { dynamicShiftDisplayName } from '../../utils/dynamicShiftDisplayName';
 import type {
   DynamicRuntimeContext,
   DynamicRuntimeRole,
@@ -57,7 +55,6 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
   return (
     <div className="dynamic-dashboard-stack">
       <DailyReportDashboardCards />
-      {context.canManageDynamicScheduling || context.managedRoles.length > 0 ? <ManagerConfigurableWidgets /> : null}
       <div className="dynamic-dashboard-role-grid">
         {context.roles.map((role) => (
           <section className="dashboard-card dynamic-dashboard-role-card" key={role.jobTypeId}>
@@ -89,13 +86,9 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
                   <strong>המשמרת הבאה</strong>
                   {role.nextAssignment ? (
                     <span>
-                      {formatDate(role.nextAssignment.shiftDate)} · {dynamicShiftDisplayName(role.nextAssignment.shiftName, role.workMode === 'on_call_daily' ? 'כוננות' : 'משמרת')}
-                      {role.workMode !== 'on_call_daily' ? (
-                        <>
-                          {' · '}
-                          <bdi dir="ltr">{formatTime(role.nextAssignment.startTime)}–{formatTime(role.nextAssignment.endTime)}</bdi>
-                        </>
-                      ) : null}
+                      {formatDate(role.nextAssignment.shiftDate)} · {role.nextAssignment.shiftName}
+                      {' · '}
+                      <bdi dir="ltr">{formatTime(role.nextAssignment.startTime)}–{formatTime(role.nextAssignment.endTime)}</bdi>
                     </span>
                   ) : (
                     <span>אין כרגע שיבוץ עתידי מפורסם</span>
@@ -120,11 +113,9 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
                       <div className="dynamic-dashboard-parallel-row" key={`${assignment.jobTypeId}-${assignment.assignmentId}`}>
                         <div>
                           <strong>{assignment.jobTypeName}</strong>
-                          <span>{assignment.displayName ?? 'לא משובץ'} · {dynamicShiftDisplayName(assignment.shiftName, 'משמרת')}</span>
+                          <span>{assignment.displayName ?? 'לא משובץ'} · {assignment.shiftName}</span>
                         </div>
-                        {assignment.workMode !== 'on_call_daily' ? (
-                          <bdi dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</bdi>
-                        ) : null}
+                        <bdi dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</bdi>
                       </div>
                     ))}
                   </div>
