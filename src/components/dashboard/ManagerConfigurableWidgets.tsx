@@ -14,10 +14,18 @@ function ManagerConfigurableWidgets() {
 
   useEffect(() => {
     let active = true;
-    void dashboardWidgetService.getDashboardWidgets()
-      .then((result) => active && setWidgets(result))
+
+    void dashboardWidgetService.canConfigure()
+      .then(async (allowed) => {
+        if (!active || !allowed) return;
+        const result = await dashboardWidgetService.getDashboardWidgets();
+        if (active) setWidgets(result);
+      })
       .catch((error) => console.error('Manager dashboard widgets failed:', error))
-      .finally(() => active && setBusy(false));
+      .finally(() => {
+        if (active) setBusy(false);
+      });
+
     return () => { active = false; };
   }, []);
 
