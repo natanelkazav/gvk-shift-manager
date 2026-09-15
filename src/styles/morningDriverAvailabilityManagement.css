@@ -12,7 +12,7 @@
   padding: 18px;
   border: 1px solid #dbeafe;
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .morning-driver-management-header h2,
@@ -50,9 +50,9 @@
   justify-content: center;
   gap: 2px 8px;
   padding: 13px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .morning-driver-management-statistics svg {
@@ -65,7 +65,7 @@
 
 .morning-driver-management-statistics span {
   grid-area: label;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
@@ -74,7 +74,7 @@
   padding: 16px;
   border: 1px solid #dbe3ef;
   border-radius: 15px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .morning-driver-management-submissions h3,
@@ -103,7 +103,7 @@
 .morning-driver-management-table th,
 .morning-driver-management-table td {
   padding: 10px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--theme-border);
   text-align: right;
   vertical-align: middle;
 }
@@ -121,7 +121,7 @@
 .morning-driver-management-table td span,
 .morning-driver-management-matrix-table th span {
   margin-top: 3px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
@@ -148,8 +148,8 @@
 }
 
 .morning-driver-management-matrix-cell-unmarked {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-muted);
 }
 
 .morning-driver-management-state {
@@ -160,9 +160,9 @@
   flex-direction: column;
   gap: 10px;
   padding: 24px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--theme-border-strong);
   border-radius: 15px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .morning-driver-management-state-error {

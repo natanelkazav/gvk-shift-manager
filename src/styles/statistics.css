@@ -932,7 +932,7 @@
 .statistics-availability-warning-list span {
   padding: 5px 9px;
   border-radius: 999px;
-  background: #fff;
+  background: var(--theme-surface);
   border: 1px solid #efd1d1;
   font-size: 0.85rem;
 }
@@ -948,7 +948,7 @@
   padding: 1.15rem;
   border: 1px solid var(--border-color, #dbe3ee);
   border-radius: 1rem;
-  background: #fff;
+  background: var(--theme-surface);
 }
 
 .statistics-workspace-step > header {
@@ -974,7 +974,7 @@
 
 .statistics-workspace-step p {
   margin: 0.25rem 0 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
 }
 
 .statistics-user-type-grid,
@@ -994,8 +994,8 @@
   padding: 0.8rem 1rem;
   border: 1px solid #dbe3ee;
   border-radius: 0.85rem;
-  background: #fff;
-  color: #334155;
+  background: var(--theme-surface);
+  color: var(--theme-text);
   font: inherit;
   cursor: pointer;
 }

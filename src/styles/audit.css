@@ -15,7 +15,7 @@
   gap: 16px;
   padding: 18px;
   border: 1px solid
-    var(--color-border, #e2e8f0);
+    var(--color-border, var(--theme-border));
   border-radius:
     var(--radius-lg, 14px);
   background:
@@ -41,7 +41,7 @@
   min-height: 42px;
   padding: 0 12px;
   border: 1px solid
-    var(--color-border, #cbd5e1);
+    var(--color-border, var(--theme-border-strong));
   border-radius:
     var(--radius-md, 10px);
   background:
@@ -82,7 +82,7 @@
 .audit-table-container {
   overflow-x: auto;
   border: 1px solid
-    var(--color-border, #e2e8f0);
+    var(--color-border, var(--theme-border));
   border-radius: 14px;
   background:
     var(--color-surface, #ffffff);
@@ -98,14 +98,14 @@
 .audit-table td {
   padding: 14px 16px;
   border-bottom: 1px solid
-    var(--color-border, #e2e8f0);
+    var(--color-border, var(--theme-border));
   text-align: right;
   vertical-align: middle;
 }
 
 .audit-table th {
-  background: #f8fafc;
-  color: #475569;
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-secondary);
   font-size: 0.82rem;
   white-space: nowrap;
 }
@@ -117,7 +117,7 @@
 .audit-table tbody tr:not(
   .audit-details-row
 ):hover {
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .audit-person {
@@ -127,12 +127,12 @@
 }
 
 .audit-person strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.88rem;
 }
 
 .audit-person span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.75rem;
 }
 
@@ -140,8 +140,8 @@
   display: inline-flex;
   padding: 5px 9px;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #334155;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text);
   font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
@@ -178,17 +178,17 @@
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: #64748b;
+  color: var(--theme-text-muted);
   cursor: pointer;
 }
 
 .audit-expand-button:hover {
   background: #e2e8f0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
 }
 
 .audit-details-row {
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .audit-details-row > td {
@@ -204,9 +204,9 @@
 
 .audit-values-card {
   padding: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .audit-values-card h4 {
@@ -216,7 +216,7 @@
 
 .audit-values-card p {
   margin: 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.82rem;
 }
 
@@ -236,14 +236,14 @@
 }
 
 .audit-values-card dt {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-family: monospace;
   font-size: 0.74rem;
 }
 
 .audit-values-card dd {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.8rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -256,7 +256,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: #64748b;
+  color: var(--theme-text-muted);
 }
 
 .audit-empty-state p {
@@ -319,6 +319,6 @@
 }
 
 .audit-action-system_event {
-  background: #f8fafc;
-  color: #475569;
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-secondary);
 }

@@ -10,11 +10,11 @@
 .dynamic-exchange-create-title button { border:0; background:transparent; cursor:pointer; }
 .dynamic-exchange-section h2 span { min-width:28px; height:28px; border-radius:999px; display:inline-grid; place-items:center; background:#edf3ff; font-size:14px; }
 .dynamic-exchange-type-toggle { display:flex; gap:8px; }
-.dynamic-exchange-type-toggle button { border:1px solid #cbd7e8; background:#fff; border-radius:10px; padding:9px 14px; cursor:pointer; }
+.dynamic-exchange-type-toggle button { border:1px solid #cbd7e8; background:var(--theme-surface); border-radius:10px; padding:9px 14px; cursor:pointer; }
 .dynamic-exchange-type-toggle button.active { border-color:#2f6fed; background:#edf3ff; font-weight:700; }
 .dynamic-exchange-form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .dynamic-exchange-form-grid label { display:grid; gap:6px; font-weight:650; }
-.dynamic-exchange-form-grid select { min-height:44px; border:1px solid #cbd7e8; border-radius:10px; background:#fff; padding:0 10px; }
+.dynamic-exchange-form-grid select { min-height:44px; border:1px solid #cbd7e8; border-radius:10px; background:var(--theme-surface); padding:0 10px; }
 .dynamic-exchange-hint { margin:0; color:var(--text-muted); font-size:14px; }
 .dynamic-exchange-section { align-content:start; }
 .dynamic-exchange-card { border:1px solid #dce4ef; border-radius:14px; padding:14px; display:grid; gap:12px; }

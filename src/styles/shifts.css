@@ -26,7 +26,7 @@
 
 .shifts-placeholder p {
   margin: 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
 }
 
 .unified-schedule-workspace {
@@ -63,13 +63,13 @@
 }
 
 .unified-schedule-current-month strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
 .unified-schedule-current-month span {
   margin-block-start: 2px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.78rem;
 }
 
@@ -81,7 +81,7 @@
 
 .unified-schedule-filters legend {
   margin-block-end: 10px;
-  color: #334155;
+  color: var(--theme-text);
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -97,10 +97,10 @@
   align-items: center;
   gap: 8px;
   padding: 9px 13px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 999px;
-  background: #ffffff;
-  color: #334155;
+  background: var(--theme-surface);
+  color: var(--theme-text);
   cursor: pointer;
   font-size: 0.76rem;
   font-weight: 700;
@@ -111,7 +111,7 @@
 }
 
 .unified-schedule-filter:hover {
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
   box-shadow:
     0 3px 10px
     rgba(15, 23, 42, 0.08);
@@ -176,7 +176,7 @@
 }
 
 .unified-calendar-entry-category {
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.54rem;
   font-weight: 800;
 }
@@ -184,7 +184,7 @@
 .unified-calendar-entry-name {
   min-width: 0;
   overflow: hidden;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -193,7 +193,7 @@
 .unified-calendar-entry-time {
   grid-column:
     1 / -1;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.54rem;
 }
 
@@ -236,7 +236,7 @@
 
 .unified-schedule-loading {
   padding: 36px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   text-align: center;
 }
 
@@ -251,10 +251,10 @@
   flex-direction: column;
   gap: 7px;
   padding: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-inline-start: 4px solid;
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .unified-schedule-day-entry-dispatcher {
@@ -277,7 +277,7 @@
 }
 
 .unified-schedule-day-entry-category {
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.7rem;
   font-weight: 800;
 }
@@ -286,18 +286,18 @@
   padding: 3px 7px;
   border-radius: 999px;
   background: #e2e8f0;
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.62rem;
   font-weight: 800;
 }
 
 .unified-schedule-day-entry strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.9rem;
 }
 
 .unified-schedule-day-entry span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
@@ -305,7 +305,7 @@
   margin: 0;
   padding-block-start: 6px;
   border-block-start: 1px solid #e2e8f0;
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.72rem;
 }
 
@@ -369,13 +369,13 @@
 
 .unified-availability-header h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1.1rem;
 }
 
 .unified-availability-header p {
   margin: 6px 0 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.78rem;
 }
 
@@ -432,8 +432,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: #f1f5f9;
-  color: #334155;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text);
 }
 
 .unified-availability-card-text {
@@ -442,13 +442,13 @@
 
 .unified-availability-card-text h3 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
 .unified-availability-card-text p {
   margin: 7px 0 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.72rem;
   line-height: 1.65;
 }
@@ -459,19 +459,19 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .unified-availability-status-label {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
   font-weight: 700;
 }
 
 .unified-availability-card-status strong {
-  color: #334155;
+  color: var(--theme-text);
   font-size: 0.72rem;
 }
 
@@ -509,23 +509,23 @@
   align-items: center;
   gap: 12px;
   padding: 11px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .unified-availability-card-details dt {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
   font-weight: 700;
 }
 
 .unified-availability-card-details dd {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.72rem;
   font-weight: 800;
   text-align: left;
@@ -548,7 +548,7 @@
 
 .unified-availability-status-closed {
   background: #e2e8f0;
-  color: #334155;
+  color: var(--theme-text);
 }
 
 .unified-availability-status-draft {
@@ -562,8 +562,8 @@
 }
 
 .unified-availability-status-missing {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-muted);
 }
 
 .unified-availability-card-error {
@@ -594,13 +594,13 @@
 
 .unified-period-header h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1.1rem;
 }
 
 .unified-period-header p {
   margin: 6px 0 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.78rem;
 }
 
@@ -656,19 +656,19 @@
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: #f1f5f9;
-  color: #334155;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text);
 }
 
 .unified-period-card-heading h3 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
 .unified-period-card-heading p {
   margin: 7px 0 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.72rem;
   line-height: 1.65;
 }
@@ -686,20 +686,20 @@
   justify-content: space-between;
   gap: 12px;
   padding: 11px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .unified-period-card-status dt {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
   font-weight: 700;
 }
 
 .unified-period-card-status dd {
   margin: 0;
-  color: #334155;
+  color: var(--theme-text);
   font-size: 0.68rem;
   font-weight: 800;
 }
@@ -748,7 +748,7 @@
   justify-content: center;
   gap: 8px;
   padding: 24px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   text-align: center;
 }
 
@@ -758,7 +758,7 @@
 }
 
 .unified-availability-details-placeholder strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
 }
 .unified-period-status-badge {
   display: inline-flex;
@@ -787,8 +787,8 @@
 }
 
 .unified-period-status-missing {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-muted);
 }
 
 .unified-period-status-archived {
@@ -820,7 +820,7 @@
 .unified-period-recommendation small {
   padding-block-start: 6px;
   border-block-start: 1px solid #bfdbfe;
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.65rem;
   line-height: 1.5;
 }
@@ -837,7 +837,7 @@
 
 .unified-period-empty {
   padding: 36px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   text-align: center;
 }
 .unified-schedule-display-mode {
@@ -859,10 +859,10 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-inline-start: 4px solid;
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .unified-schedule-list-entry > div:first-child {
@@ -873,12 +873,12 @@
 }
 
 .unified-schedule-list-entry strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.88rem;
 }
 
 .unified-schedule-list-entry span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
@@ -920,18 +920,18 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 8px 16px;
   padding: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .unified-schedule-edit-summary span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
 .unified-schedule-edit-summary strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.78rem;
 }
 
@@ -942,7 +942,7 @@
 }
 
 .unified-schedule-edit-field > span {
-  color: #334155;
+  color: var(--theme-text);
   font-size: 0.75rem;
   font-weight: 800;
 }
@@ -951,15 +951,15 @@
 .unified-schedule-edit-field textarea {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 9px;
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--theme-surface);
+  color: var(--theme-text-strong);
   font: inherit;
 }
 
 .unified-schedule-edit-loading {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 

@@ -270,10 +270,10 @@
   width: 42px;
   height: 42px;
   padding: 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 50%;
-  background: #ffffff;
-  color: #334155;
+  background: var(--theme-surface);
+  color: var(--theme-text);
   cursor: pointer;
   transition:
     background-color 150ms ease,
@@ -344,7 +344,7 @@
   overflow: hidden;
   border: 1px solid #dbe3ef;
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--theme-surface);
   box-shadow:
     0 18px 45px rgb(15 23 42 / 18%);
 }
@@ -355,7 +355,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 16px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .notification-popover-header > div {
@@ -365,12 +365,12 @@
 }
 
 .notification-popover-header strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
 .notification-popover-header span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
@@ -405,7 +405,7 @@
   gap: 8px;
   min-height: 110px;
   padding: 18px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   text-align: center;
 }
 
@@ -426,14 +426,14 @@
   padding: 14px 16px;
   border: 0;
   border-bottom: 1px solid #eef2f7;
-  background: #ffffff;
+  background: var(--theme-surface);
   color: inherit;
   text-align: start;
   cursor: pointer;
 }
 
 .notification-popover-item:hover {
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .notification-popover-item-unread {
@@ -445,14 +445,14 @@
 }
 
 .notification-popover-item-title {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.82rem;
   font-weight: 700;
 }
 
 .notification-popover-item-body {
   overflow: hidden;
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.74rem;
   line-height: 1.5;
   text-overflow: ellipsis;
@@ -468,8 +468,8 @@
   width: 100%;
   padding: 13px 16px;
   border: 0;
-  border-top: 1px solid #e2e8f0;
-  background: #ffffff;
+  border-top: 1px solid var(--theme-border);
+  background: var(--theme-surface);
   color: #2563eb;
   cursor: pointer;
   font: inherit;
@@ -479,7 +479,7 @@
 }
 
 .notification-popover-footer:hover {
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 @keyframes notification-popover-spin {
@@ -515,7 +515,7 @@
 }
 
 .navigation-link-active .navigation-link-badge {
-  background: #ffffff;
+  background: var(--theme-surface);
   color: var(--color-primary-700);
 }
 
@@ -550,13 +550,13 @@
 
 .push-permission-content h3 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
 .push-permission-content p {
   margin: 6px 0 0;
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.8rem;
   line-height: 1.6;
 }
@@ -582,3 +582,39 @@
 .development-mode-banner button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgb(255 255 255 / 45%); background: rgb(255 255 255 / 12%); color: inherit; border-radius: 999px; padding: 5px 10px; cursor: pointer; }
 .development-mode-banner + .sidebar-backdrop, .development-mode-banner ~ .app-sidebar, .development-mode-banner ~ .app-content-wrapper { margin-top: 42px; }
 @media (max-width: 760px) { .development-mode-banner { justify-content: flex-start; flex-wrap: wrap; font-size: 12px; } .development-mode-banner + .sidebar-backdrop, .development-mode-banner ~ .app-sidebar, .development-mode-banner ~ .app-content-wrapper { margin-top: 68px; } }
+
+/* Dark theme: keep the shell consistently dark. The base gray palette is
+ * inverted for legacy content, so the navigation shell needs explicit tones. */
+:root[data-theme='dark'] .app-sidebar {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+:root[data-theme='dark'] .app-logo span,
+:root[data-theme='dark'] .navigation-link {
+  color: #cbd5e1;
+}
+
+:root[data-theme='dark'] .navigation-link:hover {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+:root[data-theme='dark'] .navigation-link-active,
+:root[data-theme='dark'] .navigation-link-active:hover {
+  color: #ffffff;
+}
+
+:root[data-theme='dark'] .app-header {
+  border-bottom-color: var(--theme-border);
+  background: rgb(11 18 32 / 92%);
+}
+
+:root[data-theme='dark'] .app-header-brand,
+:root[data-theme='dark'] .app-user-name {
+  color: var(--theme-text-strong);
+}
+
+:root[data-theme='dark'] .app-user-role {
+  color: var(--theme-text-muted);
+}

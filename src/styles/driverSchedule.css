@@ -10,9 +10,9 @@
   justify-content: space-between;
   gap: 16px;
   padding: 15px 17px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .driver-schedule-access-heading {
@@ -28,12 +28,12 @@
 }
 
 .driver-schedule-access-heading strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.84rem;
 }
 
 .driver-schedule-access-heading span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
   line-height: 1.5;
 }
@@ -99,9 +99,9 @@
   flex-direction: column;
   gap: 18px;
   padding: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .driver-schedule-section-header {
@@ -124,13 +124,13 @@
 
 .driver-schedule-section-header h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
 .driver-schedule-section-header p {
   margin: 4px 0 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.72rem;
   line-height: 1.5;
 }
@@ -155,7 +155,7 @@
 }
 
 .driver-availability-create-form label > span {
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.7rem;
   font-weight: 700;
 }
@@ -164,10 +164,10 @@
 .driver-availability-create-form select,
 .driver-availability-create-form textarea {
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 10px;
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--theme-surface);
+  color: var(--theme-text-strong);
   font: inherit;
 }
 
@@ -195,7 +195,7 @@
 .driver-availability-create-form select:disabled,
 .driver-availability-create-form textarea:disabled {
   cursor: not-allowed;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
   color: #94a3b8;
 }
 
@@ -215,10 +215,10 @@
   gap: 15px;
   min-height: 130px;
   padding: 20px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--theme-border-strong);
   border-radius: 15px;
-  background: #f8fafc;
-  color: #64748b;
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-muted);
 }
 
 .driver-schedule-placeholder-card > div,
@@ -273,9 +273,9 @@
   flex-direction: column;
   gap: 16px;
   padding: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .driver-availability-periods-list {
@@ -290,9 +290,9 @@
   justify-content: space-between;
   gap: 16px;
   padding: 14px 15px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .driver-availability-period-main {
@@ -302,12 +302,12 @@
 }
 
 .driver-availability-period-main strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.84rem;
 }
 
 .driver-availability-period-main span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
@@ -327,8 +327,8 @@
 }
 
 .driver-availability-status-draft {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-secondary);
 }
 
 .driver-availability-status-open {
@@ -348,7 +348,7 @@
 
 .driver-availability-open-note,
 .driver-availability-submission-summary {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
@@ -368,9 +368,9 @@
   flex-direction: column;
   gap: 16px;
   padding: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .my-driver-availability-header {
@@ -405,19 +405,19 @@
 }
 
 .my-driver-availability-heading span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
 .my-driver-availability-heading h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1.05rem;
 }
 
 .my-driver-availability-heading p {
   margin: 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
@@ -428,7 +428,7 @@
   gap: 12px;
   padding: 12px 14px;
   border-radius: 11px;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .my-driver-availability-period-info > div {
@@ -436,7 +436,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
@@ -452,8 +452,8 @@
 }
 
 .my-driver-availability-submission-status-draft {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-secondary);
 }
 
 .my-driver-availability-submission-status-submitted {
@@ -499,9 +499,9 @@
   gap: 9px;
   min-width: 0;
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 11px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .my-driver-availability-summary article > div {
@@ -512,12 +512,12 @@
 }
 
 .my-driver-availability-summary strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.94rem;
 }
 
 .my-driver-availability-summary span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.65rem;
 }
 
@@ -535,9 +535,9 @@
   flex-direction: column;
   gap: 10px;
   padding: 11px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 11px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .my-driver-availability-day > header {
@@ -555,7 +555,7 @@
 }
 
 .my-driver-availability-day > header span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.61rem;
 }
 
@@ -572,7 +572,7 @@
   justify-content: center;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: var(--theme-surface-soft);
   color: #334155 !important;
   font-size: 0.65rem !important;
   font-weight: 800;
@@ -584,7 +584,7 @@
   gap: 6px;
   margin-top: auto;
   padding-top: 8px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--theme-border);
 }
 
 .my-driver-availability-day-status strong {
@@ -604,12 +604,12 @@
 }
 
 .my-driver-availability-day-unmarked {
-  color: #64748b;
+  color: var(--theme-text-muted);
 }
 
 .my-driver-availability-day-note {
   margin: 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.62rem;
   line-height: 1.45;
 }
@@ -617,8 +617,8 @@
 .my-driver-availability-readonly-note {
   padding: 11px 13px;
   border-radius: 10px;
-  background: #f8fafc;
-  color: #64748b;
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
   text-align: center;
 }
@@ -647,7 +647,7 @@
 .my-driver-availability-error span,
 .my-driver-availability-empty span {
   max-width: 480px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
   line-height: 1.6;
 }
@@ -719,10 +719,10 @@
   justify-content: center;
   gap: 5px;
   padding: 6px 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 8px;
-  background: #ffffff;
-  color: #475569;
+  background: var(--theme-surface);
+  color: var(--theme-text-secondary);
   font: inherit;
   font-size: 0.62rem;
   font-weight: 700;
@@ -731,7 +731,7 @@
 
 .my-driver-availability-choice:hover:not(:disabled) {
   border-color: #94a3b8;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .my-driver-availability-choice:disabled {
@@ -758,7 +758,7 @@
 }
 
 .my-driver-availability-day-note-field span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.6rem;
   font-weight: 700;
 }
@@ -767,9 +767,9 @@
   width: 100%;
   min-height: 52px;
   padding: 6px 7px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--theme-surface);
   color: #1e293b;
   font: inherit;
   font-size: 0.62rem;
@@ -784,7 +784,7 @@
 
 .my-driver-availability-day-note-field textarea:disabled {
   cursor: not-allowed;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
   color: #94a3b8;
 }
 
@@ -807,7 +807,7 @@
 }
 
 .my-driver-availability-footer span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
@@ -883,9 +883,9 @@
   flex-direction: column;
   gap: 18px;
   padding: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .driver-availability-management-header {
@@ -920,19 +920,19 @@
 }
 
 .driver-availability-management-heading span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
 .driver-availability-management-heading h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1.05rem;
 }
 
 .driver-availability-management-heading p {
   margin: 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
@@ -943,8 +943,8 @@
   gap: 7px;
   padding: 12px 14px;
   border-radius: 11px;
-  background: #f8fafc;
-  color: #64748b;
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
@@ -965,9 +965,9 @@
   align-items: center;
   gap: 10px;
   padding: 13px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 11px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .driver-availability-management-statistics article > div {
@@ -977,12 +977,12 @@
 }
 
 .driver-availability-management-statistics strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
 .driver-availability-management-statistics span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
@@ -1004,20 +1004,20 @@
 .driver-availability-submissions-section h3,
 .driver-availability-matrix-section h3 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.9rem;
 }
 
 .driver-availability-submissions-section header span,
 .driver-availability-matrix-section header span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.65rem;
 }
 
 .driver-availability-submissions-table-wrapper,
 .driver-availability-matrix-wrapper {
   overflow: auto;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 11px;
 }
 
@@ -1033,21 +1033,21 @@
 .driver-availability-matrix th,
 .driver-availability-matrix td {
   padding: 10px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--theme-border);
   text-align: right;
   vertical-align: middle;
 }
 
 .driver-availability-submissions-table thead th,
 .driver-availability-matrix thead th {
-  background: #f8fafc;
-  color: #475569;
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-secondary);
   font-size: 0.65rem;
   font-weight: 800;
 }
 
 .driver-availability-submissions-table tbody td {
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.68rem;
 }
 
@@ -1090,8 +1090,8 @@
 }
 
 .driver-availability-submission-badge-not-started {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-muted);
 }
 
 .driver-availability-matrix-date-column {
@@ -1099,7 +1099,7 @@
   right: 0;
   z-index: 2;
   min-width: 105px;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .driver-availability-matrix-date-column strong,
@@ -1114,7 +1114,7 @@
 
 .driver-availability-matrix-date-column span {
   margin-top: 2px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.61rem;
 }
 
@@ -1141,8 +1141,8 @@
 }
 
 .driver-availability-matrix-cell-unmarked {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-muted);
 }
 
 .driver-availability-management-loading,
@@ -1169,7 +1169,7 @@
 .driver-availability-management-error span,
 .driver-availability-management-empty span {
   max-width: 480px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
   line-height: 1.6;
 }
@@ -1206,9 +1206,9 @@
   flex-direction: column;
   gap: 16px;
   padding: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .driver-schedule-draft-statistics {
@@ -1223,18 +1223,18 @@
   flex-direction: column;
   gap: 3px;
   padding: 13px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 11px;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .driver-schedule-draft-statistics strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
 .driver-schedule-draft-statistics span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
@@ -1253,9 +1253,9 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 11px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .driver-schedule-draft-item-warning {
@@ -1284,7 +1284,7 @@
 .driver-schedule-draft-date span,
 .driver-schedule-draft-assignment span,
 .driver-schedule-draft-source {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.65rem;
 }
 
@@ -1314,9 +1314,9 @@
   flex-direction: column;
   gap: 12px;
   padding: 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .driver-schedule-day-editor-warning {
@@ -1330,8 +1330,8 @@
 }
 
 .driver-schedule-day-editor-locked {
-  border-color: #cbd5e1;
-  background: #f8fafc;
+  border-color: var(--theme-border-strong);
+  background: var(--theme-surface-muted);
 }
 
 .driver-schedule-day-editor-header {
@@ -1348,12 +1348,12 @@
 }
 
 .driver-schedule-day-editor-date strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.78rem;
 }
 
 .driver-schedule-day-editor-date span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
@@ -1363,10 +1363,10 @@
   justify-content: center;
   gap: 6px;
   padding: 7px 10px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 9px;
-  background: #ffffff;
-  color: #475569;
+  background: var(--theme-surface);
+  color: var(--theme-text-secondary);
   font: inherit;
   font-size: 0.64rem;
   font-weight: 700;
@@ -1399,7 +1399,7 @@
 }
 
 .driver-schedule-day-editor-field > span {
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.64rem;
   font-weight: 700;
 }
@@ -1408,9 +1408,9 @@
 .driver-schedule-day-editor-field textarea {
   width: 100%;
   padding: 8px 9px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 9px;
-  background: #ffffff;
+  background: var(--theme-surface);
   color: #1e293b;
   font: inherit;
   font-size: 0.68rem;
@@ -1433,7 +1433,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.64rem;
 }
 
@@ -1475,7 +1475,7 @@
   justify-content: flex-end;
   gap: 8px;
   padding-top: 10px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--theme-border);
 }
 
 @media (max-width: 700px) {
@@ -1507,8 +1507,8 @@
   padding: 13px 14px;
   border: 1px solid #dbe3ef;
   border-radius: 14px;
-  background: #ffffff;
-  color: #475569;
+  background: var(--theme-surface);
+  color: var(--theme-text-secondary);
   font: inherit;
   text-align: right;
   cursor: pointer;
@@ -1545,8 +1545,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 11px;
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-muted);
 }
 
 .driver-schedule-workspace-tab-active
@@ -1569,7 +1569,7 @@
 
 .driver-schedule-workspace-tab-content small {
   overflow: hidden;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.61rem;
   line-height: 1.45;
   text-overflow: ellipsis;
@@ -1601,9 +1601,9 @@
   justify-content: space-between;
   gap: 16px;
   padding: 14px 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .driver-schedule-view-toolbar > div:first-child {
@@ -1613,12 +1613,12 @@
 }
 
 .driver-schedule-view-toolbar strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.78rem;
 }
 
 .driver-schedule-view-toolbar span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.63rem;
 }
 
@@ -1627,9 +1627,9 @@
   align-items: center;
   gap: 5px;
   padding: 4px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 11px;
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .driver-schedule-view-button {
@@ -1641,7 +1641,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font: inherit;
   font-size: 0.65rem;
   font-weight: 800;
@@ -1649,12 +1649,12 @@
 }
 
 .driver-schedule-view-button:hover {
-  background: #ffffff;
-  color: #334155;
+  background: var(--theme-surface);
+  color: var(--theme-text);
 }
 
 .driver-schedule-view-button-active {
-  background: #ffffff;
+  background: var(--theme-surface);
   color: #2563eb;
   box-shadow:
     0 1px 3px
@@ -1681,8 +1681,8 @@
   }
 }
 .driver-calendar-period-status-empty {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-muted);
 }
 
 .driver-duty-transfer-list {
@@ -1709,12 +1709,12 @@
 }
 
 .driver-duty-transfer-list-item strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.76rem;
 }
 
 .driver-duty-transfer-list-item span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
@@ -1740,7 +1740,7 @@
   padding: 19px;
   border: 1px solid #dbe3ef;
   border-radius: 17px;
-  background: #ffffff;
+  background: var(--theme-surface);
   box-shadow: 0 24px 65px rgba(15, 23, 42, 0.25);
 }
 
@@ -1771,13 +1771,13 @@
 
 .driver-duty-transfer-heading h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
 .driver-duty-transfer-heading p {
   margin: 4px 0 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
@@ -1789,8 +1789,8 @@
   justify-content: center;
   border: 0;
   border-radius: 10px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-secondary);
   cursor: pointer;
 }
 
@@ -1824,7 +1824,7 @@
 
 .driver-duty-transfer-date span,
 .driver-duty-transfer-current span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.64rem;
 }
 
@@ -1835,7 +1835,7 @@
 }
 
 .driver-duty-transfer-current {
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .driver-duty-transfer-field {
@@ -1845,7 +1845,7 @@
 }
 
 .driver-duty-transfer-field > span {
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.68rem;
   font-weight: 800;
 }
@@ -1854,9 +1854,9 @@
   width: 100%;
   min-height: 43px;
   padding: 8px 10px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 10px;
-  background: #ffffff;
+  background: var(--theme-surface);
   color: #1e293b;
   font: inherit;
 }
@@ -1886,7 +1886,7 @@
   justify-content: flex-end;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--theme-border);
 }
 
 .driver-duty-transfer-loading {

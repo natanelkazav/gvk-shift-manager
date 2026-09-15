@@ -73,3 +73,70 @@
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
 }
+/* Semantic theme tokens. Light remains the product default. */
+:root,
+:root[data-theme='light'] {
+  --theme-page: #f1f5f9;
+  --theme-surface: #ffffff;
+  --theme-surface-muted: #f8fafc;
+  --theme-surface-soft: #f1f5f9;
+  --theme-border: #e2e8f0;
+  --theme-border-strong: #cbd5e1;
+  --theme-text-strong: #0f172a;
+  --theme-text: #334155;
+  --theme-text-secondary: #475569;
+  --theme-text-muted: #64748b;
+}
+
+:root[data-theme='dark'] {
+  --theme-page: #0b1220;
+  --theme-surface: #111827;
+  --theme-surface-muted: #172033;
+  --theme-surface-soft: #1e293b;
+  --theme-border: #2b3a50;
+  --theme-border-strong: #3b4b63;
+  --theme-text-strong: #f8fafc;
+  --theme-text: #e2e8f0;
+  --theme-text-secondary: #cbd5e1;
+  --theme-text-muted: #94a3b8;
+
+  --color-white: #111827;
+  --color-gray-50: #172033;
+  --color-gray-100: #0b1220;
+  --color-gray-200: #2b3a50;
+  --color-gray-300: #3b4b63;
+  --color-gray-500: #94a3b8;
+  --color-gray-600: #cbd5e1;
+  --color-gray-700: #e2e8f0;
+  --color-gray-800: #f1f5f9;
+  --color-gray-900: #f8fafc;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 25%);
+  --shadow-md: 0 4px 14px rgb(0 0 0 / 30%);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 38%);
+}
+
+/* Compatibility aliases for legacy screens that still use the old semantic names. */
+:root,
+:root[data-theme='light'] {
+  --color-background: var(--theme-page);
+  --color-background-subtle: var(--theme-surface-muted);
+  --color-surface: var(--theme-surface);
+  --color-border: var(--theme-border);
+  --color-text: var(--theme-text-strong);
+  --color-text-muted: var(--theme-text-muted);
+  --color-primary: var(--color-primary-600);
+  --color-primary-soft: #bfdbfe;
+}
+
+:root[data-theme='dark'] {
+  --color-background: var(--theme-page);
+  --color-background-subtle: var(--theme-surface-muted);
+  --color-surface: var(--theme-surface);
+  --color-border: var(--theme-border);
+  --color-text: var(--theme-text-strong);
+  --color-text-muted: var(--theme-text-muted);
+  --color-primary: #60a5fa;
+  --color-primary-soft: #1e3a5f;
+  color-scheme: dark;
+}

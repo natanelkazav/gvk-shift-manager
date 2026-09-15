@@ -32,13 +32,13 @@
 
 .morning-driver-page-header h1 {
   margin: 8px 0 5px;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1.55rem;
 }
 
 .morning-driver-page-header p {
   margin: 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.86rem;
 }
 
@@ -74,9 +74,9 @@
 }
 
 .morning-driver-secondary-button {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
+  border: 1px solid var(--theme-border-strong);
+  background: var(--theme-surface);
+  color: var(--theme-text);
 }
 
 .morning-driver-open-button {
@@ -184,7 +184,7 @@
   padding: 17px;
   border: 1px solid #dbe3ef;
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--theme-surface);
   box-shadow:
     0 8px 24px
     rgba(15, 23, 42, 0.06);
@@ -204,13 +204,13 @@
 }
 
 .morning-driver-period-header span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
 .morning-driver-period-header h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1.05rem;
 }
 
@@ -223,8 +223,8 @@
 }
 
 .morning-driver-status-draft {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-secondary);
 }
 
 .morning-driver-status-open {
@@ -244,7 +244,7 @@
 
 .morning-driver-period-title {
   margin: 0;
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.76rem;
 }
 
@@ -263,8 +263,8 @@
   gap: 7px;
   padding: 10px;
   border-radius: 11px;
-  background: #f8fafc;
-  color: #475569;
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-secondary);
 }
 
 .morning-driver-period-stat-grid span {
@@ -272,7 +272,7 @@
 }
 
 .morning-driver-period-stat-grid strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.78rem;
 }
 
@@ -292,13 +292,13 @@
 }
 
 .morning-driver-period-details dt {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.65rem;
 }
 
 .morning-driver-period-details dd {
   margin: 0;
-  color: #334155;
+  color: var(--theme-text);
   font-size: 0.67rem;
   font-weight: 700;
 }
@@ -306,8 +306,8 @@
 .morning-driver-period-instructions {
   padding: 10px;
   border-radius: 10px;
-  background: #f8fafc;
-  color: #64748b;
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-muted);
   font-size: 0.68rem;
   line-height: 1.55;
 }
@@ -315,7 +315,7 @@
 .morning-driver-period-actions {
   justify-content: flex-end;
   padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--theme-border);
 }
 
 .morning-driver-empty-state {
@@ -326,15 +326,15 @@
   flex-direction: column;
   gap: 10px;
   padding: 28px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--theme-border-strong);
   border-radius: 16px;
-  background: #ffffff;
-  color: #64748b;
+  background: var(--theme-surface);
+  color: var(--theme-text-muted);
   text-align: center;
 }
 
 .morning-driver-empty-state strong {
-  color: #334155;
+  color: var(--theme-text);
 }
 
 .morning-driver-empty-state span {
@@ -362,7 +362,7 @@
   overflow: auto;
   border: 1px solid #dbe3ef;
   border-radius: 17px;
-  background: #ffffff;
+  background: var(--theme-surface);
   box-shadow:
     0 25px 70px
     rgba(15, 23, 42, 0.28);
@@ -374,18 +374,18 @@
   justify-content: space-between;
   gap: 15px;
   padding: 18px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .morning-driver-dialog-header h2 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
 .morning-driver-dialog-header p {
   margin: 5px 0 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
@@ -397,8 +397,8 @@
   justify-content: center;
   border: 0;
   border-radius: 9px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-secondary);
   cursor: pointer;
 }
 
@@ -416,7 +416,7 @@
 }
 
 .morning-driver-create-form label > span {
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.68rem;
   font-weight: 800;
 }
@@ -427,10 +427,10 @@
   width: 100%;
   min-height: 42px;
   padding: 9px 11px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 10px;
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--theme-surface);
+  color: var(--theme-text-strong);
   font: inherit;
 }
 
@@ -476,7 +476,7 @@
 .morning-driver-dialog-actions {
   justify-content: flex-end;
   padding-top: 14px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--theme-border);
 }
 
 .morning-driver-spin {

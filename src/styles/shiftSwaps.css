@@ -121,7 +121,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
-  border: 1px dashed var(--border-color, #cbd5e1);
+  border: 1px dashed var(--border-color, var(--theme-border-strong));
   border-radius: 0.9rem;
   color: var(--text-secondary, #64748b);
   text-align: center;
@@ -156,7 +156,7 @@
 }
 
 .shift-swap-type-selector button {
-  border: 1px solid var(--border-color, #cbd5e1);
+  border: 1px solid var(--border-color, var(--theme-border-strong));
   background: var(--surface, #fff);
   border-radius: 0.85rem;
   padding: 0.9rem;

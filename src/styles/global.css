@@ -9,8 +9,8 @@
 html {
   direction: rtl;
   font-family: var(--font-family);
-  color: var(--color-gray-800);
-  background: var(--color-gray-100);
+  color: var(--theme-text);
+  background: var(--theme-page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -19,7 +19,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: var(--color-gray-100);
+  background: var(--theme-page);
 }
 
 body,
@@ -57,13 +57,13 @@ p {
 h1 {
   margin-bottom: var(--space-2);
   font-size: var(--font-size-2xl);
-  color: var(--color-gray-900);
+  color: var(--theme-text-strong);
 }
 
 h2 {
   margin-bottom: var(--space-4);
   font-size: var(--font-size-xl);
-  color: var(--color-gray-900);
+  color: var(--theme-text-strong);
 }
 
 p {

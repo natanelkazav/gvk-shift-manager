@@ -5,6 +5,7 @@ import {
   Settings,
   ShieldCheck,
   Wrench,
+  Palette,
 } from 'lucide-react';
 
 import {
@@ -40,6 +41,7 @@ import DynamicPilotQaPanel from '../components/settings/DynamicPilotQaPanel';
 import LegacyCompatibilityPanel from '../components/settings/LegacyCompatibilityPanel';
 import DashboardWidgetSettings from '../components/settings/DashboardWidgetSettings';
 import { dashboardWidgetService } from '../services/dashboardWidgetService';
+import ThemeSettings from '../components/settings/ThemeSettings';
 
 type FileToolTab =
   | 'import'
@@ -145,6 +147,18 @@ function SettingsPage() {
               canUseDriverDutyReminders
             }
           />
+
+          <div className="settings-personal-divider" />
+
+          <div className="settings-subsection-heading">
+            <Palette size={20} aria-hidden="true" />
+            <div>
+              <h3>ערכת נושא</h3>
+              <p>בחר את צבעי המערכת במכשיר הזה. השינוי יחול לאחר לחיצה על אישור.</p>
+            </div>
+          </div>
+
+          <ThemeSettings />
         </section>
 
         {canConfigureDashboard ? (

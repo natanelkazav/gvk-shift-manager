@@ -17,12 +17,12 @@
 
 .my-morning-driver-header h2 {
   margin: 5px 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
 }
 
 .my-morning-driver-header p {
   margin: 0;
-  color: #64748b;
+  color: var(--theme-text-muted);
 }
 
 .my-morning-driver-eyebrow {
@@ -66,9 +66,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .my-morning-driver-period-info > div {
@@ -85,8 +85,8 @@
 }
 
 .my-morning-driver-submission-status-draft {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--theme-surface-soft);
+  color: var(--theme-text-secondary);
 }
 
 .my-morning-driver-submission-status-submitted {
@@ -151,9 +151,9 @@
   justify-content: center;
   gap: 2px 8px;
   padding: 13px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .my-morning-driver-summary svg {
@@ -166,7 +166,7 @@
 
 .my-morning-driver-summary span {
   grid-area: label;
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
@@ -179,7 +179,7 @@
   overflow: hidden;
   border: 1px solid #dbe3ef;
   border-radius: 15px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .my-morning-driver-day-card > header {
@@ -188,8 +188,8 @@
   justify-content: space-between;
   gap: 12px;
   padding: 13px 15px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-surface-muted);
 }
 
 .my-morning-driver-day-card > header div {
@@ -199,7 +199,7 @@
 }
 
 .my-morning-driver-day-card > header span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
@@ -215,9 +215,9 @@
   flex-direction: column;
   gap: 11px;
   padding: 13px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--theme-border);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .my-morning-driver-shift-available {
@@ -231,7 +231,7 @@
 }
 
 .my-morning-driver-shift-unmarked {
-  border-color: #cbd5e1;
+  border-color: var(--theme-border-strong);
 }
 
 .my-morning-driver-shift-heading {
@@ -248,7 +248,7 @@
 }
 
 .my-morning-driver-shift-heading span {
-  color: #64748b;
+  color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
@@ -267,9 +267,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 9px;
-  background: #ffffff;
+  background: var(--theme-surface);
   font: inherit;
   font-weight: 800;
   cursor: pointer;
@@ -299,7 +299,7 @@
 }
 
 .my-morning-driver-note span {
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.7rem;
   font-weight: 800;
 }
@@ -308,9 +308,9 @@
   width: 100%;
   resize: vertical;
   padding: 8px 9px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--theme-border-strong);
   border-radius: 9px;
-  background: #ffffff;
+  background: var(--theme-surface);
   font: inherit;
 }
 
@@ -339,9 +339,9 @@
   flex-direction: column;
   gap: 10px;
   padding: 25px;
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed var(--theme-border-strong);
   border-radius: 15px;
-  background: #ffffff;
+  background: var(--theme-surface);
   text-align: center;
 }
 
@@ -402,7 +402,7 @@
 
 .my-morning-driver-header h1 {
   margin: 0;
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: clamp(1.35rem, 2.4vw, 1.9rem);
 }
 
@@ -434,7 +434,7 @@
   padding: 13px 15px;
   border: 1px solid #dbe3ef;
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--theme-surface);
 }
 
 .my-morning-driver-completion > div:first-child {
@@ -442,13 +442,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.78rem;
   font-weight: 800;
 }
 
 .my-morning-driver-completion > div:first-child strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
 }
 
 .my-morning-driver-completion-track {

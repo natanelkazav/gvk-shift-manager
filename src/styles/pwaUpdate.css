@@ -39,12 +39,12 @@
 }
 
 .pwa-update-banner-content strong {
-  color: #0f172a;
+  color: var(--theme-text-strong);
   font-size: 0.93rem;
 }
 
 .pwa-update-banner-content span {
-  color: #475569;
+  color: var(--theme-text-secondary);
   font-size: 0.79rem;
   line-height: 1.55;
 }
@@ -99,12 +99,12 @@
 
 .pwa-update-button-secondary {
   border: 1px solid #bfdbfe;
-  background: #ffffff;
-  color: #334155;
+  background: var(--theme-surface);
+  color: var(--theme-text);
 }
 
 .pwa-update-button-secondary:not(:disabled):hover {
-  background: #f8fafc;
+  background: var(--theme-surface-muted);
 }
 
 .pwa-update-button-spinner {

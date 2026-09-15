@@ -7,6 +7,9 @@ import { router } from './app/router';
 import { AuthProvider } from './auth/AuthContext';
 import './styles/global.css';
 import './styles/components.css';
+import { themeService } from './services/themeService';
+
+themeService.initialize();
 
 const rootElement =
   document.getElementById('root');
