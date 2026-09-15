@@ -366,6 +366,23 @@ async function validateScheduleEditWorkflowNotification(
   );
 }
 
+
+async function validateDailyReportNotification(
+  adminClient: SupabaseClient,
+  userId: string,
+  notificationId: string,
+): Promise<boolean> {
+  const { data, error } = await adminClient
+    .from('notifications')
+    .select('type, source, created_by, data')
+    .eq('id', notificationId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || data.type !== 'manager_message' || data.source !== 'daily_report' || data.created_by !== userId) return false;
+  const metadata = data.data as Record<string, unknown> | null;
+  return Boolean(metadata && metadata.workflow === 'daily_report' && metadata.event === 'submitted' && metadata.actorUserId === userId && typeof metadata.reportId === 'string');
+}
+
 async function validateDynamicSchedulePublicationNotification(
   adminClient: SupabaseClient,
   userId: string,
@@ -488,8 +505,13 @@ export async function authenticateNotificationManager(
             notificationId,
           );
 
-    const isAuthorizedDynamicPublicationDelivery =
+    const isAuthorizedDailyReportDelivery =
       isAuthorizedShiftSwapDelivery || isAuthorizedScheduleEditDelivery
+        ? false
+        : await validateDailyReportNotification(adminClient, userId, notificationId);
+
+    const isAuthorizedDynamicPublicationDelivery =
+      isAuthorizedShiftSwapDelivery || isAuthorizedScheduleEditDelivery || isAuthorizedDailyReportDelivery
         ? false
         : await validateDynamicSchedulePublicationNotification(
             adminClient,
@@ -500,6 +522,7 @@ export async function authenticateNotificationManager(
     if (
       !isAuthorizedShiftSwapDelivery &&
       !isAuthorizedScheduleEditDelivery &&
+      !isAuthorizedDailyReportDelivery &&
       !isAuthorizedDynamicPublicationDelivery
     ) {
       throw new Error(

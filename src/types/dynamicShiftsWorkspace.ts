@@ -22,6 +22,7 @@ export interface DynamicScheduleCalendarJobType {
 export interface DynamicScheduleCalendarAssignment {
   userId: string;
   displayName: string;
+  scheduleName?: string | null;
 }
 
 export interface DynamicScheduleCalendarSlot {

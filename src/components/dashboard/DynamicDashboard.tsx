@@ -5,6 +5,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import DailyReportDashboardCards from '../../features/dailyReports/components/DailyReportDashboardCards';
 import type {
   DynamicRuntimeContext,
   DynamicRuntimeRole,
@@ -21,6 +22,7 @@ const workModeLabels: Record<DynamicRuntimeRole['workMode'], string> = {
 };
 
 const strategyLabels: Record<DynamicRuntimeRole['schedulingStrategy'], string> = {
+  none: 'ללא שיבוצים',
   availability_optimizer: 'שיבוץ לפי אילוצים',
   monthly_rotation_constraints: 'סבב חודשי + אילוצים',
 };
@@ -52,6 +54,7 @@ function getAvailabilityText(role: DynamicRuntimeRole): string {
 function DynamicDashboard({ context }: DynamicDashboardProps) {
   return (
     <div className="dynamic-dashboard-stack">
+      <DailyReportDashboardCards />
       <div className="dynamic-dashboard-role-grid">
         {context.roles.map((role) => (
           <section className="dashboard-card dynamic-dashboard-role-card" key={role.jobTypeId}>

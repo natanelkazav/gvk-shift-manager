@@ -1,6 +1,38 @@
 import { supabase } from '../lib/supabase';
 import { PerformanceDebugService } from './performanceDebugService';
 import { schedulePublicationNotificationService } from './schedulePublicationNotificationService';
+
+async function flushPendingOperationalPushNotifications(): Promise<void> {
+  try {
+    const { data, error } = await supabase.rpc('get_my_pending_operational_push_notifications');
+    if (error) throw error;
+
+    const notificationIds = Array.isArray(data)
+      ? data.filter((value): value is string => typeof value === 'string')
+      : [];
+
+    for (const notificationId of notificationIds) {
+      const { error: deliveryError } = await supabase.functions.invoke('send-notification', {
+        body: { notificationId },
+      });
+      if (deliveryError) {
+        console.error('Operational Push delivery failed:', { notificationId, deliveryError });
+        continue;
+      }
+
+      const { error: markError } = await supabase.rpc('mark_my_operational_push_dispatched', {
+        requested_notification_id: notificationId,
+      });
+      if (markError) {
+        console.error('Failed to mark operational Push as dispatched:', { notificationId, markError });
+      }
+    }
+  } catch (error) {
+    // The scheduling action itself must remain successful even if Push delivery fails.
+    console.error('Failed to flush operational Push notifications:', error);
+  }
+}
+
 import type {
   DynamicAvailabilityShadowSummary,
   DynamicAvailabilityWorkspace,
@@ -49,6 +81,22 @@ const throwSupabaseError = (
 };
 
 export const dynamicSchedulingService = {
+  async getScheduleExportWorkspace(
+    year: number,
+    month: number,
+    jobTypeIds: string[],
+  ): Promise<DynamicScheduleCalendarWorkspace> {
+    return PerformanceDebugService.measureAsync('dynamic-scheduling.phase10.8.1.5.schedule-export-workspace', async () => {
+      const { data, error } = await supabase.rpc('get_dynamic_schedule_export_workspace', {
+        requested_year: year,
+        requested_month: month,
+        requested_job_type_ids: jobTypeIds,
+      });
+      if (error) throwSupabaseError('Dynamic schedule export workspace', error);
+      return data as DynamicScheduleCalendarWorkspace;
+    });
+  },
+
   async getScheduleCalendarWorkspace(year: number, month: number): Promise<DynamicScheduleCalendarWorkspace> {
     return PerformanceDebugService.measureAsync('dynamic-scheduling.phase10.5.8.schedule-calendar', async () => {
       const { data, error } = await supabase.rpc('get_dynamic_schedule_calendar_workspace', {
@@ -178,6 +226,7 @@ export const dynamicSchedulingService = {
       requested_request_id: requestId, requested_approve: approve, requested_rejection_reason: rejectionReason?.trim() || null,
     });
     if (error) throwSupabaseError('Review dynamic shift exchange request', error);
+    if (approve) await flushPendingOperationalPushNotifications();
   },
 
   async cancelDynamicShiftExchangeRequest(requestId: string): Promise<void> {
@@ -210,6 +259,7 @@ export const dynamicSchedulingService = {
         requested_reason: input.reason?.trim() || null,
       });
       if (error) throwSupabaseError('Set dynamic published schedule assignment', error);
+      await flushPendingOperationalPushNotifications();
     });
   },
 
@@ -253,6 +303,7 @@ export const dynamicSchedulingService = {
         requested_user_id: userId,
       });
       if (error) throwSupabaseError('Update my dynamic published assignment', error);
+      await flushPendingOperationalPushNotifications();
     });
   },
   async getMyDynamicAvailabilityPeriods(): Promise<MyDynamicAvailabilityPeriod[]> {

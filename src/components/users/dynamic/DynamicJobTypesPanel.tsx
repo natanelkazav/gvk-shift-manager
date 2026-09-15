@@ -41,6 +41,8 @@ import type {
 } from '../../../types/dynamicScheduling';
 import DynamicSchedulingShadowTester from './DynamicSchedulingShadowTester';
 import DynamicRoleWorkspaceModal from './DynamicRoleWorkspaceModal';
+import { dailyReportService } from '../../../services/dailyReportService';
+import type { DailyReportAdminUser } from '../../../types/dailyReports';
 import { Button, Input, Modal, Textarea } from '../../ui';
 
 interface DynamicJobTypesPanelProps {
@@ -64,6 +66,7 @@ const payModelLabels: Record<JobPayModel, string> = {
 };
 
 const schedulingStrategyLabels: Record<DynamicSchedulingStrategy, string> = {
+  none: 'ללא שיבוצים',
   availability_optimizer: 'אילוצים + אופטימיזציה חודשית',
   monthly_rotation_constraints: 'סבב חודשי + אילוצים',
 };
@@ -82,6 +85,7 @@ const getIsraelMonth = (offsetMonths = 0): { year: number; month: number } => {
 
 const defaultSchedulingConfig = (): DynamicSchedulingConfig => ({
   scheduleChangeMode: 'none',
+  dailyReports: { enabled: false, recipientUserIds: [], allowAddSubjects: true, allowAddCustomers: true, allowAttachments: true },
   minimumMode: 'soft',
   maximumMode: 'hard',
   proportionalFairness: true,
@@ -298,6 +302,8 @@ const deriveAutomaticCapabilities = (input: SaveDynamicJobTypeInput): string[] =
   capabilities.add('availability');
 
   if (input.statisticsConfig.enabled) capabilities.add('statistics');
+  if (input.schedulingConfig.dailyReports?.enabled) capabilities.add('daily_reports');
+  else capabilities.delete('daily_reports');
   if (input.payModel !== 'none') capabilities.add('payroll');
   if (input.availabilityConfig.monthlyCapacity.enabled) capabilities.add('monthly_shift_capacity');
   capabilities.add('schedule_publication_notifications');
@@ -329,6 +335,7 @@ const permissionFeatureLabels: Record<string, string> = {
   monthly_rotation: 'סבב חודשי',
   statistics: 'סטטיסטיקות',
   payroll: 'שכר',
+  daily_reports: 'דיווח עבודה יומי',
 };
 
 const permissionBlueprint: PermissionBlueprintItem[] = [
@@ -366,6 +373,7 @@ const derivePermissionFeatures = (input: SaveDynamicJobTypeInput): string[] => {
   if (input.schedulingStrategy === 'monthly_rotation_constraints') features.add('monthly_rotation');
   if (input.statisticsConfig.enabled) features.add('statistics');
   if (input.payModel !== 'none') features.add('payroll');
+  if (input.schedulingConfig.dailyReports?.enabled) features.add('daily_reports');
   return Array.from(features);
 };
 
@@ -416,6 +424,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
   const [legacyPreview, setLegacyPreview] = useState<DynamicLegacyImportPreview | null>(null);
   const [legacyImporting, setLegacyImporting] = useState(false);
   const [legacyImportMessage, setLegacyImportMessage] = useState<string | null>(null);
+  const [dailyReportAdminUsers, setDailyReportAdminUsers] = useState<DailyReportAdminUser[]>([]);
 
   const loadData = async (): Promise<void> => {
     setState((current) => ({
@@ -499,6 +508,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     setDashboardContextJobTypeIds([]);
     setFormError(null);
     setIsModalOpen(true);
+    void dailyReportService.getAdminOptions().then((data) => setDailyReportAdminUsers(data.users)).catch(() => setDailyReportAdminUsers([]));
   };
 
   const openEdit = (jobType: DynamicJobType): void => {
@@ -508,6 +518,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     setPermissionEditorError(null);
     setFormError(null);
     setIsModalOpen(true);
+    void dailyReportService.getAdminOptions().then((data) => setDailyReportAdminUsers(data.users)).catch(() => setDailyReportAdminUsers([]));
     void loadPermissionEditor(jobType.id);
   };
 
@@ -1276,14 +1287,26 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                   value={form.schedulingStrategy}
                   onChange={(event) => {
                     const schedulingStrategy = event.target.value as DynamicSchedulingStrategy;
+                    const hasScheduling = schedulingStrategy !== 'none';
+                    const schedulingCapabilities = new Set(form.capabilities);
+                    if (hasScheduling) {
+                      schedulingCapabilities.add('availability');
+                      schedulingCapabilities.add('schedule');
+                    } else {
+                      schedulingCapabilities.delete('availability');
+                      schedulingCapabilities.delete('schedule');
+                      schedulingCapabilities.delete('shift_exchange');
+                      schedulingCapabilities.delete('self_edit');
+                      schedulingCapabilities.delete('monthly_rotation');
+                    }
                     setForm({
                       ...form,
                       schedulingStrategy,
-                      availabilityConfig: {
-                        ...form.availabilityConfig,
-                        enabled: true,
-                      },
-                      capabilities: Array.from(new Set([...form.capabilities, 'availability', 'schedule'])),
+                      availabilityConfig: { ...form.availabilityConfig, enabled: hasScheduling },
+                      schedulingConfig: hasScheduling
+                        ? form.schedulingConfig
+                        : { ...form.schedulingConfig, scheduleChangeMode: 'none' },
+                      capabilities: Array.from(schedulingCapabilities),
                     });
                   }}
                 >
@@ -1294,9 +1317,11 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                   ))}
                 </select>
                 <small>
-                  {form.schedulingStrategy === 'monthly_rotation_constraints'
-                    ? 'הסבב החודשי יהיה נקודת המוצא, והאילוצים ישמשו להתאמת הסבב. מנוע הסבב עצמו יחובר בשלב הבא.'
-                    : 'המנוע בונה את החודש מתוך האילוצים, יעדי האיזון והחוקים שהוגדרו.'}
+                  {form.schedulingStrategy === 'none'
+                    ? 'לתפקיד אין לוח שיבוצים, תקופות אילוצים או מנגנון איזון. יכולות אחרות של התפקיד ממשיכות לעבוד כרגיל.'
+                    : form.schedulingStrategy === 'monthly_rotation_constraints'
+                      ? 'הסבב החודשי יהיה נקודת המוצא, והאילוצים ישמשו להתאמת הסבב. מנוע הסבב עצמו יחובר בשלב הבא.'
+                      : 'המנוע בונה את החודש מתוך האילוצים, יעדי האיזון והחוקים שהוגדרו.'}
                 </small>
               </label>
               <label className="dynamic-select-field">
@@ -1710,7 +1735,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
               })()}
             </div>
 
-            <div className="dynamic-config-section dynamic-availability-config dynamic-form-section">
+            <div className="dynamic-config-section dynamic-availability-config dynamic-form-section" style={{ display: form.schedulingStrategy === 'none' ? 'none' : undefined }}>
               <div className="dynamic-section-heading"><span>4</span><div><h3>מערכת אילוצים דינמית</h3><small>הגדר אילו תשובות וחוקי קיבולת זמינים לעובדים.</small></div></div>
               <p>
                 ההגדרות נשמרות ב־Shadow Mode בלבד. הן עדיין לא מחליפות את מסכי האילוצים הפעילים.
@@ -1940,7 +1965,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
               ) : null}
             </div>
 
-            <div className="dynamic-config-section dynamic-scheduling-rules-config dynamic-simple-rules">
+            <div className="dynamic-config-section dynamic-scheduling-rules-config dynamic-simple-rules" style={{ display: form.schedulingStrategy === 'none' ? 'none' : undefined }}>
               <div className="dynamic-section-title-row">
                 <div>
                   <h3>אילוצים ואיזון</h3>
@@ -2078,6 +2103,49 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                   </div>
                 </div>
               ) : null}
+
+              <div className="dynamic-config-section dynamic-daily-report-config">
+                <div className="dynamic-section-heading"><span>+</span><div><h3>דיווחים וטפסי עבודה</h3><small>Workflow תפעולי שאינו תלוי בשיבוץ.</small></div></div>
+                <label className="dynamic-choice-chip">
+                  <input type="checkbox" checked={form.schedulingConfig.dailyReports?.enabled === true}
+                    onChange={(event) => setForm({ ...form, schedulingConfig: { ...form.schedulingConfig, dailyReports: {
+                      enabled: event.target.checked,
+                      recipientUserIds: form.schedulingConfig.dailyReports?.recipientUserIds ?? [],
+                      allowAddSubjects: form.schedulingConfig.dailyReports?.allowAddSubjects ?? true,
+                      allowAddCustomers: form.schedulingConfig.dailyReports?.allowAddCustomers ?? true,
+                      allowAttachments: form.schedulingConfig.dailyReports?.allowAttachments ?? true,
+                    } } })} />
+                  <span>דיווח עבודה יומי</span>
+                </label>
+                {form.schedulingConfig.dailyReports?.enabled ? (
+                  <div className="dynamic-daily-report-settings">
+                    <div><strong>למי נשלח הדיווח?</strong><small>הנמענים יקבלו התראה ו-Push בכל שליחה.</small>
+                      <div className="dynamic-dashboard-context-options">
+                        {dailyReportAdminUsers.map((user) => {
+                          const checked = form.schedulingConfig.dailyReports?.recipientUserIds.includes(user.userId) ?? false;
+                          return <label className="dynamic-dashboard-context-option" key={user.userId}>
+                            <input type="checkbox" checked={checked} onChange={(event) => {
+                              const current = form.schedulingConfig.dailyReports?.recipientUserIds ?? [];
+                              const recipientUserIds = event.target.checked ? Array.from(new Set([...current, user.userId])) : current.filter((id) => id !== user.userId);
+                              setForm({ ...form, schedulingConfig: { ...form.schedulingConfig, dailyReports: { ...form.schedulingConfig.dailyReports!, recipientUserIds } } });
+                            }} />
+                            <span><strong>{user.displayName}</strong><small>{user.email}</small></span>
+                          </label>;
+                        })}
+                      </div>
+                    </div>
+                    <label className="dynamic-choice-chip"><input type="checkbox" checked={form.schedulingConfig.dailyReports.allowAddSubjects}
+                      onChange={(event) => setForm({ ...form, schedulingConfig: { ...form.schedulingConfig, dailyReports: { ...form.schedulingConfig.dailyReports!, allowAddSubjects: event.target.checked } } })} />
+                      <span>עובדים יכולים להוסיף נושאים חדשים</span></label>
+                    <label className="dynamic-choice-chip"><input type="checkbox" checked={form.schedulingConfig.dailyReports.allowAddCustomers}
+                      onChange={(event) => setForm({ ...form, schedulingConfig: { ...form.schedulingConfig, dailyReports: { ...form.schedulingConfig.dailyReports!, allowAddCustomers: event.target.checked } } })} />
+                      <span>עובדים יכולים להוסיף לקוחות חדשים</span></label>
+                    <label className="dynamic-choice-chip"><input type="checkbox" checked={form.schedulingConfig.dailyReports.allowAttachments !== false}
+                      onChange={(event) => setForm({ ...form, schedulingConfig: { ...form.schedulingConfig, dailyReports: { ...form.schedulingConfig.dailyReports!, allowAttachments: event.target.checked } } })} />
+                      <span>אפשר צירוף טפסים וקבצים לדיווח</span></label>
+                  </div>
+                ) : null}
+              </div>
 
               <div className="dynamic-permission-builder">
                 <div className="dynamic-permission-builder-heading">

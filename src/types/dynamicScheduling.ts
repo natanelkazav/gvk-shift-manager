@@ -50,6 +50,7 @@ export interface DynamicShiftPatternDefinition {
 export type JobPayModel = 'hourly' | 'per_shift' | 'per_day' | 'mixed' | 'none';
 
 export type DynamicSchedulingStrategy =
+  | 'none'
   | 'availability_optimizer'
   | 'monthly_rotation_constraints';
 
@@ -380,7 +381,16 @@ export interface DynamicSchedulePreview {
 
 export type DynamicRuleSeverity = 'hard' | 'soft';
 
+export interface DynamicDailyReportConfig {
+  enabled: boolean;
+  recipientUserIds: string[];
+  allowAddSubjects: boolean;
+  allowAddCustomers: boolean;
+  allowAttachments?: boolean;
+}
+
 export interface DynamicSchedulingConfig {
+  dailyReports?: DynamicDailyReportConfig;
   scheduleChangeMode: DynamicScheduleChangeMode;
   minimumMode: DynamicRuleSeverity;
   maximumMode: DynamicRuleSeverity;

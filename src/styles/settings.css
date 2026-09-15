@@ -738,3 +738,229 @@
 .settings-legacy-freeze-blockers { padding:12px 14px; border:1px solid #fde68a; border-radius:10px; background:#fffbeb; color:#92400e; font-size:.76rem; }
 .settings-legacy-freeze-blockers ul { margin:8px 0 0; padding-inline-start:20px; }
 .settings-legacy-freeze-blockers li { margin:3px 0; }
+
+/* Phase 10.8.1 - Dynamic Excel export layout */
+.schedule-export-panel-dynamic {
+  gap: 18px;
+}
+
+.schedule-export-layout-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #dbe4f0;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.schedule-export-layout-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.schedule-export-layout-header h4 {
+  margin: 4px 0 5px;
+  font-size: 1rem;
+}
+
+.schedule-export-layout-header p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.schedule-export-layout-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2563eb;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.schedule-export-mapping-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-export-mapping-row {
+  display: grid;
+  grid-template-columns: 70px minmax(180px, 1fr) minmax(230px, 0.85fr);
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.schedule-export-column-badge {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 800;
+  direction: ltr;
+}
+
+.schedule-export-mapping-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.schedule-export-mapping-copy span {
+  color: #64748b;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.schedule-export-template-preview {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.schedule-export-template-preview > div {
+  display: grid;
+  gap: 4px;
+  min-height: 68px;
+  padding: 9px 7px;
+  border-inline-start: 1px solid #e2e8f0;
+  text-align: center;
+  align-content: center;
+}
+
+.schedule-export-template-preview > div:first-child {
+  border-inline-start: 0;
+}
+
+.schedule-export-template-preview b {
+  color: #475569;
+  direction: ltr;
+}
+
+.schedule-export-template-preview span {
+  font-size: 0.77rem;
+  line-height: 1.35;
+}
+
+.schedule-export-template-preview-highlight {
+  background: #eff6ff;
+}
+
+@media (max-width: 900px) {
+  .schedule-export-layout-header {
+    flex-direction: column;
+  }
+
+  .schedule-export-mapping-row {
+    grid-template-columns: 58px 1fr;
+  }
+
+  .schedule-export-mapping-row > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .schedule-export-template-preview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Phase 10.8.2 - keep operational settings focused; migration/recovery tools stay available but collapsed. */
+.settings-advanced-card {
+  gap: 14px;
+}
+
+.settings-tool-group {
+  overflow: hidden;
+  border: 1px solid #dbe4f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.settings-tool-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+  color: #334155;
+}
+
+.settings-tool-group > summary::-webkit-details-marker,
+.settings-advanced-item > summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-tool-summary-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 9px;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.settings-tool-group > summary strong {
+  display: block;
+  font-size: 0.78rem;
+}
+
+.settings-tool-group > summary small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.settings-tool-group-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 14px 14px;
+}
+
+.settings-advanced-item {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.settings-advanced-item > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.settings-advanced-item[open] > summary {
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.settings-advanced-item-content {
+  padding: 14px;
+}
+
+.settings-inline-summary-icon {
+  display: inline-flex;
+  align-items: center;
+}

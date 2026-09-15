@@ -3,6 +3,7 @@ import {
   FileSpreadsheet,
   Settings,
   ShieldCheck,
+  Wrench,
 } from 'lucide-react';
 
 import {
@@ -94,11 +95,16 @@ function SettingsPage() {
     canImportSchedules ||
     canExportSchedules;
 
+  const canUseAdvancedSystemTools =
+    canManageUsers ||
+    canManageNotifications ||
+    isSystemAdmin;
+
   return (
     <section className="settings-page">
       <PageHeader
         title="הגדרות"
-        description="העדפות אישיות וכלי מערכת מסודרים לפי תחום ובהתאם להרשאות שלך."
+        description="העדפות אישיות, קבצים וכלי ניהול מערכת. כלי מעבר ו-Legacy נשמרים באזור מתקדם כדי לא להעמיס על העבודה השוטפת."
       />
 
       <div className="settings-page-sections">
@@ -113,7 +119,7 @@ function SettingsPage() {
               <h2>העדפות אישיות</h2>
 
               <p>
-                הגדרות ששייכות למשתמש שלך, כולל Push ותזכורות המותאמות ללוחות שאליהם יש לך גישה.
+                Push ותזכורות אישיות לפי הלוחות שאליהם יש לך גישה.
               </p>
             </div>
           </div>
@@ -215,7 +221,7 @@ function SettingsPage() {
                     <div>
                       <h3>ייבוא קובץ שיבוצים</h3>
                       <p>
-                        טעינת לוחות מוקדנים, כוננים וכונני בוקר מקובץ Excel קיים.
+                        טעינת לוחות Excel קיימים למערכת.
                       </p>
                     </div>
                   </div>
@@ -238,83 +244,90 @@ function SettingsPage() {
           </section>
         ) : null}
 
-        {canManageUsers ? (
-          <section className="settings-section settings-section-card">
-            <div className="settings-section-header">
-              <ShieldCheck size={22} aria-hidden="true" />
-              <div><h2>Dynamic-first / Rollback</h2><p>מתג Cutover מרכזי לפיילוט. אינו מוחק נתונים וניתן לחזור זמנית ל-Legacy.</p></div>
-            </div>
-            <DynamicCutoverSettings />
-          </section>
-        ) : null}
-
-        {canManageUsers ? (
-          <section className="settings-section settings-section-card">
+        {canUseAdvancedSystemTools ? (
+          <section className="settings-section settings-section-card settings-advanced-card">
             <div className="settings-section-header">
               <ShieldCheck size={22} aria-hidden="true" />
               <div>
-                <h2>QA לפיילוט הדינמי</h2>
-                <p>בדיקות Readiness לא הרסניות לפני מעבר לבדיקת המערכת הידנית המלאה.</p>
-              </div>
-            </div>
-            <DynamicPilotQaPanel />
-          </section>
-        ) : null}
-
-        {canManageUsers ? (
-          <section className="settings-section settings-section-card">
-            <div className="settings-section-header">
-              <ShieldCheck size={22} aria-hidden="true" />
-              <div>
-                <h2>מעבר GVK למערכת הדינמית</h2>
-                <p>Adapter חד-פעמי שממפה את שלושת מקורות ה-Legacy של הפיילוט לתפקידי Job Type שתבחר.</p>
-              </div>
-            </div>
-            <GvkLegacyMigrationPanel />
-          </section>
-        ) : null}
-
-        {canManageUsers ? (
-          <section className="settings-section settings-section-card">
-            <div className="settings-section-header">
-              <ShieldCheck size={22} aria-hidden="true" />
-              <div>
-                <h2>כלי Legacy לשחזור</h2>
-                <p>מסכי המערכת הישנה הוצאו מהניווט הראשי ונשמרו כאן לצורכי Rollback ובדיקות בלבד.</p>
-              </div>
-            </div>
-            <LegacyCompatibilityPanel />
-          </section>
-        ) : null}
-
-        {isSystemAdmin ? (
-          <section className="settings-section settings-section-card settings-development-section">
-            <div className="settings-section-header">
-              <ShieldCheck size={22} aria-hidden="true" />
-              <div><h2>סביבת פיתוח בטוחה</h2><p>הפעל סימולציה אישית לפני בדיקות בזמן שהמערכת בשימוש.</p></div>
-            </div>
-            <DevelopmentModeSettings />
-          </section>
-        ) : null}
-
-        {canManageNotifications ? (
-          <section className="settings-section settings-section-card">
-            <div className="settings-section-header">
-              <BellRing
-                size={22}
-                aria-hidden="true"
-              />
-
-              <div>
-                <h2>התראות וכלי בדיקה</h2>
-
+                <h2>ניהול מערכת</h2>
                 <p>
-                  כלי בדיקה ניהוליים למערכת ההתראות וה-Push.
+                  כלי תחזוקה, בדיקות ו-Recovery. אין צורך להשתמש בהם בעבודה השוטפת.
                 </p>
               </div>
             </div>
 
-            <PushTestNotification />
+            <details className="settings-tool-group">
+              <summary>
+                <span className="settings-tool-summary-icon" aria-hidden="true">
+                  <Wrench size={18} />
+                </span>
+                <span>
+                  <strong>כלים מתקדמים ו-Recovery</strong>
+                  <small>Dynamic-first, QA, Legacy, סביבת פיתוח ובדיקות Push</small>
+                </span>
+              </summary>
+
+              <div className="settings-tool-group-content">
+                {canManageUsers ? (
+                  <details className="settings-advanced-item">
+                    <summary>מצב Dynamic-first ו-Rollback</summary>
+                    <div className="settings-advanced-item-content">
+                      <DynamicCutoverSettings />
+                    </div>
+                  </details>
+                ) : null}
+
+                {canManageUsers ? (
+                  <details className="settings-advanced-item">
+                    <summary>בדיקות QA לפיילוט הדינמי</summary>
+                    <div className="settings-advanced-item-content">
+                      <DynamicPilotQaPanel />
+                    </div>
+                  </details>
+                ) : null}
+
+                {canManageUsers ? (
+                  <details className="settings-advanced-item">
+                    <summary>העברת נתוני GVK מ-Legacy</summary>
+                    <div className="settings-advanced-item-content">
+                      <GvkLegacyMigrationPanel />
+                    </div>
+                  </details>
+                ) : null}
+
+                {canManageUsers ? (
+                  <details className="settings-advanced-item">
+                    <summary>כלי Legacy לשחזור</summary>
+                    <div className="settings-advanced-item-content">
+                      <LegacyCompatibilityPanel />
+                    </div>
+                  </details>
+                ) : null}
+
+                {isSystemAdmin ? (
+                  <details className="settings-advanced-item">
+                    <summary>סביבת פיתוח בטוחה</summary>
+                    <div className="settings-advanced-item-content">
+                      <DevelopmentModeSettings />
+                    </div>
+                  </details>
+                ) : null}
+
+                {canManageNotifications ? (
+                  <details className="settings-advanced-item">
+                    <summary>
+                      <span className="settings-inline-summary-icon" aria-hidden="true">
+                        <BellRing size={16} />
+                      </span>
+                      בדיקת Push והתראות
+                    </summary>
+                    <div className="settings-advanced-item-content">
+                      <PushTestNotification />
+                    </div>
+                  </details>
+                ) : null}
+              </div>
+            </details>
           </section>
         ) : null}
 

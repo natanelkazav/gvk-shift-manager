@@ -110,10 +110,11 @@ function ShiftsPage() {
     setError(null);
     try {
       const data = await dynamicSchedulingService.getShiftsManagementWorkspace(year, month);
-      setWorkspace(data);
+      const schedulingRoles = data.roles.filter((role) => role.jobType.schedulingStrategy !== 'none');
+      setWorkspace({ ...data, roles: schedulingRoles });
       setSelectedJobTypeId((current) => {
-        if (current && data.roles.some((role) => role.jobType.id === current)) return current;
-        return data.roles[0]?.jobType.id ?? null;
+        if (current && schedulingRoles.some((role) => role.jobType.id === current)) return current;
+        return schedulingRoles[0]?.jobType.id ?? null;
       });
     } catch (loadError) {
       setWorkspace(null);
