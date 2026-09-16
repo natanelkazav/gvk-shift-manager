@@ -28,6 +28,7 @@ interface DynamicAllSchedulesCalendarProps {
   workspace: DynamicScheduleCalendarWorkspace;
   displayMode?: ScheduleDisplayMode;
   defaultAssignmentFilter?: AssignmentFilter;
+  currentUserId?: string | null;
   onChanged?: () => void | Promise<void>;
 }
 
@@ -58,11 +59,13 @@ function DynamicAllSchedulesCalendar({
   workspace,
   displayMode = 'calendar',
   defaultAssignmentFilter = 'all',
+  currentUserId = null,
   onChanged,
 }: DynamicAllSchedulesCalendarProps) {
   const holidayLabels = useCalendarHolidays(workspace.year, workspace.month);
   const [selectedJobTypeIds, setSelectedJobTypeIds] = useState<string[]>([]);
   const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>(defaultAssignmentFilter);
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState('all');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<DynamicScheduleCalendarSlot | null>(null);
   const [editor, setEditor] = useState<DynamicPublishedEditorWorkspace | null>(null);
@@ -77,6 +80,7 @@ function DynamicAllSchedulesCalendar({
   useEffect(() => {
     setSelectedJobTypeIds(workspace.jobTypes.map((jobType) => jobType.id));
     setAssignmentFilter(defaultAssignmentFilter);
+    setSelectedAssigneeId('all');
     setSelectedSlot(null);
   }, [defaultAssignmentFilter, workspace.year, workspace.month, workspace.jobTypes]);
 
@@ -87,17 +91,37 @@ function DynamicAllSchedulesCalendar({
   const allRolesSelected = workspace.jobTypes.length > 0
     && selectedJobTypeIds.length === workspace.jobTypes.length;
 
+  const visibleAssignees = useMemo(() => {
+    const byId = new Map<string, { userId: string; displayName: string; scheduleName?: string | null }>();
+    workspace.slots.forEach((slot) => {
+      if (!selectedJobTypeIds.includes(slot.jobTypeId)) return;
+      slot.assignments.forEach((assignment) => {
+        if (!byId.has(assignment.userId)) byId.set(assignment.userId, assignment);
+      });
+    });
+    return Array.from(byId.values()).sort((a, b) => (
+      (a.scheduleName || a.displayName).localeCompare(b.scheduleName || b.displayName, 'he')
+    ));
+  }, [selectedJobTypeIds, workspace.slots]);
+
+  useEffect(() => {
+    if (selectedAssigneeId !== 'all' && !visibleAssignees.some((assignee) => assignee.userId === selectedAssigneeId)) {
+      setSelectedAssigneeId('all');
+    }
+  }, [selectedAssigneeId, visibleAssignees]);
+
   const filteredSlots = useMemo(() => workspace.slots
     .filter((slot) => (
       selectedJobTypeIds.includes(slot.jobTypeId)
       && matchesAssignmentFilter(slot, assignmentFilter)
+      && (selectedAssigneeId === 'all' || slot.assignments.some((assignment) => assignment.userId === selectedAssigneeId))
     ))
     .sort((a, b) => (
       a.shiftDate.localeCompare(b.shiftDate)
       || a.startTime.localeCompare(b.startTime)
       || a.jobTypeName.localeCompare(b.jobTypeName, 'he')
       || a.shiftName.localeCompare(b.shiftName, 'he')
-    )), [assignmentFilter, selectedJobTypeIds, workspace.slots]);
+    )), [assignmentFilter, selectedAssigneeId, selectedJobTypeIds, workspace.slots]);
 
   const slotsByDate = useMemo(() => {
     const map = new Map<string, DynamicScheduleCalendarSlot[]>();
@@ -277,16 +301,21 @@ function DynamicAllSchedulesCalendar({
   const renderSlotCard = (slot: DynamicScheduleCalendarSlot, key: string) => {
     const isUnassigned = slot.unassignedCount > 0 || slot.assignments.length === 0;
     const tone = roleToneById.get(slot.jobTypeId) ?? 0;
+    const isMine = selectedAssigneeId === 'all' && Boolean(currentUserId)
+      && slot.assignments.some((assignment) => assignment.userId === currentUserId);
     return (
       <button
         type="button"
-        className={`dynamic-all-calendar-shift role-tone-${tone} ${isUnassigned ? 'is-unassigned' : ''}`}
+        className={`dynamic-all-calendar-shift role-tone-${tone} ${isUnassigned ? 'is-unassigned' : ''} ${isMine ? 'is-my-assignment' : ''}`}
         key={key}
         onClick={() => void openSlot(slot)}
       >
         <div className="dynamic-all-calendar-shift-head">
           <span className="dynamic-all-calendar-role">{slot.jobTypeName}</span>
-          {slot.contains200Percent ? <span className="dynamic-all-calendar-premium">200%</span> : null}
+          <span className="dynamic-all-calendar-shift-badges">
+            {isMine ? <span className="dynamic-all-calendar-mine-badge">שלי</span> : null}
+            {slot.contains200Percent ? <span className="dynamic-all-calendar-premium">200%</span> : null}
+          </span>
         </div>
         <strong>{dynamicShiftDisplayName(slot.shiftName, 'משמרת')}</strong>
         <span className="dynamic-all-calendar-time">
@@ -294,7 +323,12 @@ function DynamicAllSchedulesCalendar({
         </span>
         <div className="dynamic-all-calendar-assignees">
           {slot.assignments.map((assignment) => (
-            <span key={`${slot.sourcePeriodId}-${assignment.userId}`}>{assignment.displayName}</span>
+            <span
+              key={`${slot.sourcePeriodId}-${assignment.userId}`}
+              className={isMine && assignment.userId === currentUserId ? 'is-current-user' : undefined}
+            >
+              {assignment.displayName}{isMine && assignment.userId === currentUserId ? <small>שלי</small> : null}
+            </span>
           ))}
           {isUnassigned ? (
             <span className="is-unassigned-label">
@@ -317,7 +351,7 @@ function DynamicAllSchedulesCalendar({
         >
           <Filter size={17} />
           <span>סינון תצוגה</span>
-          <small>{selectedJobTypeIds.length}/{workspace.jobTypes.length} תפקידים · {assignmentFilter === 'all' ? 'הכול' : assignmentFilter === 'assigned' ? 'משובצים' : 'לא משובצים'}</small>
+          <small>{selectedJobTypeIds.length}/{workspace.jobTypes.length} תפקידים · {assignmentFilter === 'all' ? 'הכול' : assignmentFilter === 'assigned' ? 'משובצים' : 'לא משובצים'} · {selectedAssigneeId === 'all' ? 'כל העובדים' : (visibleAssignees.find((assignee) => assignee.userId === selectedAssigneeId)?.scheduleName || visibleAssignees.find((assignee) => assignee.userId === selectedAssigneeId)?.displayName || 'עובד')}</small>
           {filtersOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
 
@@ -350,6 +384,23 @@ function DynamicAllSchedulesCalendar({
                 </span>
               </label>
             ))}
+          </fieldset>
+
+          <fieldset className="dynamic-all-calendar-filter-group dynamic-all-calendar-assignee-filter">
+            <legend>עובד / משובץ</legend>
+            <select
+              value={selectedAssigneeId}
+              onChange={(event) => setSelectedAssigneeId(event.target.value)}
+              aria-label="סינון שיבוצים לפי עובד"
+            >
+              <option value="all">כל העובדים</option>
+              {visibleAssignees.map((assignee) => (
+                <option key={assignee.userId} value={assignee.userId}>
+                  {assignee.scheduleName || assignee.displayName}
+                </option>
+              ))}
+            </select>
+            <small>הצג רק משמרות וכוננויות של העובד שנבחר.</small>
           </fieldset>
 
           <fieldset className="dynamic-all-calendar-filter-group">
@@ -417,10 +468,12 @@ function DynamicAllSchedulesCalendar({
                 {slots.map((slot, index) => {
                   const isUnassigned = slot.unassignedCount > 0 || slot.assignments.length === 0;
                   const tone = roleToneById.get(slot.jobTypeId) ?? 0;
+                  const isMine = selectedAssigneeId === 'all' && Boolean(currentUserId)
+                    && slot.assignments.some((assignment) => assignment.userId === currentUserId);
                   return (
                     <button
                       type="button"
-                      className={`dynamic-all-schedules-list-row role-tone-${tone} ${isUnassigned ? 'is-unassigned' : ''}`}
+                      className={`dynamic-all-schedules-list-row role-tone-${tone} ${isUnassigned ? 'is-unassigned' : ''} ${isMine ? 'is-my-assignment' : ''}`}
                       key={`${slot.jobTypeId}-${slot.shiftCode}-${slot.startTime}-${index}`}
                       onClick={() => void openSlot(slot)}
                     >
@@ -430,12 +483,17 @@ function DynamicAllSchedulesCalendar({
                         <small>{slot.startTime.slice(0, 5)}–{slot.endTime.slice(0, 5)}</small>
                       </span>
                       <span className="dynamic-all-schedules-list-workers">
-                        {slot.assignments.length
-                          ? slot.assignments.map((assignment) => assignment.displayName).join(', ')
-                          : 'אין עובד משובץ'}
+                        {slot.assignments.length ? slot.assignments.map((assignment) => (
+                          <span key={assignment.userId} className={isMine && assignment.userId === currentUserId ? 'is-current-user' : undefined}>
+                            {assignment.displayName}{isMine && assignment.userId === currentUserId ? <small>שלי</small> : null}
+                          </span>
+                        )) : 'אין עובד משובץ'}
                         {slot.unassignedCount > 0 ? <small>{slot.unassignedCount} מקום/ות לא משובצים</small> : null}
                       </span>
-                      {slot.contains200Percent ? <span className="dynamic-all-calendar-premium">200%</span> : null}
+                      <span className="dynamic-all-calendar-shift-badges">
+                        {isMine ? <span className="dynamic-all-calendar-mine-badge">שלי</span> : null}
+                        {slot.contains200Percent ? <span className="dynamic-all-calendar-premium">200%</span> : null}
+                      </span>
                     </button>
                   );
                 })}

@@ -1351,3 +1351,91 @@
   background: #3f1d24;
   color: #fecaca;
 }
+
+/* Personal schedule filtering and emphasis inside the shared schedule board. */
+.dynamic-all-calendar-filters-panel {
+  grid-template-columns: minmax(0, 1.2fr) minmax(210px, .8fr) minmax(190px, .65fr) minmax(220px, .8fr);
+}
+
+.dynamic-all-calendar-assignee-filter {
+  align-self: stretch;
+}
+
+.dynamic-all-calendar-assignee-filter select {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--theme-border-strong);
+  border-radius: 9px;
+  background: var(--theme-surface);
+  color: var(--theme-text);
+  font: inherit;
+}
+
+.dynamic-all-calendar-assignee-filter > small {
+  color: var(--theme-text-muted);
+  font-size: .68rem;
+}
+
+.dynamic-all-calendar-shift-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-inline-start: auto;
+}
+
+.dynamic-all-calendar-mine-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, #0f766e 38%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, #14b8a6 16%, var(--theme-surface));
+  color: #0f766e;
+  font-size: .65rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.dynamic-all-calendar-shift.is-my-assignment,
+.dynamic-all-schedules-list-row.is-my-assignment {
+  border-color: #14b8a6;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, #14b8a6 42%, transparent), 0 3px 12px rgba(15, 118, 110, .12);
+}
+
+.dynamic-all-calendar-assignees > span.is-current-user,
+.dynamic-all-schedules-list-workers > span.is-current-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 900;
+}
+
+.dynamic-all-calendar-assignees > span.is-current-user > small,
+.dynamic-all-schedules-list-workers > span.is-current-user > small {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #14b8a6 18%, var(--theme-surface));
+  color: #0f766e;
+  font-size: .6rem;
+  font-weight: 900;
+}
+
+[data-theme='dark'] .dynamic-all-calendar-mine-badge,
+[data-theme='dark'] .dynamic-all-calendar-assignees > span.is-current-user > small,
+[data-theme='dark'] .dynamic-all-schedules-list-workers > span.is-current-user > small {
+  color: #5eead4;
+}
+
+@media (max-width: 980px) {
+  .dynamic-all-calendar-filters-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .dynamic-all-calendar-filters-panel {
+    grid-template-columns: 1fr;
+  }
+}

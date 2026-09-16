@@ -265,6 +265,7 @@ function ShiftsPage() {
               workspace={calendarWorkspace}
               displayMode={displayMode}
               defaultAssignmentFilter={profile?.role === 'admin' ? 'assigned' : 'all'}
+              currentUserId={profile?.id ?? null}
               onChanged={loadCalendarWorkspace}
             />
           ) : (
