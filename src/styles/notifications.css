@@ -336,7 +336,7 @@
     padding: 14px;
   }
 }
-.notifications-workspace-tabs {
+.notifications-workspace-navigation {
   display: flex;
   gap: 0.5rem;
   padding: 0.35rem;
@@ -346,7 +346,7 @@
   width: fit-content;
 }
 
-.notifications-workspace-tabs button {
+.notifications-workspace-navigation button {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -360,12 +360,12 @@
   cursor: pointer;
 }
 
-.notifications-workspace-tabs button.active {
+.notifications-workspace-navigation button.active {
   background: #eff6ff;
   color: #1d4ed8;
 }
 
-.notifications-workspace-tabs button span {
+.notifications-workspace-navigation button span {
   min-width: 22px;
   padding: 0.15rem 0.4rem;
   border-radius: 999px;
@@ -374,7 +374,7 @@
   text-align: center;
 }
 
-.notifications-workspace-tabs button.active span {
+.notifications-workspace-navigation button.active span {
   background: #2563eb;
   color: #fff;
 }
@@ -482,11 +482,11 @@
 }
 
 @media (max-width: 720px) {
-  .notifications-workspace-tabs {
+  .notifications-workspace-navigation {
     width: 100%;
   }
 
-  .notifications-workspace-tabs button {
+  .notifications-workspace-navigation button {
     flex: 1;
     justify-content: center;
   }
@@ -646,3 +646,23 @@
 
 .notification-list-item-focused { outline: 3px solid var(--primary, #2563eb); outline-offset: 3px; animation: notification-focus-pulse 1.6s ease-out 1; }
 @keyframes notification-focus-pulse { 0% { transform: scale(.985); } 45% { transform: scale(1.008); } 100% { transform: scale(1); } }
+
+/* Announcement composer is an action, not a workspace tab. */
+.notifications-workspace-navigation {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.notifications-send-announcement-button {
+  margin-inline-start: 0.35rem;
+  background: #2563eb !important;
+  color: #fff !important;
+  border: 1px solid #2563eb !important;
+}
+.notifications-send-announcement-button:hover { background: #1d4ed8 !important; }
+.announcement-composer-modal { width: min(1040px, calc(100vw - 32px)); }
+.announcement-composer-modal .announcement-composer { border: 0; padding: 0; box-shadow: none; }
+@media (max-width: 640px) {
+  .notifications-workspace-navigation { width: 100%; }
+  .notifications-send-announcement-button { margin-inline-start: auto; }
+  .announcement-composer-modal { width: calc(100vw - 20px); }
+}

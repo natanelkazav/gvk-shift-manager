@@ -9,7 +9,11 @@ function defaultExpiry(): string {
   return date.toISOString().slice(0, 16);
 }
 
-export default function AnnouncementComposer() {
+type AnnouncementComposerProps = {
+  onSent?: (recipientCount: number) => void;
+};
+
+export default function AnnouncementComposer({ onSent }: AnnouncementComposerProps) {
   const [catalog, setCatalog] = useState<AnnouncementRecipientCatalog>({ users: [], jobTypes: [] });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [title, setTitle] = useState('');
@@ -38,7 +42,7 @@ export default function AnnouncementComposer() {
     setBusy(true);
     try {
       const count = await announcementService.send({ userIds: [...selected], title, body, priority, expiresAt: new Date(expiresAt).toISOString() });
-      setSuccess(`העדכון נשלח ל־${count} משתמשים.`); setTitle(''); setBody('');
+      if (onSent) { onSent(count); } else { setSuccess(`העדכון נשלח ל־${count} משתמשים.`); } setTitle(''); setBody('');
     } catch (e) { setError(e instanceof Error ? e.message : 'שליחת העדכון נכשלה.'); }
     finally { setBusy(false); }
   };

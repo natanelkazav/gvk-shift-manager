@@ -7,6 +7,7 @@ import {
   Clock3,
   Download,
   FileText,
+  Megaphone,
   Paperclip,
   ChevronDown,
   RefreshCw,
@@ -36,7 +37,7 @@ import { dynamicShiftDisplayName } from '../utils/dynamicShiftDisplayName';
 import AnnouncementComposer from '../features/notifications/components/AnnouncementComposer';
 
 type NotificationFilter = 'all' | 'unread' | 'read';
-type WorkspaceTab = 'notifications' | 'requests' | 'send';
+type WorkspaceTab = 'notifications' | 'requests';
 
 function formatNotificationDate(value: string): string {
   const date = new Date(value);
@@ -91,13 +92,11 @@ function NotificationsPage() {
   const canSendAnnouncements = hasPermission('announcements.send');
   const requestedTab = searchParams.get('tab');
   const activeTab: WorkspaceTab =
-    requestedTab === 'send' && canSendAnnouncements
-      ? 'send'
-      : requestedTab === 'requests' && canApproveSwaps
-        ? 'requests'
-        : canViewNotifications
-          ? 'notifications'
-          : canSendAnnouncements ? 'send' : 'requests';
+    requestedTab === 'requests' && canApproveSwaps
+      ? 'requests'
+      : canViewNotifications
+        ? 'notifications'
+        : 'requests';
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>('all');
   const [swapRequests, setSwapRequests] = useState<ShiftSwapRequest[]>([]);
   const [dynamicSwapRequests, setDynamicSwapRequests] = useState<DynamicShiftExchangeRequest[]>([]);
@@ -109,6 +108,10 @@ function NotificationsPage() {
   const [dailyReportDetail, setDailyReportDetail] = useState<DailyReportDetail | null>(null);
   const [dailyReportDetailLoading, setDailyReportDetailLoading] = useState(false);
   const [dailyReportDetailError, setDailyReportDetailError] = useState<string | null>(null);
+  const [isAnnouncementComposerOpen, setIsAnnouncementComposerOpen] = useState(
+    requestedTab === 'send' && canSendAnnouncements,
+  );
+  const [announcementSuccess, setAnnouncementSuccess] = useState<string | null>(null);
 
   const {
     state,
@@ -189,6 +192,20 @@ function NotificationsPage() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('tab', tab);
     setSearchParams(nextParams, { replace: true });
+  };
+
+  const openAnnouncementComposer = (): void => {
+    setAnnouncementSuccess(null);
+    setIsAnnouncementComposerOpen(true);
+  };
+
+  const closeAnnouncementComposer = (): void => {
+    setIsAnnouncementComposerOpen(false);
+    if (searchParams.get('tab') === 'send') {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('tab', canViewNotifications ? 'notifications' : 'requests');
+      setSearchParams(nextParams, { replace: true });
+    }
   };
 
   const filteredNotifications = useMemo(() => {
@@ -349,7 +366,7 @@ function NotificationsPage() {
       </header>
 
       <div
-        className="notifications-workspace-tabs"
+        className="notifications-workspace-navigation"
         role="tablist"
         aria-label={canApproveSwaps ? 'התראות ובקשות' : 'התראות'}
       >
@@ -363,15 +380,6 @@ function NotificationsPage() {
             <span>{unreadCount}</span>
           </button>
         ) : null}
-        {canSendAnnouncements ? (
-          <button
-            type="button"
-            className={activeTab === 'send' ? 'active' : ''}
-            onClick={() => selectWorkspaceTab('send')}
-          >
-            שליחת עדכון
-          </button>
-        ) : null}
         {canApproveSwaps ? (
           <button
             type="button"
@@ -382,9 +390,23 @@ function NotificationsPage() {
             <span>{pendingManagerRequests.length + pendingDynamicManagerRequests.length}</span>
           </button>
         ) : null}
+        {canSendAnnouncements ? (
+          <button
+            type="button"
+            className="notifications-send-announcement-button"
+            onClick={openAnnouncementComposer}
+          >
+            <Megaphone size={18} aria-hidden="true" />
+            שליחת עדכון
+          </button>
+        ) : null}
       </div>
 
-      {activeTab === 'send' && canSendAnnouncements ? <AnnouncementComposer /> : null}
+      {announcementSuccess ? (
+        <div className="notifications-page-message notifications-page-success" role="status">
+          {announcementSuccess}
+        </div>
+      ) : null}
 
       {activeTab === 'notifications' && canViewNotifications ? (
         <>
@@ -446,6 +468,20 @@ function NotificationsPage() {
           ) : null}
         </>
       ) : null}
+
+      <Modal
+        isOpen={isAnnouncementComposerOpen && canSendAnnouncements}
+        title="שליחת עדכון"
+        onClose={closeAnnouncementComposer}
+        className="announcement-composer-modal"
+      >
+        <AnnouncementComposer
+          onSent={(count) => {
+            setAnnouncementSuccess(`העדכון נשלח ל־${count} משתמשים.`);
+            closeAnnouncementComposer();
+          }}
+        />
+      </Modal>
 
       <Modal
         isOpen={dailyReportDetailLoading || Boolean(dailyReportDetail) || Boolean(dailyReportDetailError)}
