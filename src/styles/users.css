@@ -3784,6 +3784,7 @@
   border: 0;
   background: transparent;
   color: inherit;
+  font: inherit;
   text-align: start;
   cursor: pointer;
 }
@@ -3816,6 +3817,8 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 8px;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
 }
 
@@ -3831,6 +3834,28 @@
   height: 1px;
   opacity: 0;
   pointer-events: none;
+}
+
+/* Keep dynamic role/manager category toggles identical to system permission toggles. */
+.dynamic-permission-category-control-selected .user-permission-switch {
+  background: var(--color-primary, #2563eb);
+}
+
+.dynamic-permission-category-control-selected .user-permission-switch span {
+  transform: translateX(-18px);
+}
+
+.dynamic-permission-category-control-partial .user-permission-switch {
+  background: color-mix(in srgb, var(--color-primary, #2563eb) 48%, #cbd5e1);
+}
+
+.dynamic-permission-category-control-partial .user-permission-switch span {
+  transform: translateX(-9px);
+}
+
+.dynamic-permission-category-control-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .dynamic-permission-category-list {

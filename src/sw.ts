@@ -46,7 +46,7 @@ interface NotificationClickData {
 }
 
 const defaultNotificationTitle =
-  'GVK Shift Manager';
+  'צוות GVK';
 
 const defaultNotificationBody =
   'התקבלה התראה חדשה.';

@@ -209,7 +209,7 @@ function LoginPage() {
           </div>
 
           <div>
-            <h1>GVK Shift Manager</h1>
+            <h1>צוות GVK</h1>
 
             <p>
               מערכת ניהול ושיבוץ משמרות

@@ -223,7 +223,14 @@ function DynamicUserJobTypePermissions({
                     </span>
                   </button>
 
-                  <label className="dynamic-permission-category-control">
+                  <label
+                    className={[
+                      'dynamic-permission-category-control',
+                      allEnabled ? 'dynamic-permission-category-control-selected' : '',
+                      partiallyEnabled ? 'dynamic-permission-category-control-partial' : '',
+                      isDisabled ? 'dynamic-permission-category-control-disabled' : '',
+                    ].filter(Boolean).join(' ')}
+                  >
                     <span>{enabledCount}/{category.permissions.length}</span>
                     <input
                       type="checkbox"

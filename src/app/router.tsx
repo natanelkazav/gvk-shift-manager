@@ -79,6 +79,7 @@ export const router = createBrowserRouter([
                 anyPermissions={[
                   'notifications.view',
                   'notifications.manage',
+                  'announcements.send',
                   'shift_swaps.approve',
                 ]}
               />

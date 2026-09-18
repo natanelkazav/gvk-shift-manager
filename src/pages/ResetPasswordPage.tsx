@@ -368,7 +368,7 @@ function ResetPasswordPage() {
 
           <div>
             <h1>
-              GVK Shift Manager
+              צוות GVK
             </h1>
 
             <p>

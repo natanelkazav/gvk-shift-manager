@@ -338,6 +338,12 @@ export const permissionGroups:
       tone: 'slate',
       permissions: [
         {
+          key: 'announcements.send',
+          label: 'שליחת הודעות ועדכונים',
+          description:
+            'מאפשרת לשלוח הודעה יזומה לכל המשתמשים, לתפקידים נבחרים או לעובדים ספציפיים, עם תוקף רלוונטיות ו־Push.',
+        },
+        {
           key: 'schedule_import.manage',
           label: 'ייבוא קובצי שיבוצים',
           description:

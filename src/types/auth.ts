@@ -39,6 +39,7 @@ export type PermissionKey =
 
   | 'notifications.view'
   | 'notifications.manage'
+  | 'announcements.send'
 
   | 'statistics.view'
 

@@ -373,7 +373,7 @@ Deno.serve(
 
                 text:
                   [
-                    'קובץ שיבוצים חודשי שנשלח מ-GVK Shift Manager.',
+                    'קובץ שיבוצים חודשי שנשלח מ-צוות GVK.',
                     `תקופה: ${String(month).padStart(2, '0')}/${year}`,
                     '',
                     'הודעה זו מיועדת להפעלת תהליך הארכיון הקיים ב-Power Automate.',

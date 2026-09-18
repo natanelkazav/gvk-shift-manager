@@ -32,6 +32,7 @@ export const ALL_PERMISSION_KEYS:
 
     'notifications.view',
     'notifications.manage',
+    'announcements.send',
 
     'statistics.view',
 

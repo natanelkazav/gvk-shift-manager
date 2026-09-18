@@ -9,6 +9,13 @@ export interface HelpWhatsNewItem {
 
 export const helpWhatsNewItems: readonly HelpWhatsNewItem[] = [
   {
+    id: 'team-gvk-announcements',
+    title: 'צוות GVK והודעות יזומות לעובדים',
+    description:
+      'המערכת נקראת כעת „צוות GVK”. נוספה הרשאת „שליחת הודעות ועדכונים”, שמאפשרת לבחור את כל המשתמשים, תפקידים או עובדים ספציפיים, לקבוע חשיבות ותוקף רלוונטיות ולשלוח את העדכון למרכז ההתראות וב־Push.',
+    requiredAnyPermissions: ['announcements.send'],
+  },
+  {
     id: 'schedule-person-filter-calendar-date-and-live-availability-sync',
     title: 'סינון עובדים וסנכרון אילוצים לאחר שינוי תפקיד',
     description:

@@ -1768,7 +1768,7 @@ async function sendArchiveEmail(
               archiveSubject,
 
             text: [
-              'קובץ שיבוצים חודשי שנשלח אוטומטית מ-GVK Shift Manager.',
+              'קובץ שיבוצים חודשי שנשלח אוטומטית מ-צוות GVK.',
 
               `תקופה: ${padNumber(
                 month,

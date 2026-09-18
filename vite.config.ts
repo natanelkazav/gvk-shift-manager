@@ -66,13 +66,13 @@ export default defineConfig({
           '/',
 
         name:
-          'GVK Shift Manager',
+          'צוות GVK',
 
         short_name:
-          'GVK משמרות',
+          'צוות GVK',
 
         description:
-          'מערכת ניהול ושיבוץ משמרות',
+          'שיבוצים, אילוצים ועדכונים לצוות GVK',
 
         lang:
           'he',

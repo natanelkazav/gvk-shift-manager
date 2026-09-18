@@ -270,6 +270,7 @@ requiredPermissions: [
       requiredPermissions: [
         'notifications.view',
         'notifications.manage',
+        'announcements.send',
       ],
     },
 
@@ -725,7 +726,7 @@ return (
         <div className="app-sidebar-header">
           <div className="app-logo">
             <strong>
-              GVK Shift Manager
+              צוות GVK
             </strong>
 
             <span>

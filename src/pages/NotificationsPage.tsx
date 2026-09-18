@@ -33,9 +33,10 @@ import type { DynamicShiftExchangeRequest } from '../types/dynamicScheduling';
 import type { ShiftSwapRequest } from '../types/shiftSwap';
 import '../styles/notifications.css';
 import { dynamicShiftDisplayName } from '../utils/dynamicShiftDisplayName';
+import AnnouncementComposer from '../features/notifications/components/AnnouncementComposer';
 
 type NotificationFilter = 'all' | 'unread' | 'read';
-type WorkspaceTab = 'notifications' | 'requests';
+type WorkspaceTab = 'notifications' | 'requests' | 'send';
 
 function formatNotificationDate(value: string): string {
   const date = new Date(value);
@@ -87,13 +88,16 @@ function NotificationsPage() {
   const canViewNotifications =
     hasPermission('notifications.view') || hasPermission('notifications.manage');
   const canApproveSwaps = hasPermission('shift_swaps.approve');
+  const canSendAnnouncements = hasPermission('announcements.send');
   const requestedTab = searchParams.get('tab');
   const activeTab: WorkspaceTab =
-    requestedTab === 'requests' && canApproveSwaps
-      ? 'requests'
-      : canViewNotifications
-        ? 'notifications'
-        : 'requests';
+    requestedTab === 'send' && canSendAnnouncements
+      ? 'send'
+      : requestedTab === 'requests' && canApproveSwaps
+        ? 'requests'
+        : canViewNotifications
+          ? 'notifications'
+          : canSendAnnouncements ? 'send' : 'requests';
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>('all');
   const [swapRequests, setSwapRequests] = useState<ShiftSwapRequest[]>([]);
   const [dynamicSwapRequests, setDynamicSwapRequests] = useState<DynamicShiftExchangeRequest[]>([]);
@@ -338,6 +342,15 @@ function NotificationsPage() {
             <span>{unreadCount}</span>
           </button>
         ) : null}
+        {canSendAnnouncements ? (
+          <button
+            type="button"
+            className={activeTab === 'send' ? 'active' : ''}
+            onClick={() => selectWorkspaceTab('send')}
+          >
+            שליחת עדכון
+          </button>
+        ) : null}
         {canApproveSwaps ? (
           <button
             type="button"
@@ -349,6 +362,8 @@ function NotificationsPage() {
           </button>
         ) : null}
       </div>
+
+      {activeTab === 'send' && canSendAnnouncements ? <AnnouncementComposer /> : null}
 
       {activeTab === 'notifications' && canViewNotifications ? (
         <>
