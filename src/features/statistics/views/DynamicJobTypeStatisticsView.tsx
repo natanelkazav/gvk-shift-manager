@@ -1,4 +1,8 @@
+import { useEffect, useState } from 'react';
+import { attendanceService } from '../../../services/attendanceService';
+import type { AttendanceStatisticsRow } from '../../../types/attendance';
 import {
+  AlertTriangle,
   CalendarDays,
   Clock3,
   Edit3,
@@ -17,6 +21,7 @@ interface Props {
   data: DynamicStatisticsWorkspace;
   selectedUserIds: string[];
   mode: ViewMode;
+  attendanceEnabled?: boolean;
 }
 
 function displayName(
@@ -35,8 +40,22 @@ function DynamicJobTypeStatisticsView({
   data,
   selectedUserIds,
   mode,
+  attendanceEnabled = false,
 }: Props) {
   const selected = new Set(selectedUserIds);
+  const [attendanceRows, setAttendanceRows] = useState<AttendanceStatisticsRow[]>([]);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  useEffect(() => {
+    const shouldLoadAttendance = attendanceEnabled && (mode === 'tables' || (mode === 'overview' && selectedUserIds.length === 1));
+    if (!shouldLoadAttendance) {
+      setAttendanceRows([]);
+      setAttendanceError(null);
+      return;
+    }
+    let cancelled=false;
+    void attendanceService.getStatistics(data.jobType.jobTypeId,data.filters.years,data.filters.months,selectedUserIds).then((rows)=>{if(!cancelled){setAttendanceRows(rows);setAttendanceError(null);}}).catch((error)=>{if(!cancelled)setAttendanceError(error instanceof Error?error.message:'לא ניתן לטעון נוכחות');});
+    return ()=>{cancelled=true;};
+  },[mode,attendanceEnabled,data.jobType.jobTypeId,data.filters.years,data.filters.months,selectedUserIds]);
   const people = selected.size === 0
     ? data.people
     : data.people.filter((row) => selected.has(row.userId));
@@ -60,6 +79,16 @@ function DynamicJobTypeStatisticsView({
     (sum, row) => sum + row.substitutionCount,
     0,
   );
+
+  const formatCurrency = (value: number): string => new Intl.NumberFormat('he-IL', {
+    style: 'currency',
+    currency: 'ILS',
+    maximumFractionDigits: 2,
+  }).format(value);
+  const singleSelectedPayroll = selectedUserIds.length === 1
+    ? data.payrollPeople.find((row) => row.userId === selectedUserIds[0])
+    : null;
+  const attendanceActualPay = attendanceRows.reduce((sum, row) => sum + (row.wage ?? 0), 0);
 
   if (mode === 'overview') {
     return (
@@ -121,6 +150,25 @@ function DynamicJobTypeStatisticsView({
               <strong>{selected.size === 0 ? data.summary.substitutionCount : filteredSubstitutions}</strong>
             </div>
           </article>
+
+          {attendanceEnabled && selectedUserIds.length === 1 ? (
+            <>
+              <article>
+                <WalletCards size={22} aria-hidden="true" />
+                <div>
+                  <span>שכר לפי כניסה ויציאה</span>
+                  <strong>{formatCurrency(attendanceActualPay)}</strong>
+                </div>
+              </article>
+              <article>
+                <WalletCards size={22} aria-hidden="true" />
+                <div>
+                  <span>שכר לפי משמרות</span>
+                  <strong>{singleSelectedPayroll ? formatCurrency(singleSelectedPayroll.projectedPay) : '—'}</strong>
+                </div>
+              </article>
+            </>
+          ) : null}
         </div>
 
         {data.summary.untimedAssignmentCount > 0 ? (
@@ -168,17 +216,12 @@ function DynamicJobTypeStatisticsView({
     );
   }
 
+
   if (mode === 'payroll') {
     const visiblePayroll = selected.size === 0
       ? data.payrollPeople
       : data.payrollPeople.filter((row) => selected.has(row.userId));
     const totalPay = visiblePayroll.reduce((sum, row) => sum + row.projectedPay, 0);
-    const formatCurrency = (value: number): string => new Intl.NumberFormat('he-IL', {
-      style: 'currency',
-      currency: 'ILS',
-      maximumFractionDigits: 2,
-    }).format(value);
-
     return (
       <>
         <section className="statistics-section">
@@ -307,7 +350,33 @@ function DynamicJobTypeStatisticsView({
     );
   }
 
+  const money = (value: number | null) => value == null
+    ? '—'
+    : new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(value);
+  const dateTime = (value: string | null) => value
+    ? new Intl.DateTimeFormat('he-IL', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
+    : '—';
+  const mapLink = (lat: number | null, lng: number | null) => lat == null || lng == null
+    ? null
+    : `https://www.google.com/maps?q=${lat},${lng}`;
+  const formatWorkedHours = (value: number): string => value.toFixed(2);
+  const locationCell = (lat: number | null, lng: number | null, distanceM: number | null, withinRadius: boolean | null) => {
+    const href = mapLink(lat, lng);
+    if (!href) return '—';
+    const outside = withinRadius === false;
+    return (
+      <span className={outside ? 'attendance-location attendance-location--outside' : 'attendance-location'}>
+        {outside ? <AlertTriangle size={17} aria-label="מחוץ לרדיוס המותר" /> : null}
+        {distanceM != null ? <span>{Math.round(distanceM)} מ׳</span> : null}
+        <span>·</span>
+        <a href={href} target="_blank" rel="noreferrer">Google Maps</a>
+        {outside ? <strong>מחוץ לרדיוס</strong> : null}
+      </span>
+    );
+  };
+
   return (
+    <>
     <section className="statistics-section">
       <header>
         <div>
@@ -344,6 +413,40 @@ function DynamicJobTypeStatisticsView({
         </table>
       </div>
     </section>
+
+    {attendanceEnabled ? (
+      <section className="statistics-section">
+        <header>
+          <div>
+            <h2>נוכחות ושכר בפועל</h2>
+            <p>דיווחי הכניסה והיציאה של העובדים שנבחרו, כולל מיקום הדיווח וחישוב השכר בפועל.</p>
+          </div>
+        </header>
+        {attendanceError ? <div className="statistics-error">{attendanceError}</div> : null}
+        <div className="statistics-table-wrapper">
+          <table className="statistics-table">
+            <thead><tr><th>עובד</th><th>תאריך</th><th>כניסה</th><th>מיקום כניסה</th><th>יציאה</th><th>מיקום יציאה</th><th>שעות בפועל</th><th>תעריף</th><th>שכר</th></tr></thead>
+            <tbody>
+              {attendanceRows.map((row) => (
+                <tr key={row.id}>
+                  <td><strong>{displayName(row.displayName, row.scheduleName)}</strong></td>
+                  <td>{row.workDate}</td>
+                  <td>{dateTime(row.clockInAt)}</td>
+                  <td>{locationCell(row.clockInLat, row.clockInLng, row.clockInDistanceM, row.clockInWithinRadius)}</td>
+                  <td>{dateTime(row.clockOutAt)}</td>
+                  <td>{locationCell(row.clockOutLat, row.clockOutLng, row.clockOutDistanceM, row.clockOutWithinRadius)}</td>
+                  <td>{row.workedHours == null ? 'פתוח' : formatWorkedHours(row.workedHours)}</td>
+                  <td>{money(row.hourlyRate)}</td>
+                  <td><strong>{money(row.wage)}</strong></td>
+                </tr>
+              ))}
+              {attendanceRows.length === 0 ? <tr><td colSpan={9}>אין דיווחי נוכחות בתקופה שנבחרה.</td></tr> : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ) : null}
+    </>
   );
 }
 

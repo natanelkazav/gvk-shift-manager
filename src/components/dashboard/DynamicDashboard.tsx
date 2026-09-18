@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import DailyReportDashboardCards from '../../features/dailyReports/components/DailyReportDashboardCards';
+import AttendanceClockCards from './AttendanceClockCards';
 import ManagerConfigurableWidgets from './ManagerConfigurableWidgets';
 import type {
   DynamicRuntimeContext,
@@ -56,6 +57,7 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
   return (
     <div className="dynamic-dashboard-stack">
       <DailyReportDashboardCards />
+      <AttendanceClockCards />
       <ManagerConfigurableWidgets />
       <div className="dynamic-dashboard-role-grid">
         {context.roles.map((role) => (

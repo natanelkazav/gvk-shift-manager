@@ -418,7 +418,19 @@ export interface DynamicDailyReportConfig {
   allowAttachments?: boolean;
 }
 
+export interface DynamicAttendanceConfig {
+  enabled: boolean;
+  requireLocation: boolean;
+  workplaceName: string;
+  latitude: number | null;
+  longitude: number | null;
+  radiusMeters: number;
+  outsidePolicy: 'flag' | 'block';
+  allowUnscheduled: boolean;
+}
+
 export interface DynamicSchedulingConfig {
+  attendance?: DynamicAttendanceConfig;
   dailyReports?: DynamicDailyReportConfig;
   scheduleChangeMode: DynamicScheduleChangeMode;
   minimumMode: DynamicRuleSeverity;

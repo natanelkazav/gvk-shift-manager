@@ -9,6 +9,13 @@ export interface HelpWhatsNewItem {
 
 export const helpWhatsNewItems: readonly HelpWhatsNewItem[] = [
   {
+    id: 'optional-attendance-time-clock',
+    title: 'שעון נוכחות אופציונלי עם מיקום ושכר בפועל',
+    description:
+      'בתפקיד מסוג משמרות ניתן להפעיל דיווח כניסה ויציאה. לעובד מוצגים תמיד כפתורי כניסה ירוק ויציאה אדום, ורק הפעולה התקפה זמינה ללחיצה. המיקום נשמר רק בעת הדיווח ואינו מוצג לעובד; למורשים הוא מופיע בטבלת הנוכחות בתוך טאב הטבלאות בסטטיסטיקות, לצד שעות בפועל, קישורי Google Maps ושכר.',
+    requiredAnyPermissions: ['users.manage', 'statistics.view'],
+  },
+  {
     id: 'team-gvk-announcements',
     title: 'צוות GVK והודעות יזומות לעובדים',
     description:

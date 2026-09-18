@@ -4216,3 +4216,5 @@
   .dynamic-rotation-preview-table { overflow-x:auto; }
   .dynamic-rotation-preview-table > div { min-width:650px; }
 }
+
+.dynamic-attendance-settings{display:grid;gap:1rem;margin-top:1rem;padding:1rem;border:1px solid var(--color-border);border-radius:14px;background:var(--color-surface-subtle)}

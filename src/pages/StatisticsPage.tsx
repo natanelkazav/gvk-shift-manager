@@ -340,6 +340,7 @@ function StatisticsPage() {
           data={workspace}
           selectedUserIds={selectedUserIds}
           mode={view}
+          attendanceEnabled={selectedJobType?.attendanceEnabled ?? false}
         />
       ) : null}
     </section>

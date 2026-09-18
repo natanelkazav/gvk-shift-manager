@@ -756,3 +756,15 @@
 :root[data-theme='dark'] .dashboard-hero p {
   color: var(--theme-text-secondary);
 }
+
+.attendance-dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem}.attendance-clock-card .dashboard-card-body{display:grid;gap:.75rem}.attendance-active{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;padding:.8rem 1rem;border-radius:12px;background:var(--color-success-soft,#ecfdf3);border:1px solid var(--color-success-border,#abefc6)}.attendance-active span{display:inline-flex;align-items:center;gap:.3rem}
+
+/* Attendance clock: both actions stay visible so the current state is obvious. */
+.attendance-clock-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;width:100%}
+.attendance-clock-actions .button{min-height:48px;font-weight:800;font-size:1rem}
+.attendance-clock-in-button:not(:disabled){background:#15803d;border-color:#15803d;color:#fff}
+.attendance-clock-in-button:not(:disabled):hover{background:#166534;border-color:#166534}
+.attendance-clock-in-button:disabled,.attendance-clock-out-button:disabled{opacity:.42;cursor:not-allowed}
+.attendance-active{justify-content:flex-start}
+.attendance-active span{font-weight:600}
+@media(max-width:640px){.attendance-clock-actions{grid-template-columns:1fr 1fr}.attendance-clock-actions .button{padding-inline:.65rem;font-size:.92rem}}

@@ -9,6 +9,7 @@ export interface DynamicStatisticsJobTypeOption {
   memberCount: number;
   dataPeriodCount: number;
   payrollEnabled: boolean;
+  attendanceEnabled: boolean;
 }
 
 export interface DynamicStatisticsPersonRow {
@@ -98,6 +99,7 @@ export interface DynamicStatisticsWorkspace {
     workMode: string | null;
     availabilityEnabled: boolean;
     payrollEnabled: boolean;
+  attendanceEnabled: boolean;
     baseRate: number;
     shiftRate: number;
   };

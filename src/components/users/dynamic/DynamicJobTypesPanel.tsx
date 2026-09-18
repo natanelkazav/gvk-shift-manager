@@ -85,6 +85,7 @@ const getIsraelMonth = (offsetMonths = 0): { year: number; month: number } => {
 
 const defaultSchedulingConfig = (): DynamicSchedulingConfig => ({
   scheduleChangeMode: 'none',
+  attendance: { enabled: false, requireLocation: true, workplaceName: '', latitude: null, longitude: null, radiusMeters: 150, outsidePolicy: 'flag', allowUnscheduled: false },
   dailyReports: { enabled: false, recipientUserIds: [], allowAddSubjects: true, allowAddCustomers: true, allowAttachments: true },
   minimumMode: 'soft',
   maximumMode: 'hard',
@@ -313,6 +314,8 @@ const deriveAutomaticCapabilities = (input: SaveDynamicJobTypeInput): string[] =
   if (input.statisticsConfig.enabled) capabilities.add('statistics');
   if (input.schedulingConfig.dailyReports?.enabled) capabilities.add('daily_reports');
   else capabilities.delete('daily_reports');
+  if (input.schedulingConfig.attendance?.enabled) capabilities.add('attendance');
+  else capabilities.delete('attendance');
   if (input.payModel !== 'none') capabilities.add('payroll');
   if (input.schedulingStrategy !== 'none' && input.availabilityConfig.monthlyCapacity.enabled) capabilities.add('monthly_shift_capacity');
   if (input.schedulingStrategy !== 'none') capabilities.add('schedule_publication_notifications');
@@ -349,6 +352,7 @@ const permissionFeatureLabels: Record<string, string> = {
   statistics: 'סטטיסטיקות',
   payroll: 'שכר',
   daily_reports: 'דיווח עבודה יומי',
+  attendance: 'נוכחות ושעון עבודה',
 };
 
 const permissionBlueprint: PermissionBlueprintItem[] = [
@@ -376,6 +380,9 @@ const permissionBlueprint: PermissionBlueprintItem[] = [
   { permissionKey: 'rotation.generate', featureKey: 'monthly_rotation', audience: 'manager', label: 'יצירת סבב חודשי', description: 'יצירת טיוטה לפי מנגנון הסבב.' },
   { permissionKey: 'statistics.view_job_type', featureKey: 'statistics', audience: 'manager', label: 'צפייה בסטטיסטיקות התפקיד', description: 'צפייה בדוחות התפקיד.' },
   { permissionKey: 'payroll.view_job_type', featureKey: 'payroll', audience: 'manager', label: 'צפייה בנתוני שכר התפקיד', description: 'צפייה בנתוני השכר של התפקיד.' },
+  { permissionKey: 'attendance.clock', featureKey: 'attendance', audience: 'member', label: 'דיווח כניסה ויציאה', description: 'דיווח נוכחות עם מיקום בעת הלחיצה.', defaultEnabled: true },
+  { permissionKey: 'attendance.view_team', featureKey: 'attendance', audience: 'manager', label: 'צפייה בנוכחות התפקיד', description: 'צפייה בדוחות נוכחות, שעות ומיקומי כניסה/יציאה.', defaultEnabled: true },
+  { permissionKey: 'attendance.edit', featureKey: 'attendance', audience: 'manager', label: 'תיקון דיווחי נוכחות', description: 'תיקון ידני של נוכחות עם Audit Log.', defaultEnabled: false },
 ];
 
 const derivePermissionFeatures = (input: SaveDynamicJobTypeInput): string[] => {
@@ -1995,7 +2002,33 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
               ) : null}
             </div>
 
-            <div className="dynamic-config-section dynamic-scheduling-rules-config dynamic-simple-rules" style={{ display: form.schedulingStrategy === 'none' ? 'none' : undefined }}>
+            
+            {form.schedulingConfig.shiftPattern?.workMode === 'shifts' ? (
+              <div className="dynamic-config-section dynamic-form-section">
+                <div className="dynamic-section-heading"><span>4</span><div><h3>נוכחות ושעון עבודה</h3><small>מודול אופציונלי לדיווח כניסה/יציאה. המיקום נלקח רק ברגע הלחיצה ואין מעקב ברקע.</small></div></div>
+                <label className="dynamic-choice-chip">
+                  <input type="checkbox" checked={form.schedulingConfig.attendance?.enabled ?? false} onChange={(event) => setForm({...form,schedulingConfig:{...form.schedulingConfig,attendance:{...(form.schedulingConfig.attendance ?? {requireLocation:true,workplaceName:'',latitude:null,longitude:null,radiusMeters:150,outsidePolicy:'flag',allowUnscheduled:false}),enabled:event.target.checked}}})} />
+                  <span>הפעל כפתורי כניסה ויציאה לתפקיד</span>
+                </label>
+                {form.schedulingConfig.attendance?.enabled ? (
+                  <div className="dynamic-attendance-settings">
+                    <div className="dynamic-form-grid">
+                      <Input label="שם מקום העבודה" value={form.schedulingConfig.attendance.workplaceName} placeholder="לדוגמה: סניף ראשי" onChange={(event)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,attendance:{...form.schedulingConfig.attendance!,workplaceName:event.target.value}}})} />
+                      <Input label="רדיוס מותר (מטרים)" type="number" min="20" max="5000" value={String(form.schedulingConfig.attendance.radiusMeters)} onChange={(event)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,attendance:{...form.schedulingConfig.attendance!,radiusMeters:Math.max(20,Number(event.target.value)||150)}}})} />
+                      <Input label="קו רוחב" type="number" step="any" value={form.schedulingConfig.attendance.latitude ?? ''} onChange={(event)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,attendance:{...form.schedulingConfig.attendance!,latitude:event.target.value===''?null:Number(event.target.value)}}})} />
+                      <Input label="קו אורך" type="number" step="any" value={form.schedulingConfig.attendance.longitude ?? ''} onChange={(event)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,attendance:{...form.schedulingConfig.attendance!,longitude:event.target.value===''?null:Number(event.target.value)}}})} />
+                    </div>
+                    <Button type="button" variant="secondary" onClick={()=>{navigator.geolocation.getCurrentPosition((position)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,attendance:{...form.schedulingConfig.attendance!,latitude:position.coords.latitude,longitude:position.coords.longitude}}}),()=>setFormError('לא ניתן לקבל את המיקום. יש לאפשר הרשאת מיקום לדפדפן.'));}}>השתמש במיקום הנוכחי כמקום העבודה</Button>
+                    <div className="dynamic-choice-grid">
+                      <label className="dynamic-choice-chip"><input type="checkbox" checked={form.schedulingConfig.attendance.requireLocation} onChange={(e)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,attendance:{...form.schedulingConfig.attendance!,requireLocation:e.target.checked}}})}/><span>דרוש מיקום בדיווח</span></label>
+                      <label className="dynamic-choice-chip"><input type="checkbox" checked={form.schedulingConfig.attendance.allowUnscheduled} onChange={(e)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,attendance:{...form.schedulingConfig.attendance!,allowUnscheduled:e.target.checked}}})}/><span>אפשר כניסה גם ללא משמרת מתוכננת</span></label>
+                    </div>
+                    <label className="dynamic-select-field"><span>דיווח מחוץ לרדיוס</span><select value={form.schedulingConfig.attendance.outsidePolicy} onChange={(e)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,attendance:{...form.schedulingConfig.attendance!,outsidePolicy:e.target.value as 'flag'|'block'}}})}><option value="flag">אפשר וסמן חריגה</option><option value="block">חסום את הדיווח</option></select></label>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+<div className="dynamic-config-section dynamic-scheduling-rules-config dynamic-simple-rules" style={{ display: form.schedulingStrategy === 'none' ? 'none' : undefined }}>
               <div className="dynamic-section-title-row">
                 <div>
                   <h3>אילוצים ואיזון</h3>
