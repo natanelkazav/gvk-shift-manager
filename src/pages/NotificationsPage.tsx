@@ -203,6 +203,27 @@ function NotificationsPage() {
 
   const readCount = state.notifications.length - unreadCount;
 
+  const focusedNotificationId = searchParams.get('notification');
+
+  useEffect(() => {
+    if (!focusedNotificationId || state.isLoading) return;
+
+    setActiveFilter('all');
+
+    const frame = window.requestAnimationFrame(() => {
+      const element = document.getElementById(
+        `notification-${focusedNotificationId}`,
+      );
+
+      element?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusedNotificationId, state.isLoading, state.notifications]);
+
   const handleNotificationClick = async (notification: MyNotification): Promise<void> => {
     if (!notification.isRead) {
       await markAsRead(notification.recipientId);
@@ -403,8 +424,9 @@ function NotificationsPage() {
                 return (
                   <button
                     key={notification.recipientId}
+                    id={`notification-${notification.notificationId}`}
                     type="button"
-                    className={`notification-list-item ${notification.isRead ? 'notification-list-item-read' : 'notification-list-item-unread'} ${notification.url ? 'notification-list-item-clickable' : ''}`}
+                    className={`notification-list-item ${notification.isRead ? 'notification-list-item-read' : 'notification-list-item-unread'} ${notification.url ? 'notification-list-item-clickable' : ''} ${focusedNotificationId === notification.notificationId ? 'notification-list-item-focused' : ''}`}
                     disabled={state.isUpdating}
                     onClick={() => void handleNotificationClick(notification)}
                   >

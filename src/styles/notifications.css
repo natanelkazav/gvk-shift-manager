@@ -643,3 +643,6 @@
 .announcement-send-button { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 10px; padding: 10px 16px; background: #2563eb; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
 .announcement-send-button:disabled { opacity: .55; cursor: wait; }
 @media (max-width: 720px) { .announcement-form-grid { grid-template-columns: 1fr; } .announcement-wide { grid-column: auto; } .announcement-send-button { width: 100%; justify-content: center; } }
+
+.notification-list-item-focused { outline: 3px solid var(--primary, #2563eb); outline-offset: 3px; animation: notification-focus-pulse 1.6s ease-out 1; }
+@keyframes notification-focus-pulse { 0% { transform: scale(.985); } 45% { transform: scale(1.008); } 100% { transform: scale(1); } }

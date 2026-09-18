@@ -156,6 +156,16 @@ function createTargetUrl(
    * לאחר עליית האפליקציה.
    */
   if (
+    clickData.notificationId &&
+    targetUrl.pathname === '/notifications'
+  ) {
+    targetUrl.searchParams.set(
+      'notification',
+      clickData.notificationId,
+    );
+  }
+
+  if (
     clickData.recipientId
   ) {
     targetUrl.searchParams.set(
@@ -185,7 +195,9 @@ async function sendClickMessageToClient(
       clickData.recipientId,
 
     url:
-      clickData.url,
+      createTargetUrl(
+        clickData,
+      ),
   });
 }
 interface ExtendedNotificationOptions
