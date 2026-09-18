@@ -9,6 +9,12 @@ export interface HelpWhatsNewItem {
 
 export const helpWhatsNewItems: readonly HelpWhatsNewItem[] = [
   {
+    id: 'schedule-person-filter-calendar-date-and-live-availability-sync',
+    title: 'סינון עובדים וסנכרון אילוצים לאחר שינוי תפקיד',
+    description:
+      'עובד שמורשה לראות את לוח התפקיד המלא יכול כעת לסנן את המשמרות לפי עובד גם במסך האישי. בלוחות חודשיים התאריך מוצג בפורמט יום/חודש. בנוסף, שינוי מבנה תפקיד לחודש שבו תקופת האילוצים כבר פתוחה בונה מחדש את משמרות האילוצים; הגשות שכבר נשלחו חוזרות לטיוטה והעובדים מקבלים התראה ו־Push למילוי מחדש.',
+  },
+  {
     id: 'dynamic-daily-on-call-window-phase-10-6-8',
     title: 'טווח תפעולי לכוננות יומית',
     description:

@@ -395,7 +395,7 @@ function MonthCalendar({
                   }}
                 >
                   <div className="month-calendar-day-heading">
-                    <span className="month-calendar-day-number">{dayNumber}</span>
+                    <span className="month-calendar-day-number" dir="ltr">{dayNumber}/{month}</span>
                     {(dayLabels?.get(context.date) ?? []).map((label) => (
                       <span key={label} className="month-calendar-day-holiday">{label}</span>
                     ))}
@@ -420,7 +420,7 @@ function MonthCalendar({
                 }
               >
                 <div className="month-calendar-day-heading">
-                  <span className="month-calendar-day-number">{dayNumber}</span>
+                  <span className="month-calendar-day-number" dir="ltr">{dayNumber}/{month}</span>
                   {(dayLabels?.get(context.date) ?? []).map((label) => (
                     <span key={label} className="month-calendar-day-holiday">{label}</span>
                   ))}

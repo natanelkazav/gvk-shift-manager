@@ -57,6 +57,7 @@ function MyDynamicShiftsPage() {
   const [selfEditLoading, setSelfEditLoading] = useState(false);
   const [selfEditSavingId, setSelfEditSavingId] = useState<string | null>(null);
   const [selectedCalendarAssignmentId, setSelectedCalendarAssignmentId] = useState<string | null>(null);
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string>('all');
   const [selfEditPermissionState, setSelfEditPermissionState] = useState({ canSelfEdit: false, canViewOthers: false, canEditAll: false });
 
   const loadPeriods = async () => {
@@ -127,6 +128,7 @@ function MyDynamicShiftsPage() {
     setSelfEditOpen(false);
     setSelfEditWorkspace(null);
     setSelectedCalendarAssignmentId(null);
+    setSelectedAssigneeId('all');
     if (!selectedId) {
       setWorkspace(null);
       return;
@@ -233,15 +235,40 @@ function MyDynamicShiftsPage() {
       ? modeTitle(selectedPeriod.workMode)
       : 'המשמרות שלי';
 
+  const visibleAssignees = useMemo(() => {
+    if (!workspace?.canViewOthers) return [];
+    const byId = new Map<string, string>();
+    for (const assignment of workspace.assignments) {
+      if (assignment.userId && assignment.displayName && !byId.has(assignment.userId)) {
+        byId.set(assignment.userId, assignment.displayName);
+      }
+    }
+    return [...byId.entries()]
+      .map(([userId, displayName]) => ({ userId, displayName }))
+      .sort((first, second) => first.displayName.localeCompare(second.displayName, 'he'));
+  }, [workspace]);
+
+  useEffect(() => {
+    if (selectedAssigneeId !== 'all' && !visibleAssignees.some((assignee) => assignee.userId === selectedAssigneeId)) {
+      setSelectedAssigneeId('all');
+    }
+  }, [selectedAssigneeId, visibleAssignees]);
+
+  const visibleAssignments = useMemo(() => {
+    const assignments = workspace?.assignments ?? [];
+    if (!workspace?.canViewOthers || selectedAssigneeId === 'all') return assignments;
+    return assignments.filter((assignment) => assignment.userId === selectedAssigneeId);
+  }, [selectedAssigneeId, workspace]);
+
   const assignmentsByDate = useMemo(() => {
     const map = new Map<string, MyDynamicScheduleAssignment[]>();
-    for (const assignment of workspace?.assignments ?? []) {
+    for (const assignment of visibleAssignments) {
       const current = map.get(assignment.shiftDate) ?? [];
       current.push(assignment);
       map.set(assignment.shiftDate, current);
     }
     return map;
-  }, [workspace]);
+  }, [visibleAssignments]);
 
   const groupedDates = useMemo(
     () => [...assignmentsByDate.entries()].sort(([first], [second]) => first.localeCompare(second)),
@@ -375,7 +402,7 @@ function MyDynamicShiftsPage() {
               <div className="my-shifts-toolbar">
                 <div className="my-shifts-summary">
                   <span className={workspace.periodSource === 'history' ? 'my-shifts-history' : 'my-shifts-published'}><CheckCircle2 size={16} /> {workspace.periodSource === 'history' ? 'היסטוריה מיובאת' : 'פורסם'}</span>
-                  <strong>{workspace.assignments.length}</strong>
+                  <strong>{visibleAssignments.length}</strong>
                   <span>{workspace.canViewOthers
                     ? (workspace.workMode === 'shifts' ? 'משמרות התפקיד בחודש' : 'כוננויות התפקיד בחודש')
                     : (workspace.workMode === 'shifts' ? 'המשמרות שלי בחודש' : 'הכוננויות שלי בחודש')}</span>
@@ -385,6 +412,21 @@ function MyDynamicShiftsPage() {
                   <button type="button" className={viewMode === 'list' ? 'is-active' : ''} onClick={() => setViewMode('list')}><List size={16} /> רשימה</button>
                 </div>
               </div>
+
+              {workspace.canViewOthers ? (
+                <div className="my-shifts-assignee-filter">
+                  <label>
+                    <span>סינון לפי עובד</span>
+                    <select value={selectedAssigneeId} onChange={(event) => setSelectedAssigneeId(event.target.value)}>
+                      <option value="all">כל העובדים</option>
+                      {visibleAssignees.map((assignee) => (
+                        <option key={assignee.userId} value={assignee.userId}>{assignee.displayName}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <small>הסינון משפיע גם על הטבלה החודשית וגם על תצוגת הרשימה.</small>
+                </div>
+              ) : null}
 
               {viewMode === 'list'
                 && !workspace.readOnly
@@ -482,7 +524,7 @@ function MyDynamicShiftsPage() {
                 </section>
               ) : null}
 
-              {!workspace.assignments.length ? (
+              {!visibleAssignments.length ? (
                 <div className="my-shifts-no-assignments">
                   {workspace.canViewOthers
                     ? 'הלוח פורסם, אך אין שיבוצים להצגה לתפקיד בחודש זה.'
