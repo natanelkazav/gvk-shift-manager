@@ -682,6 +682,7 @@ export interface DynamicAvailabilityWorkspace {
   jobTypeId: string;
   jobTypeName: string;
   availabilityConfig: DynamicAvailabilityConfig;
+  schedulingConfig: DynamicSchedulingConfig;
   slots: DynamicAvailabilityWorkspaceSlot[];
   members: DynamicAvailabilityWorkspaceMember[];
 }

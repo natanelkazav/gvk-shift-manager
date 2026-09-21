@@ -18,6 +18,45 @@ const shiftKey = (name:string,start:string,end:string) => `${name}__${start.slic
 const formatDate = (date:string) => { const [y,m,d]=date.split('-'); return `${d}/${m}/${y}`; };
 const statusClass = (status: Status | '') => status ? `status-${status}` : 'status-empty';
 
+type CapacitySlot = { date:string; startTime:string; endTime:string };
+const slotBounds = (slot: CapacitySlot) => {
+  const start = new Date(`${slot.date}T${slot.startTime.slice(0,8)}`).getTime();
+  let end = new Date(`${slot.date}T${slot.endTime.slice(0,8)}`).getTime();
+  if (end <= start) end += 24 * 60 * 60 * 1000;
+  return { ...slot, start, end };
+};
+const calculateTheoreticalMaximum = (workspace: DynamicAvailabilityWorkspace | null) => {
+  if (!workspace?.slots.length) return 0;
+  const rules = workspace.schedulingConfig?.rules;
+  const noOverlap = rules?.noOverlap?.enabled ?? true;
+  const noConsecutive = rules?.noConsecutive?.enabled ?? true;
+  const minRestMs = (rules?.minimumRestMinutes?.enabled ? Math.max(0, rules.minimumRestMinutes.value) : 0) * 60_000;
+  const maxPerDay = rules?.maxShiftsPerDay?.enabled ? Math.max(1, rules.maxShiftsPerDay.value) : Number.POSITIVE_INFINITY;
+  const slots = workspace.slots.map(slotBounds).sort((a,b)=>a.start-b.start || a.end-b.end);
+  const memo = new Map<string,number>();
+
+  // Slots are ordered chronologically. Once we move to a new shift_date, the
+  // previous day's counter can be discarded; the last selected shift is enough
+  // to enforce the same overlap/consecutive/minimum-rest rules used by the engine.
+  const solve = (index:number,lastIndex:number,countOnDate:number):number => {
+    if (index >= slots.length) return 0;
+    const currentDate = slots[index].date;
+    const previousDate = index > 0 ? slots[index-1].date : currentDate;
+    const normalizedCount = index > 0 && currentDate !== previousDate ? 0 : countOnDate;
+    const key = `${index}|${lastIndex}|${normalizedCount}`;
+    const cached = memo.get(key); if (cached !== undefined) return cached;
+    let best = solve(index+1,lastIndex,normalizedCount);
+    const slot = slots[index];
+    const previous = lastIndex >= 0 ? slots[lastIndex] : null;
+    const gap = previous ? slot.start-previous.end : Number.POSITIVE_INFINITY;
+    const timingAllowed = !previous ||
+      ((!noOverlap || slot.start >= previous.end) && (!noConsecutive || slot.start !== previous.end) && gap >= minRestMs);
+    if (timingAllowed && normalizedCount < maxPerDay) best = Math.max(best,1+solve(index+1,index,normalizedCount+1));
+    memo.set(key,best); return best;
+  };
+  return solve(0,-1,0);
+};
+
 function MyDynamicAvailabilityPage() {
   const [periods,setPeriods]=useState<MyDynamicAvailabilityPeriod[]>([]);
   const [selectedKey,setSelectedKey]=useState('');
@@ -35,10 +74,13 @@ function MyDynamicAvailabilityPage() {
   const selected=useMemo(()=>periods.find(p=>`${p.jobTypeId}:${p.year}:${p.month}`===selectedKey)??null,[periods,selectedKey]);
   const statuses=(workspace?.availabilityConfig?.statuses?.length ? workspace.availabilityConfig.statuses : ['available','unavailable']) as Status[];
   const member=workspace?.members?.[0]??null;
+  const theoreticalMaximum=useMemo(()=>calculateTheoreticalMaximum(workspace),[workspace]);
 
   const loadPeriods=async()=>{ setBusy(true); setError(null); try { const data=await dynamicSchedulingService.getMyDynamicAvailabilityPeriods(); setPeriods(data); setSelectedKey(k=>k&&data.some(p=>`${p.jobTypeId}:${p.year}:${p.month}`===k)?k:(data[0]?`${data[0].jobTypeId}:${data[0].year}:${data[0].month}`:'')); } catch(e){setError(e instanceof Error?e.message:'טעינת תקופות האילוצים נכשלה.');} finally{setBusy(false);} };
   useEffect(()=>{void loadPeriods();},[]);
-  useEffect(()=>{ if(!selected){setWorkspace(null);return;} void (async()=>{setBusy(true);setError(null);try{const w=await dynamicSchedulingService.getMyDynamicAvailabilityWorkspace(selected.jobTypeId,selected.year,selected.month);setWorkspace(w);const currentMember=w.members?.[0]??null;const entries=currentMember?.entries??{};setStatusBySlot(Object.fromEntries(w.slots.map(s=>[s.id,entries[s.id]?.status??'available'])));const capacity=w.availabilityConfig?.monthlyCapacity;const maximum=currentMember?.maximum??capacity?.defaultMax??null;const currentTarget=currentMember?.target??capacity?.defaultTarget??null;setPreferredTarget(currentTarget);setMaximizeShifts(maximum!==null&&currentTarget!==null&&currentTarget>=maximum);setBulkKeys(null);}catch(e){setError(e instanceof Error?e.message:'טעינת האילוצים נכשלה.');}finally{setBusy(false);}})();},[selected?.jobTypeId,selected?.year,selected?.month]);
+  useEffect(()=>{ if(!selected){setWorkspace(null);return;} void (async()=>{setBusy(true);setError(null);try{const w=await dynamicSchedulingService.getMyDynamicAvailabilityWorkspace(selected.jobTypeId,selected.year,selected.month);setWorkspace(w);const currentMember=w.members?.[0]??null;const entries=currentMember?.entries??{};setStatusBySlot(Object.fromEntries(w.slots.map(s=>[s.id,entries[s.id]?.status??'available'])));const capacity=w.availabilityConfig?.monthlyCapacity;const currentTarget=currentMember?.target??capacity?.defaultTarget??null;setPreferredTarget(currentTarget);setMaximizeShifts(false);setBulkKeys(null);}catch(e){setError(e instanceof Error?e.message:'טעינת האילוצים נכשלה.');}finally{setBusy(false);}})();},[selected?.jobTypeId,selected?.year,selected?.month]);
+
+  useEffect(()=>{ if(member?.target!==null&&member?.target!==undefined&&theoreticalMaximum>0&&member.target>=theoreticalMaximum) setMaximizeShifts(true); },[member?.target,theoreticalMaximum]);
 
   const options=useMemo(()=>{if(!workspace)return[];const map=new Map<string,{name:string;start:string;end:string}>();workspace.slots.filter(s=>dayOf(s.date)===bulkDay).forEach(s=>{const k=shiftKey(s.shiftName,s.startTime,s.endTime);map.set(k,{name:s.shiftName,start:s.startTime.slice(0,5),end:s.endTime.slice(0,5)})});return [...map].map(([key,value])=>({key,...value}));},[workspace,bulkDay]);
   const selectedKeys=bulkKeys===null?options.map(o=>o.key):bulkKeys.filter(k=>options.some(o=>o.key===k));
@@ -51,7 +93,7 @@ function MyDynamicAvailabilityPage() {
   const applyMonth=()=>{if(!workspace)return;setStatusBySlot(Object.fromEntries(workspace.slots.map(s=>[s.id,bulkStatus])));setMessage(`כל ${workspace.slots.length} משמרות החודש סומנו כ${labels[bulkStatus]}.`)};
   const applyRule=()=>{setStatusBySlot(cur=>{const next={...cur};matching.forEach(id=>next[id]=bulkStatus);return next;});setMessage(`הכלל הוחל על ${matching.size} משמרות.`)};
   const alreadySubmitted=selected?.submissionStatus==='submitted';
-  const save=async(submit:boolean)=>{if(!selected||!workspace||!member)return;const shouldSubmit=submit||alreadySubmitted;if(shouldSubmit&&filled<total){setError(`נשארו ${total-filled} משמרות ללא בחירה.`);return;}setBusy(true);setError(null);setMessage(null);try{const capacity=workspace.availabilityConfig?.monthlyCapacity;const minimum=member.minimum??capacity?.defaultMin??null;const maximum=member.maximum??capacity?.defaultMax??null;const target=capacity?.targetEnabled?(maximizeShifts&&maximum!==null?maximum:preferredTarget):member.target;const payload:SaveDynamicAvailabilityShadowSubmissionInput={submissionStatus:shouldSubmit?'submitted':'draft',minimum,target,maximum,maxNights:member.maxNights,maxWeekends:member.maxWeekends,maxHolidays:member.maxHolidays,note:member.note,entries:workspace.slots.filter(s=>statusBySlot[s.id]).map(s=>({slotId:s.id,status:statusBySlot[s.id] as Status,note:member.entries[s.id]?.note??null}))};await dynamicSchedulingService.saveMyDynamicAvailabilitySubmission(selected.jobTypeId,selected.year,selected.month,payload);await loadPeriods();setMessage(shouldSubmit?'האילוצים הוגשו בהצלחה. ההגשה נשארת פתוחה לעדכון עד סגירת התקופה.':'הטיוטה נשמרה.');}catch(e){setError(e instanceof Error?e.message:'שמירת האילוצים נכשלה.');}finally{setBusy(false);}};
+  const save=async(submit:boolean)=>{if(!selected||!workspace||!member)return;const shouldSubmit=submit||alreadySubmitted;if(shouldSubmit&&filled<total){setError(`נשארו ${total-filled} משמרות ללא בחירה.`);return;}setBusy(true);setError(null);setMessage(null);try{const capacity=workspace.availabilityConfig?.monthlyCapacity;const minimum=member.minimum??capacity?.defaultMin??null;const target=maximizeShifts?theoreticalMaximum:preferredTarget;const payload:SaveDynamicAvailabilityShadowSubmissionInput={submissionStatus:shouldSubmit?'submitted':'draft',minimum,target,maximum:null,maxNights:member.maxNights,maxWeekends:member.maxWeekends,maxHolidays:member.maxHolidays,note:member.note,entries:workspace.slots.filter(s=>statusBySlot[s.id]).map(s=>({slotId:s.id,status:statusBySlot[s.id] as Status,note:member.entries[s.id]?.note??null}))};await dynamicSchedulingService.saveMyDynamicAvailabilitySubmission(selected.jobTypeId,selected.year,selected.month,payload);await loadPeriods();setMessage(shouldSubmit?'האילוצים הוגשו בהצלחה. ההגשה נשארת פתוחה לעדכון עד סגירת התקופה.':'הטיוטה נשמרה.');}catch(e){setError(e instanceof Error?e.message:'שמירת האילוצים נכשלה.');}finally{setBusy(false);}};
 
   if(busy&&!periods.length)return <main className="my-dynamic-availability page-shell"><div className="my-availability-loading"><LoaderCircle className="spin"/> טוען אילוצים…</div></main>;
   return <main className="my-dynamic-availability page-shell" dir="rtl">
@@ -61,17 +103,15 @@ function MyDynamicAvailabilityPage() {
       <div className="my-availability-period-tabs">{periods.map(p=>{const k=`${p.jobTypeId}:${p.year}:${p.month}`;return <button key={k} className={selectedKey===k?'is-active':''} onClick={()=>setSelectedKey(k)}><strong>{p.jobTypeName}</strong><span>{String(p.month).padStart(2,'0')}/{p.year}</span><small>{p.periodStatus==='open' ? (p.submissionStatus==='submitted'?'הוגש · ניתן לעדכן':'פתוח להגשה') : p.periodStatus==='closed'?'נסגר':'לצפייה'}</small></button>})}</div>
       {workspace&&selected?<section className="my-availability-card">
         <div className="my-availability-progress"><div><strong>{filled}/{total}</strong><span>משמרות סומנו</span></div><progress max={Math.max(total,1)} value={filled}/><span>{total?Math.round(filled/total*100):0}%</span></div>
-        {workspace.availabilityConfig?.monthlyCapacity?.enabled && workspace.availabilityConfig.monthlyCapacity.targetEnabled ? <div className="my-availability-capacity">
+        {<div className="my-availability-capacity">
           <div className="my-availability-capacity-heading"><strong>העדפת כמות משמרות</strong><small>היעד הוא העדפה ולא התחייבות. השיבוץ בפועל תלוי באילוצים, בצורכי השיבוץ ובאיזון בין העובדים.</small></div>
           <div className="my-availability-capacity-fields">
-            {(() => { const capacity=workspace.availabilityConfig.monthlyCapacity; const minimum=member?.minimum??capacity.defaultMin??null; const maximum=member?.maximum??capacity.defaultMax??null; return <>
+            {(() => { const capacity=workspace.availabilityConfig.monthlyCapacity; const minimum=member?.minimum??capacity.defaultMin??null; return <>
               {minimum!==null?<div className="my-capacity-readonly"><span>מינימום</span><strong>{minimum}</strong><small>(כמות המשמרות המינימלית שהמערכת תנסה לתת לך בחודש)</small></div>:null}
-              <label className="my-capacity-target"><span>יעד משמרות</span><input type="number" min={minimum??0} max={maximum??undefined} disabled={!editable||maximizeShifts} value={preferredTarget??''} onChange={e=>setPreferredTarget(e.target.value===''?null:Number(e.target.value))}/><small>(כמות המשמרות שהיית רוצה לקבל בחודש)</small></label>
-              {maximum!==null?<div className="my-capacity-readonly"><span>מקסימום</span><strong>{maximum}</strong><small>(כמות המשמרות המרבית שניתן לשבץ אותך בחודש)</small></div>:null}
-              <label className="my-capacity-maximize"><input type="checkbox" disabled={!editable||maximum===null} checked={maximizeShifts} onChange={e=>setMaximizeShifts(e.target.checked)}/><span><strong>כמה שיותר</strong><small>(נסה לשבץ אותי לכמה שיותר משמרות במסגרת המותר)</small></span></label>
+              <div className="my-capacity-target"><span>יעד משמרות</span><div className="my-capacity-target-row"><input type="number" min={minimum??0} max={theoreticalMaximum||undefined} disabled={!editable||maximizeShifts} value={maximizeShifts?'':preferredTarget??''} placeholder={maximizeShifts?'כמה שיותר':''} onChange={e=>{const raw=e.target.value;if(raw===''){setPreferredTarget(null);return;}const value=Number(raw);const minValue=minimum??0;setPreferredTarget(Math.min(theoreticalMaximum,Math.max(minValue,value)));}}/><label className="my-capacity-maximize"><input type="checkbox" disabled={!editable||theoreticalMaximum===0} checked={maximizeShifts} onChange={e=>setMaximizeShifts(e.target.checked)}/><span><strong>כמה שיותר</strong></span></label></div><small>(כמות המשמרות שהיית רוצה לקבל בחודש)</small></div>
             </>; })()}
           </div>
-        </div>:null}
+        </div>}
         {!editable?<div className="my-availability-readonly">{deadlinePassed?'מועד ההגשה עבר. ההגשה מוצגת לקריאה בלבד.':'תקופת האילוצים סגורה. ההגשה מוצגת לקריאה בלבד.'}</div>:<div className="my-availability-rules">
           <div className="my-rule-title"><Sparkles size={18}/><div><strong>החלת חוק רוחבי</strong><small>החוק משנה את הטופס בלבד. אפשר לתקן משמרות ידנית לפני השליחה.</small></div></div>
           <div className="my-availability-status-legend">{statuses.map(s=><span key={s} className={`my-availability-status-chip ${statusClass(s)}`}>{labels[s]}</span>)}</div>

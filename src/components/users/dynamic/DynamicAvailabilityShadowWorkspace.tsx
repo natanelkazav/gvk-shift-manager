@@ -15,6 +15,40 @@ type Status = 'available' | 'unavailable' | 'preferred' | 'avoid';
 
 const statusLabels: Record<Status, string> = { available: 'זמין', unavailable: 'לא זמין', preferred: 'מעדיף', avoid: 'מעדיף שלא' };
 
+type CapacitySlot = { date:string; startTime:string; endTime:string };
+const slotBounds = (slot: CapacitySlot) => {
+  const start = new Date(`${slot.date}T${slot.startTime.slice(0,8)}`).getTime();
+  let end = new Date(`${slot.date}T${slot.endTime.slice(0,8)}`).getTime();
+  if (end <= start) end += 24 * 60 * 60 * 1000;
+  return { ...slot, start, end };
+};
+const calculateTheoreticalMaximum = (workspace: DynamicAvailabilityWorkspace | null) => {
+  if (!workspace?.slots.length) return 0;
+  const rules = workspace.schedulingConfig?.rules;
+  const noOverlap = rules?.noOverlap?.enabled ?? true;
+  const noConsecutive = rules?.noConsecutive?.enabled ?? true;
+  const minRestMs = (rules?.minimumRestMinutes?.enabled ? Math.max(0, rules.minimumRestMinutes.value) : 0) * 60_000;
+  const maxPerDay = rules?.maxShiftsPerDay?.enabled ? Math.max(1, rules.maxShiftsPerDay.value) : Number.POSITIVE_INFINITY;
+  const slots = workspace.slots.map(slotBounds).sort((a,b)=>a.start-b.start || a.end-b.end);
+  const memo = new Map<string,number>();
+  const solve = (index:number,lastIndex:number,countOnDate:number):number => {
+    if (index >= slots.length) return 0;
+    const currentDate = slots[index].date;
+    const previousDate = index > 0 ? slots[index-1].date : currentDate;
+    const normalizedCount = index > 0 && currentDate !== previousDate ? 0 : countOnDate;
+    const key = `${index}|${lastIndex}|${normalizedCount}`;
+    const cached = memo.get(key); if (cached !== undefined) return cached;
+    let best = solve(index+1,lastIndex,normalizedCount);
+    const slot = slots[index];
+    const previous = lastIndex >= 0 ? slots[lastIndex] : null;
+    const gap = previous ? slot.start-previous.end : Number.POSITIVE_INFINITY;
+    const timingAllowed = !previous || ((!noOverlap || slot.start >= previous.end) && (!noConsecutive || slot.start !== previous.end) && gap >= minRestMs);
+    if (timingAllowed && normalizedCount < maxPerDay) best = Math.max(best,1+solve(index+1,index,normalizedCount+1));
+    memo.set(key,best); return best;
+  };
+  return solve(0,-1,0);
+};
+
 const fallbackAvailabilityConfig = {
   enabled: true,
   statuses: ['available', 'unavailable'] as Status[],
@@ -68,7 +102,7 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
       submissionStatus: member.status ?? 'draft',
       minimum: member.minimum ?? defaults.defaultMin,
       target: member.target ?? defaults.defaultTarget,
-      maximum: member.maximum ?? defaults.defaultMax,
+      maximum: null,
       maxNights: member.maxNights ?? limits.defaultMaxNights,
       maxWeekends: member.maxWeekends ?? limits.defaultMaxWeekends,
       maxHolidays: member.maxHolidays ?? limits.defaultMaxHolidays,
@@ -79,13 +113,13 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
 
   const setEntry = (slotId: string, status: Status) => setForm((current) => current ? ({ ...current, entries: current.entries.map((entry) => entry.slotId === slotId ? { ...entry, status } : entry) }) : current);
 
-  const setNumber = (key: 'minimum'|'target'|'maximum', value: string) => setForm((current) => current ? ({ ...current, [key]: value === '' ? null : Number(value) }) : current);
+  const setNumber = (key: 'minimum'|'target', value: string) => setForm((current) => current ? ({ ...current, [key]: value === '' ? null : Number(value) }) : current);
 
   const save = async () => {
     if (!canEdit || !form || !selectedUserId) return;
     setBusy(true); setError(null); setMessage(null);
     try {
-      await dynamicSchedulingService.saveAvailabilityShadowSubmission(jobType.id, year, month, selectedUserId, form);
+      await dynamicSchedulingService.saveAvailabilityShadowSubmission(jobType.id, year, month, selectedUserId, { ...form, maximum: null });
       setMessage('אילוצי העובד נשמרו בהצלחה.'); await load();
     } catch (err) { setError(err instanceof Error ? err.message : 'שמירת האילוצים נכשלה.'); }
     finally { setBusy(false); }
@@ -99,6 +133,7 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
   const availabilityConfig = workspace.availabilityConfig ?? fallbackAvailabilityConfig;
   const monthlyCapacity = availabilityConfig.monthlyCapacity ?? fallbackAvailabilityConfig.monthlyCapacity;
   const statuses = availabilityConfig.statuses?.length ? availabilityConfig.statuses : fallbackAvailabilityConfig.statuses;
+  const theoreticalMaximum = calculateTheoreticalMaximum(workspace);
 
   return <div className="dynamic-availability-workspace">
     {!canEdit ? <div className="dynamic-period-workflow-note">מצב צפייה בלבד — אין לך הרשאת ניהול הגשות אילוצים עבור התפקיד הזה.</div> : null}
@@ -113,8 +148,11 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
 
       <div className="dynamic-capacity-row">
         {monthlyCapacity.minEnabled ? <label>מינימום<input type="number" min="0" value={form.minimum ?? ''} onChange={(e) => setNumber('minimum',e.target.value)}/></label> : null}
-        {monthlyCapacity.targetEnabled ? <label>יעד<input type="number" min="0" value={form.target ?? ''} onChange={(e) => setNumber('target',e.target.value)}/></label> : null}
-        {monthlyCapacity.maxEnabled ? <label>מקסימום<input type="number" min="0" value={form.maximum ?? ''} onChange={(e) => setNumber('maximum',e.target.value)}/></label> : null}
+        <label>
+          <span>יעד</span>
+          <input type="number" min="0" max={theoreticalMaximum || undefined} value={form.target ?? ''} onChange={(e) => setNumber('target',e.target.value)}/>
+          {theoreticalMaximum > 0 && form.target !== null && form.target >= theoreticalMaximum ? <small className="dynamic-capacity-preference">העדפת העובד: כמה שיותר</small> : form.target !== null ? <small className="dynamic-capacity-preference">העדפת העובד: {form.target} משמרות</small> : null}
+        </label>
         <label>מצב<select className={`dynamic-submission-status is-${form.submissionStatus}`} disabled={!canEdit} value={form.submissionStatus} onChange={(e) => setForm({ ...form, submissionStatus: e.target.value as SaveDynamicAvailabilityShadowSubmissionInput['submissionStatus'] })}><option value="draft">טיוטה</option><option value="submitted">הוגש</option><option value="reopened">נפתח מחדש</option></select></label>
       </div>
       <div className="dynamic-availability-grid">

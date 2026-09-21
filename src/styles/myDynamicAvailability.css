@@ -13,3 +13,7 @@
 .my-capacity-target input{min-height:42px;border:1px solid var(--border-color,#cbd5e1);border-radius:9px;padding:0 10px;background:var(--surface-primary,#fff);color:inherit}.my-capacity-target input:disabled{opacity:.55;cursor:not-allowed}
 .my-capacity-maximize{grid-column:1/-1;display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;background:var(--surface-primary,#fff);border:1px solid var(--border-color,#d9dee7);cursor:pointer}.my-capacity-maximize>span{display:flex;flex-direction:column;gap:3px}.my-capacity-maximize input{margin-top:3px}
 @media(max-width:760px){.my-availability-capacity-fields{grid-template-columns:1fr}.my-capacity-maximize{grid-column:auto}}
+
+/* Personal monthly target: keep maximize beside the target input. */
+.my-capacity-target-row{display:flex;align-items:center;gap:10px}.my-capacity-target-row>input{flex:1;min-width:0}.my-capacity-target-row .my-capacity-maximize{grid-column:auto;padding:9px 12px;align-items:center;white-space:nowrap}.my-capacity-target-row .my-capacity-maximize input{margin:0}.my-capacity-target-row .my-capacity-maximize>span{display:block}
+@media(max-width:520px){.my-capacity-target-row{align-items:stretch;flex-direction:column}.my-capacity-target-row .my-capacity-maximize{justify-content:flex-start}}
