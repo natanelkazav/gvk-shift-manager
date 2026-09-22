@@ -1263,3 +1263,15 @@
 .attendance-location--outside a {
   color: inherit;
 }
+
+.attendance-time-source { display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap; }
+.attendance-time-source svg { flex:0 0 auto; }
+.attendance-missing-exit { display:inline-flex; align-items:center; gap:.35rem; font-weight:700; color:var(--danger-color,#b42318); white-space:nowrap; }
+.attendance-edit-button { display:inline-flex; align-items:center; gap:.35rem; border:1px solid var(--border-color,#d0d5dd); border-radius:.55rem; padding:.4rem .65rem; background:var(--surface-color,#fff); cursor:pointer; }
+.attendance-archived-label { opacity:.7; font-size:.9rem; }
+.attendance-edit-form { display:grid; gap:1rem; min-width:min(520px,80vw); }
+.attendance-edit-form label { display:grid; gap:.4rem; font-weight:600; }
+.attendance-edit-form input,.attendance-edit-form textarea { width:100%; padding:.65rem .75rem; border:1px solid var(--border-color,#d0d5dd); border-radius:.55rem; background:var(--surface-color,#fff); color:inherit; font:inherit; }
+.attendance-edit-note { margin:0; font-size:.9rem; opacity:.75; }
+.attendance-archive-warning { display:flex; gap:.5rem; align-items:center; padding:.7rem; border-radius:.55rem; background:rgba(245,158,11,.12); }
+.attendance-edit-save { font-weight:700; }

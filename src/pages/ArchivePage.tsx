@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   Archive,
   CalendarDays,
+  Clock3,
   CheckCircle2,
   FileSpreadsheet,
   RefreshCw,
@@ -427,6 +428,7 @@ function ArchivePage() {
                                   <div className="archive-dynamic-role-stats">
                                     <span><Users size={17} aria-hidden="true" /><strong>{jobType.workerCount}</strong> עובדים</span>
                                     <span><CalendarDays size={17} aria-hidden="true" /><strong>{jobType.assignmentCount}</strong> שיבוצים</span>
+                                    {jobType.attendanceSessionCount > 0 ? <span><Clock3 size={17} aria-hidden="true" /><strong>{jobType.attendanceSessionCount}</strong> דיווחי נוכחות{jobType.attendanceMissingExitCount > 0 ? ` · ${jobType.attendanceMissingExitCount} ללא יציאה` : ''}</span> : null}
                                   </div>
                                 </div>
                               ))}

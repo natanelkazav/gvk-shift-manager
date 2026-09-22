@@ -1439,3 +1439,24 @@
     grid-template-columns: 1fr;
   }
 }
+
+.dynamic-period-reminders-card { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 14px; border:1px solid var(--theme-border); border-radius:12px; background:var(--theme-surface); }
+.dynamic-period-reminders-copy { display:flex; flex-direction:column; gap:5px; }
+.dynamic-period-reminders-copy strong { display:flex; align-items:center; gap:6px; }
+.dynamic-period-reminders-copy > span { color:var(--theme-text-muted); font-size:.75rem; }
+.dynamic-period-reminder-statuses { display:flex; flex-wrap:wrap; gap:6px; margin-top:3px; }
+.dynamic-period-reminder-statuses span { display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border:1px solid var(--theme-border); border-radius:999px; font-size:.72rem; }
+.dynamic-period-reminder-statuses span.is-sent { border-color:#86efac; background:#f0fdf4; color:#166534; }
+.dynamic-period-reminders-controls { display:flex; align-items:flex-end; gap:8px; }
+.dynamic-period-reminder-picker { position:relative; min-width:260px; }
+.dynamic-period-reminder-picker > summary { list-style:none; cursor:pointer; min-height:42px; padding:7px 12px; border:1px solid var(--theme-border); border-radius:10px; background:var(--theme-surface); display:flex; flex-direction:column; justify-content:center; gap:2px; }
+.dynamic-period-reminder-picker > summary::-webkit-details-marker { display:none; }
+.dynamic-period-reminder-picker > summary span { color:var(--theme-text-muted); font-size:.7rem; }
+.dynamic-period-reminder-picker > summary strong { font-size:.82rem; font-weight:700; color:var(--theme-text); }
+.dynamic-period-reminder-options { position:absolute; z-index:20; inset-inline-end:0; top:calc(100% + 6px); width:100%; padding:7px; border:1px solid var(--theme-border); border-radius:12px; background:var(--theme-surface); box-shadow:0 12px 30px rgba(15,23,42,.14); }
+.dynamic-period-reminder-options label { min-height:36px; padding:7px 8px; border-radius:8px; display:flex; align-items:center; gap:8px; cursor:pointer; color:var(--theme-text); font-size:.8rem; }
+.dynamic-period-reminder-options label:hover { background:var(--theme-surface-muted); }
+.dynamic-period-reminder-options input { width:16px; height:16px; margin:0; accent-color:var(--theme-primary); }
+.dynamic-period-reminder-options label.is-sent { color:var(--theme-text-muted); cursor:default; }
+.dynamic-period-reminder-option-sent { margin-inline-start:auto; display:inline-flex; align-items:center; gap:4px; color:#15803d; font-size:.72rem; font-weight:700; }
+@media (max-width: 720px) { .dynamic-period-reminders-card { flex-direction:column; align-items:stretch; } .dynamic-period-reminders-controls { align-items:stretch; flex-direction:column; } .dynamic-period-reminder-picker { width:100%; min-width:0; } .dynamic-period-reminder-options { position:static; margin-top:6px; } }

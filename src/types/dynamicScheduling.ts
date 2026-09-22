@@ -704,6 +704,11 @@ export interface SaveDynamicAvailabilityShadowSubmissionInput {
 }
 
 
+export interface DynamicAvailabilityReminderSettings {
+  days: number[];
+  deliveries: Array<{ daysBefore: number; sentAt: string; recipientCount: number }>;
+}
+
 export interface DynamicPeriodWorkflowState {
   jobTypeId: string;
   jobTypeName: string;

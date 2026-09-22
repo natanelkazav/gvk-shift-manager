@@ -6,10 +6,14 @@ import {
   CalendarDays,
   Clock3,
   Edit3,
+  Pencil,
+  UserRoundCheck,
   Users,
   UserX,
   WalletCards,
 } from 'lucide-react';
+
+import Modal from '../../../components/ui/Modal';
 
 import type { DynamicStatisticsWorkspace } from '../../../types/dynamicStatistics';
 import StatisticsBarChart from '../components/StatisticsBarChart';
@@ -45,6 +49,13 @@ function DynamicJobTypeStatisticsView({
   const selected = new Set(selectedUserIds);
   const [attendanceRows, setAttendanceRows] = useState<AttendanceStatisticsRow[]>([]);
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  const [attendanceRefresh, setAttendanceRefresh] = useState(0);
+  const [editingAttendance, setEditingAttendance] = useState<AttendanceStatisticsRow | null>(null);
+  const [editClockIn, setEditClockIn] = useState('');
+  const [editClockOut, setEditClockOut] = useState('');
+  const [editReason, setEditReason] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
   useEffect(() => {
     const shouldLoadAttendance = attendanceEnabled && (mode === 'tables' || (mode === 'overview' && selectedUserIds.length === 1));
     if (!shouldLoadAttendance) {
@@ -55,7 +66,7 @@ function DynamicJobTypeStatisticsView({
     let cancelled=false;
     void attendanceService.getStatistics(data.jobType.jobTypeId,data.filters.years,data.filters.months,selectedUserIds).then((rows)=>{if(!cancelled){setAttendanceRows(rows);setAttendanceError(null);}}).catch((error)=>{if(!cancelled)setAttendanceError(error instanceof Error?error.message:'לא ניתן לטעון נוכחות');});
     return ()=>{cancelled=true;};
-  },[mode,attendanceEnabled,data.jobType.jobTypeId,data.filters.years,data.filters.months,selectedUserIds]);
+  },[mode,attendanceEnabled,data.jobType.jobTypeId,data.filters.years,data.filters.months,selectedUserIds,attendanceRefresh]);
   const people = selected.size === 0
     ? data.people
     : data.people.filter((row) => selected.has(row.userId));
@@ -360,6 +371,33 @@ function DynamicJobTypeStatisticsView({
     ? null
     : `https://www.google.com/maps?q=${lat},${lng}`;
   const formatWorkedHours = (value: number): string => value.toFixed(2);
+  const toLocalInput = (value: string | null): string => {
+    if (!value) return '';
+    const date = new Date(value);
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0,16);
+  };
+  const openAttendanceEdit = (row: AttendanceStatisticsRow) => {
+    setEditingAttendance(row);
+    setEditClockIn(toLocalInput(row.clockInAt));
+    setEditClockOut(toLocalInput(row.clockOutAt));
+    setEditReason('');
+    setEditError(null);
+  };
+  const saveAttendanceEdit = async () => {
+    if (!editingAttendance || !editClockIn) return;
+    setEditSaving(true); setEditError(null);
+    try {
+      await attendanceService.updateSession(editingAttendance.id,new Date(editClockIn).toISOString(),editClockOut?new Date(editClockOut).toISOString():null,editReason);
+      setEditingAttendance(null); setAttendanceRefresh((value)=>value+1);
+    } catch(error) { setEditError(error instanceof Error?error.message:'לא ניתן לשמור את התיקון'); }
+    finally { setEditSaving(false); }
+  };
+  const attendanceTime = (value:string|null,edited:boolean,missing=false) => {
+    if (missing) return <span className="attendance-missing-exit"><AlertTriangle size={16} aria-hidden="true" /> לא ביצע יציאה</span>;
+    if (!value) return '—';
+    return <span className="attendance-time-source" title={edited?'נערך על ידי מנהל התפקיד':'דווח על ידי בעל התפקיד'}>{edited?<Pencil size={16} aria-hidden="true" />:<UserRoundCheck size={16} aria-hidden="true" />}{dateTime(value)}</span>;
+  };
   const locationCell = (lat: number | null, lng: number | null, distanceM: number | null, withinRadius: boolean | null) => {
     const href = mapLink(lat, lng);
     if (!href) return '—';
@@ -425,27 +463,43 @@ function DynamicJobTypeStatisticsView({
         {attendanceError ? <div className="statistics-error">{attendanceError}</div> : null}
         <div className="statistics-table-wrapper">
           <table className="statistics-table">
-            <thead><tr><th>עובד</th><th>תאריך</th><th>כניסה</th><th>מיקום כניסה</th><th>יציאה</th><th>מיקום יציאה</th><th>שעות בפועל</th><th>תעריף</th><th>שכר</th></tr></thead>
+            <thead><tr><th>עובד</th><th>תאריך</th><th>כניסה</th><th>מיקום כניסה</th><th>יציאה</th><th>מיקום יציאה</th><th>שעות בפועל</th><th>תעריף</th><th>שכר</th><th>פעולות</th></tr></thead>
             <tbody>
               {attendanceRows.map((row) => (
                 <tr key={row.id}>
                   <td><strong>{displayName(row.displayName, row.scheduleName)}</strong></td>
                   <td>{row.workDate}</td>
-                  <td>{dateTime(row.clockInAt)}</td>
-                  <td>{locationCell(row.clockInLat, row.clockInLng, row.clockInDistanceM, row.clockInWithinRadius)}</td>
-                  <td>{dateTime(row.clockOutAt)}</td>
-                  <td>{locationCell(row.clockOutLat, row.clockOutLng, row.clockOutDistanceM, row.clockOutWithinRadius)}</td>
+                  <td>{attendanceTime(row.clockInAt,row.clockInEdited)}</td>
+                  <td>{row.clockInEdited ? '---------' : locationCell(row.clockInLat, row.clockInLng, row.clockInDistanceM, row.clockInWithinRadius)}</td>
+                  <td>{attendanceTime(row.clockOutAt,row.clockOutEdited,row.missingExit)}</td>
+                  <td>{row.clockOutEdited ? '---------' : locationCell(row.clockOutLat, row.clockOutLng, row.clockOutDistanceM, row.clockOutWithinRadius)}</td>
                   <td>{row.workedHours == null ? 'פתוח' : formatWorkedHours(row.workedHours)}</td>
                   <td>{money(row.hourlyRate)}</td>
                   <td><strong>{money(row.wage)}</strong></td>
+                  <td>{row.canEdit ? <button type="button" className="attendance-edit-button" onClick={()=>openAttendanceEdit(row)}><Edit3 size={16} aria-hidden="true" /> עריכה</button> : row.archived ? <span className="attendance-archived-label">ארכיון</span> : '—'}</td>
                 </tr>
               ))}
-              {attendanceRows.length === 0 ? <tr><td colSpan={9}>אין דיווחי נוכחות בתקופה שנבחרה.</td></tr> : null}
+              {attendanceRows.length === 0 ? <tr><td colSpan={10}>אין דיווחי נוכחות בתקופה שנבחרה.</td></tr> : null}
             </tbody>
           </table>
         </div>
       </section>
     ) : null}
+    <Modal
+      isOpen={editingAttendance !== null}
+      title={editingAttendance ? `עריכת נוכחות — ${displayName(editingAttendance.displayName,editingAttendance.scheduleName)}` : 'עריכת נוכחות'}
+      onClose={()=>{if(!editSaving)setEditingAttendance(null);}}
+      footer={<><button type="button" onClick={()=>setEditingAttendance(null)} disabled={editSaving}>ביטול</button><button type="button" className="attendance-edit-save" onClick={()=>void saveAttendanceEdit()} disabled={editSaving||!editClockIn}>{editSaving?'שומר...':'שמור תיקון'}</button></>}
+    >
+      <div className="attendance-edit-form">
+        {editingAttendance?.archived ? <div className="attendance-archive-warning"><AlertTriangle size={18} aria-hidden="true" /> זהו חודש מארכיון. נדרשת הרשאת עריכת נוכחות בארכיון.</div> : null}
+        <label>כניסה<input type="datetime-local" value={editClockIn} onChange={(event)=>setEditClockIn(event.target.value)} /></label>
+        <label>יציאה<input type="datetime-local" value={editClockOut} onChange={(event)=>setEditClockOut(event.target.value)} /></label>
+        <label>סיבת התיקון<textarea value={editReason} onChange={(event)=>setEditReason(event.target.value)} placeholder="לדוגמה: העובד שכח לבצע יציאה" rows={3} /></label>
+        <p className="attendance-edit-note">שעה שנערכת על ידי מנהל תסומן כאירוע ערוך, והמיקום שלה יוצג כ־--------- . נתוני המיקום המקוריים נשמרים ביומן השינויים.</p>
+        {editError ? <div className="statistics-error">{editError}</div> : null}
+      </div>
+    </Modal>
     </>
   );
 }

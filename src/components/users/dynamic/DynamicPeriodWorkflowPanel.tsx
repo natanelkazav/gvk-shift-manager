@@ -1,7 +1,7 @@
-import { CalendarClock, CheckCircle2, ChevronUp, LoaderCircle, LockKeyhole, PencilLine, Play, Send, Sparkles } from 'lucide-react';
+import { BellRing, CalendarClock, CheckCircle2, ChevronUp, LoaderCircle, LockKeyhole, PencilLine, Play, Send, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
-import type { DynamicJobType, DynamicPeriodWorkflowState } from '../../../types/dynamicScheduling';
+import type { DynamicAvailabilityReminderSettings, DynamicJobType, DynamicPeriodWorkflowState } from '../../../types/dynamicScheduling';
 import { Button } from '../../ui';
 import DynamicAvailabilityShadowWorkspace from './DynamicAvailabilityShadowWorkspace';
 import DynamicScheduleDraftEditor from './DynamicScheduleDraftEditor';
@@ -61,6 +61,12 @@ function DynamicPeriodWorkflowPanel({
       const nextState = await dynamicSchedulingService.getPeriodWorkflow(jobType.id, year, month);
       if (generation !== loadGenerationRef.current) return;
       setState(nextState);
+      if (nextState.period) {
+        const reminderState = await dynamicSchedulingService.getDynamicAvailabilityReminderSettings(jobType.id, year, month);
+        if (generation !== loadGenerationRef.current) return;
+        setReminders(reminderState);
+        setSelectedReminderDays(reminderState.days.filter((day) => day >= 1 && day <= 7));
+      }
     } catch (loadError) {
       if (generation !== loadGenerationRef.current) return;
       setError(loadError instanceof Error ? loadError.message : 'טעינת ניהול התקופה נכשלה.');
@@ -97,6 +103,8 @@ function DynamicPeriodWorkflowPanel({
   };
 
   const [deadlineInput, setDeadlineInput] = useState('');
+  const [reminders, setReminders] = useState<DynamicAvailabilityReminderSettings>({ days: [7, 3, 1], deliveries: [] });
+  const [selectedReminderDays, setSelectedReminderDays] = useState<number[]>([7, 3, 1]);
 
   useEffect(() => {
     if (!state?.period?.submissionDeadline) {
@@ -119,6 +127,15 @@ function DynamicPeriodWorkflowPanel({
       );
     },
     'מועד ההגשה עודכן.',
+  );
+
+  const saveReminderSettings = (): Promise<void> => run(
+    async () => {
+      const days = [...selectedReminderDays].sort((a, b) => b - a);
+      if (days.length === 0) throw new Error('יש לבחור לפחות תזכורת אוטומטית אחת.');
+      await dynamicSchedulingService.setDynamicAvailabilityReminderSettings(jobType.id, days);
+    },
+    'התזכורות האוטומטיות עודכנו לתפקיד.',
   );
 
   const createPeriod = (): Promise<void> => run(
@@ -263,6 +280,62 @@ function DynamicPeriodWorkflowPanel({
                 {state.period ? (
                   <Button variant="secondary" disabled={busy || !canOpenPeriod || !deadlineInput} onClick={() => void saveDeadline()}>שמור מועד</Button>
                 ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          {state.period && state.period.status !== 'archived' ? (
+            <div className="dynamic-period-reminders-card">
+              <div className="dynamic-period-reminders-copy">
+                <strong><BellRing size={16} /> תזכורות אוטומטיות להגשת אילוצים</strong>
+                <span>ההגדרה נשמרת לפי תפקיד. התראה נשלחת רק לעובדים שעדיין לא הגישו.</span>
+                <div className="dynamic-period-reminder-statuses">
+                  {reminders.days.map((day) => {
+                    const delivery = reminders.deliveries.find((item) => item.daysBefore === day);
+                    return (
+                      <span key={day} className={delivery ? 'is-sent' : ''}>
+                        {delivery ? <CheckCircle2 size={14} /> : null}
+                        {day === 0 ? 'ביום האחרון' : `${day} ימים לפני`}
+                        {delivery ? ` · נשלח ל-${delivery.recipientCount}` : ''}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="dynamic-period-reminders-controls">
+                <details className="dynamic-period-reminder-picker">
+                  <summary aria-label="בחירת ימים לתזכורת">
+                    <span>מתי לשלוח?</span>
+                    <strong>
+                      {selectedReminderDays.length === 0
+                        ? 'בחר ימים'
+                        : selectedReminderDays.slice().sort((a, b) => b - a).map((day) => day === 1 ? 'יום אחד' : `${day} ימים`).join(' · ')}
+                    </strong>
+                  </summary>
+                  <div className="dynamic-period-reminder-options">
+                    {[7, 6, 5, 4, 3, 2, 1].map((day) => {
+                      const delivery = reminders.deliveries.find((item) => item.daysBefore === day);
+                      const checked = selectedReminderDays.includes(day);
+                      return (
+                        <label key={day} className={delivery ? 'is-sent' : ''}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={!canOpenPeriod || Boolean(delivery)}
+                            onChange={(event) => {
+                              setSelectedReminderDays((current) => event.target.checked
+                                ? Array.from(new Set([...current, day])).sort((a, b) => b - a)
+                                : current.filter((value) => value !== day));
+                            }}
+                          />
+                          <span>{day === 1 ? 'יום אחד לפני' : day === 2 ? 'יומיים לפני' : `${day} ימים לפני`}</span>
+                          {delivery ? <span className="dynamic-period-reminder-option-sent"><CheckCircle2 size={14} /> נשלח</span> : null}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </details>
+                <Button variant="secondary" disabled={busy || !canOpenPeriod || selectedReminderDays.length === 0} onClick={() => void saveReminderSettings()}>שמור תזכורות</Button>
               </div>
             </div>
           ) : null}

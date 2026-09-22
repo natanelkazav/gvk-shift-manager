@@ -74,6 +74,8 @@ export interface DynamicArchiveJobType {
   status: 'published' | 'archived';
   assignmentCount: number;
   workerCount: number;
+  attendanceSessionCount: number;
+  attendanceMissingExitCount: number;
   publishedAt: string | null;
   archivedAt: string | null;
 }

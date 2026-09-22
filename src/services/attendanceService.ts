@@ -13,4 +13,7 @@ export const attendanceService = {
   async getStatistics(jobTypeId:string,years:number[],months:number[],userIds:string[]):Promise<AttendanceStatisticsRow[]> {
     const {data,error}=await supabase.rpc('get_dynamic_attendance_statistics',{requested_job_type_id:jobTypeId,requested_years:years.length?years:null,requested_months:months.length?months:null,requested_user_ids:userIds.length?userIds:null}); if(error) throw error; return ((data as {rows?:AttendanceStatisticsRow[]})?.rows??[]);
   },
+  async updateSession(sessionId:string,clockInAt:string,clockOutAt:string|null,reason:string):Promise<void> {
+    const {error}=await supabase.rpc('update_attendance_session_by_manager',{requested_session_id:sessionId,requested_clock_in_at:clockInAt,requested_clock_out_at:clockOutAt,requested_reason:reason||null}); if(error) throw error;
+  },
 };

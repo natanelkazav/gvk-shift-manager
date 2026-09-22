@@ -56,6 +56,7 @@ import type {
   DynamicRoleWorkspace,
   DynamicRotationWorkspace,
   DynamicPeriodWorkflowState,
+  DynamicAvailabilityReminderSettings,
   DynamicPublishedEditorWorkspace,
   DynamicHistoricalSlotEditorWorkspace,
   DynamicSchedulePublicationResult,
@@ -163,6 +164,25 @@ export const dynamicSchedulingService = {
       });
       if (error) throwSupabaseError('Dynamic shifts management workspace', error);
       return data as DynamicShiftsManagementWorkspace;
+    });
+  },
+
+  async getDynamicAvailabilityReminderSettings(jobTypeId: string, year: number, month: number): Promise<DynamicAvailabilityReminderSettings> {
+    return PerformanceDebugService.measureAsync('dynamic-scheduling.availability-reminders.get', async () => {
+      const { data, error } = await supabase.rpc('get_dynamic_availability_reminder_settings', {
+        requested_job_type_id: jobTypeId, requested_year: year, requested_month: month,
+      });
+      if (error) throwSupabaseError('Get dynamic availability reminder settings', error);
+      return data as DynamicAvailabilityReminderSettings;
+    });
+  },
+
+  async setDynamicAvailabilityReminderSettings(jobTypeId: string, days: number[]): Promise<void> {
+    await PerformanceDebugService.measureAsync('dynamic-scheduling.availability-reminders.save', async () => {
+      const { error } = await supabase.rpc('set_dynamic_availability_reminder_settings', {
+        requested_job_type_id: jobTypeId, requested_days: days,
+      });
+      if (error) throwSupabaseError('Set dynamic availability reminder settings', error);
     });
   },
 

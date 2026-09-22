@@ -382,7 +382,8 @@ const permissionBlueprint: PermissionBlueprintItem[] = [
   { permissionKey: 'payroll.view_job_type', featureKey: 'payroll', audience: 'manager', label: 'צפייה בנתוני שכר התפקיד', description: 'צפייה בנתוני השכר של התפקיד.' },
   { permissionKey: 'attendance.clock', featureKey: 'attendance', audience: 'member', label: 'דיווח כניסה ויציאה', description: 'דיווח נוכחות עם מיקום בעת הלחיצה.', defaultEnabled: true },
   { permissionKey: 'attendance.view_team', featureKey: 'attendance', audience: 'manager', label: 'צפייה בנוכחות התפקיד', description: 'צפייה בדוחות נוכחות, שעות ומיקומי כניסה/יציאה.', defaultEnabled: true },
-  { permissionKey: 'attendance.edit', featureKey: 'attendance', audience: 'manager', label: 'תיקון דיווחי נוכחות', description: 'תיקון ידני של נוכחות עם Audit Log.', defaultEnabled: false },
+  { permissionKey: 'attendance.edit_team', featureKey: 'attendance', audience: 'manager', label: 'עריכת נוכחות התפקיד', description: 'תיקון זמני כניסה ויציאה של עובדי התפקיד עם Audit Log.', defaultEnabled: false },
+  { permissionKey: 'attendance.edit_archived', featureKey: 'attendance', audience: 'manager', label: 'עריכת נוכחות בארכיון', description: 'תיקון חריג של דיווחי נוכחות מחודשים קודמים.', defaultEnabled: false },
 ];
 
 const derivePermissionFeatures = (input: SaveDynamicJobTypeInput): string[] => {
