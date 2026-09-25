@@ -69,6 +69,45 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
   const managerEdits = Number(metrics.managerEditedAssignments ?? 0);
   const totalAssignments = useMemo(() => workspace?.slots.reduce((sum, slot) => sum + slot.assignments.length, 0) ?? 0, [workspace]);
 
+  const draftStatistics = useMemo(() => {
+    if (!workspace) return { shiftTypes: [], rows: [] };
+
+    const shiftTypes = Array.from(new Map(
+      workspace.slots.map((slot) => {
+        const key = `${slot.shiftCode}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
+        return [key, {
+          key,
+          name: dynamicShiftDisplayName(slot.shiftName, 'משמרת'),
+          startTime: formatTime(slot.startTime),
+          endTime: formatTime(slot.endTime),
+        }] as const;
+      }),
+    ).values());
+
+    const members = new Map<string, string>();
+    workspace.slots.forEach((slot) => {
+      slot.candidates.forEach((candidate) => members.set(candidate.userId, candidate.displayName));
+      slot.assignments.forEach((assignment) => members.set(assignment.userId, assignment.displayName));
+    });
+
+    const rows = Array.from(members, ([userId, displayName]) => {
+      const counts = Object.fromEntries(shiftTypes.map((shiftType) => [shiftType.key, 0])) as Record<string, number>;
+      let total = 0;
+
+      workspace.slots.forEach((slot) => {
+        const assignedHere = slot.assignments.filter((assignment) => assignment.userId === userId).length;
+        if (assignedHere === 0) return;
+        const key = `${slot.shiftCode}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
+        counts[key] = (counts[key] ?? 0) + assignedHere;
+        total += assignedHere;
+      });
+
+      return { userId, displayName, total, counts };
+    }).sort((a, b) => a.displayName.localeCompare(b.displayName, 'he'));
+
+    return { shiftTypes, rows };
+  }, [workspace]);
+
   if (busy && !workspace) return <div className="dynamic-job-types-loading"><LoaderCircle className="spin" size={18} /> טוען טיוטה…</div>;
   if (!workspace) return error ? <div className="users-error" role="alert">{error}</div> : null;
 
@@ -94,6 +133,42 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
         <button type="button" className={viewMode === 'list' ? 'is-active' : ''} onClick={() => setViewMode('list')}><List size={16} /> רשימה</button>
         <button type="button" className={viewMode === 'calendar' ? 'is-active' : ''} onClick={() => setViewMode('calendar')}><CalendarDays size={16} /> טבלה חודשית</button>
       </div>
+
+      <section className="dynamic-draft-statistics" aria-labelledby="dynamic-draft-statistics-title">
+        <div className="dynamic-draft-statistics-head">
+          <div>
+            <h5 id="dynamic-draft-statistics-title">סטטיסטיקת הטיוטה</h5>
+            <p>סיכום זמני של השיבוץ הנוכחי. הנתונים מתעדכנים לאחר כל שינוי בטיוטה.</p>
+          </div>
+        </div>
+        <div className="dynamic-draft-statistics-table-wrap">
+          <table className="dynamic-draft-statistics-table">
+            <thead>
+              <tr>
+                <th scope="col">עובד</th>
+                <th scope="col">סה״כ</th>
+                {draftStatistics.shiftTypes.map((shiftType) => (
+                  <th scope="col" key={shiftType.key}>
+                    <span>{shiftType.name}</span>
+                    <small><bdi dir="ltr">{shiftType.startTime}–{shiftType.endTime}</bdi></small>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {draftStatistics.rows.map((row) => (
+                <tr key={row.userId}>
+                  <th scope="row">{row.displayName}</th>
+                  <td><strong>{row.total}</strong></td>
+                  {draftStatistics.shiftTypes.map((shiftType) => (
+                    <td key={shiftType.key}>{row.counts[shiftType.key] ?? 0}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       {viewMode === 'calendar' ? (
         <div className="dynamic-draft-calendar">

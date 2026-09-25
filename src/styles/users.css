@@ -4218,3 +4218,28 @@
 }
 
 .dynamic-attendance-settings{display:grid;gap:1rem;margin-top:1rem;padding:1rem;border:1px solid var(--color-border);border-radius:14px;background:var(--color-surface-subtle)}
+
+/* Draft-only scheduling statistics */
+.dynamic-draft-statistics {
+  margin: 14px 0 18px;
+  border: 1px solid var(--theme-border);
+  border-radius: 14px;
+  background: var(--theme-surface);
+  overflow: hidden;
+}
+.dynamic-draft-statistics-head { padding: 13px 15px 10px; }
+.dynamic-draft-statistics-head h5 { margin: 0 0 4px; font-size: 1rem; }
+.dynamic-draft-statistics-head p { margin: 0; color: var(--theme-text-muted); font-size: .88rem; }
+.dynamic-draft-statistics-table-wrap { overflow-x: auto; border-top: 1px solid var(--theme-border); }
+.dynamic-draft-statistics-table { width: 100%; min-width: 620px; border-collapse: collapse; text-align: center; }
+.dynamic-draft-statistics-table th,
+.dynamic-draft-statistics-table td { padding: 10px 12px; border-inline-start: 1px solid var(--theme-border); border-bottom: 1px solid var(--theme-border); white-space: nowrap; }
+.dynamic-draft-statistics-table th:first-child,
+.dynamic-draft-statistics-table td:first-child { border-inline-start: 0; }
+.dynamic-draft-statistics-table thead th { background: var(--theme-surface-muted); font-weight: 700; }
+.dynamic-draft-statistics-table thead th span,
+.dynamic-draft-statistics-table thead th small { display: block; }
+.dynamic-draft-statistics-table thead th small { margin-top: 3px; color: var(--theme-text-muted); font-size: .76rem; font-weight: 500; }
+.dynamic-draft-statistics-table tbody th { text-align: start; background: var(--theme-surface-soft); }
+.dynamic-draft-statistics-table tbody tr:last-child th,
+.dynamic-draft-statistics-table tbody tr:last-child td { border-bottom: 0; }
