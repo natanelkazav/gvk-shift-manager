@@ -36,6 +36,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
   const [message, setMessage] = useState<string | null>(null);
   const [pendingCandidate, setPendingCandidate] = useState<Record<string, string>>({});
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [show200PercentHours, setShow200PercentHours] = useState(true);
 
   const load = async (): Promise<void> => {
     setBusy(true);
@@ -74,10 +75,11 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
 
     const shiftTypes = Array.from(new Map(
       workspace.slots.map((slot) => {
-        const key = `${slot.shiftCode}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
+        const displayName = dynamicShiftDisplayName(slot.shiftName, 'משמרת');
+        const key = `${displayName}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
         return [key, {
           key,
-          name: dynamicShiftDisplayName(slot.shiftName, 'משמרת'),
+          name: displayName,
           startTime: formatTime(slot.startTime),
           endTime: formatTime(slot.endTime),
         }] as const;
@@ -90,19 +92,70 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
       slot.assignments.forEach((assignment) => members.set(assignment.userId, assignment.displayName));
     });
 
+    const availabilityWeight = (status: DynamicDraftEditorCandidate['availabilityStatus']): number => {
+      if (status === 'preferred') return 1.25;
+      if (status === 'available') return 1;
+      if (status === 'avoid') return 0.2;
+      return 0;
+    };
+
+    const opportunities = new Map<string, Record<string, number>>();
+    members.forEach((_displayName, userId) => {
+      opportunities.set(userId, Object.fromEntries(shiftTypes.map((shiftType) => [shiftType.key, 0])));
+    });
+    workspace.slots.forEach((slot) => {
+      const key = `${dynamicShiftDisplayName(slot.shiftName, 'משמרת')}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
+      slot.candidates.forEach((candidate) => {
+        const memberOpportunities = opportunities.get(candidate.userId);
+        if (memberOpportunities) memberOpportunities[key] = (memberOpportunities[key] ?? 0) + availabilityWeight(candidate.availabilityStatus);
+      });
+    });
+
+    const assignedByType = Object.fromEntries(shiftTypes.map((shiftType) => [shiftType.key, 0])) as Record<string, number>;
+    workspace.slots.forEach((slot) => {
+      const key = `${dynamicShiftDisplayName(slot.shiftName, 'משמרת')}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
+      assignedByType[key] = (assignedByType[key] ?? 0) + slot.assignments.length;
+    });
+    const totalAssigned = Object.values(assignedByType).reduce((sum, count) => sum + count, 0);
+    const totalOpportunityWeight = Array.from(opportunities.values()).reduce(
+      (sum, values) => sum + Object.values(values).reduce((inner, value) => inner + value, 0), 0,
+    );
+
+    const balanceTone = (actual: number, expected: number, opportunityWeight: number): 'good' | 'watch' | 'bad' | 'muted' => {
+      if (opportunityWeight <= 0) return actual === 0 ? 'muted' : 'bad';
+      const difference = Math.abs(actual - expected);
+      if (difference <= Math.max(1, expected * 0.25)) return 'good';
+      if (difference <= Math.max(2, expected * 0.5)) return 'watch';
+      return 'bad';
+    };
+
     const rows = Array.from(members, ([userId, displayName]) => {
       const counts = Object.fromEntries(shiftTypes.map((shiftType) => [shiftType.key, 0])) as Record<string, number>;
       let total = 0;
-
+      let hours200Percent = 0;
       workspace.slots.forEach((slot) => {
         const assignedHere = slot.assignments.filter((assignment) => assignment.userId === userId).length;
         if (assignedHere === 0) return;
-        const key = `${slot.shiftCode}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
+        const key = `${dynamicShiftDisplayName(slot.shiftName, 'משמרת')}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
         counts[key] = (counts[key] ?? 0) + assignedHere;
         total += assignedHere;
+        hours200Percent += assignedHere * Number(slot.hours200Percent ?? 0);
       });
 
-      return { userId, displayName, total, counts };
+      const memberOpportunities = opportunities.get(userId) ?? {};
+      const typeBalance = Object.fromEntries(shiftTypes.map((shiftType) => {
+        const opportunityWeight = memberOpportunities[shiftType.key] ?? 0;
+        const allOpportunityWeight = Array.from(opportunities.values()).reduce((sum, values) => sum + (values[shiftType.key] ?? 0), 0);
+        const expected = allOpportunityWeight > 0 ? (assignedByType[shiftType.key] ?? 0) * opportunityWeight / allOpportunityWeight : 0;
+        return [shiftType.key, { expected, tone: balanceTone(counts[shiftType.key] ?? 0, expected, opportunityWeight) }] as const;
+      }));
+      const memberTotalOpportunityWeight = Object.values(memberOpportunities).reduce((sum, value) => sum + value, 0);
+      const expectedTotal = totalOpportunityWeight > 0 ? totalAssigned * memberTotalOpportunityWeight / totalOpportunityWeight : 0;
+
+      return {
+        userId, displayName, total, hours200Percent, counts, typeBalance,
+        totalBalance: { expected: expectedTotal, tone: balanceTone(total, expectedTotal, memberTotalOpportunityWeight) },
+      };
     }).sort((a, b) => a.displayName.localeCompare(b.displayName, 'he'));
 
     return { shiftTypes, rows };
@@ -140,6 +193,15 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
             <h5 id="dynamic-draft-statistics-title">סטטיסטיקת הטיוטה</h5>
             <p>סיכום זמני של השיבוץ הנוכחי. הנתונים מתעדכנים לאחר כל שינוי בטיוטה.</p>
           </div>
+          <label className="dynamic-draft-statistics-option">
+            <span>הצג שעות 200%</span>
+            <input
+              type="checkbox"
+              checked={show200PercentHours}
+              onChange={(event) => setShow200PercentHours(event.target.checked)}
+            />
+            <span className="dynamic-draft-statistics-switch" aria-hidden="true"><span /></span>
+          </label>
         </div>
         <div className="dynamic-draft-statistics-table-wrap">
           <table className="dynamic-draft-statistics-table">
@@ -147,6 +209,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
               <tr>
                 <th scope="col">עובד</th>
                 <th scope="col">סה״כ</th>
+                {show200PercentHours ? <th scope="col"><span>שעות 200%</span><small>בטיוטה</small></th> : null}
                 {draftStatistics.shiftTypes.map((shiftType) => (
                   <th scope="col" key={shiftType.key}>
                     <span>{shiftType.name}</span>
@@ -159,10 +222,22 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
               {draftStatistics.rows.map((row) => (
                 <tr key={row.userId}>
                   <th scope="row">{row.displayName}</th>
-                  <td><strong>{row.total}</strong></td>
-                  {draftStatistics.shiftTypes.map((shiftType) => (
-                    <td key={shiftType.key}>{row.counts[shiftType.key] ?? 0}</td>
-                  ))}
+                  <td className={`balance-cell balance-${row.totalBalance.tone}`} title={`צפי יחסי לפי האילוצים: ${row.totalBalance.expected.toFixed(1)}`}><strong>{row.total}</strong></td>
+                  {show200PercentHours ? (
+                    <td className="balance-cell" title="סך שעות 200% במשמרות ששובצו לעובד בטיוטה"><strong>{new Intl.NumberFormat('he-IL', { maximumFractionDigits: 2 }).format(row.hours200Percent)}</strong></td>
+                  ) : null}
+                  {draftStatistics.shiftTypes.map((shiftType) => {
+                    const balance = row.typeBalance[shiftType.key];
+                    return (
+                      <td
+                        key={shiftType.key}
+                        className={`balance-cell balance-${balance.tone}`}
+                        title={`צפי יחסי לפי זמין/מעדיף/מעדיף שלא: ${balance.expected.toFixed(1)}`}
+                      >
+                        {row.counts[shiftType.key] ?? 0}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>

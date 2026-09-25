@@ -4243,3 +4243,88 @@
 .dynamic-draft-statistics-table tbody th { text-align: start; background: var(--theme-surface-soft); }
 .dynamic-draft-statistics-table tbody tr:last-child th,
 .dynamic-draft-statistics-table tbody tr:last-child td { border-bottom: 0; }
+
+/* Availability-normalized draft balance tones */
+.dynamic-draft-statistics-table .balance-cell.balance-good {
+  background: #dcfce7;
+  box-shadow: inset 0 0 0 1px #86efac;
+}
+.dynamic-draft-statistics-table .balance-cell.balance-watch {
+  background: #fef3c7;
+  box-shadow: inset 0 0 0 1px #fcd34d;
+}
+.dynamic-draft-statistics-table .balance-cell.balance-bad {
+  background: #fee2e2;
+  box-shadow: inset 0 0 0 1px #fca5a5;
+}
+.dynamic-draft-statistics-table .balance-cell.balance-muted {
+  background: var(--theme-surface-muted);
+  color: var(--theme-text-muted);
+}
+
+/* Optional 200% hours column in dynamic draft statistics */
+.dynamic-draft-statistics-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dynamic-draft-statistics-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  flex: 0 0 auto;
+  cursor: pointer;
+  color: var(--theme-text-muted);
+  font-size: .86rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+.dynamic-draft-statistics-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dynamic-draft-statistics-switch {
+  width: 38px;
+  height: 22px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--theme-border, #cbd5e1);
+  transition: background .18s ease;
+  direction: ltr;
+}
+
+.dynamic-draft-statistics-switch > span {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 22%);
+  transform: translateX(0);
+  transition: transform .18s ease;
+}
+
+.dynamic-draft-statistics-option input:checked + .dynamic-draft-statistics-switch {
+  background: #2563eb;
+}
+
+.dynamic-draft-statistics-option input:checked + .dynamic-draft-statistics-switch > span {
+  transform: translateX(16px);
+}
+
+.dynamic-draft-statistics-option input:focus-visible + .dynamic-draft-statistics-switch {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .dynamic-draft-statistics-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -89,6 +89,7 @@ export interface DynamicShiftTemplate {
   dayKind: DynamicDayKind;
   startTime: string;
   endTime: string;
+  hours200Percent: number;
   minWorkers: number;
   targetWorkers: number;
   maxWorkers: number;
@@ -360,6 +361,7 @@ export interface SaveDynamicShiftTemplateInput {
   dayKind: DynamicDayKind;
   startTime: string;
   endTime: string;
+  hours200Percent: number;
   minWorkers: number;
   targetWorkers: number;
   maxWorkers: number;
@@ -385,6 +387,7 @@ export interface DynamicSchedulePreviewShift {
   name: string;
   startTime: string;
   endTime: string;
+  hours200Percent: number;
   minWorkers: number;
   targetWorkers: number;
   maxWorkers: number;
@@ -682,7 +685,7 @@ export interface DynamicAvailabilityWorkspace {
   jobTypeId: string;
   jobTypeName: string;
   availabilityConfig: DynamicAvailabilityConfig;
-  schedulingConfig: DynamicSchedulingConfig;
+  schedulingConfig?: DynamicSchedulingConfig;
   slots: DynamicAvailabilityWorkspaceSlot[];
   members: DynamicAvailabilityWorkspaceMember[];
 }
@@ -704,9 +707,16 @@ export interface SaveDynamicAvailabilityShadowSubmissionInput {
 }
 
 
+
+export interface DynamicAvailabilityReminderDelivery {
+  daysBefore: number;
+  sentAt: string | null;
+  recipientCount: number;
+}
+
 export interface DynamicAvailabilityReminderSettings {
   days: number[];
-  deliveries: Array<{ daysBefore: number; sentAt: string; recipientCount: number }>;
+  deliveries: DynamicAvailabilityReminderDelivery[];
 }
 
 export interface DynamicPeriodWorkflowState {
@@ -946,6 +956,7 @@ export interface DynamicDraftEditorSlot {
   shiftName: string;
   startTime: string;
   endTime: string;
+  hours200Percent: number;
   minWorkers: number;
   targetWorkers: number;
   maxWorkers: number;
