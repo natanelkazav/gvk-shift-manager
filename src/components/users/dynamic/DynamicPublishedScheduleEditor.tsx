@@ -112,7 +112,7 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
     return (
       <select
         value={selected}
-        disabled={busy || !workspace.editable}
+        disabled={busy || !workspace?.editable}
         onChange={(event) => {
           setMessage(null);
           setSelection((current) => ({ ...current, [assignment.id]: event.target.value }));
