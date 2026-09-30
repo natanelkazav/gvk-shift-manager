@@ -1,9 +1,10 @@
-import { AlertTriangle, CheckCircle2, LoaderCircle, Save, UserRoundX } from 'lucide-react';
+import { AlertTriangle, CalendarDays, CheckCircle2, List, LoaderCircle, Save, UserRoundX } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
 import type { DynamicPublishedEditorWorkspace } from '../../../types/dynamicScheduling';
 import { Button } from '../../ui';
 import { dynamicShiftDisplayName } from '../../../utils/dynamicShiftDisplayName';
+import MonthCalendar from '../../calendar/MonthCalendar';
 
 interface Props {
   publicationId: string;
@@ -12,6 +13,13 @@ interface Props {
 }
 
 const UNASSIGNED_VALUE = '__UNASSIGNED__';
+
+const availabilityLabel: Record<string, string> = {
+  preferred: 'מעדיף',
+  available: 'זמין',
+  avoid: 'מעדיף שלא',
+  unavailable: 'לא זמין',
+};
 
 const formatDate = (value: string): string => {
   const [year, month, day] = value.slice(0, 10).split('-');
@@ -27,6 +35,7 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
   const [message, setMessage] = useState<string | null>(null);
   const [selection, setSelection] = useState<Record<string, string>>({});
   const [reason, setReason] = useState<Record<string, string>>({});
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 
   const load = async (): Promise<void> => {
     setBusy(true);
@@ -94,6 +103,29 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
   }, [selection, workspace]);
 
   const hasUnsavedChanges = pendingChanges.length > 0;
+
+  const candidateLabel = (displayName: string, status: string | null): string =>
+    `${displayName} · ${status ? availabilityLabel[status] ?? status : 'לא הוגש'}`;
+
+  const renderAssignmentSelect = (slot: DynamicPublishedEditorWorkspace['slots'][number], assignment: DynamicPublishedEditorWorkspace['slots'][number]['assignments'][number]) => {
+    const selected = selection[assignment.id] ?? assignment.userId;
+    return (
+      <select
+        value={selected}
+        disabled={busy || !workspace.editable}
+        onChange={(event) => {
+          setMessage(null);
+          setSelection((current) => ({ ...current, [assignment.id]: event.target.value }));
+        }}
+      >
+        <option value={assignment.userId}>{candidateLabel(assignment.displayName, slot.candidates.find((candidate) => candidate.userId === assignment.userId)?.availabilityStatus ?? null)} (נוכחי)</option>
+        <option value={UNASSIGNED_VALUE}>— השאר משמרת לא מאוישת —</option>
+        {slot.candidates
+          .filter((candidate) => candidate.userId !== assignment.userId)
+          .map((candidate) => <option key={candidate.userId} value={candidate.userId}>{candidateLabel(candidate.displayName, candidate.availabilityStatus)}</option>)}
+      </select>
+    );
+  };
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent): void => {
@@ -164,6 +196,54 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
       {error ? <div className="users-error" role="alert">{error}</div> : null}
       {message ? <div className="dynamic-shadow-success"><CheckCircle2 size={16} />{message}</div> : null}
 
+      <div className="dynamic-draft-view-toggle" role="group" aria-label="תצוגת עריכת לוח מפורסם">
+        <button type="button" className={viewMode === 'list' ? 'is-active' : ''} onClick={() => setViewMode('list')}><List size={16} /> רשימה</button>
+        <button type="button" className={viewMode === 'calendar' ? 'is-active' : ''} onClick={() => setViewMode('calendar')}><CalendarDays size={16} /> טבלה חודשית</button>
+      </div>
+
+      {viewMode === 'calendar' ? (
+        <div className="dynamic-draft-calendar">
+          <MonthCalendar
+            year={workspace.year}
+            month={workspace.month}
+            renderDayContent={({ date }) => {
+              const daySlots = workspace.slots.filter((slot) => slot.shiftDate.slice(0, 10) === date);
+              if (daySlots.length === 0) return <span className="dynamic-draft-calendar-empty">אין משמרות</span>;
+              return (
+                <div className="dynamic-draft-calendar-slots">
+                  {daySlots.map((slot) => (
+                    <div key={slot.slotId} className="dynamic-draft-calendar-shift">
+                      <div className="dynamic-draft-calendar-shift-head">
+                        <strong>{dynamicShiftDisplayName(slot.shiftName, 'משמרת')}</strong>
+                        <bdi dir="ltr">{formatTime(slot.startTime)}–{formatTime(slot.endTime)}</bdi>
+                      </div>
+                      {slot.assignments.map((assignment) => (
+                        <div key={assignment.id}>{renderAssignmentSelect(slot, assignment)}</div>
+                      ))}
+                      {slot.assignments.length === 0 && slot.intentionallyUnassignedCount === 0 ? <span className="dynamic-draft-calendar-unassigned">לא מאויש</span> : null}
+                      {slot.intentionallyUnassignedCount > 0 ? (
+                        <select
+                          value={selection[`empty-${slot.slotId}`] ?? ''}
+                          disabled={busy || !workspace.editable}
+                          aria-label={`${dynamicShiftDisplayName(slot.shiftName, 'משמרת')} - עמדה לא מאוישת`}
+                          onChange={(event) => {
+                            setMessage(null);
+                            setSelection((current) => ({ ...current, [`empty-${slot.slotId}`]: event.target.value }));
+                          }}
+                        >
+                          <option value="">לא מאויש בכוונה</option>
+                          {slot.candidates.map((candidate) => <option key={candidate.userId} value={candidate.userId}>{candidateLabel(candidate.displayName, candidate.availabilityStatus)}</option>)}
+                        </select>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              );
+            }}
+            getDayClassName={({ date }) => workspace.slots.some((slot) => slot.shiftDate.slice(0, 10) === date) ? 'dynamic-draft-calendar-day' : null}
+          />
+        </div>
+      ) : (
       <div className="dynamic-published-editor-list">
         {workspace.slots.map((slot) => (
           <section className="dynamic-published-editor-slot" key={slot.slotId}>
@@ -188,20 +268,7 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
                     {!assignment.userIsActive ? <small className="is-inactive">משתמש לא פעיל — נשמר כהיסטוריה אך אינו זמין לבחירה מחדש.</small> : null}
                     {assignment.originalDisplayName && assignment.originalUserId !== assignment.userId ? <small>סבב מקורי: {assignment.originalDisplayName}</small> : null}
                   </div>
-                  <select
-                    value={selected}
-                    disabled={busy || !workspace.editable}
-                    onChange={(event) => {
-                      setMessage(null);
-                      setSelection((current) => ({ ...current, [key]: event.target.value }));
-                    }}
-                  >
-                    <option value={assignment.userId}>{assignment.displayName} (נוכחי)</option>
-                    <option value={UNASSIGNED_VALUE}>— השאר משמרת לא מאוישת —</option>
-                    {workspace.members
-                      .filter((member) => member.userId !== assignment.userId)
-                      .map((member) => <option key={member.userId} value={member.userId}>{member.displayName}</option>)}
-                  </select>
+                  {renderAssignmentSelect(slot, assignment)}
                   <input
                     type="text"
                     value={reason[key] ?? ''}
@@ -234,7 +301,7 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
                   }}
                 >
                   <option value="">השאר לא מאויש…</option>
-                  {workspace.members.map((member) => <option key={member.userId} value={member.userId}>{member.displayName}</option>)}
+                  {slot.candidates.map((candidate) => <option key={candidate.userId} value={candidate.userId}>{candidateLabel(candidate.displayName, candidate.availabilityStatus)}</option>)}
                 </select>
                 <input
                   type="text"
@@ -249,6 +316,7 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
           </section>
         ))}
       </div>
+      )}
 
       <div className={`dynamic-published-editor-savebar${hasUnsavedChanges ? ' has-changes' : ''}`}>
         <div>

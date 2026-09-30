@@ -758,6 +758,10 @@ export interface DynamicPublishedEditorMember {
   displayName: string;
 }
 
+export interface DynamicPublishedEditorCandidate extends DynamicPublishedEditorMember {
+  availabilityStatus: 'available' | 'unavailable' | 'preferred' | 'avoid' | null;
+}
+
 export interface DynamicPublishedEditorAssignment {
   id: string;
   userId: string;
@@ -778,6 +782,7 @@ export interface DynamicPublishedEditorSlot {
   endTime: string;
   intentionallyUnassignedCount: number;
   assignments: DynamicPublishedEditorAssignment[];
+  candidates: DynamicPublishedEditorCandidate[];
 }
 
 export interface DynamicPublishedEditorWorkspace {
