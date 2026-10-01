@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import DailyReportDashboardCards from '../../features/dailyReports/components/DailyReportDashboardCards';
 import AttendanceClockCards from './AttendanceClockCards';
 import ManagerConfigurableWidgets from './ManagerConfigurableWidgets';
+import ContactChangesWidget from './ContactChangesWidget';
 import type {
   DynamicRuntimeContext,
   DynamicRuntimeRole,
@@ -59,6 +60,7 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
       <DailyReportDashboardCards />
       <AttendanceClockCards />
       <ManagerConfigurableWidgets />
+      <ContactChangesWidget />
       <div className="dynamic-dashboard-role-grid">
         {context.roles.map((role) => (
           <section className="dashboard-card dynamic-dashboard-role-card" key={role.jobTypeId}>

@@ -301,6 +301,18 @@ export const permissionGroups:
       ],
     },
     {
+      id: 'contacts',
+      title: 'אנשי קשר',
+      description: 'ספר אנשי קשר של לקוחות ועובדי המערכת, ייבוא ועדכונים.',
+      tone: 'blue',
+      permissions: [
+        { key: 'contacts.view', label: 'צפייה באנשי קשר', description: 'צפייה בטאב אנשי קשר ושימוש בחיוג, WhatsApp ומייל.' },
+        { key: 'contacts.edit', label: 'עריכת אנשי קשר', description: 'עריכה ידנית של פרטי איש קשר.' },
+        { key: 'contacts.import', label: 'ייבוא אנשי קשר', description: 'העלאת קובץ Excel ועדכון ספר אנשי הקשר.' },
+        { key: 'contacts.changes_view', label: 'צפייה בשינויי אנשי קשר', description: 'צפייה באנשי קשר חדשים או מעודכנים ובסיכום השינויים.' },
+      ],
+    },
+    {
       id: 'archive',
       title: 'ארכיון',
       description:

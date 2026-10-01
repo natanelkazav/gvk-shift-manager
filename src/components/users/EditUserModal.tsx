@@ -59,6 +59,10 @@ const SYSTEM_PERMISSION_KEYS: PermissionKey[] = [
   'audit.view',
   'attendance.view',
   'attendance.manage',
+  'contacts.view',
+  'contacts.edit',
+  'contacts.import',
+  'contacts.changes_view',
 ];
 
 interface EditUserModalProps {

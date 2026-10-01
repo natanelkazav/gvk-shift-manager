@@ -53,6 +53,11 @@ export const ALL_PERMISSION_KEYS:
     'schedule_import.manage',
     'schedule_export.manage',
 
+    'contacts.view',
+    'contacts.edit',
+    'contacts.import',
+    'contacts.changes_view',
+
     'audit.view',
   ];
 

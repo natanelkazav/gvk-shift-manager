@@ -1,4 +1,5 @@
 import {
+  ContactRound,
   Archive,
   BarChart3,
   Bell,
@@ -227,6 +228,13 @@ const navigationItems:
       ],
       runtimeMode: 'legacy',
       },
+    {
+      label: 'אנשי קשר',
+      path: '/contacts',
+      icon: ContactRound,
+      requiredPermissions: ['contacts.view'],
+    },
+
     {
       label:
         'ניהול משתמשים',

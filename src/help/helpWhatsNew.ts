@@ -9,6 +9,12 @@ export interface HelpWhatsNewItem {
 
 export const helpWhatsNewItems: readonly HelpWhatsNewItem[] = [
   {
+    id: 'contacts-directory-2026-10',
+    title: 'ספר אנשי קשר ללקוחות ולעובדים',
+    description: 'נוסף טאב אנשי קשר עם הרשאות נפרדות לצפייה, עריכה, ייבוא וצפייה בשינויים. ניתן לייבא את תבנית Excel של אושר עד, לסנן בהיררכיה לפי לקוח ואז סניף, להוסיף איש קשר ידנית עם לקוח, סניף, טלפון ומייל, לקבל כרטיסים עם חיוג, WhatsApp ומייל, ולזהות אנשי קשר חדשים, מעודכנים או מספרים שדורשים בדיקה. במסך עובדים מוצגים אנשי הקשר של משתמשי המערכת.',
+    requiredAnyPermissions: ['contacts.view'],
+  },
+  {
     id: 'optional-attendance-time-clock',
     title: 'שעון נוכחות אופציונלי עם מיקום ושכר בפועל',
     description:

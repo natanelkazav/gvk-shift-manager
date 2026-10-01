@@ -27,6 +27,7 @@ import ShiftSwapsPage from '../pages/ShiftSwapsPage';
 import ShiftsPage from '../pages/ShiftsPage';
 import StatisticsPage from '../pages/StatisticsPage';
 import UsersPage from '../pages/UsersPage';
+import ContactsPage from '../pages/ContactsPage';
 
 export const router = createBrowserRouter([
   {
@@ -54,6 +55,11 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <DashboardPage /> },
+
+          {
+            element: <PermissionRoute permission="contacts.view" />,
+            children: [{ path: 'contacts', element: <ContactsPage /> }],
+          },
 
           {
             element: <PermissionRoute permission="audit.view" />,

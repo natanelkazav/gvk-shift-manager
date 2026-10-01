@@ -62,7 +62,12 @@ export type PermissionKey =
   | 'settings.manage'
 
   | 'schedule_import.manage'
-  | 'schedule_export.manage';
+  | 'schedule_export.manage'
+
+  | 'contacts.view'
+  | 'contacts.edit'
+  | 'contacts.import'
+  | 'contacts.changes_view';
 
 export interface UserProfile {
   id: string;
