@@ -18,6 +18,17 @@ type ViewMode = 'list' | 'calendar';
 
 const weekdays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
+const availabilityLabel: Record<string, string> = {
+  preferred: 'מעדיף',
+  available: 'זמין',
+  avoid: 'מעדיף שלא',
+  unavailable: 'לא זמין',
+};
+
+function selfEditCandidateLabel(displayName: string, status: string | null): string {
+  return `${displayName} · ${status ? availabilityLabel[status] ?? status : 'לא הוגש'}`;
+}
+
 function localDate(value: string): Date {
   const [year, month, day] = value.slice(0, 10).split('-').map(Number);
   return new Date(year, month - 1, day, 12, 0, 0, 0);
@@ -506,8 +517,10 @@ function MyDynamicShiftsPage() {
                                         disabled={!selfEditWorkspace.editable || (!assignment.isMine && !selfEditWorkspace.canEditAll) || selfEditSavingId === assignment.id}
                                         onChange={(event) => void handleSelfEditAssignment(assignment.id, event.target.value)}
                                       >
-                                        {selfEditWorkspace.members.map((member) => (
-                                          <option key={member.userId} value={member.userId}>{member.displayName}</option>
+                                        {assignment.candidates.map((candidate) => (
+                                          <option key={candidate.userId} value={candidate.userId}>
+                                            {selfEditCandidateLabel(candidate.displayName, candidate.availabilityStatus)}
+                                          </option>
                                         ))}
                                       </select>
                                     </label>
@@ -632,8 +645,10 @@ function MyDynamicShiftsPage() {
                   disabled={!selfEditWorkspace.editable || (!selectedCalendarEditorAssignment.isMine && !selfEditWorkspace.canEditAll) || selfEditSavingId === selectedCalendarEditorAssignment.id}
                   onChange={(event) => void handleSelfEditAssignment(selectedCalendarEditorAssignment.id, event.target.value)}
                 >
-                  {selfEditWorkspace.members.map((member) => (
-                    <option key={member.userId} value={member.userId}>{member.displayName}</option>
+                  {selectedCalendarEditorAssignment.candidates.map((candidate) => (
+                    <option key={candidate.userId} value={candidate.userId}>
+                      {selfEditCandidateLabel(candidate.displayName, candidate.availabilityStatus)}
+                    </option>
                   ))}
                 </select>
                 {selfEditSavingId === selectedCalendarEditorAssignment.id ? <small><LoaderCircle className="spin" size={15} /> שומר…</small> : null}

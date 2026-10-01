@@ -281,13 +281,15 @@ async getScheduleByMonth(
     }
   }
 
-  async getCurrentScheduleEditOptions():
-    Promise<CurrentScheduleEditOptions> {
+  async getCurrentScheduleEditOptions(
+    shiftId: string,
+  ): Promise<CurrentScheduleEditOptions> {
     const {
       data,
       error,
     } = await supabase.rpc(
       'get_current_schedule_edit_options',
+      { requested_shift_id: shiftId },
     );
 
     if (error) {

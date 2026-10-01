@@ -891,6 +891,10 @@ export interface DynamicSelfEditMember {
   displayName: string;
 }
 
+export interface DynamicSelfEditCandidate extends DynamicSelfEditMember {
+  availabilityStatus: 'available' | 'unavailable' | 'preferred' | 'avoid' | null;
+}
+
 export interface DynamicSelfEditAssignment {
   id: string;
   shiftDate: string;
@@ -903,6 +907,7 @@ export interface DynamicSelfEditAssignment {
   isMine: boolean;
   userEditedBy: string | null;
   userEditedAt: string | null;
+  candidates: DynamicSelfEditCandidate[];
 }
 
 export interface DynamicSelfEditWorkspace {

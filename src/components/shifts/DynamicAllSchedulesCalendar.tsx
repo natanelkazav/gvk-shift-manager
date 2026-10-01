@@ -35,6 +35,19 @@ interface DynamicAllSchedulesCalendarProps {
 const ROLE_TONE_COUNT = 8;
 const UNASSIGNED_VALUE = '__unassigned__';
 
+const availabilityLabel = (status: 'available' | 'unavailable' | 'preferred' | 'avoid' | null): string => {
+  switch (status) {
+    case 'preferred': return 'מעדיף';
+    case 'available': return 'זמין';
+    case 'avoid': return 'מעדיף שלא';
+    case 'unavailable': return 'לא זמין';
+    default: return 'לא הוגש';
+  }
+};
+
+const publishedCandidateLabel = (displayName: string, status: 'available' | 'unavailable' | 'preferred' | 'avoid' | null): string =>
+  `${displayName} · ${availabilityLabel(status)}`;
+
 const matchesAssignmentFilter = (
   slot: DynamicScheduleCalendarSlot,
   filter: AssignmentFilter,
@@ -593,8 +606,8 @@ function DynamicAllSchedulesCalendar({
                     >
                       <option value={assignment.userId}>{assignment.displayName} (נוכחי)</option>
                       <option value={UNASSIGNED_VALUE}>— השאר לא משובץ —</option>
-                      {editor.members.filter((member) => member.userId !== assignment.userId).map((member) => (
-                        <option key={member.userId} value={member.userId}>{member.displayName}</option>
+                      {selectedEditorSlot.candidates.filter((candidate) => candidate.userId !== assignment.userId).map((candidate) => (
+                        <option key={candidate.userId} value={candidate.userId}>{publishedCandidateLabel(candidate.displayName, candidate.availabilityStatus)}</option>
                       ))}
                     </select>
                   </label>
@@ -605,7 +618,9 @@ function DynamicAllSchedulesCalendar({
                     <span>עמדה לא משובצת</span>
                     <select value={emptySelection} disabled={!editor.editable || saving} onChange={(event) => setEmptySelection(event.target.value)}>
                       <option value="">השאר לא משובץ</option>
-                      {editor.members.map((member) => <option key={member.userId} value={member.userId}>{member.displayName}</option>)}
+                      {selectedEditorSlot.candidates.map((candidate) => (
+                        <option key={candidate.userId} value={candidate.userId}>{publishedCandidateLabel(candidate.displayName, candidate.availabilityStatus)}</option>
+                      ))}
                     </select>
                   </label>
                 ) : null}

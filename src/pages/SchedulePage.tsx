@@ -1522,8 +1522,8 @@ const canEditDisplayedSchedule =
       setShiftEditSuccess(null);
 
       if (
-        editDispatchers.length >
-        0
+        isDraftDisplayedPeriod &&
+        editDispatchers.length > 0
       ) {
         return;
       }
@@ -1533,7 +1533,7 @@ const canEditDisplayedSchedule =
       try {
         const options =
           await scheduleService
-            .getCurrentScheduleEditOptions();
+            .getCurrentScheduleEditOptions(shift.id);
 
         setEditDispatchers(
           options.dispatchers,

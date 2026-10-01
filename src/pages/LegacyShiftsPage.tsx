@@ -831,7 +831,7 @@ const handleWorkspaceTabChange =
         ) {
           const options =
             await scheduleService
-              .getCurrentScheduleEditOptions();
+              .getCurrentScheduleEditOptions(entry.sourceId);
 
           setEditUsers(
             options.dispatchers.map(
