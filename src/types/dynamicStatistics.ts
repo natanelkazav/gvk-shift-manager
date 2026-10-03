@@ -10,6 +10,8 @@ export interface DynamicStatisticsJobTypeOption {
   dataPeriodCount: number;
   payrollEnabled: boolean;
   attendanceEnabled: boolean;
+  activityTrackingEnabled?: boolean;
+  personalOnly?: boolean;
 }
 
 export interface DynamicStatisticsPersonRow {
@@ -100,6 +102,8 @@ export interface DynamicStatisticsWorkspace {
     availabilityEnabled: boolean;
     payrollEnabled: boolean;
   attendanceEnabled: boolean;
+  activityTrackingEnabled?: boolean;
+  personalOnly?: boolean;
     baseRate: number;
     shiftRate: number;
   };

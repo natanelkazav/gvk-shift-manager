@@ -90,6 +90,11 @@ function DynamicJobTypeStatisticsView({
     (sum, row) => sum + row.substitutionCount,
     0,
   );
+  const visibleAssignments = selected.size === 0 ? data.summary.assignmentCount : filteredAssignmentCount;
+  const visibleHours = selected.size === 0 ? data.summary.timedHours : filteredTimedHours;
+  const workersWithAssignments = people.filter((row) => row.assignmentCount > 0).length;
+  const averageAssignmentsPerWorker = workersWithAssignments ? visibleAssignments / workersWithAssignments : 0;
+  const averageHoursPerTimedAssignment = data.summary.timedAssignmentCount ? visibleHours / data.summary.timedAssignmentCount : 0;
 
   const formatCurrency = (value: number): string => new Intl.NumberFormat('he-IL', {
     style: 'currency',
@@ -161,6 +166,14 @@ function DynamicJobTypeStatisticsView({
               <strong>{selected.size === 0 ? data.summary.substitutionCount : filteredSubstitutions}</strong>
             </div>
           </article>
+          <article>
+            <CalendarDays size={22} aria-hidden="true" />
+            <div><span>ממוצע שיבוצים לעובד פעיל</span><strong>{formatHours(averageAssignmentsPerWorker)}</strong></div>
+          </article>
+          <article>
+            <Clock3 size={22} aria-hidden="true" />
+            <div><span>ממוצע שעות לשיבוץ מתוזמן</span><strong>{formatHours(averageHoursPerTimedAssignment)}</strong></div>
+          </article>
 
           {attendanceEnabled && selectedUserIds.length === 1 ? (
             <>
@@ -194,6 +207,18 @@ function DynamicJobTypeStatisticsView({
   if (mode === 'charts') {
     return (
       <div className="statistics-charts-grid">
+        <StatisticsPieChart
+          title="חלוקת שיבוצים לפי סוג עבודה"
+          description="היחס בין סוגי המשמרות או יחידות העבודה בתקופה שנבחרה."
+          slices={data.shifts.filter((row) => row.assignmentCount > 0).map((row) => ({ label: row.shiftName || row.shiftCode, value: row.assignmentCount }))}
+        />
+
+        <StatisticsPieChart
+          title="חלוקת עומס בין עובדים"
+          description="איזה חלק מסך השיבוצים בוצע על ידי כל עובד שנבחר."
+          slices={people.filter((row) => row.assignmentCount > 0).map((row) => ({ label: displayName(row.displayName,row.scheduleName), value: row.assignmentCount }))}
+        />
+
         <StatisticsBarChart
           title="שיבוצים לפי עובד"
           description="מספר יחידות העבודה בפועל לכל עובד בתקופה שנבחרה."

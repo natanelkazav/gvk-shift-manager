@@ -87,6 +87,7 @@ const defaultSchedulingConfig = (): DynamicSchedulingConfig => ({
   scheduleChangeMode: 'none',
   attendance: { enabled: false, requireLocation: true, workplaceName: '', latitude: null, longitude: null, radiusMeters: 150, outsidePolicy: 'flag', allowUnscheduled: false },
   dailyReports: { enabled: false, recipientUserIds: [], allowAddSubjects: true, allowAddCustomers: true, allowAttachments: true },
+  activityTracking: { enabled: false, activities: [{ key: 'operations', label: 'תפעול' }, { key: 'sales', label: 'מכירות' }], reminderEnabled: true, reminderTime: '20:00' },
   minimumMode: 'soft',
   maximumMode: 'hard',
   proportionalFairness: true,
@@ -187,11 +188,13 @@ const normalizeShiftPattern = (value: unknown): DynamicShiftPatternDefinition =>
   return {
     enabled: source.enabled !== false,
     workMode:
-      source.workMode === 'on_call_daily'
-        ? 'on_call_daily'
-        : source.workMode === 'on_call_hourly' || source.workMode === 'on_call'
-          ? 'on_call_hourly'
-          : 'shifts',
+      source.workMode === 'none'
+        ? 'none'
+        : source.workMode === 'on_call_daily'
+          ? 'on_call_daily'
+          : source.workMode === 'on_call_hourly' || source.workMode === 'on_call'
+            ? 'on_call_hourly'
+            : 'shifts',
     dailyOnCallWindow: {
       startTime:
         typeof (source.dailyOnCallWindow as Record<string, unknown> | undefined)?.startTime === 'string'
@@ -316,6 +319,8 @@ const deriveAutomaticCapabilities = (input: SaveDynamicJobTypeInput): string[] =
   else capabilities.delete('daily_reports');
   if (input.schedulingConfig.attendance?.enabled) capabilities.add('attendance');
   else capabilities.delete('attendance');
+  if (input.schedulingConfig.activityTracking?.enabled) capabilities.add('activity_tracking');
+  else capabilities.delete('activity_tracking');
   if (input.payModel !== 'none') capabilities.add('payroll');
   if (input.schedulingStrategy !== 'none' && input.availabilityConfig.monthlyCapacity.enabled) capabilities.add('monthly_shift_capacity');
   if (input.schedulingStrategy !== 'none') capabilities.add('schedule_publication_notifications');
@@ -353,6 +358,7 @@ const permissionFeatureLabels: Record<string, string> = {
   payroll: 'שכר',
   daily_reports: 'דיווח עבודה יומי',
   attendance: 'נוכחות ושעון עבודה',
+  activity_tracking: 'מעקב פעילות',
 };
 
 const permissionBlueprint: PermissionBlueprintItem[] = [
@@ -384,6 +390,10 @@ const permissionBlueprint: PermissionBlueprintItem[] = [
   { permissionKey: 'attendance.view_team', featureKey: 'attendance', audience: 'manager', label: 'צפייה בנוכחות התפקיד', description: 'צפייה בדוחות נוכחות, שעות ומיקומי כניסה/יציאה.', defaultEnabled: true },
   { permissionKey: 'attendance.edit_team', featureKey: 'attendance', audience: 'manager', label: 'עריכת נוכחות התפקיד', description: 'תיקון זמני כניסה ויציאה של עובדי התפקיד עם Audit Log.', defaultEnabled: false },
   { permissionKey: 'attendance.edit_archived', featureKey: 'attendance', audience: 'manager', label: 'עריכת נוכחות בארכיון', description: 'תיקון חריג של דיווחי נוכחות מחודשים קודמים.', defaultEnabled: false },
+  { permissionKey: 'activity_tracking.use', featureKey: 'activity_tracking', audience: 'member', label: 'שימוש במעקב פעילות', description: 'מעבר בין פעילויות וסיום יום.', defaultEnabled: true },
+  { permissionKey: 'activity_tracking.view_own', featureKey: 'activity_tracking', audience: 'member', label: 'צפייה בסטטיסטיקות האישיות שלי', description: 'הצגת טאב הסטטיסטיקות עם נתוני הפעילות האישיים בלבד.', defaultEnabled: true },
+  { permissionKey: 'activity_tracking.view_team', featureKey: 'activity_tracking', audience: 'manager', label: 'צפייה במעקב פעילות התפקיד', description: 'צפייה בסטטיסטיקות וביומן הפעילות.', defaultEnabled: true },
+  { permissionKey: 'activity_tracking.edit_team', featureKey: 'activity_tracking', audience: 'manager', label: 'עריכת מקטעי פעילות', description: 'תיקון מקטעי פעילות עם תיעוד.', defaultEnabled: false },
 ];
 
 const derivePermissionFeatures = (input: SaveDynamicJobTypeInput): string[] => {
@@ -398,6 +408,7 @@ const derivePermissionFeatures = (input: SaveDynamicJobTypeInput): string[] => {
   if (input.statisticsConfig.enabled) features.add('statistics');
   if (input.payModel !== 'none') features.add('payroll');
   if (input.schedulingConfig.dailyReports?.enabled) features.add('daily_reports');
+  if (input.schedulingConfig.activityTracking?.enabled) features.add('activity_tracking');
   return Array.from(features);
 };
 
@@ -1425,10 +1436,9 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
             </div>
 
             <div className="dynamic-config-section dynamic-form-section dynamic-work-structure-section">
-              <div className="dynamic-section-heading"><span>1</span><div><h3>מבנה העבודה</h3><small>בחר משמרות, כוננות שעתית או כוננות יומית והגדר את ימי הפעילות.</small></div></div>
+              <div className="dynamic-section-heading"><span>1</span><div><h3>מבנה העבודה</h3><small>בחר ללא שיבוץ, משמרות, כוננות שעתית או כוננות יומית.</small></div></div>
               <p>
-                בחר קודם אם התפקיד עובד במבנה של משמרות או כוננות. לאחר מכן הגדר בנפרד את ימי
-                החול, שישי, שבת והחגים.
+                בחר אם לתפקיד יש בכלל מבנה שיבוץ. בתפקידים כמו מעקב פעילות ניתן לבחור „ללא” ולהפעיל רק את היכולות הרלוונטיות לתפקיד.
               </p>
 
               {(() => {
@@ -1463,6 +1473,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                   <>
                     <div className="dynamic-choice-grid">
                       {([
+                        ['none', 'ללא'],
                         ['shifts', 'משמרות'],
                         ['on_call_hourly', 'כוננות שעתית'],
                         ['on_call_daily', 'כוננות יומית'],
@@ -1472,7 +1483,23 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                             type="radio"
                             name="work-structure-mode"
                             checked={pattern.workMode === key}
-                            onChange={() => updatePattern({ ...pattern, workMode: key })}
+                            onChange={() => {
+                              updatePattern({ ...pattern, workMode: key });
+                              if (key === 'none') {
+                                setForm((current) => {
+                                  if (!current) return current;
+                                  return {
+                                    ...current,
+                                    schedulingStrategy: 'none',
+                                    schedulingConfig: {
+                                      ...current.schedulingConfig,
+                                      scheduleChangeMode: 'none',
+                                      shiftPattern: { ...normalizeShiftPattern(current.schedulingConfig.shiftPattern), workMode: 'none' },
+                                    },
+                                  };
+                                });
+                              }
+                            }}
                           />
                           <span>{label}</span>
                         </label>
@@ -1480,13 +1507,16 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                     </div>
 
                     <small>
-                      {pattern.workMode === 'on_call_hourly'
+                      {pattern.workMode === 'none'
+                        ? 'לתפקיד זה אין לוח שיבוצים, אילוצים או ניהול שינויי שיבוץ. יכולות אחרות, כמו מעקב פעילות, ממשיכות לעבוד כרגיל.'
+                        : pattern.workMode === 'on_call_hourly'
                         ? 'בכוננות שעתית מגדירים חלון כוננות אחד או יותר לכל סוג יום, למשל א׳–ה׳ 06:00–16:00 ושישי 06:00–14:00.'
                         : pattern.workMode === 'on_call_daily'
                           ? 'בכוננות יומית העובד משובץ לכוננות של יום שלם. בוחרים רק באילו סוגי ימים התפקיד פעיל, ללא שעות התחלה וסיום.'
                           : 'במשמרות כל חלון הוא משמרת נפרדת. ניתן להוסיף כמה משמרות לכל סוג יום ולתת לכל אחת שם ושעות.'}
                     </small>
 
+                    {pattern.workMode !== 'none' ? (<>
                     {pattern.workMode === 'on_call_daily' ? (
                       <div className="dynamic-daily-on-call-window">
                         <div>
@@ -1768,9 +1798,22 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                         );
                       })}
                     </div>
+                    </>) : null}
                   </>
                 );
               })()}
+            </div>
+
+            <div className="dynamic-config-section dynamic-form-section">
+              <div className="dynamic-section-heading"><span>4</span><div><h3>מעקב פעילות</h3><small>טיימר דינמי למעבר בין תחומי עבודה במהלך היום.</small></div></div>
+              <label className="dynamic-checkbox-row"><input type="checkbox" checked={form.schedulingConfig.activityTracking?.enabled ?? false} onChange={(e)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,activityTracking:{...(form.schedulingConfig.activityTracking ?? {activities:[{key:'operations',label:'תפעול'},{key:'sales',label:'מכירות'}],reminderEnabled:true,reminderTime:'20:00'}),enabled:e.target.checked}}})}/><span>הפעל מעקב פעילות לתפקיד</span></label>
+              {form.schedulingConfig.activityTracking?.enabled ? <div className="dynamic-activity-config">
+                <strong>פעילויות למדידה</strong>
+                {(form.schedulingConfig.activityTracking.activities ?? []).map((activity,index)=><div className="dynamic-form-grid" key={activity.key}><Input label={`פעילות ${index+1}`} value={activity.label} onChange={(e)=>{const activities=[...(form.schedulingConfig.activityTracking?.activities??[])];activities[index]={...activity,label:e.target.value,key:activity.key||`activity_${index+1}`};setForm({...form,schedulingConfig:{...form.schedulingConfig,activityTracking:{...form.schedulingConfig.activityTracking!,activities}}})}}/><Button type="button" variant="secondary" onClick={()=>{const activities=(form.schedulingConfig.activityTracking?.activities??[]).filter((_,i)=>i!==index);setForm({...form,schedulingConfig:{...form.schedulingConfig,activityTracking:{...form.schedulingConfig.activityTracking!,activities}}})}}>הסר</Button></div>)}
+                <Button type="button" variant="secondary" onClick={()=>{const activities=[...(form.schedulingConfig.activityTracking?.activities??[]),{key:`activity_${Date.now()}`,label:'פעילות חדשה'}];setForm({...form,schedulingConfig:{...form.schedulingConfig,activityTracking:{...form.schedulingConfig.activityTracking!,activities}}})}}>+ הוסף פעילות</Button>
+                <div className="dynamic-form-grid"><label className="dynamic-checkbox-row"><input type="checkbox" checked={form.schedulingConfig.activityTracking.reminderEnabled} onChange={(e)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,activityTracking:{...form.schedulingConfig.activityTracking!,reminderEnabled:e.target.checked}}})}/><span>שלח תזכורת אם היום לא הסתיים</span></label><Input label="שעת תזכורת" type="time" value={form.schedulingConfig.activityTracking.reminderTime} onChange={(e)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,activityTracking:{...form.schedulingConfig.activityTracking!,reminderTime:e.target.value}}})}/></div>
+                <small>לאחר 12 שעות רצופות ללא פעולה היום יסומן אוטומטית כ„דורש בדיקה” במקום להמשיך לצבור זמן ללא הגבלה.</small>
+              </div>:null}
             </div>
 
             <div className="dynamic-config-section dynamic-availability-config dynamic-form-section" style={{ display: form.schedulingStrategy === 'none' ? 'none' : undefined }}>

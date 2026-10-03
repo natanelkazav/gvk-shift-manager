@@ -65,6 +65,7 @@ import type {
 import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
 import { dynamicRuntimeService } from '../services/dynamicRuntimeService';
 import { dynamicCutoverService } from '../services/dynamicCutoverService';
+import { activityTrackingService } from '../services/activityTrackingService';
 import type { DynamicRuntimeContext } from '../types/dynamicRuntime';
 
 import '../styles/layout.css';
@@ -497,6 +498,8 @@ const [
     setHasDynamicManagementWorkspace,
   ] = useState(false);
 
+  const [canViewOwnActivityStatistics, setCanViewOwnActivityStatistics] = useState(false);
+
   useEffect(() => {
     let active = true;
     void Promise.all([dynamicRuntimeService.getMyRuntimeContext(), dynamicCutoverService.getState()])
@@ -585,6 +588,15 @@ const [
     return () => { active = false; };
   }, [profile?.id]);
 
+
+  useEffect(() => {
+    let active = true;
+    void activityTrackingService.canViewOwnStatistics()
+      .then((value) => { if (active) setCanViewOwnActivityStatistics(value); })
+      .catch(() => { if (active) setCanViewOwnActivityStatistics(false); });
+    return () => { active = false; };
+  }, [profile?.id]);
+
 const visibleNavigationItems =
   useMemo(
     () =>
@@ -603,7 +615,7 @@ const visibleNavigationItems =
             item.requiredPermissions.length === 0 ||
             item.requiredPermissions.some((permission) =>
               hasPermission(permission),
-            );
+            ) || (item.path === '/statistics' && canViewOwnActivityStatistics);
 
           if (!hasRequiredPermission) return false;
 
@@ -645,6 +657,7 @@ const visibleNavigationItems =
       hasDynamicPublishedSchedule,
       hasDynamicShiftExchange,
       hasDynamicManagementWorkspace,
+      canViewOwnActivityStatistics,
       dynamicFirstActive,
       profile?.role,
     ],

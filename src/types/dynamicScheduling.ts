@@ -9,7 +9,7 @@ export interface DynamicEmploymentDefinition {
   partTimeEndTime: string;
 }
 
-export type DynamicWorkStructureMode = 'shifts' | 'on_call_hourly' | 'on_call_daily';
+export type DynamicWorkStructureMode = 'none' | 'shifts' | 'on_call_hourly' | 'on_call_daily';
 
 export type DynamicScheduleChangeMode = 'none' | 'shift_exchange' | 'self_edit';
 
@@ -432,7 +432,15 @@ export interface DynamicAttendanceConfig {
   allowUnscheduled: boolean;
 }
 
+export interface DynamicActivityTrackingConfig {
+  enabled: boolean;
+  activities: Array<{ key: string; label: string }>;
+  reminderEnabled: boolean;
+  reminderTime: string;
+}
+
 export interface DynamicSchedulingConfig {
+  activityTracking?: DynamicActivityTrackingConfig;
   attendance?: DynamicAttendanceConfig;
   dailyReports?: DynamicDailyReportConfig;
   scheduleChangeMode: DynamicScheduleChangeMode;

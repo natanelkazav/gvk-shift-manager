@@ -1,6 +1,10 @@
 import {
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   CalendarCheck2,
+  CalendarDays,
+  ChevronDown,
   LayoutDashboard,
   RefreshCw,
   Table2,
@@ -10,27 +14,31 @@ import {
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
 import { Button, PageHeader } from '../components/ui';
 import StatisticsMultiSelect from '../features/statistics/components/StatisticsMultiSelect';
 import DynamicJobTypeStatisticsView from '../features/statistics/views/DynamicJobTypeStatisticsView';
+import ActivityTrackingStatistics from '../features/statistics/views/ActivityTrackingStatistics';
 import { dynamicStatisticsService } from '../services/dynamicStatisticsService';
 import type {
   DynamicStatisticsJobTypeOption,
   DynamicStatisticsWorkspace,
 } from '../types/dynamicStatistics';
+import type { StatisticsPeriodMode } from '../types/activityTracking';
 import '../styles/statistics.css';
 
 import LegacyStatisticsPage from './LegacyStatisticsPage';
 
 type WorkspaceView = 'overview' | 'availability' | 'charts' | 'tables' | 'payroll';
 
-const hebrewMonths = [
-  'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
-  'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר',
-];
+const hebrewMonths = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const isoDate=(date:Date)=>{const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,'0');const d=String(date.getDate()).padStart(2,'0');return `${y}-${m}-${d}`};
+const periodRange=(mode:StatisticsPeriodMode,anchor:Date)=>{const start=new Date(anchor);const end=new Date(anchor);if(mode==='day')return{start:isoDate(start),end:isoDate(end)};if(mode==='week'){const day=(start.getDay()+6)%7;start.setDate(start.getDate()-day);end.setTime(start.getTime());end.setDate(end.getDate()+6);return{start:isoDate(start),end:isoDate(end)}}if(mode==='month'){start.setDate(1);end.setMonth(end.getMonth()+1,0);return{start:isoDate(start),end:isoDate(end)}}start.setMonth(0,1);end.setMonth(11,31);return{start:isoDate(start),end:isoDate(end)}};
+const shiftPeriod=(mode:StatisticsPeriodMode,anchor:Date,direction:number)=>{const next=new Date(anchor);if(mode==='day')next.setDate(next.getDate()+direction);else if(mode==='week')next.setDate(next.getDate()+direction*7);else if(mode==='month')next.setMonth(next.getMonth()+direction);else next.setFullYear(next.getFullYear()+direction);return next};
+const periodLabel=(mode:StatisticsPeriodMode,anchor:Date)=>{const r=periodRange(mode,anchor);if(mode==='day')return anchor.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'});if(mode==='week')return `${new Date(`${r.start}T12:00:00`).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'})}–${new Date(`${r.end}T12:00:00`).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'})}`;if(mode==='month')return `${hebrewMonths[anchor.getMonth()]} ${anchor.getFullYear()}`;return String(anchor.getFullYear())};
 
 function personLabel(
   displayName: string,
@@ -52,6 +60,10 @@ function StatisticsPage() {
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [periodMode,setPeriodMode]=useState<StatisticsPeriodMode>('month');
+  const [periodAnchor,setPeriodAnchor]=useState(()=>new Date());
+  const [isPeriodMenuOpen,setIsPeriodMenuOpen]=useState(false);
+  const periodPickerRef=useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (legacyRequested) {
@@ -97,6 +109,19 @@ function StatisticsPage() {
 
     let cancelled = false;
 
+    const selectedOption = jobTypes.find((item) => item.jobTypeId === selectedJobTypeId);
+    if (selectedOption?.personalOnly) {
+      // Personal statistics do not need the team workspace. Avoid writing a new
+      // empty array on every effect pass: selectedUserIds is itself a dependency
+      // of this effect, so setSelectedUserIds([]) here caused an infinite loop.
+      setWorkspace(null);
+      if (selectedUserIds.length > 0) {
+        setSelectedUserIds([]);
+      }
+      setIsLoading(false);
+      return;
+    }
+
     const loadWorkspace = async (): Promise<void> => {
       setIsLoading(true);
       setError(null);
@@ -128,24 +153,33 @@ function StatisticsPage() {
     return () => {
       cancelled = true;
     };
-  }, [legacyRequested, months, refreshNonce, selectedJobTypeId, selectedUserIds, years]);
+  }, [legacyRequested, months, refreshNonce, selectedJobTypeId, selectedUserIds, years, jobTypes]);
 
-  const availableYears = useMemo(() => {
-    const periodYears = workspace?.availablePeriods.map((period) => period.year) ?? [];
-    return Array.from(new Set(periodYears)).sort((a, b) => b - a);
-  }, [workspace]);
+  const selectedJobType = jobTypes.find((jobType) => jobType.jobTypeId === selectedJobTypeId) ?? null;
+  const activityOnly=Boolean(selectedJobType?.activityTrackingEnabled && selectedJobType.workMode==='none');
+  const activeRange=periodRange(periodMode,periodAnchor);
+  const availablePeriodModes: Array<[StatisticsPeriodMode,string]> = activityOnly
+    ? [['day','היום'],['week','שבוע'],['month','חודש'],['year','שנה']]
+    : [['month','חודש'],['year','שנה']];
+  const periodModeLabel=availablePeriodModes.find(([value])=>value===periodMode)?.[1] ?? 'תקופה';
 
-  const availableMonths = useMemo(() => {
-    if (!workspace) {
-      return [] as number[];
-    }
+  useEffect(()=>{
+    if(!isPeriodMenuOpen)return;
+    const handlePointerDown=(event:MouseEvent)=>{
+      if(periodPickerRef.current && !periodPickerRef.current.contains(event.target as Node))setIsPeriodMenuOpen(false);
+    };
+    const handleKeyDown=(event:KeyboardEvent)=>{if(event.key==='Escape')setIsPeriodMenuOpen(false)};
+    document.addEventListener('mousedown',handlePointerDown);
+    document.addEventListener('keydown',handleKeyDown);
+    return()=>{document.removeEventListener('mousedown',handlePointerDown);document.removeEventListener('keydown',handleKeyDown)};
+  },[isPeriodMenuOpen]);
 
-    const periodMonths = workspace.availablePeriods
-      .filter((period) => years.length === 0 || years.includes(period.year))
-      .map((period) => period.month);
-
-    return Array.from(new Set(periodMonths)).sort((a, b) => a - b);
-  }, [workspace, years]);
+  useEffect(()=>{
+    if(activityOnly)return;
+    if(periodMode==='day'||periodMode==='week'){setPeriodMode('month');return;}
+    setYears([periodAnchor.getFullYear()]);
+    setMonths(periodMode==='month'?[periodAnchor.getMonth()+1]:[]);
+  },[activityOnly,periodMode,periodAnchor]);
 
   const peopleOptions = useMemo(() => (
     workspace?.people.map((person) => ({
@@ -153,8 +187,6 @@ function StatisticsPage() {
       label: `${personLabel(person.displayName, person.scheduleName)}${person.isActive ? '' : ' · מושבת'}`,
     })) ?? []
   ), [workspace]);
-
-  const selectedJobType = jobTypes.find((jobType) => jobType.jobTypeId === selectedJobTypeId) ?? null;
 
   if (legacyRequested) {
     return <LegacyStatisticsPage />;
@@ -168,17 +200,23 @@ function StatisticsPage() {
     value: WorkspaceView;
     label: string;
     icon: typeof LayoutDashboard;
-  }> = [
-    { value: 'overview', label: 'סקירה', icon: LayoutDashboard },
-    ...(selectedJobType?.availabilityEnabled || (workspace?.availabilitySummary.periodCount ?? 0) > 0
-      ? [{ value: 'availability' as const, label: 'אילוצים', icon: CalendarCheck2 }]
-      : []),
-    { value: 'charts', label: 'גרפים', icon: BarChart3 },
-    { value: 'tables', label: 'טבלאות', icon: Table2 },
-    ...(selectedJobType?.payrollEnabled
-      ? [{ value: 'payroll' as const, label: 'שכר', icon: WalletCards }]
-      : []),
-  ];
+  }> = selectedJobType?.personalOnly
+    ? [
+        { value: 'overview', label: 'סקירה', icon: LayoutDashboard },
+        { value: 'charts', label: 'גרפים', icon: BarChart3 },
+        { value: 'tables', label: 'טבלאות', icon: Table2 },
+      ]
+    : [
+        { value: 'overview', label: 'סקירה', icon: LayoutDashboard },
+        ...(selectedJobType?.availabilityEnabled || (workspace?.availabilitySummary.periodCount ?? 0) > 0
+          ? [{ value: 'availability' as const, label: 'אילוצים', icon: CalendarCheck2 }]
+          : []),
+        { value: 'charts', label: 'גרפים', icon: BarChart3 },
+        { value: 'tables', label: 'טבלאות', icon: Table2 },
+        ...(selectedJobType?.payrollEnabled
+          ? [{ value: 'payroll' as const, label: 'שכר', icon: WalletCards }]
+          : []),
+      ];
 
   return (
     <section className="statistics-page">
@@ -226,6 +264,8 @@ function StatisticsPage() {
                 setSelectedUserIds([]);
                 setYears([]);
                 setMonths([]);
+                setPeriodMode(jobType.activityTrackingEnabled && jobType.workMode==='none'?'week':'month');
+                setPeriodAnchor(new Date());
                 setView('overview');
               }}
             >
@@ -246,49 +286,37 @@ function StatisticsPage() {
           </div>
         </header>
 
-        <div className="statistics-filters statistics-period-filters">
+        <div className="statistics-filters statistics-period-filters statistics-period-unified">
           <StatisticsMultiSelect
             label="עובדים"
             allLabel="כל העובדים"
             selectedValues={selectedUserIds}
             options={peopleOptions}
             disabled={isLoading || !workspace}
-            onChange={(values) => {
-              setSelectedUserIds(values.filter(
-                (value): value is string => typeof value === 'string',
-              ));
-            }}
+            onChange={(values) => setSelectedUserIds(values.filter((value): value is string => typeof value === 'string'))}
           />
-
-          <StatisticsMultiSelect
-            label="שנים"
-            allLabel="כל השנים"
-            selectedValues={years}
-            options={availableYears.map((year) => ({ value: year, label: String(year) }))}
-            disabled={isLoading || availableYears.length === 0}
-            onChange={(values) => {
-              setYears(values.filter(
-                (value): value is number => typeof value === 'number',
-              ));
-              setMonths([]);
-            }}
-          />
-
-          <StatisticsMultiSelect
-            label="חודשים"
-            allLabel="כל החודשים"
-            selectedValues={months}
-            options={availableMonths.map((month) => ({
-              value: month,
-              label: hebrewMonths[month - 1] ?? String(month),
-            }))}
-            disabled={isLoading || availableMonths.length === 0}
-            onChange={(values) => {
-              setMonths(values.filter(
-                (value): value is number => typeof value === 'number',
-              ));
-            }}
-          />
+          <div className="statistics-compact-period">
+            <span className="statistics-compact-period-label">תקופה</span>
+            <div className="statistics-compact-period-control" ref={periodPickerRef}>
+              <button type="button" className="statistics-period-arrow" aria-label="תקופה קודמת" onClick={()=>setPeriodAnchor(current=>shiftPeriod(periodMode,current,-1))}><ChevronRight size={18}/></button>
+              <div className="statistics-period-picker">
+                <button type="button" className="statistics-period-trigger" aria-haspopup="dialog" aria-expanded={isPeriodMenuOpen} onClick={()=>setIsPeriodMenuOpen(open=>!open)}>
+                  <CalendarDays size={17} aria-hidden="true"/>
+                  <span><small>{periodModeLabel}</small><strong>{periodLabel(periodMode,periodAnchor)}</strong></span>
+                  <ChevronDown size={16} aria-hidden="true"/>
+                </button>
+                {isPeriodMenuOpen ? <div className="statistics-period-popover" role="dialog" aria-label="בחירת תקופת ניתוח">
+                  <span>הצג לפי</span>
+                  <div className="statistics-period-mode" role="group" aria-label="רמת תקופת הניתוח">
+                    {availablePeriodModes.map(([value,label])=><button key={value} type="button" className={periodMode===value?'active':''} onClick={()=>{setPeriodMode(value);setIsPeriodMenuOpen(false)}}>{label}</button>)}
+                  </div>
+                  <div className="statistics-period-popover-current">{periodLabel(periodMode,periodAnchor)}</div>
+                  <button type="button" className="statistics-period-current-button" onClick={()=>{setPeriodAnchor(new Date());setIsPeriodMenuOpen(false)}}>חזרה לתקופה הנוכחית</button>
+                </div> : null}
+              </div>
+              <button type="button" className="statistics-period-arrow" aria-label="תקופה הבאה" onClick={()=>setPeriodAnchor(current=>shiftPeriod(periodMode,current,1))}><ChevronLeft size={18}/></button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -335,7 +363,9 @@ function StatisticsPage() {
         </div>
       ) : null}
 
-      {workspace ? (
+      {selectedJobTypeId && selectedJobType?.activityTrackingEnabled ? <ActivityTrackingStatistics jobTypeId={selectedJobTypeId} mode={view} selectedUserIds={selectedUserIds} rangeStart={activeRange.start} rangeEnd={activeRange.end} periodMode={periodMode} canEdit={!selectedJobType?.personalOnly} /> : null}
+
+      {workspace && !(selectedJobType?.activityTrackingEnabled && selectedJobType.workMode === 'none') ? (
         <DynamicJobTypeStatisticsView
           data={workspace}
           selectedUserIds={selectedUserIds}

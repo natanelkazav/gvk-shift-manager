@@ -20,6 +20,8 @@ interface StatisticsStackedBarChartProps {
   series: StackedBarSeries[];
   items: StackedBarItem[];
   emptyMessage?: string;
+  unitLabel?: string;
+  valueFormatter?: (value: number) => string;
 }
 
 function StatisticsStackedBarChart({
@@ -28,6 +30,8 @@ function StatisticsStackedBarChart({
   series,
   items,
   emptyMessage = 'אין נתונים להצגה.',
+  unitLabel = 'משמרות',
+  valueFormatter = (value) => String(value),
 }: StatisticsStackedBarChartProps) {
   const [hiddenSeriesKeys, setHiddenSeriesKeys] =
     useState<string[]>([]);
@@ -136,11 +140,11 @@ function StatisticsStackedBarChart({
                 key={item.key}
                 className="statistics-stacked-bar-column"
               >
-                <strong>{selectedTotal}</strong>
+                <strong>{valueFormatter(selectedTotal)}</strong>
 
                 <div
                   className="statistics-stacked-bar-track"
-                  aria-label={`${item.label}: ${selectedTotal} משמרות`}
+                  aria-label={`${item.label}: ${valueFormatter(selectedTotal)} ${unitLabel}`}
                 >
                   {visibleSeries.map((entry) => {
                     const originalIndex =
@@ -162,7 +166,7 @@ function StatisticsStackedBarChart({
                         style={{ height: `${height}%` }}
                         title={`${entry.label}: ${value}`}
                       >
-                        <span>{value}</span>
+                        <span>{valueFormatter(value)}</span>
                       </div>
                     );
                   })}

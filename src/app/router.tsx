@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import ProtectedRoute from '../auth/ProtectedRoute';
 import PublicOnlyRoute from '../auth/PublicOnlyRoute';
 import PermissionRoute from '../auth/PermissionRoute';
+import StatisticsAccessRoute from '../auth/StatisticsAccessRoute';
 import LegacyRuntimeRoute from '../auth/LegacyRuntimeRoute';
 import AppLayout from '../layouts/AppLayout';
 
@@ -94,7 +95,7 @@ export const router = createBrowserRouter([
           },
 
           {
-            element: <PermissionRoute permission="statistics.view" />,
+            element: <StatisticsAccessRoute />,
             children: [{ path: 'statistics', element: <StatisticsPage /> }],
           },
 

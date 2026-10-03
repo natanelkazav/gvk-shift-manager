@@ -9,6 +9,7 @@ import DailyReportDashboardCards from '../../features/dailyReports/components/Da
 import AttendanceClockCards from './AttendanceClockCards';
 import ManagerConfigurableWidgets from './ManagerConfigurableWidgets';
 import ContactChangesWidget from './ContactChangesWidget';
+import ActivityTrackingCards from './ActivityTrackingCards';
 import type {
   DynamicRuntimeContext,
   DynamicRuntimeRole,
@@ -19,6 +20,7 @@ interface DynamicDashboardProps {
 }
 
 const workModeLabels: Record<DynamicRuntimeRole['workMode'], string> = {
+  none: 'ללא שיבוץ',
   shifts: 'משמרות',
   on_call_hourly: 'כוננות שעתית',
   on_call_daily: 'כוננות יומית',
@@ -57,12 +59,13 @@ function getAvailabilityText(role: DynamicRuntimeRole): string {
 function DynamicDashboard({ context }: DynamicDashboardProps) {
   return (
     <div className="dynamic-dashboard-stack">
+      <ActivityTrackingCards />
       <DailyReportDashboardCards />
       <AttendanceClockCards />
       <ManagerConfigurableWidgets />
       <ContactChangesWidget />
       <div className="dynamic-dashboard-role-grid">
-        {context.roles.map((role) => (
+        {context.roles.filter((role) => !(role.workMode === 'none' && role.schedulingStrategy === 'none')).map((role) => (
           <section className="dashboard-card dynamic-dashboard-role-card" key={role.jobTypeId}>
             <div className="dashboard-card-header">
               <div className="dashboard-card-title-wrap">

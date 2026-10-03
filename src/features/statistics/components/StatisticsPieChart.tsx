@@ -11,6 +11,7 @@ interface StatisticsPieChartProps {
 
   slices:
     PieSlice[];
+  valueFormatter?: (value: number) => string;
 }
 
 const chartColors = [
@@ -93,6 +94,7 @@ function StatisticsPieChart({
   title,
   description,
   slices,
+  valueFormatter = (value) => String(value),
 }: StatisticsPieChartProps) {
   const total =
     slices.reduce(
@@ -137,7 +139,7 @@ function StatisticsPieChart({
         >
           <div className="statistics-pie-center">
             <strong>
-              {total}
+              {valueFormatter(total)}
             </strong>
 
             <span>
@@ -175,9 +177,7 @@ function StatisticsPieChart({
                 </span>
 
                 <strong>
-                  {
-                    slice.value
-                  }
+                  {valueFormatter(slice.value)}
                 </strong>
               </div>
             ),
