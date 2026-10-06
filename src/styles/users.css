@@ -4328,3 +4328,7 @@
     flex-direction: column;
   }
 }
+
+/* Dynamic activity-tracking timer policy */
+.dynamic-activity-policy-intro{display:flex;flex-direction:column;gap:4px;margin-top:8px}.dynamic-activity-policy-intro small{color:var(--theme-text-muted);line-height:1.5}.dynamic-activity-policy-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}.dynamic-activity-policy-card{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--theme-border);border-radius:14px;background:var(--theme-surface)}.dynamic-activity-policy-card>div:first-child{display:flex;flex-direction:column;gap:4px}.dynamic-activity-policy-card strong{color:var(--theme-text-strong)}.dynamic-activity-policy-card small{color:var(--theme-text-muted);line-height:1.45}.dynamic-activity-policy-card.is-disabled{opacity:.65}.dynamic-activity-policy-card .dynamic-checkbox-row{margin:0;padding:9px 10px;border:1px solid var(--theme-border);border-radius:10px;background:var(--theme-surface-soft)}
+@media(max-width:1050px){.dynamic-activity-policy-cards{grid-template-columns:1fr}}

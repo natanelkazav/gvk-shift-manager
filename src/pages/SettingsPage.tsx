@@ -42,6 +42,7 @@ import LegacyCompatibilityPanel from '../components/settings/LegacyCompatibility
 import DashboardWidgetSettings from '../components/settings/DashboardWidgetSettings';
 import { dashboardWidgetService } from '../services/dashboardWidgetService';
 import ThemeSettings from '../components/settings/ThemeSettings';
+import ActivityTrackingPersonalSettings from '../components/settings/ActivityTrackingPersonalSettings';
 
 type FileToolTab =
   | 'import'
@@ -148,6 +149,8 @@ function SettingsPage() {
             }
           />
 
+          <div className="settings-personal-divider" />
+          <ActivityTrackingPersonalSettings />
           <div className="settings-personal-divider" />
 
           <div className="settings-subsection-heading">

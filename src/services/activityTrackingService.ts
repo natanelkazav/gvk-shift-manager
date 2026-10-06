@@ -1,8 +1,11 @@
 import { supabase } from '../lib/supabase';
 import { PerformanceDebugService } from './performanceDebugService';
-import type { ActivityRange,ActivityRoleContext,ActivityWeek } from '../types/activityTracking';
+import type { ActivityPersonalSettingsRole,ActivityRange,ActivityRoleContext,ActivityWeek } from '../types/activityTracking';
 export const activityTrackingService={
  canViewOwnStatistics:()=>PerformanceDebugService.measureAsync('activityTracking.canViewOwnStatistics',async()=>{const{data,error}=await supabase.rpc('can_view_own_activity_statistics');if(error)throw error;return data===true;}),
+ getMySettings:()=>PerformanceDebugService.measureAsync('activityTracking.getMySettings',async()=>{const{data,error}=await supabase.rpc('get_my_activity_tracking_settings');if(error)throw error;return(data??[]) as ActivityPersonalSettingsRole[];}),
+ saveMySettings:(jobTypeId:string,settings:ActivityPersonalSettingsRole['personal'])=>PerformanceDebugService.measureAsync('activityTracking.saveMySettings',async()=>{const{error}=await supabase.rpc('save_my_activity_tracking_settings',{requested_job_type_id:jobTypeId,requested_settings:settings});if(error)throw error;}),
+ resetMySettings:(jobTypeId:string)=>PerformanceDebugService.measureAsync('activityTracking.resetMySettings',async()=>{const{error}=await supabase.rpc('reset_my_activity_tracking_settings',{requested_job_type_id:jobTypeId});if(error)throw error;}),
  getMyContext:()=>PerformanceDebugService.measureAsync('activityTracking.getMyContext',async()=>{const{data,error}=await supabase.rpc('get_my_activity_tracking_context');if(error)throw error;return(data??[]) as ActivityRoleContext[];}),
  switchActivity:(jobTypeId:string,activityKey:string)=>PerformanceDebugService.measureAsync('activityTracking.switch',async()=>{const{data,error}=await supabase.rpc('switch_my_activity',{requested_job_type_id:jobTypeId,requested_activity_key:activityKey});if(error)throw error;return data;}),
  pauseActivity:(jobTypeId:string)=>PerformanceDebugService.measureAsync('activityTracking.pause',async()=>{const{data,error}=await supabase.rpc('pause_my_activity',{requested_job_type_id:jobTypeId});if(error)throw error;return data;}),

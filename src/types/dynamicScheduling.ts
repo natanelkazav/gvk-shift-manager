@@ -437,6 +437,12 @@ export interface DynamicActivityTrackingConfig {
   activities: Array<{ key: string; label: string }>;
   reminderEnabled: boolean;
   reminderTime: string;
+  autoEndEnabled?: boolean;
+  autoEndTime?: string;
+  endReminderEnabled?: boolean;
+  endReminderMinutesBefore?: number;
+  continuousReminderEnabled?: boolean;
+  continuousReminderMinutes?: number;
 }
 
 export interface DynamicSchedulingConfig {
