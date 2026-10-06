@@ -15,6 +15,8 @@ interface StatisticsMultiSelectProps {
   options: StatisticsMultiSelectOption[];
   disabled?: boolean;
   onChange: (values: Array<string | number>) => void;
+  inclusionMode?: 'active' | 'all';
+  onInclusionModeChange?: (mode: 'active' | 'all') => void;
 }
 
 function StatisticsMultiSelect({
@@ -24,6 +26,8 @@ function StatisticsMultiSelect({
   options,
   disabled = false,
   onChange,
+  inclusionMode,
+  onInclusionModeChange,
 }: StatisticsMultiSelectProps) {
   const allSelected =
     selectedValues.length === 0;
@@ -100,6 +104,20 @@ function StatisticsMultiSelect({
         </summary>
 
         <div className="statistics-multi-select-menu">
+          {inclusionMode && onInclusionModeChange ? (
+            <div className="statistics-multi-select-scope" role="group" aria-label="הצגת עובדים">
+              <span>הצגה</span>
+              <label>
+                <input type="radio" name={`${label}-inclusion-mode`} checked={inclusionMode === 'active'} disabled={disabled} onChange={() => onInclusionModeChange('active')} />
+                <span>עובדים פעילים</span>
+              </label>
+              <label>
+                <input type="radio" name={`${label}-inclusion-mode`} checked={inclusionMode === 'all'} disabled={disabled} onChange={() => onInclusionModeChange('all')} />
+                <span>פעילים ולא פעילים</span>
+              </label>
+            </div>
+          ) : null}
+          <div className="statistics-multi-select-options-title">בחירת עובדים</div>
           <label>
             <input
               type="checkbox"

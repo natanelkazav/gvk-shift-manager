@@ -36,7 +36,7 @@ type WorkspaceView = 'overview' | 'availability' | 'charts' | 'tables' | 'payrol
 
 const hebrewMonths = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const isoDate=(date:Date)=>{const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,'0');const d=String(date.getDate()).padStart(2,'0');return `${y}-${m}-${d}`};
-const periodRange=(mode:StatisticsPeriodMode,anchor:Date)=>{const start=new Date(anchor);const end=new Date(anchor);if(mode==='day')return{start:isoDate(start),end:isoDate(end)};if(mode==='week'){const day=(start.getDay()+6)%7;start.setDate(start.getDate()-day);end.setTime(start.getTime());end.setDate(end.getDate()+6);return{start:isoDate(start),end:isoDate(end)}}if(mode==='month'){start.setDate(1);end.setMonth(end.getMonth()+1,0);return{start:isoDate(start),end:isoDate(end)}}start.setMonth(0,1);end.setMonth(11,31);return{start:isoDate(start),end:isoDate(end)}};
+const periodRange=(mode:StatisticsPeriodMode,anchor:Date)=>{const start=new Date(anchor);const end=new Date(anchor);if(mode==='day')return{start:isoDate(start),end:isoDate(end)};if(mode==='week'){const day=start.getDay();start.setDate(start.getDate()-day);end.setTime(start.getTime());end.setDate(end.getDate()+6);return{start:isoDate(start),end:isoDate(end)}}if(mode==='month'){start.setDate(1);end.setMonth(end.getMonth()+1,0);return{start:isoDate(start),end:isoDate(end)}}start.setMonth(0,1);end.setMonth(11,31);return{start:isoDate(start),end:isoDate(end)}};
 const shiftPeriod=(mode:StatisticsPeriodMode,anchor:Date,direction:number)=>{const next=new Date(anchor);if(mode==='day')next.setDate(next.getDate()+direction);else if(mode==='week')next.setDate(next.getDate()+direction*7);else if(mode==='month')next.setMonth(next.getMonth()+direction);else next.setFullYear(next.getFullYear()+direction);return next};
 const periodLabel=(mode:StatisticsPeriodMode,anchor:Date)=>{const r=periodRange(mode,anchor);if(mode==='day')return anchor.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'});if(mode==='week')return `${new Date(`${r.start}T12:00:00`).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'})}–${new Date(`${r.end}T12:00:00`).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'})}`;if(mode==='month')return `${hebrewMonths[anchor.getMonth()]} ${anchor.getFullYear()}`;return String(anchor.getFullYear())};
 
@@ -63,6 +63,7 @@ function StatisticsPage() {
   const [periodMode,setPeriodMode]=useState<StatisticsPeriodMode>('month');
   const [periodAnchor,setPeriodAnchor]=useState(()=>new Date());
   const [isPeriodMenuOpen,setIsPeriodMenuOpen]=useState(false);
+  const [includeInactive,setIncludeInactive]=useState(false);
   const periodPickerRef=useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -132,6 +133,7 @@ function StatisticsPage() {
           years,
           months,
           selectedUserIds,
+          includeInactive,
         );
 
         if (!cancelled) {
@@ -153,7 +155,7 @@ function StatisticsPage() {
     return () => {
       cancelled = true;
     };
-  }, [legacyRequested, months, refreshNonce, selectedJobTypeId, selectedUserIds, years, jobTypes]);
+  }, [legacyRequested, months, refreshNonce, selectedJobTypeId, selectedUserIds, years, jobTypes, includeInactive]);
 
   const selectedJobType = jobTypes.find((jobType) => jobType.jobTypeId === selectedJobTypeId) ?? null;
   const activityOnly=Boolean(selectedJobType?.activityTrackingEnabled && selectedJobType.workMode==='none');
@@ -208,7 +210,7 @@ function StatisticsPage() {
       ]
     : [
         { value: 'overview', label: 'סקירה', icon: LayoutDashboard },
-        ...(selectedJobType?.availabilityEnabled || (workspace?.availabilitySummary.periodCount ?? 0) > 0
+        ...(selectedJobType?.availabilityEnabled
           ? [{ value: 'availability' as const, label: 'אילוצים', icon: CalendarCheck2 }]
           : []),
         { value: 'charts', label: 'גרפים', icon: BarChart3 },
@@ -262,6 +264,7 @@ function StatisticsPage() {
               onClick={() => {
                 setSelectedJobTypeId(jobType.jobTypeId);
                 setSelectedUserIds([]);
+                setIncludeInactive(false);
                 setYears([]);
                 setMonths([]);
                 setPeriodMode(jobType.activityTrackingEnabled && jobType.workMode==='none'?'week':'month');
@@ -287,14 +290,22 @@ function StatisticsPage() {
         </header>
 
         <div className="statistics-filters statistics-period-filters statistics-period-unified">
-          <StatisticsMultiSelect
-            label="עובדים"
-            allLabel="כל העובדים"
-            selectedValues={selectedUserIds}
-            options={peopleOptions}
-            disabled={isLoading || !workspace}
-            onChange={(values) => setSelectedUserIds(values.filter((value): value is string => typeof value === 'string'))}
-          />
+          <div className="statistics-people-filter-group">
+            <StatisticsMultiSelect
+              label="עובדים"
+              allLabel="כל העובדים"
+              selectedValues={selectedUserIds}
+              options={peopleOptions}
+              disabled={isLoading || !workspace}
+              onChange={(values) => setSelectedUserIds(values.filter((value): value is string => typeof value === 'string'))}
+            />
+            {!selectedJobType?.personalOnly ? (
+              <label className="statistics-inactive-toggle">
+                <input type="checkbox" checked={includeInactive} onChange={(event)=>{setIncludeInactive(event.target.checked);setSelectedUserIds([])}} />
+                <span>הצג גם עובדים לא פעילים</span>
+              </label>
+            ) : null}
+          </div>
           <div className="statistics-compact-period">
             <span className="statistics-compact-period-label">תקופה</span>
             <div className="statistics-compact-period-control" ref={periodPickerRef}>
@@ -363,7 +374,7 @@ function StatisticsPage() {
         </div>
       ) : null}
 
-      {selectedJobTypeId && selectedJobType?.activityTrackingEnabled ? <ActivityTrackingStatistics jobTypeId={selectedJobTypeId} mode={view} selectedUserIds={selectedUserIds} rangeStart={activeRange.start} rangeEnd={activeRange.end} periodMode={periodMode} canEdit={!selectedJobType?.personalOnly} /> : null}
+      {selectedJobTypeId && selectedJobType?.activityTrackingEnabled ? <ActivityTrackingStatistics jobTypeId={selectedJobTypeId} mode={view} selectedUserIds={selectedUserIds} rangeStart={activeRange.start} rangeEnd={activeRange.end} periodMode={periodMode} canEdit={!selectedJobType?.personalOnly} includeInactive={includeInactive} /> : null}
 
       {workspace && !(selectedJobType?.activityTrackingEnabled && selectedJobType.workMode === 'none') ? (
         <DynamicJobTypeStatisticsView

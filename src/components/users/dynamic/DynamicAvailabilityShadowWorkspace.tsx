@@ -107,7 +107,7 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
       maxWeekends: member.maxWeekends ?? limits.defaultMaxWeekends,
       maxHolidays: member.maxHolidays ?? limits.defaultMaxHolidays,
       note: member.note,
-      entries: workspace.slots.map((slot) => ({ slotId: slot.id, status: member.entries[slot.id]?.status ?? 'unavailable', note: member.entries[slot.id]?.note ?? null })),
+      entries: workspace.slots.map((slot) => ({ slotId: slot.id, status: member.entries[slot.id]?.status ?? 'available', note: member.entries[slot.id]?.note ?? null })),
     });
   }, [member, workspace]);
 
