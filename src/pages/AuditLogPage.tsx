@@ -6,6 +6,7 @@ import {
   Search,
 } from 'lucide-react';
 import {
+  Fragment,
   useState,
 } from 'react';
 import {
@@ -513,10 +514,8 @@ function AuditLogPage() {
                     entry.id;
 
                   return (
-                    <>
-                      <tr
-                        key={entry.id}
-                      >
+                    <Fragment key={entry.id}>
+                      <tr>
                         <td>
                           {formatDate(
                             entry.createdAt,
@@ -637,7 +636,7 @@ function AuditLogPage() {
                           </td>
                         </tr>
                       ) : null}
-                    </>
+                    </Fragment>
                   );
                 },
               )}

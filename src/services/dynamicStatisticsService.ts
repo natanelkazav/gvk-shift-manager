@@ -30,6 +30,25 @@ function normalizeError(error: unknown): Error {
 }
 
 class DynamicStatisticsService {
+  async getAvailablePeriods(jobTypeId: string): Promise<Array<{ year: number; month: number }>> {
+    const { data, error } = await supabase.rpc('get_dynamic_statistics_data_periods', {
+      requested_job_type_id: jobTypeId,
+    });
+
+    if (error) {
+      throw normalizeError(error);
+    }
+
+    if (!Array.isArray(data)) {
+      return [];
+    }
+
+    return data
+      .map((item) => item as { year?: unknown; month?: unknown })
+      .filter((item) => Number.isInteger(Number(item.year)) && Number.isInteger(Number(item.month)))
+      .map((item) => ({ year: Number(item.year), month: Number(item.month) }));
+  }
+
   async getJobTypes(): Promise<DynamicStatisticsJobTypeOption[]> {
     const { data, error } = await supabase.rpc('get_dynamic_statistics_job_types');
 

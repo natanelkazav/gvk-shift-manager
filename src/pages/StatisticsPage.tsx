@@ -62,8 +62,11 @@ function StatisticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [periodMode,setPeriodMode]=useState<StatisticsPeriodMode>('month');
   const [periodAnchor,setPeriodAnchor]=useState(()=>new Date());
+  const [selectedMonthKeys,setSelectedMonthKeys]=useState<string[]>([]);
+  const [selectedYears,setSelectedYears]=useState<number[]>([]);
   const [isPeriodMenuOpen,setIsPeriodMenuOpen]=useState(false);
   const [includeInactive,setIncludeInactive]=useState(false);
+  const [statisticalPeriods,setStatisticalPeriods]=useState<Array<{year:number;month:number}>>([]);
   const periodPickerRef=useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -157,9 +160,49 @@ function StatisticsPage() {
     };
   }, [legacyRequested, months, refreshNonce, selectedJobTypeId, selectedUserIds, years, jobTypes, includeInactive]);
 
+  useEffect(() => {
+    if (legacyRequested || !selectedJobTypeId) {
+      setStatisticalPeriods([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    void dynamicStatisticsService.getAvailablePeriods(selectedJobTypeId)
+      .then((periods) => {
+        if (cancelled) return;
+        setStatisticalPeriods(periods);
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        setStatisticalPeriods([]);
+        setError(loadError instanceof Error ? loadError.message : 'לא ניתן היה לטעון את התקופות הסטטיסטיות.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [legacyRequested, selectedJobTypeId, refreshNonce]);
+
   const selectedJobType = jobTypes.find((jobType) => jobType.jobTypeId === selectedJobTypeId) ?? null;
   const activityOnly=Boolean(selectedJobType?.activityTrackingEnabled && selectedJobType.workMode==='none');
   const activeRange=periodRange(periodMode,periodAnchor);
+  const selectedMonthNumbers=selectedMonthKeys.filter(key=>key.startsWith(`${periodAnchor.getFullYear()}-`)).map(key=>Number(key.slice(5)));
+  const effectiveMonthNumbers=periodMode==='month'?(selectedMonthNumbers.length?selectedMonthNumbers:[periodAnchor.getMonth()+1]):[];
+  const effectiveYears=periodMode==='year'?(selectedYears.length?selectedYears:[periodAnchor.getFullYear()]):[periodAnchor.getFullYear()];
+  const activityRanges=periodMode==='month'
+    ? effectiveMonthNumbers.map(month=>periodRange('month',new Date(periodAnchor.getFullYear(),month-1,1)))
+    : periodMode==='year'
+      ? effectiveYears.map(year=>periodRange('year',new Date(year,0,1)))
+      : [activeRange];
+  const selectedPeriodCount=periodMode==='month'?effectiveMonthNumbers.length:periodMode==='year'?effectiveYears.length:1;
+  const triggerPeriodLabel=selectedPeriodCount>1
+    ? `${selectedPeriodCount} תקופות נבחרו`
+    : periodMode==='month' && effectiveMonthNumbers.length===1
+      ? periodLabel('month',new Date(periodAnchor.getFullYear(),effectiveMonthNumbers[0]-1,1))
+      : periodMode==='year' && effectiveYears.length===1
+        ? String(effectiveYears[0])
+        : periodLabel(periodMode,periodAnchor);
   const availablePeriodModes: Array<[StatisticsPeriodMode,string]> = activityOnly
     ? [['day','היום'],['week','שבוע'],['month','חודש'],['year','שנה']]
     : [['month','חודש'],['year','שנה']];
@@ -177,17 +220,65 @@ function StatisticsPage() {
   },[isPeriodMenuOpen]);
 
   useEffect(()=>{
+    if(!activityOnly && (periodMode==='day'||periodMode==='week')){setPeriodMode('month');return;}
     if(activityOnly)return;
-    if(periodMode==='day'||periodMode==='week'){setPeriodMode('month');return;}
-    setYears([periodAnchor.getFullYear()]);
-    setMonths(periodMode==='month'?[periodAnchor.getMonth()+1]:[]);
-  },[activityOnly,periodMode,periodAnchor]);
+    setYears(effectiveYears);
+    setMonths(periodMode==='month'?effectiveMonthNumbers:[]);
+  },[activityOnly,periodMode,periodAnchor,selectedMonthKeys,selectedYears]);
+
+  useEffect(()=>{
+    if(periodMode==='month' && selectedMonthKeys.length===0)setSelectedMonthKeys([`${periodAnchor.getFullYear()}-${String(periodAnchor.getMonth()+1).padStart(2,'0')}`]);
+    if(periodMode==='year' && selectedYears.length===0)setSelectedYears([periodAnchor.getFullYear()]);
+  },[periodMode,periodAnchor,selectedMonthKeys.length,selectedYears.length]);
+
+  const availableMonthOptions=useMemo(()=>{
+    const year=periodAnchor.getFullYear();
+    return statisticalPeriods
+      .filter(item=>item.year===year)
+      .sort((a,b)=>a.month-b.month)
+      .map(item=>({
+        key:`${item.year}-${String(item.month).padStart(2,'0')}`,
+        label:hebrewMonths[item.month-1],
+      }));
+  },[statisticalPeriods,periodAnchor]);
+
+  const availableYearOptions=useMemo(()=>
+    Array.from(new Set(statisticalPeriods.map(item=>item.year))).sort((a,b)=>b-a)
+  ,[statisticalPeriods]);
+
+  useEffect(()=>{
+    if(periodMode!=='month' || statisticalPeriods.length===0)return;
+    const allowed=new Set(statisticalPeriods.map(item=>`${item.year}-${String(item.month).padStart(2,'0')}`));
+    setSelectedMonthKeys(current=>{
+      const kept=current.filter(key=>allowed.has(key));
+      if(kept.length>0)return kept;
+      const latest=[...statisticalPeriods].sort((a,b)=>(b.year-a.year)||(b.month-a.month))[0];
+      if(!latest)return current;
+      setPeriodAnchor(new Date(latest.year,latest.month-1,1));
+      return [`${latest.year}-${String(latest.month).padStart(2,'0')}`];
+    });
+  },[periodMode,selectedJobTypeId,statisticalPeriods]);
+
+  useEffect(()=>{
+    if(periodMode!=='year' || statisticalPeriods.length===0)return;
+    const allowed=new Set(statisticalPeriods.map(item=>item.year));
+    setSelectedYears(current=>{
+      const kept=current.filter(year=>allowed.has(year));
+      if(kept.length>0)return kept;
+      const latest=Math.max(...allowed);
+      setPeriodAnchor(new Date(latest,0,1));
+      return [latest];
+    });
+  },[periodMode,selectedJobTypeId,statisticalPeriods]);
 
   const peopleOptions = useMemo(() => (
-    workspace?.people.map((person) => ({
-      value: person.userId,
-      label: `${personLabel(person.displayName, person.scheduleName)}${person.isActive ? '' : ' · מושבת'}`,
-    })) ?? []
+    workspace?.people
+      .map((person) => ({
+        value: person.userId,
+        label: `${personLabel(person.displayName, person.scheduleName)}${person.isActive ? '' : ' · מושבת'}`,
+        muted: !person.isActive,
+      }))
+      .sort((left, right) => Number(left.muted) - Number(right.muted) || left.label.localeCompare(right.label, 'he')) ?? []
   ), [workspace]);
 
   if (legacyRequested) {
@@ -269,6 +360,8 @@ function StatisticsPage() {
                 setMonths([]);
                 setPeriodMode(jobType.activityTrackingEnabled && jobType.workMode==='none'?'week':'month');
                 setPeriodAnchor(new Date());
+                setSelectedMonthKeys([]);
+                setSelectedYears([]);
                 setView('overview');
               }}
             >
@@ -293,18 +386,17 @@ function StatisticsPage() {
           <div className="statistics-people-filter-group">
             <StatisticsMultiSelect
               label="עובדים"
-              allLabel="כל העובדים"
+              allLabel={includeInactive ? "כל העובדים" : "כל העובדים הפעילים"}
               selectedValues={selectedUserIds}
               options={peopleOptions}
               disabled={isLoading || !workspace}
               onChange={(values) => setSelectedUserIds(values.filter((value): value is string => typeof value === 'string'))}
+              inclusionMode={selectedJobType?.personalOnly ? undefined : (includeInactive ? 'all' : 'active')}
+              onInclusionModeChange={selectedJobType?.personalOnly ? undefined : (mode) => {
+                setIncludeInactive(mode === 'all');
+                setSelectedUserIds([]);
+              }}
             />
-            {!selectedJobType?.personalOnly ? (
-              <label className="statistics-inactive-toggle">
-                <input type="checkbox" checked={includeInactive} onChange={(event)=>{setIncludeInactive(event.target.checked);setSelectedUserIds([])}} />
-                <span>הצג גם עובדים לא פעילים</span>
-              </label>
-            ) : null}
           </div>
           <div className="statistics-compact-period">
             <span className="statistics-compact-period-label">תקופה</span>
@@ -313,16 +405,42 @@ function StatisticsPage() {
               <div className="statistics-period-picker">
                 <button type="button" className="statistics-period-trigger" aria-haspopup="dialog" aria-expanded={isPeriodMenuOpen} onClick={()=>setIsPeriodMenuOpen(open=>!open)}>
                   <CalendarDays size={17} aria-hidden="true"/>
-                  <span><small>{periodModeLabel}</small><strong>{periodLabel(periodMode,periodAnchor)}</strong></span>
+                  <span><small>{periodModeLabel}</small><strong>{triggerPeriodLabel}</strong></span>
                   <ChevronDown size={16} aria-hidden="true"/>
                 </button>
                 {isPeriodMenuOpen ? <div className="statistics-period-popover" role="dialog" aria-label="בחירת תקופת ניתוח">
                   <span>הצג לפי</span>
                   <div className="statistics-period-mode" role="group" aria-label="רמת תקופת הניתוח">
-                    {availablePeriodModes.map(([value,label])=><button key={value} type="button" className={periodMode===value?'active':''} onClick={()=>{setPeriodMode(value);setIsPeriodMenuOpen(false)}}>{label}</button>)}
+                    {availablePeriodModes.map(([value,label])=><button key={value} type="button" className={periodMode===value?'active':''} onClick={()=>{setPeriodMode(value);if(value==='month')setSelectedMonthKeys([]);if(value==='year')setSelectedYears([])}}>{label}</button>)}
                   </div>
-                  <div className="statistics-period-popover-current">{periodLabel(periodMode,periodAnchor)}</div>
-                  <button type="button" className="statistics-period-current-button" onClick={()=>{setPeriodAnchor(new Date());setIsPeriodMenuOpen(false)}}>חזרה לתקופה הנוכחית</button>
+                  {periodMode==='month' ? <div className="statistics-period-multi-list">
+                    <div className="statistics-period-multi-heading"><strong>{periodAnchor.getFullYear()}</strong><button type="button" onClick={()=>setSelectedMonthKeys(availableMonthOptions.map(item=>item.key))}>בחר הכל</button></div>
+                    {availableMonthOptions.map(item=><label key={item.key}><input type="checkbox" checked={selectedMonthKeys.includes(item.key)} onChange={()=>setSelectedMonthKeys(current=>{
+                      const next=current.includes(item.key)
+                        ? (current.length>1?current.filter(key=>key!==item.key):current)
+                        : [...current,item.key];
+                      if(next.length===1){
+                        const [yearText,monthText]=next[0].split('-');
+                        const year=Number(yearText);
+                        const month=Number(monthText);
+                        if(Number.isFinite(year)&&Number.isFinite(month)){
+                          setPeriodAnchor(new Date(year,month-1,1));
+                        }
+                      }
+                      return next;
+                    })}/><span>{item.label}</span></label>)}
+                  </div> : periodMode==='year' ? <div className="statistics-period-multi-list">
+                    {availableYearOptions.map(year=><label key={year}><input type="checkbox" checked={selectedYears.includes(year)} onChange={()=>setSelectedYears(current=>{
+                      const next=current.includes(year)
+                        ? (current.length>1?current.filter(value=>value!==year):current)
+                        : [...current,year];
+                      if(next.length===1){
+                        setPeriodAnchor(new Date(next[0],0,1));
+                      }
+                      return next;
+                    })}/><span>{year}</span></label>)}
+                  </div> : <div className="statistics-period-popover-current">{periodLabel(periodMode,periodAnchor)}</div>}
+                  <button type="button" className="statistics-period-current-button" onClick={()=>{const now=new Date();setPeriodAnchor(now);setSelectedMonthKeys([]);setSelectedYears([]);setIsPeriodMenuOpen(false)}}>חזרה לתקופה הנוכחית</button>
                 </div> : null}
               </div>
               <button type="button" className="statistics-period-arrow" aria-label="תקופה הבאה" onClick={()=>setPeriodAnchor(current=>shiftPeriod(periodMode,current,1))}><ChevronLeft size={18}/></button>
@@ -374,7 +492,7 @@ function StatisticsPage() {
         </div>
       ) : null}
 
-      {selectedJobTypeId && selectedJobType?.activityTrackingEnabled ? <ActivityTrackingStatistics jobTypeId={selectedJobTypeId} mode={view} selectedUserIds={selectedUserIds} rangeStart={activeRange.start} rangeEnd={activeRange.end} periodMode={periodMode} canEdit={!selectedJobType?.personalOnly} includeInactive={includeInactive} /> : null}
+      {selectedJobTypeId && selectedJobType?.activityTrackingEnabled ? <ActivityTrackingStatistics jobTypeId={selectedJobTypeId} mode={view} selectedUserIds={selectedUserIds} rangeStart={activeRange.start} rangeEnd={activeRange.end} ranges={activityRanges} periodMode={periodMode} canEdit={!selectedJobType?.personalOnly} includeInactive={includeInactive} /> : null}
 
       {workspace && !(selectedJobType?.activityTrackingEnabled && selectedJobType.workMode === 'none') ? (
         <DynamicJobTypeStatisticsView

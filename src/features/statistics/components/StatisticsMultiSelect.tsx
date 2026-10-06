@@ -131,29 +131,35 @@ function StatisticsMultiSelect({
             <span>{allLabel}</span>
           </label>
 
-          {options.map((option) => (
-            <label
-              key={option.value}
-              className={option.muted ? 'statistics-multi-select-option-muted' : undefined}
-            >
-              <input
-                type="checkbox"
-                checked={
-                  selectedValues.includes(
-                    option.value,
-                  )
-                }
-                disabled={disabled}
-                onChange={() => {
-                  toggleValue(
-                    option.value,
-                  );
-                }}
-              />
+          {options.map((option, index) => {
+            const startsInactiveGroup =
+              option.muted &&
+              (index === 0 || !options[index - 1]?.muted);
 
-              <span>{option.label}</span>
-            </label>
-          ))}
+            return (
+              <div key={option.value}>
+                {startsInactiveGroup ? (
+                  <div className="statistics-multi-select-options-title statistics-multi-select-inactive-title">
+                    עובדים לא פעילים
+                  </div>
+                ) : null}
+                <label
+                  className={option.muted ? 'statistics-multi-select-option-muted' : undefined}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedValues.includes(option.value)}
+                    disabled={disabled}
+                    onChange={() => {
+                      toggleValue(option.value);
+                    }}
+                  />
+
+                  <span>{option.label}</span>
+                </label>
+              </div>
+            );
+          })}
         </div>
       </details>
     </div>
