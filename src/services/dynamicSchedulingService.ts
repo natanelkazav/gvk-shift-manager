@@ -12,6 +12,7 @@ export interface DynamicExchangeCommitment {
 }
 
 import { supabase } from '../lib/supabase';
+import type { MyOnCallCoverageConflict } from '../types/dynamicScheduling';
 import { PerformanceDebugService } from './performanceDebugService';
 import { schedulePublicationNotificationService } from './schedulePublicationNotificationService';
 
@@ -315,6 +316,14 @@ export const dynamicSchedulingService = {
       });
       if (error) throwSupabaseError('Set dynamic published schedule assignment', error);
       await flushPendingOperationalPushNotifications();
+    });
+  },
+
+  async getMyOnCallCoverageConflicts(): Promise<MyOnCallCoverageConflict[]> {
+    return PerformanceDebugService.measureAsync('dynamic-scheduling.oncall.coverage-conflicts', async () => {
+      const { data, error } = await supabase.rpc('get_my_oncall_coverage_conflicts');
+      if (error) throwSupabaseError('My on-call coverage conflicts', error);
+      return (Array.isArray(data) ? data : []) as MyOnCallCoverageConflict[];
     });
   },
 

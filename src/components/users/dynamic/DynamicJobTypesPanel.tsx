@@ -226,6 +226,7 @@ const emptyForm = (scheduleGroupId: string): SaveDynamicJobTypeInput => ({
   payModel: 'none',
   payConfig: {},
   availabilityConfig: {
+    showEmployeePreferences: false,
     enabled: false,
     statuses: ['available', 'unavailable'],
     allowNotes: true,
@@ -268,6 +269,7 @@ const toForm = (jobType: DynamicJobType): SaveDynamicJobTypeInput => ({
   payModel: jobType.payModel,
   payConfig: jobType.payConfig,
   availabilityConfig: {
+    showEmployeePreferences: jobType.availabilityConfig?.showEmployeePreferences ?? true,
     enabled: Boolean(jobType.availabilityConfig?.enabled),
     statuses: jobType.availabilityConfig?.statuses?.length
       ? jobType.availabilityConfig.statuses
@@ -1908,6 +1910,43 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                         <span>הערה למשמרת</span>
                       </label>
                     </div>
+                  </div>
+
+                  <div className="dynamic-availability-subsection">
+                    <label className="dynamic-choice-chip dynamic-availability-master">
+                      <input
+                        type="checkbox"
+                        checked={form.availabilityConfig.showEmployeePreferences ?? true}
+                        onChange={(event) => setForm({
+                          ...form,
+                          availabilityConfig: {
+                            ...form.availabilityConfig,
+                            showEmployeePreferences: event.target.checked,
+                          },
+                        })}
+                      />
+                      <span>הצג לעובדים העדפת כמות משמרות באילוצים</span>
+                    </label>
+                    <small>כאשר האפשרות כבויה, לא יוצג לעובד שדה יעד משמרות. נתונים קיימים לא יימחקו.</small>
+                    {(form.availabilityConfig.showEmployeePreferences ?? true) ? (
+                      <label className="dynamic-choice-chip">
+                        <input
+                          type="checkbox"
+                          checked={form.availabilityConfig.monthlyCapacity.targetEnabled}
+                          onChange={(event) => setForm({
+                            ...form,
+                            availabilityConfig: {
+                              ...form.availabilityConfig,
+                              monthlyCapacity: {
+                                ...form.availabilityConfig.monthlyCapacity,
+                                targetEnabled: event.target.checked,
+                              },
+                            },
+                          })}
+                        />
+                        <span>יעד משמרות חודשי + ״כמה שיותר״</span>
+                      </label>
+                    ) : null}
                   </div>
 
                   <div className="dynamic-availability-subsection">

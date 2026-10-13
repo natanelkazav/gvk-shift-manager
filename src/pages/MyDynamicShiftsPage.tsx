@@ -1,4 +1,4 @@
-import { CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, List, LoaderCircle, Pencil, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, List, LoaderCircle, Pencil, RefreshCw, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import MonthCalendar from '../components/calendar/MonthCalendar';
 import Button from '../components/ui/Button';
@@ -6,10 +6,13 @@ import Modal from '../components/ui/Modal';
 import { calendarHolidayService, type CalendarHoliday } from '../services/calendarHolidayService';
 import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
 import type {
+  MyOnCallCoverageConflict,
   MyDynamicSchedulePeriod,
   MyDynamicScheduleWorkspace,
   MyDynamicScheduleAssignment,
   DynamicSelfEditWorkspace,
+  DynamicShiftExchangeOptions,
+  DynamicShiftExchangeType,
 } from '../types/dynamicScheduling';
 import '../styles/myDynamicShifts.css';
 import { dynamicShiftDisplayName } from '../utils/dynamicShiftDisplayName';
@@ -49,7 +52,7 @@ function modeTitle(workMode: MyDynamicSchedulePeriod['workMode'] | MyDynamicSche
 }
 
 function changeModeText(mode: MyDynamicScheduleWorkspace['scheduleChangeMode']): string | null {
-  if (mode === 'shift_exchange') return 'לתפקיד הזה פעילה מערכת חילופי משמרות. את הבקשות מגישים מהטאב „חילופי משמרות”.';
+  if (mode === 'shift_exchange') return 'לתפקיד הזה פעילה מערכת חילופי משמרות. ניתן להגיש בקשה בלחיצה על משמרת אישית בלוח השנה או דרך טאב „חילופי משמרות”.';
   return null;
 }
 
@@ -59,6 +62,23 @@ function MyDynamicShiftsPage() {
   const [selectedJobTypeId, setSelectedJobTypeId] = useState<string>('');
   const [workspace, setWorkspace] = useState<MyDynamicScheduleWorkspace | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const [coverageConflicts, setCoverageConflicts] = useState<MyOnCallCoverageConflict[]>([]);
+  const [coverageError, setCoverageError] = useState(false);
+  const refreshCoverage = () => {
+    void dynamicSchedulingService.getMyOnCallCoverageConflicts()
+      .then((items) => { setCoverageConflicts(items); setCoverageError(false); })
+      .catch(() => setCoverageError(true));
+  };
+  useEffect(() => {
+    refreshCoverage();
+    window.addEventListener('gvk:dynamic-schedule-changed', refreshCoverage);
+    window.addEventListener('focus', refreshCoverage);
+    return () => {
+      window.removeEventListener('gvk:dynamic-schedule-changed', refreshCoverage);
+      window.removeEventListener('focus', refreshCoverage);
+    };
+  }, []);
+
   const [holidays, setHolidays] = useState<CalendarHoliday[]>([]);
   const [loading, setLoading] = useState(true);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
@@ -68,6 +88,21 @@ function MyDynamicShiftsPage() {
   const [selfEditLoading, setSelfEditLoading] = useState(false);
   const [selfEditSavingId, setSelfEditSavingId] = useState<string | null>(null);
   const [selectedCalendarAssignmentId, setSelectedCalendarAssignmentId] = useState<string | null>(null);
+  const [exchangeFormOpen, setExchangeFormOpen] = useState(false);
+  const [exchangeOptions, setExchangeOptions] = useState<DynamicShiftExchangeOptions | null>(null);
+  const [exchangeLoading, setExchangeLoading] = useState(false);
+  const [exchangeSubmitting, setExchangeSubmitting] = useState(false);
+  const [exchangeError, setExchangeError] = useState<string | null>(null);
+  const [exchangeSuccess, setExchangeSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!exchangeSuccess) return;
+    const timeoutId = window.setTimeout(() => setExchangeSuccess(false), 4000);
+    return () => window.clearTimeout(timeoutId);
+  }, [exchangeSuccess]);
+  const [exchangeType, setExchangeType] = useState<DynamicShiftExchangeType>('one_way');
+  const [exchangeCounterpartyId, setExchangeCounterpartyId] = useState('');
+  const [exchangeCounterpartyAssignmentId, setExchangeCounterpartyAssignmentId] = useState('');
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string>('all');
   const [selfEditPermissionState, setSelfEditPermissionState] = useState({ canSelfEdit: false, canViewOthers: false, canEditAll: false });
 
@@ -159,6 +194,31 @@ function MyDynamicShiftsPage() {
         if (active) setWorkspaceLoading(false);
       });
     return () => { active = false; };
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    let active = true;
+    const refreshPublishedSchedule = () => {
+      if (!active || document.visibilityState === 'hidden') return;
+      void dynamicSchedulingService.getMyDynamicScheduleWorkspace(selectedId)
+        .then((data) => { if (active) setWorkspace(data); })
+        .catch((caught: unknown) => {
+          if (active) setError(caught instanceof Error ? caught.message : 'רענון השיבוץ נכשל.');
+        });
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refreshPublishedSchedule();
+    };
+    window.addEventListener('focus', refreshPublishedSchedule);
+    window.addEventListener('gvk:dynamic-schedule-changed', refreshPublishedSchedule);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refreshPublishedSchedule);
+      window.removeEventListener('gvk:dynamic-schedule-changed', refreshPublishedSchedule);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [selectedId]);
 
   useEffect(() => {
@@ -306,16 +366,95 @@ function MyDynamicShiftsPage() {
     [selfEditWorkspace, selectedCalendarAssignmentId],
   );
 
+  const conflictAssignmentIds = useMemo(() => new Set(
+    coverageConflicts.filter((item) => item.publicationId === workspace?.publicationId).map((item) => item.assignmentId),
+  ), [coverageConflicts, workspace?.publicationId]);
+
   const canEditAssignment = (assignment: MyDynamicScheduleAssignment): boolean => {
     if (!workspace || workspace.readOnly || workspace.scheduleChangeMode !== 'self_edit') return false;
     if (selfEditPermissionState.canEditAll) return true;
     return assignment.isMine && selfEditPermissionState.canSelfEdit;
   };
 
+  const canRequestExchange = (assignment: MyDynamicScheduleAssignment): boolean =>
+    Boolean(workspace && !workspace.readOnly && workspace.scheduleChangeMode === 'shift_exchange' && assignment.isMine);
+
+  const closeCalendarModal = () => {
+    if (exchangeSubmitting) return;
+    setSelectedCalendarAssignmentId(null);
+    setExchangeFormOpen(false);
+    setExchangeError(null);
+  };
+
+  const openExchangeForm = async () => {
+    if (!selectedCalendarAssignment) return;
+    const assignmentId = selectedCalendarAssignment.id;
+    setExchangeFormOpen(true);
+    setExchangeLoading(true);
+    setExchangeError(null);
+    setExchangeOptions(null);
+    setExchangeType('one_way');
+    setExchangeCounterpartyId('');
+    setExchangeCounterpartyAssignmentId('');
+    try {
+      const options = await dynamicSchedulingService.getMyDynamicShiftExchangeOptions();
+      if (!options.myShifts.some((shift) => shift.id === assignmentId)) {
+        setExchangeError('המשמרת כבר אינה זמינה להגשת בקשת חילוף.');
+      } else {
+        setExchangeOptions(options);
+      }
+    } catch (caught) {
+      setExchangeError(caught instanceof Error ? caught.message : 'טעינת אפשרויות החילוף נכשלה.');
+    } finally {
+      setExchangeLoading(false);
+    }
+  };
+
+  const submitCalendarExchange = async () => {
+    if (!selectedCalendarAssignment || !exchangeOptions || !exchangeCounterpartyId || exchangeSubmitting) return;
+    if (exchangeType === 'two_way' && !exchangeCounterpartyAssignmentId) {
+      setExchangeError('יש לבחור משמרת נגדית.');
+      return;
+    }
+    setExchangeSubmitting(true);
+    setExchangeError(null);
+    setExchangeSuccess(false);
+    try {
+      await dynamicSchedulingService.createDynamicShiftExchangeRequest({
+        swapType: exchangeType,
+        requesterAssignmentId: selectedCalendarAssignment.id,
+        counterpartyUserId: exchangeCounterpartyId,
+        counterpartyAssignmentId: exchangeType === 'two_way' ? exchangeCounterpartyAssignmentId : null,
+      });
+      setSelectedCalendarAssignmentId(null);
+      setExchangeFormOpen(false);
+      setExchangeOptions(null);
+      setExchangeSuccess(true);
+      refreshCoverage();
+      try {
+        await reloadPersonalWorkspace(selectedId);
+        refreshCoverage();
+      } catch {
+        // The request was already created successfully; a refresh failure must not report a failed submission.
+      }
+    } catch (caught) {
+      setExchangeError(caught instanceof Error ? caught.message : 'שליחת בקשת החילוף נכשלה.');
+    } finally {
+      setExchangeSubmitting(false);
+    }
+  };
+
+  const selectedExchangeShift = exchangeOptions?.myShifts.find((shift) => shift.id === selectedCalendarAssignmentId);
+  const exchangeMembers = exchangeOptions?.members.filter((member) => member.jobTypeId === selectedExchangeShift?.jobTypeId) ?? [];
+  const exchangeCounterpartyShifts = exchangeOptions?.counterpartyShifts.filter((shift) =>
+    shift.publicationId === selectedExchangeShift?.publicationId && shift.assignedUserId === exchangeCounterpartyId
+  ) ?? [];
+
   const openCalendarAssignmentEditor = (assignment: MyDynamicScheduleAssignment) => {
-    if (!canEditAssignment(assignment)) return;
+    if (!canEditAssignment(assignment) && !canRequestExchange(assignment)) return;
+    setExchangeSuccess(false);
     setSelectedCalendarAssignmentId(assignment.id);
-    if (!selfEditWorkspace || selfEditWorkspace.publicationId !== workspace?.publicationId) {
+    if (canEditAssignment(assignment) && (!selfEditWorkspace || selfEditWorkspace.publicationId !== workspace?.publicationId)) {
       void loadSelfEditWorkspace(workspace!.publicationId);
     }
   };
@@ -335,6 +474,42 @@ function MyDynamicShiftsPage() {
       </header>
 
       {error ? <div className="users-error" role="alert">{error}</div> : null}
+      {exchangeSuccess ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'fixed',
+            top: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            width: 'max-content',
+            maxWidth: 'calc(100vw - 32px)',
+            padding: '14px 18px',
+            borderRadius: 14,
+            border: '1px solid #86d6a3',
+            background: '#edfdf2',
+            color: '#14532d',
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.2)',
+          }}
+        >
+          <CheckCircle2 size={24} aria-hidden="true" />
+          <div>
+            <strong>בקשת החילוף נשלחה בהצלחה!</strong>
+            <div>הבקשה ממתינה לאישור העובד המחליף.</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setExchangeSuccess(false)}
+            aria-label="סגור הודעת הצלחה"
+            style={{ marginInlineStart: 'auto', border: 0, background: 'transparent', cursor: 'pointer', color: 'inherit' }}
+          ><X size={18} /></button>
+        </div>
+      ) : null}
 
       {!periods.length ? (
         <section className="my-shifts-empty">
@@ -462,6 +637,19 @@ function MyDynamicShiftsPage() {
                 </div>
               ) : null}
 
+              {coverageError && workspace.scheduleChangeMode === 'shift_exchange' ? (
+                <div className="my-shifts-coverage-load-error" role="status">לא ניתן כרגע לבדוק אילו כוננויות דורשות חלופה. נסה לרענן את הדף.</div>
+              ) : null}
+              {coverageConflicts.some((item) => item.publicationId === workspace.publicationId) ? (
+                <div className="my-shifts-coverage-summary" role="alert">
+                  <AlertTriangle size={20} aria-hidden="true" />
+                  <div><strong>נדרשת מציאת חלופה לכוננויות שסימנת בהן ״לא זמין״</strong>
+                    <span>הסבב נשמר. עליך לשלוח בקשת חילוף ולקבל את אישור המחליף.</span>
+                    <div className="my-shifts-coverage-dates">{coverageConflicts.filter((item) => item.publicationId === workspace.publicationId).map((item) => <span key={item.assignmentId}>{formatDate(item.shiftDate)}</span>)}</div>
+                  </div>
+                </div>
+              ) : null}
+
               {workspace.readOnly ? (
                 <div className="my-shifts-transition-note">זהו חודש היסטורי שיובא מהמערכת הקודמת ולכן הוא מוצג לקריאה בלבד.</div>
               ) : changeModeText(workspace.scheduleChangeMode) ? (
@@ -549,32 +737,36 @@ function MyDynamicShiftsPage() {
                   month={workspace.month}
                   emptyMessage="אין משמרות להצגה בחודש הזה."
                   dayLabels={holidayLabels}
-                  getDayClassName={({ date }) => assignmentsByDate.has(date) ? 'my-shifts-calendar-has-assignment' : null}
+                  getDayClassName={({ date }) => (assignmentsByDate.get(date) ?? []).some((assignment) => conflictAssignmentIds.has(assignment.id)) ? 'my-shifts-calendar-needs-coverage' : assignmentsByDate.has(date) ? 'my-shifts-calendar-has-assignment' : null}
                   renderDayContent={({ date }) => {
                     const dayAssignments = assignmentsByDate.get(date) ?? [];
                     if (!dayAssignments.length) return null;
                     return (
                       <div className="my-shifts-calendar-items">
                         {dayAssignments.map((assignment) => {
-                          const editable = canEditAssignment(assignment);
+                          const editable = canEditAssignment(assignment) || canRequestExchange(assignment);
                           return (
                             <button
                               key={assignment.id}
                               type="button"
-                              className={`my-shifts-calendar-item${editable ? ' is-editable' : ''}`}
+                              className={`my-shifts-calendar-item${editable ? ' is-editable' : ''}${conflictAssignmentIds.has(assignment.id) ? ' needs-coverage' : ''}`}
                               onClick={() => openCalendarAssignmentEditor(assignment)}
                               disabled={!editable}
-                              title={editable ? 'לחץ לעריכת השיבוץ' : undefined}
+                              title={editable ? (canRequestExchange(assignment) ? 'לחץ להגשת בקשת חילוף' : 'לחץ לעריכת השיבוץ') : undefined}
                             >
                               <div className="my-shifts-assignment-title">
                                 <strong>{dynamicShiftDisplayName(assignment.shiftName, workspace?.workMode === 'on_call_daily' ? 'כוננות' : 'משמרת')}</strong>
                                 {assignment.contains200Percent ? <span className="my-shifts-premium-badge">200%</span> : null}
                               </div>
+                              {conflictAssignmentIds.has(assignment.id) && canRequestExchange(assignment) ? (
+                                <span className="my-shifts-coverage-action" aria-hidden="true">בקש חילוף</span>
+                              ) : null}
                               <span className="my-shifts-time" dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
                               {workspace.canViewOthers && assignment.displayName ? (
                                 <small className="my-shifts-assignee">{assignment.displayName}{assignment.isMine ? ' · אני' : ''}</small>
                               ) : null}
                               {assignment.holidayName ? <small className="my-shifts-holiday-note">{assignment.holidayName}</small> : null}
+                              {conflictAssignmentIds.has(assignment.id) ? <small className="my-shifts-coverage-label"><AlertTriangle size={13} /> לא זמין — נדרש חילוף</small> : null}
                             </button>
                           );
                         })}
@@ -594,7 +786,7 @@ function MyDynamicShiftsPage() {
                         </header>
                         <div>
                           {dayAssignments.map((assignment) => (
-                            <article key={assignment.id} className="my-shifts-row">
+                            <article key={assignment.id} className={`my-shifts-row${conflictAssignmentIds.has(assignment.id) ? ' needs-coverage' : ''}`}>
                               <div>
                                 <div className="my-shifts-assignment-title">
                                   <strong>{dynamicShiftDisplayName(assignment.shiftName, workspace?.workMode === 'on_call_daily' ? 'כוננות' : 'משמרת')}</strong>
@@ -605,7 +797,11 @@ function MyDynamicShiftsPage() {
                                 ) : null}
                                 {assignment.holidayName ? <small className="my-shifts-holiday-note">{assignment.holidayName}</small> : null}
                                 {assignment.managerEdited ? <small>השיבוץ עודכן ידנית על ידי מנהל</small> : null}
+                                {conflictAssignmentIds.has(assignment.id) ? <small className="my-shifts-coverage-label"><AlertTriangle size={14} /> לא זמין — עליך למצוא מחליף</small> : null}
                               </div>
+                              {conflictAssignmentIds.has(assignment.id) && canRequestExchange(assignment) ? (
+                                <button type="button" className="my-shifts-coverage-action" onClick={() => openCalendarAssignmentEditor(assignment)}>בקש חילוף</button>
+                              ) : null}
                               <span className="my-shifts-time" dir="ltr">{formatTime(assignment.startTime)}–{formatTime(assignment.endTime)}</span>
                             </article>
                           ))}
@@ -622,9 +818,9 @@ function MyDynamicShiftsPage() {
 
       <Modal
         isOpen={Boolean(selectedCalendarAssignmentId)}
-        title={selectedCalendarAssignment ? `עריכת ${workspace?.workMode === 'shifts' ? 'משמרת' : 'כוננות'} · ${selectedCalendarAssignment.shiftName}` : 'עריכת שיבוץ'}
-        onClose={() => setSelectedCalendarAssignmentId(null)}
-        footer={<Button variant="secondary" onClick={() => setSelectedCalendarAssignmentId(null)}>סגור</Button>}
+        title={selectedCalendarAssignment ? `${canRequestExchange(selectedCalendarAssignment) ? 'פרטי' : 'עריכת'} ${workspace?.workMode === 'shifts' ? 'משמרת' : 'כוננות'} · ${selectedCalendarAssignment.shiftName}` : 'פרטי שיבוץ'}
+        onClose={closeCalendarModal}
+        footer={<Button variant="secondary" onClick={closeCalendarModal} disabled={exchangeSubmitting}>סגור</Button>}
         className="my-shifts-calendar-edit-modal"
       >
         {selectedCalendarAssignment ? (
@@ -635,7 +831,43 @@ function MyDynamicShiftsPage() {
               {selectedCalendarAssignment.holidayName ? <span><strong>מועד:</strong> {selectedCalendarAssignment.holidayName}</span> : null}
             </div>
 
-            {selfEditLoading ? (
+            {canRequestExchange(selectedCalendarAssignment) ? (
+              exchangeFormOpen ? (
+                <div className="my-shifts-inline-exchange" dir="rtl">
+                  {exchangeLoading ? <div className="my-shifts-loading"><LoaderCircle className="spin" /> טוען אפשרויות חילוף…</div> : null}
+                  {exchangeError ? <div className="users-error" role="alert">{exchangeError}</div> : null}
+                  {exchangeOptions && selectedExchangeShift ? (
+                    <>
+                      <div className="my-shifts-exchange-types">
+                        <button type="button" className={exchangeType === 'one_way' ? 'active' : ''} onClick={() => { setExchangeType('one_way'); setExchangeCounterpartyAssignmentId(''); }}>חד-כיווני</button>
+                        <button type="button" className={exchangeType === 'two_way' ? 'active' : ''} onClick={() => setExchangeType('two_way')}>דו-כיווני</button>
+                      </div>
+                      <label><span>המשמרת שלי</span><strong>{formatDate(selectedCalendarAssignment.shiftDate)} · {selectedCalendarAssignment.shiftName}</strong></label>
+                      <label><span>עובד מחליף</span>
+                        <select value={exchangeCounterpartyId} onChange={(event) => { setExchangeCounterpartyId(event.target.value); setExchangeCounterpartyAssignmentId(''); }}>
+                          <option value="">בחר עובד…</option>
+                          {exchangeMembers.map((member) => <option key={member.userId} value={member.userId}>{member.displayName}</option>)}
+                        </select>
+                      </label>
+                      {exchangeType === 'two_way' ? (
+                        <label><span>המשמרת שלו/ה</span>
+                          <select value={exchangeCounterpartyAssignmentId} disabled={!exchangeCounterpartyId} onChange={(event) => setExchangeCounterpartyAssignmentId(event.target.value)}>
+                            <option value="">בחר משמרת נגדית…</option>
+                            {exchangeCounterpartyShifts.map((shift) => <option key={shift.id} value={shift.id}>{formatDate(shift.shiftDate)} · {shift.shiftName} · {formatTime(shift.startTime)}–{formatTime(shift.endTime)}</option>)}
+                          </select>
+                        </label>
+                      ) : null}
+                      <p className="my-shifts-exchange-hint">הבקשה תישלח לאישור העובד השני בהתאם לכללי התפקיד.</p>
+                      <Button onClick={() => void submitCalendarExchange()} disabled={exchangeSubmitting || !exchangeCounterpartyId || (exchangeType === 'two_way' && !exchangeCounterpartyAssignmentId)}>
+                        {exchangeSubmitting ? 'שולח…' : 'שלח בקשת חילוף'}
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              ) : (
+                <Button onClick={() => void openExchangeForm()}>בקשה לחילוף משמרת</Button>
+              )
+            ) : selfEditLoading ? (
               <div className="my-shifts-loading"><LoaderCircle className="spin" /> טוען אפשרויות שיבוץ…</div>
             ) : selfEditWorkspace && selectedCalendarEditorAssignment ? (
               <label className="my-shifts-calendar-edit-select">

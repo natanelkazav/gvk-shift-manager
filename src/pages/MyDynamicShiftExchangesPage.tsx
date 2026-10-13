@@ -147,6 +147,37 @@ function MyDynamicShiftExchangesPage() {
     finally { setBusyId(null); }
   };
 
+  const respondToRequest = async (requestId: string, approve: boolean) => {
+    setBusyId(requestId);
+    setError(null);
+    setSuccess(null);
+    try {
+      await dynamicSchedulingService.respondToDynamicShiftExchangeRequest(requestId, approve);
+      const updatedRequests = await dynamicSchedulingService.getDynamicShiftExchangeRequests();
+      setRequests(updatedRequests);
+      const updatedRequest = updatedRequests.find((request) => request.id === requestId);
+      if (!updatedRequest) {
+        setSuccess('התגובה נקלטה. לא ניתן לאמת כרגע את מצב הבקשה; ניתן לרענן את הרשימה.');
+      } else if (updatedRequest.status === 'approved') {
+        setSuccess('החילוף אושר והשיבוץ עודכן בהצלחה.');
+        window.dispatchEvent(new Event('gvk:dynamic-schedule-changed'));
+      } else if (updatedRequest.status === 'pending_manager') {
+        setSuccess('הבקשה אושרה על ידך והועברה לאישור בעל ההרשאה.');
+      } else if (updatedRequest.status === 'rejected_by_counterparty') {
+        setSuccess('הבקשה נדחתה.');
+      } else {
+        setSuccess('התגובה נקלטה. מצב הבקשה: ' + (STATUS_LABELS[updatedRequest.status] ?? updatedRequest.status));
+      }
+      // Reload options as well: approved exchanges may change which shifts can be offered.
+      const nextOptions = await dynamicSchedulingService.getMyDynamicShiftExchangeOptions();
+      setOptions(nextOptions);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'לא ניתן לאמת את תוצאת הפעולה. רענן את הרשימה לפני ניסיון נוסף.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const createRequest = async () => {
     if (!requesterAssignmentId || !counterpartyUserId) { setError('יש לבחור משמרת ועובד מחליף.'); return; }
     if (swapType === 'two_way' && !counterpartyAssignmentId) { setError('בהחלפה דו-כיוונית יש לבחור גם משמרת נגדית.'); return; }
@@ -186,7 +217,7 @@ function MyDynamicShiftExchangesPage() {
   return (
     <main className="dynamic-exchanges page-shell" dir="rtl">
       <header className="dynamic-exchange-header">
-        <div><h1><Repeat2 size={27} /> חילופי משמרות</h1><p>בקשה → אישור העובד השני → אישור בעל הרשאה. השיבוץ מתעדכן רק לאחר האישור הסופי.</p></div>
+        <div><h1><Repeat2 size={27} /> חילופי משמרות</h1><p>הבקשה נשלחת לעובד השני. לאחר אישורו, השיבוץ מתעדכן מיד בתפקידים ללא אישור נוסף; בתפקידים אחרים הבקשה מועברת לאישור בעל הרשאה.</p></div>
         <div className="dynamic-exchange-header-actions">
           <Button variant="secondary" onClick={() => void loadData()}><RefreshCw size={16} /> רענן</Button>
           {options.hasDynamicShiftExchange ? <Button onClick={() => setCreateOpen(true)}><Plus size={17} /> בקשת חילוף</Button> : null}
@@ -236,7 +267,7 @@ function MyDynamicShiftExchangesPage() {
         </section>
       ) : null}
 
-      {awaitingMe.length ? <section className="dynamic-exchange-section"><h2>ממתין לתגובה שלי <span>{awaitingMe.length}</span></h2>{awaitingMe.map((request) => renderRequest(request, <><Button onClick={() => void runAction(request.id, () => dynamicSchedulingService.respondToDynamicShiftExchangeRequest(request.id, true), 'הבקשה אושרה והועברה לאישור מנהל.')} disabled={busyId === request.id}><Check size={16} /> אשר</Button><Button variant="secondary" onClick={() => void runAction(request.id, () => dynamicSchedulingService.respondToDynamicShiftExchangeRequest(request.id, false), 'הבקשה נדחתה.')} disabled={busyId === request.id}><X size={16} /> דחה</Button></>))}</section> : null}
+      {awaitingMe.length ? <section className="dynamic-exchange-section"><h2>ממתין לתגובה שלי <span>{awaitingMe.length}</span></h2>{awaitingMe.map((request) => renderRequest(request, <><Button onClick={() => void respondToRequest(request.id, true)} disabled={busyId === request.id}><Check size={16} /> אשר</Button><Button variant="secondary" onClick={() => void respondToRequest(request.id, false)} disabled={busyId === request.id}><X size={16} /> דחה</Button></>))}</section> : null}
 
       {awaitingManager.length ? <section className="dynamic-exchange-section manager"><h2>ממתין לאישור מנהל <span>{awaitingManager.length}</span></h2>{awaitingManager.map((request) => renderRequest(request, <><Button onClick={() => void runAction(request.id, () => dynamicSchedulingService.reviewDynamicShiftExchangeRequest(request.id, true), 'החילוף אושר והשיבוץ עודכן.')} disabled={busyId === request.id}><Check size={16} /> אישור סופי</Button><Button variant="secondary" onClick={() => void runAction(request.id, () => dynamicSchedulingService.reviewDynamicShiftExchangeRequest(request.id, false), 'הבקשה נדחתה.')} disabled={busyId === request.id}><X size={16} /> דחה</Button></>))}</section> : null}
 

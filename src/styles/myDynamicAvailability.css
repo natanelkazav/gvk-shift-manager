@@ -17,3 +17,13 @@
 /* Personal monthly target: keep maximize beside the target input. */
 .my-capacity-target-row{display:flex;align-items:center;gap:10px}.my-capacity-target-row>input{flex:1;min-width:0}.my-capacity-target-row .my-capacity-maximize{grid-column:auto;padding:9px 12px;align-items:center;white-space:nowrap}.my-capacity-target-row .my-capacity-maximize input{margin:0}.my-capacity-target-row .my-capacity-maximize>span{display:block}
 @media(max-width:520px){.my-capacity-target-row{align-items:stretch;flex-direction:column}.my-capacity-target-row .my-capacity-maximize{justify-content:flex-start}}
+
+/* Make planned/published on-call rotation visible independently of availability status. */
+.my-availability-row .my-availability-rotation-badge{display:inline-flex;align-items:center;gap:7px;justify-self:start;width:max-content;max-width:100%;margin-top:5px;padding:5px 11px;border:1px solid #93c5fd;border-radius:999px;background:#dbeafe;color:#1e40af;font-size:.875rem;font-weight:800;line-height:1.4;box-shadow:0 1px 3px rgba(30,64,175,.08)}
+.my-availability-rotation-badge svg{flex:none}
+
+/* Explicit confirmation before converting unmarked shifts to available. */
+.my-availability-confirm-backdrop{position:fixed;inset:0;z-index:1200;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.my-availability-confirm-dialog{background:var(--surface,#fff);color:var(--text-primary,#17233b);border-radius:18px;padding:26px;max-width:480px;width:100%;box-shadow:0 20px 55px rgba(0,0,0,.25)}
+.my-availability-confirm-dialog h2{margin:0 0 14px;font-size:1.25rem}.my-availability-confirm-dialog p{line-height:1.7;margin:0 0 22px}
+.my-availability-confirm-actions{display:flex;gap:10px;flex-wrap:wrap}.my-availability-confirm-actions button{flex:1;min-width:165px}

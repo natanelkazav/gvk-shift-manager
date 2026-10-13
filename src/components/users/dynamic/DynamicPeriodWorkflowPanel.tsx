@@ -1,7 +1,7 @@
 import { BellRing, CalendarClock, CheckCircle2, ChevronUp, LoaderCircle, LockKeyhole, PencilLine, Play, Send, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
-import type { DynamicAvailabilityReminderSettings, DynamicJobType, DynamicPeriodWorkflowState } from '../../../types/dynamicScheduling';
+import type { DynamicAvailabilityReminderSettings, DynamicJobType, DynamicPeriodWorkflowState, DynamicWeeklyRestViolation } from '../../../types/dynamicScheduling';
 import { Button } from '../../ui';
 import DynamicAvailabilityShadowWorkspace from './DynamicAvailabilityShadowWorkspace';
 import DynamicScheduleDraftEditor from './DynamicScheduleDraftEditor';
@@ -194,6 +194,12 @@ function DynamicPeriodWorkflowPanel({
   const draftStatus = state?.draft?.status ?? null;
   const unfilled = Number(state?.draft?.metrics?.unfilledRequiredPositions ?? 0);
   const effectiveUnfilled = Number(state?.draft?.metrics?.effectiveUnfilledRequiredPositions ?? unfilled);
+  const weeklyRestViolations = Array.isArray(state?.draft?.metrics?.weeklyRestViolations)
+    ? state.draft.metrics.weeklyRestViolations as unknown as DynamicWeeklyRestViolation[]
+    : [];
+  const weeklyRestValid = state?.draft?.metrics?.weeklyRestRuleEnabled === true
+    ? state.draft.metrics.weeklyRestValid === true
+    : true;
   const canPublish = Boolean(state?.draft && periodStatus === 'closed' && effectiveUnfilled === 0 && ['generated', 'incomplete'].includes(draftStatus ?? ''));
   const permissions = state?.permissions ?? {};
   const can = (permissionKey: string): boolean => permissions[permissionKey] === true;
@@ -383,6 +389,20 @@ function DynamicPeriodWorkflowPanel({
 
           {state.draft && effectiveUnfilled > 0 ? (
             <div className="dynamic-period-workflow-note is-warning">לא ניתן לפרסם כל עוד קיימות {effectiveUnfilled} עמדות חובה לא מאוישות שלא סומנו במפורש כחוסר מכוון.</div>
+          ) : null}
+
+          {state.draft && !weeklyRestValid && weeklyRestViolations.length > 0 ? (
+            <div className="dynamic-period-workflow-note is-warning dynamic-weekly-rest-warning">
+              <strong>לא נמצא שיבוץ שעומד בכלל יום חופש שבועי עבור כל המוקדנים.</strong>
+              <span>מוצג הפתרון הטוב ביותר שנמצא. יש לבדוק ידנית את השבועות הבאים:</span>
+              <ul>
+                {weeklyRestViolations.map((violation) => (
+                  <li key={`${violation.userId}-${violation.calendarWeekStart}`}>
+                    <strong>{violation.displayName}</strong> — {new Date(`${violation.weekStart}T12:00:00`).toLocaleDateString('he-IL')}–{new Date(`${violation.weekEnd}T12:00:00`).toLocaleDateString('he-IL')}: עובד בכל {violation.workedDays} הימים שבטווח השבוע בחודש.
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
 
           {state.draft && !state.publication && showDraftEditor && canEditDraft ? (

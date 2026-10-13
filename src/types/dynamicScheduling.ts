@@ -121,6 +121,8 @@ export interface DynamicScheduleGroup {
 }
 
 export interface DynamicAvailabilityConfig {
+  /** Optional for backward compatibility: existing roles keep their current preferences UI. */
+  showEmployeePreferences?: boolean;
   enabled: boolean;
   statuses: Array<'available' | 'unavailable' | 'preferred' | 'avoid'>;
   allowNotes: boolean;
@@ -870,6 +872,15 @@ export interface DynamicAvailabilityLegacyComparison {
   entryDelta: number;
 }
 
+
+export interface MyOnCallCoverageConflict {
+  assignmentId: string;
+  publicationId: string;
+  jobTypeId: string;
+  jobTypeName: string;
+  shiftDate: string;
+  shiftName: string;
+}
 
 export interface MyDynamicSchedulePeriod {
   publicationId: string;

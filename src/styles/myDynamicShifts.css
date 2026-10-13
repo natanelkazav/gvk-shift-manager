@@ -12,3 +12,25 @@
 .my-shifts-calendar-item{width:100%;text-align:right;font:inherit;color:inherit;appearance:none}.my-shifts-calendar-item:disabled{opacity:1;cursor:default}.my-shifts-calendar-item.is-editable{cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}.my-shifts-calendar-item.is-editable:hover{border-color:color-mix(in srgb,var(--color-primary-600) 50%,var(--color-gray-200));box-shadow:0 3px 10px rgba(15,23,42,.08);transform:translateY(-1px)}.my-shifts-calendar-item.is-editable:focus-visible{outline:2px solid var(--color-primary-600);outline-offset:2px}.my-shifts-calendar-edit-modal{max-width:560px}.my-shifts-calendar-edit-content{display:grid;gap:16px}.my-shifts-calendar-edit-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;border:1px solid var(--color-gray-200);background:var(--color-gray-50);border-radius:12px;padding:12px}.my-shifts-calendar-edit-meta span{display:flex;gap:6px;align-items:center}.my-shifts-calendar-edit-select{display:grid;gap:7px}.my-shifts-calendar-edit-select>span{font-weight:700}.my-shifts-calendar-edit-select select{width:100%;border:1px solid var(--color-gray-300);border-radius:10px;background:var(--color-white);padding:10px 11px;font:inherit}.my-shifts-calendar-edit-select small{display:flex;align-items:center;gap:6px;color:var(--color-gray-600)}@media(max-width:620px){.my-shifts-calendar-edit-meta{grid-template-columns:1fr}}
 
 .my-shifts-assignee-filter{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:12px 14px;border:1px solid var(--color-gray-200);border-radius:12px;background:var(--color-gray-50)}.my-shifts-assignee-filter label{display:grid;gap:5px;min-width:220px}.my-shifts-assignee-filter label>span{font-size:.82rem;font-weight:700;color:var(--color-gray-700)}.my-shifts-assignee-filter select{min-width:220px;border:1px solid var(--color-gray-300);border-radius:10px;background:var(--color-white);color:var(--color-gray-900);padding:9px 11px;font:inherit}.my-shifts-assignee-filter>small{color:var(--color-gray-600);padding-bottom:9px}@media(max-width:760px){.my-shifts-assignee-filter{align-items:stretch}.my-shifts-assignee-filter label,.my-shifts-assignee-filter select{width:100%;min-width:0}}
+
+
+.my-shifts-inline-exchange { display: grid; gap: 14px; margin-top: 10px; }
+.my-shifts-inline-exchange label { display: grid; gap: 6px; font-weight: 650; }
+.my-shifts-inline-exchange select { width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color, #cbd7e8); background: var(--surface, #fff); color: inherit; font: inherit; }
+.my-shifts-exchange-types { display: flex; gap: 8px; }
+.my-shifts-exchange-types button { border: 1px solid var(--border-color, #cbd7e8); background: var(--surface, #fff); color: inherit; border-radius: 10px; padding: 9px 14px; cursor: pointer; }
+.my-shifts-exchange-types button.active { border-color: #2f6fed; background: #edf3ff; color: #193c84; font-weight: 700; }
+.my-shifts-exchange-hint { margin: 0; font-size: 13px; color: var(--text-muted); }
+
+/* On-call coverage warnings: only the current assignee sees these indicators. */
+.my-shifts-calendar-item.needs-coverage,.my-shifts-row.needs-coverage{background:#fff1f2!important;border-color:#fda4af!important;color:#881337}
+.month-calendar-day.my-shifts-calendar-needs-coverage{background:#fff1f2!important;box-shadow:inset 0 0 0 2px #fda4af}
+.my-shifts-coverage-label{display:inline-flex;align-items:center;gap:5px;color:#b91c1c!important;font-weight:800!important;font-size:.78rem!important}
+.my-shifts-coverage-summary{display:flex;gap:12px;align-items:flex-start;background:#fff1f2;border:1px solid #fda4af;color:#881337;border-radius:14px;padding:14px;margin-bottom:16px}
+.my-shifts-coverage-summary>div{display:grid;gap:6px}.my-shifts-coverage-summary span{font-size:.9rem}
+.my-shifts-coverage-dates{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}.my-shifts-coverage-dates span{background:white;border:1px solid #fda4af;border-radius:9px;padding:5px 9px;font-weight:750}
+.my-shifts-coverage-action{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:34px;border:2px solid #9f1239!important;border-radius:9px;background:#be123c!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;padding:7px 12px;cursor:pointer;font-weight:850!important;font-size:.85rem!important;line-height:1.2;text-align:center;box-shadow:0 2px 5px rgba(136,19,55,.24)}
+.my-shifts-calendar-item.needs-coverage .my-shifts-coverage-action{width:100%;margin:5px 0 3px;pointer-events:none}
+button.my-shifts-coverage-action:hover{background:#9f1239!important;border-color:#881337!important}
+button.my-shifts-coverage-action:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
+.my-shifts-coverage-load-error{color:#9a3412;margin:10px 0}
