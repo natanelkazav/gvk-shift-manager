@@ -1,10 +1,15 @@
 import {
+  AlertTriangle,
   CalendarClock,
   CalendarDays,
   CheckCircle2,
   Users,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import './dynamicCoverageAlerts.css';
+import { useEffect, useState } from 'react';
+import { dynamicSchedulingService } from '../../services/dynamicSchedulingService';
+import type { MyOnCallCoverageConflict, MyDynamicAvailabilityPeriod } from '../../types/dynamicScheduling';
 import DailyReportDashboardCards from '../../features/dailyReports/components/DailyReportDashboardCards';
 import AttendanceClockCards from './AttendanceClockCards';
 import ManagerConfigurableWidgets from './ManagerConfigurableWidgets';
@@ -45,7 +50,11 @@ function formatTime(value: string): string {
   return value.slice(0, 5);
 }
 
-function getAvailabilityText(role: DynamicRuntimeRole): string {
+function getAvailabilityText(role: DynamicRuntimeRole, period?: MyDynamicAvailabilityPeriod): string {
+  if (period) {
+    const suffix = `${String(period.month).padStart(2,'0')}/${period.year}`;
+    return `${period.submissionStatus==='submitted'?'האילוצים הוגשו':'מולאו'} · ${period.filledCount}/${period.slotCount} · ${suffix}`;
+  }
   if (!role.availabilityEnabled) return 'התפקיד אינו משתמש במערכת אילוצים';
   if (!role.availability) return 'אין כרגע תקופת אילוצים פעילה';
 
@@ -57,6 +66,24 @@ function getAvailabilityText(role: DynamicRuntimeRole): string {
 }
 
 function DynamicDashboard({ context }: DynamicDashboardProps) {
+  const [periods, setPeriods] = useState<MyDynamicAvailabilityPeriod[]>([]);
+  const [coverageConflicts, setCoverageConflicts] = useState<MyOnCallCoverageConflict[]>([]);
+  useEffect(() => {
+    let active = true;
+    const refresh = () => { void dynamicSchedulingService.getMyOnCallCoverageConflicts()
+      .then((items) => { if (active) setCoverageConflicts(items); })
+      .catch((error) => console.error('Failed to load on-call coverage conflicts', error)); };
+    refresh();
+    window.addEventListener('focus', refresh);
+    window.addEventListener('gvk:dynamic-schedule-changed', refresh);
+    return () => { active = false; window.removeEventListener('focus', refresh); window.removeEventListener('gvk:dynamic-schedule-changed', refresh); };
+  }, []);
+
+  useEffect(() => { let active = true; dynamicSchedulingService.getMyDynamicAvailabilityPeriods().then(data => { if (active) setPeriods(data); }).catch(() => {}); return () => { active = false; }; }, []);
+  const getRelevantPeriod = (jobTypeId: string) => {
+    const matches = periods.filter(p => p.jobTypeId === jobTypeId && (p.periodStatus === 'open' || p.periodStatus === 'closed'));
+    return matches.sort((a,b) => (a.periodStatus === 'open' ? 0 : 1) - (b.periodStatus === 'open' ? 0 : 1) || (b.year-a.year) || (b.month-a.month))[0];
+  };
   return (
     <div className="dynamic-dashboard-stack">
       <ActivityTrackingCards />
@@ -108,6 +135,20 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
                 </>
               ) : null}
 
+              {coverageConflicts.some((item) => item.jobTypeId === role.jobTypeId) ? (
+                <div className="dynamic-dashboard-coverage-alert" role="alert">
+                  <AlertTriangle size={20} aria-hidden="true" />
+                  <div>
+                    <strong>עליך למצוא חלופה לכוננויות</strong>
+                    <span>סימנת ״לא זמין״ בתאריכים שבהם שובצת לפי הסבב:</span>
+                    <div className="dynamic-dashboard-coverage-dates">
+                      {coverageConflicts.filter((item) => item.jobTypeId === role.jobTypeId).map((item) => <span key={item.assignmentId}>{formatDate(item.shiftDate)}</span>)}
+                    </div>
+                    <Link to="/my-shifts">מעבר לכוננויות שלי והגשת בקשת חילוף</Link>
+                  </div>
+                </div>
+              ) : null}
+
               {role.parallelAssignments.length > 0 ? (
                 <div className="dynamic-dashboard-parallel">
                   <div className="dynamic-dashboard-parallel-heading">
@@ -137,7 +178,7 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
                 <CheckCircle2 size={18} aria-hidden="true" />
                 <div>
                   <strong>אילוצים</strong>
-                  <span>{getAvailabilityText(role)}</span>
+                  <span>{getAvailabilityText(role, getRelevantPeriod(role.jobTypeId))}</span>
                 </div>
               </div>
                 </>

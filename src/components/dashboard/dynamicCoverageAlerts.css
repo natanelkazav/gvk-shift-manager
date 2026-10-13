@@ -1,0 +1,6 @@
+.dynamic-dashboard-coverage-alert{display:flex;gap:10px;padding:12px;border:1px solid #fda4af;border-radius:12px;background:#fff1f2;color:#881337;margin:12px 0}
+.dynamic-dashboard-coverage-alert>div{display:grid;gap:7px;min-width:0}
+.dynamic-dashboard-coverage-alert strong{font-weight:800}.dynamic-dashboard-coverage-alert span{font-size:.87rem}
+.dynamic-dashboard-coverage-dates{display:flex;flex-wrap:wrap;gap:5px}
+.dynamic-dashboard-coverage-dates span{border:1px solid #fda4af;border-radius:7px;padding:3px 7px;background:#fff}
+.dynamic-dashboard-coverage-alert a{color:#9f1239;text-decoration:underline;font-weight:750}
