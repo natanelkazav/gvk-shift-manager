@@ -1324,12 +1324,28 @@
 }
 
 .dynamic-select-field select {
-  min-height: 42px;
-  padding: 0 10px;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding-inline: 12px 32px;
   border: 1px solid var(--theme-border-strong);
   border-radius: 10px;
   background: var(--theme-surface);
+  color: var(--theme-text);
   font: inherit;
+  font-weight: 600;
+  direction: rtl;
+  text-align: right;
+  text-overflow: ellipsis;
+}
+
+.dynamic-select-field { min-width: 0; }
+.dynamic-select-field select option { direction: rtl; }
+@media (max-width: 820px) {
+  .dynamic-form-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 .dynamic-config-section {
@@ -4332,3 +4348,10 @@
 /* Dynamic activity-tracking timer policy */
 .dynamic-activity-policy-intro{display:flex;flex-direction:column;gap:4px;margin-top:8px}.dynamic-activity-policy-intro small{color:var(--theme-text-muted);line-height:1.5}.dynamic-activity-policy-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}.dynamic-activity-policy-card{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--theme-border);border-radius:14px;background:var(--theme-surface)}.dynamic-activity-policy-card>div:first-child{display:flex;flex-direction:column;gap:4px}.dynamic-activity-policy-card strong{color:var(--theme-text-strong)}.dynamic-activity-policy-card small{color:var(--theme-text-muted);line-height:1.45}.dynamic-activity-policy-card.is-disabled{opacity:.65}.dynamic-activity-policy-card .dynamic-checkbox-row{margin:0;padding:9px 10px;border:1px solid var(--theme-border);border-radius:10px;background:var(--theme-surface-soft)}
 @media(max-width:1050px){.dynamic-activity-policy-cards{grid-template-columns:1fr}}
+
+
+/* Weekly rest hard-rule fallback warning */
+.dynamic-weekly-rest-warning { display: grid; gap: 7px; }
+.dynamic-weekly-rest-warning > span { display: block; }
+.dynamic-weekly-rest-warning ul { margin: 2px 0 0; padding-inline-start: 22px; display: grid; gap: 4px; }
+.dynamic-weekly-rest-warning li { line-height: 1.45; }

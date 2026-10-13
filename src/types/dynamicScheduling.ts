@@ -446,6 +446,8 @@ export interface DynamicActivityTrackingConfig {
 }
 
 export interface DynamicSchedulingConfig {
+  /** Versioned with job-type effective month; reuses the monthly rotation engine. */
+  rotationExchangeEnabled?: boolean;
   activityTracking?: DynamicActivityTrackingConfig;
   attendance?: DynamicAttendanceConfig;
   dailyReports?: DynamicDailyReportConfig;
@@ -520,6 +522,22 @@ export interface DynamicFeasibilityAnalysis {
   warnings?: Record<string, string>;
 }
 
+export interface DynamicWeeklyRestViolation {
+  userId: string;
+  displayName: string;
+  weekStart: string;
+  weekEnd: string;
+  calendarWeekStart: string;
+  workedDays: number;
+  daysInPeriod: number;
+}
+
+export interface DynamicWeeklyRestValidation {
+  valid: boolean;
+  violationCount: number;
+  violations: DynamicWeeklyRestViolation[];
+}
+
 export interface DynamicShadowDraftResult {
   draftId: string;
   mode: 'shadow';
@@ -534,6 +552,8 @@ export interface DynamicShadowDraftResult {
   employmentScopeIsEligibilityCutoff?: boolean;
   partTimeRecommendationFactor?: number;
   feasibility: DynamicFeasibilityAnalysis;
+  weeklyRest?: DynamicWeeklyRestValidation;
+  generationAttempts?: number;
 }
 
 export interface DynamicShadowDiagnosticCandidate {

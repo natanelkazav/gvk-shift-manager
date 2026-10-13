@@ -1,3 +1,16 @@
+export interface DynamicExchangeCommitment {
+  id: string;
+  jobTypeId: string;
+  debtorUserId: string;
+  creditorUserId: string;
+  returnGroup: 'weekday' | 'weekend';
+  dueMonth: string;
+  status: 'open' | 'fulfilled';
+  sourceRequestId: string;
+  fulfillmentRequestId: string | null;
+  fulfilledAt: string | null;
+}
+
 import { supabase } from '../lib/supabase';
 import { PerformanceDebugService } from './performanceDebugService';
 import { schedulePublicationNotificationService } from './schedulePublicationNotificationService';
@@ -42,6 +55,7 @@ import type {
   DynamicShadowDraftResult,
   DynamicShadowDiagnostics,
   DynamicShadowValidation,
+  DynamicWeeklyRestValidation,
   DynamicSchedulePreview,
   DynamicSchedulingAdminData,
   DynamicJobType,
@@ -217,6 +231,14 @@ export const dynamicSchedulingService = {
     });
   },
 
+  async getMyDynamicExchangeCommitments(): Promise<DynamicExchangeCommitment[]> {
+    return PerformanceDebugService.measureAsync('dynamic-scheduling.exchange-commitments', async () => {
+      const { data, error } = await supabase.rpc('get_my_dynamic_exchange_commitments');
+      if (error) throwSupabaseError('Dynamic exchange commitments', error);
+      return Array.isArray(data) ? data as DynamicExchangeCommitment[] : [];
+    });
+  },
+
   async getDynamicShiftExchangeRequests(): Promise<DynamicShiftExchangeRequest[]> {
     const { data, error } = await supabase.rpc('get_dynamic_shift_exchange_requests');
     if (error) throwSupabaseError('Dynamic shift exchange requests', error);
@@ -233,6 +255,18 @@ export const dynamicSchedulingService = {
       requested_counterparty_assignment_id: input.counterpartyAssignmentId ?? null,
     });
     if (error) throwSupabaseError('Create dynamic shift exchange request', error);
+  },
+
+  async requestDynamicExchangeReturnCommitment(requestId: string): Promise<void> {
+    const { error } = await supabase.rpc('request_dynamic_exchange_return_commitment', { requested_request_id: requestId });
+    if (error) throwSupabaseError('Request exchange return commitment', error);
+  },
+
+  async consentDynamicExchangeReturnCommitment(requestId: string, accept: boolean): Promise<void> {
+    const { error } = await supabase.rpc('consent_dynamic_exchange_return_commitment', {
+      requested_request_id: requestId, requested_accept: accept,
+    });
+    if (error) throwSupabaseError('Consent to exchange return commitment', error);
   },
 
   async respondToDynamicShiftExchangeRequest(requestId: string, approve: boolean, rejectionReason?: string): Promise<void> {
@@ -513,6 +547,14 @@ export const dynamicSchedulingService = {
   },
 
 
+  async getMyRotationDates(jobTypeId: string, year: number, month: number): Promise<Array<{date:string; planned:boolean; published:boolean; hasPublishedAssignment:boolean}>> {
+    const { data, error } = await supabase.rpc('get_my_dynamic_rotation_dates', {
+      requested_job_type_id: jobTypeId, requested_year: year, requested_month: month,
+    });
+    if (error) throwSupabaseError('Personal rotation dates', error);
+    return (data ?? []) as Array<{date:string; planned:boolean; published:boolean; hasPublishedAssignment:boolean}>;
+  },
+
   async getRotationWorkspace(
     jobTypeId: string,
     startDate?: string,
@@ -761,15 +803,63 @@ export const dynamicSchedulingService = {
     month: number,
   ): Promise<DynamicShadowDraftResult> {
     return PerformanceDebugService.measureAsync(
-      'dynamic-scheduling.phase7.create-shadow-draft',
+      'dynamic-scheduling.weekly-rest-retry',
       async () => {
-        const { data, error } = await supabase.rpc('create_dynamic_schedule_shadow_draft', {
-          requested_job_type_id: jobTypeId,
-          requested_year: year,
-          requested_month: month,
-        });
-        if (error) throwSupabaseError('Create dynamic schedule shadow draft', error);
-        return data as DynamicShadowDraftResult;
+        const maxAttempts = 12;
+        let best: { result: DynamicShadowDraftResult; validation: DynamicWeeklyRestValidation; attempt: number } | null = null;
+
+        const discard = async (draftId: string): Promise<void> => {
+          const { error } = await supabase.rpc('discard_dynamic_schedule_shadow_draft', { requested_draft_id: draftId });
+          if (error) throwSupabaseError('Discard dynamic schedule retry draft', error);
+        };
+
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+          const { data, error } = await supabase.rpc('create_dynamic_schedule_shadow_draft_attempt', {
+            requested_job_type_id: jobTypeId,
+            requested_year: year,
+            requested_month: month,
+            requested_attempt: attempt,
+          });
+          if (error) throwSupabaseError('Create dynamic schedule shadow draft attempt', error);
+          const result = data as DynamicShadowDraftResult;
+
+          const { data: validationData, error: validationError } = await supabase.rpc(
+            'get_dynamic_schedule_weekly_rest_validation',
+            { requested_draft_id: result.draftId },
+          );
+          if (validationError) throwSupabaseError('Validate weekly rest rule', validationError);
+          const validation = validationData as DynamicWeeklyRestValidation;
+
+          const currentRank = [
+            validation.violationCount,
+            result.unfilledRequiredPositions,
+            result.avoidAssignments ?? 0,
+          ];
+          const bestRank = best ? [
+            best.validation.violationCount,
+            best.result.unfilledRequiredPositions,
+            best.result.avoidAssignments ?? 0,
+          ] : null;
+          const isBetter = !bestRank || currentRank.some((value, index) =>
+            value < bestRank[index] && currentRank.slice(0, index).every((prior, priorIndex) => prior === bestRank[priorIndex]),
+          );
+
+          if (isBetter) {
+            if (best) await discard(best.result.draftId);
+            best = { result, validation, attempt: attempt + 1 };
+          } else {
+            await discard(result.draftId);
+          }
+
+          if (validation.valid) break;
+        }
+
+        if (!best) throw new Error('לא נוצרה טיוטת שיבוץ.');
+        return {
+          ...best.result,
+          weeklyRest: best.validation,
+          generationAttempts: best.attempt,
+        };
       },
     );
   },

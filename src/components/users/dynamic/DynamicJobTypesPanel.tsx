@@ -71,6 +71,9 @@ const schedulingStrategyLabels: Record<DynamicSchedulingStrategy, string> = {
   monthly_rotation_constraints: 'סבב חודשי + אילוצים',
 };
 
+const ROTATION_EXCHANGE_OPTION = 'monthly_rotation_exchange' as const;
+const isRotationExchange = (config: DynamicSchedulingConfig) => config.rotationExchangeEnabled === true;
+
 const getIsraelMonth = (offsetMonths = 0): { year: number; month: number } => {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Jerusalem',
@@ -85,6 +88,7 @@ const getIsraelMonth = (offsetMonths = 0): { year: number; month: number } => {
 
 const defaultSchedulingConfig = (): DynamicSchedulingConfig => ({
   scheduleChangeMode: 'none',
+  rotationExchangeEnabled: false,
   attendance: { enabled: false, requireLocation: true, workplaceName: '', latitude: null, longitude: null, radiusMeters: 150, outsidePolicy: 'flag', allowUnscheduled: false },
   dailyReports: { enabled: false, recipientUserIds: [], allowAddSubjects: true, allowAddCustomers: true, allowAttachments: true },
   activityTracking: { enabled: false, activities: [{ key: 'operations', label: 'תפעול' }, { key: 'sales', label: 'מכירות' }], reminderEnabled: true, reminderTime: '20:00', autoEndEnabled: false, autoEndTime: '20:00', endReminderEnabled: true, endReminderMinutesBefore: 30, continuousReminderEnabled: true, continuousReminderMinutes: 240 },
@@ -1320,9 +1324,10 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
               <label className="dynamic-select-field">
                 <span>שיטת יצירת שיבוץ</span>
                 <select
-                  value={form.schedulingStrategy}
+                  value={form.schedulingStrategy === 'monthly_rotation_constraints' && isRotationExchange(form.schedulingConfig) ? ROTATION_EXCHANGE_OPTION : form.schedulingStrategy}
                   onChange={(event) => {
-                    const schedulingStrategy = event.target.value as DynamicSchedulingStrategy;
+                    const selectedRotationExchange = event.target.value === ROTATION_EXCHANGE_OPTION;
+                    const schedulingStrategy = (selectedRotationExchange ? 'monthly_rotation_constraints' : event.target.value) as DynamicSchedulingStrategy;
                     const hasScheduling = schedulingStrategy !== 'none';
                     const schedulingCapabilities = new Set(form.capabilities);
                     if (hasScheduling) {
@@ -1340,7 +1345,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                       schedulingStrategy,
                       availabilityConfig: { ...form.availabilityConfig, enabled: hasScheduling },
                       schedulingConfig: hasScheduling
-                        ? form.schedulingConfig
+                        ? { ...form.schedulingConfig, rotationExchangeEnabled: selectedRotationExchange, scheduleChangeMode: selectedRotationExchange ? 'shift_exchange' : form.schedulingConfig.scheduleChangeMode }
                         : { ...form.schedulingConfig, scheduleChangeMode: 'none' },
                       capabilities: Array.from(schedulingCapabilities),
                     });
@@ -1351,9 +1356,12 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                       {label}
                     </option>
                   ))}
-                </select>
+                    <option value={ROTATION_EXCHANGE_OPTION}>סבב חודשי + אילוצים וחילופים</option>
+                  </select>
                 <small>
-                  {form.schedulingStrategy === 'none'
+                  {isRotationExchange(form.schedulingConfig)
+                    ? 'סבב חודשי עם התראות אי־זמינות והחלפות באישור המחליף. השינוי נשמר לפי חודש התחולה של התפקיד.'
+                    : form.schedulingStrategy === 'none'
                     ? 'לתפקיד אין לוח שיבוצים, תקופות אילוצים או מנגנון איזון. יכולות אחרות של התפקיד ממשיכות לעבוד כרגיל.'
                     : form.schedulingStrategy === 'monthly_rotation_constraints'
                       ? 'הסבב החודשי יהיה נקודת המוצא, והאילוצים ישמשו להתאמת הסבב. מנוע הסבב עצמו יחובר בשלב הבא.'
