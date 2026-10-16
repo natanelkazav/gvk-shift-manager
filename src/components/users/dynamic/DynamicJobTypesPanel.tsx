@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
+import { supabase } from '../../../lib/supabase';
 import { dynamicPermissionEngineService } from '../../../services/dynamicPermissionEngineService';
 import type {
   DynamicJobType,
@@ -424,6 +425,86 @@ const derivePermissionBlueprint = (input: SaveDynamicJobTypeInput): PermissionBl
   return permissionBlueprint.filter((item) => features.has(item.featureKey));
 };
 
+type RoleConfigDifference = { label: string; current: string; upcoming: string; impact: string };
+
+const describeRoleConfigDifferences = (
+  current: SaveDynamicJobTypeInput,
+  upcoming: SaveDynamicJobTypeInput,
+): RoleConfigDifference[] => {
+  const differences: RoleConfigDifference[] = [];
+  const add = (label: string, before: unknown, after: unknown, impact: string) => {
+    if (before !== after) differences.push({ label, current: String(before), upcoming: String(after), impact });
+  };
+  const strategyName = (form: SaveDynamicJobTypeInput) =>
+    form.schedulingStrategy === 'monthly_rotation_constraints' && isRotationExchange(form.schedulingConfig)
+      ? 'סבב חודשי + אילוצים וחילופים'
+      : schedulingStrategyLabels[form.schedulingStrategy];
+  add('שיטת שיבוץ', strategyName(current), strategyName(upcoming),
+    'משפיע על יצירת שיבוצים ועל תהליך האילוצים והחילופים בחודש התחולה.');
+  const workModeLabels: Record<string, string> = {
+    none: 'ללא שיבוץ', shifts: 'משמרות', on_call_daily: 'כוננות יומית', on_call_hourly: 'כוננות שעתית',
+  };
+  const workMode = (form: SaveDynamicJobTypeInput) =>
+    workModeLabels[form.schedulingConfig.shiftPattern?.workMode ?? 'shifts'] ?? 'לא מוגדר';
+  add('מבנה עבודה', workMode(current), workMode(upcoming),
+    'משפיע על סוג יחידות השיבוץ שייווצרו בחודש התחולה.');
+  const changeModeLabel = (mode: DynamicScheduleChangeMode | undefined) =>
+    ({ none: 'ללא שינוי עצמי', self_edit: 'עריכה עצמית של השיבוץ', shift_exchange: 'מערכת חילופי משמרות וכוננויות' })[mode ?? 'none'] ?? 'לא מוגדר';
+  add('ניהול שינויים', changeModeLabel(current.schedulingConfig.scheduleChangeMode),
+    changeModeLabel(upcoming.schedulingConfig.scheduleChangeMode),
+    'משפיע על פעולות החלפה ועריכה הזמינות לאחר פרסום השיבוץ.');
+  add('הגשת אילוצים', current.availabilityConfig.enabled ? 'פעילה' : 'כבויה',
+    upcoming.availabilityConfig.enabled ? 'פעילה' : 'כבויה',
+    'משפיע על מסך הגשת האילוצים ועל תהליך הכנת השיבוץ.');
+  add('מודל שכר', payModelLabels[current.payModel], payModelLabels[upcoming.payModel],
+    'משפיע על אופן חישוב השכר לתפקיד בחודש התחולה.');
+  add('היקף העסקה', employmentScopeLabels[current.employmentScope], employmentScopeLabels[upcoming.employmentScope],
+    'עשוי להשפיע על כללי השיבוץ ויעדי העובדים.');
+  const addon = (form: SaveDynamicJobTypeInput, key: 'activityTracking' | 'dailyReports' | 'attendance') =>
+    form.schedulingConfig[key]?.enabled ? 'פעיל' : 'כבוי';
+  for (const [key, label] of [
+    ['activityTracking', 'מעקב פעילות'], ['dailyReports', 'דיווח יומי'], ['attendance', 'נוכחות'],
+  ] as const) {
+    add(label, addon(current, key), addon(upcoming, key),
+      'משפיע על זמינות התוספת לעובדי התפקיד בחודש התחולה.');
+  }
+  return differences;
+};
+
+type FutureMonthDataStatus = {
+  periods: number;
+  drafts: number;
+  publications: number;
+};
+
+const futureMonthName = (): string => {
+  const { year, month } = getIsraelMonth(1);
+  return new Intl.DateTimeFormat('he-IL', { month: 'long', year: 'numeric', timeZone: 'Asia/Jerusalem' })
+    .format(new Date(Date.UTC(year, month - 1, 15)));
+};
+
+async function fetchFutureMonthDataStatus(jobTypeId: string): Promise<FutureMonthDataStatus> {
+  const { year, month } = getIsraelMonth(1);
+  const tables = [
+    'dynamic_availability_periods',
+    'dynamic_schedule_shadow_drafts',
+    'dynamic_schedule_publications',
+  ] as const;
+  const results = await Promise.all(tables.map((table) =>
+    supabase.from(table).select('id', { count: 'exact', head: true })
+      .eq('job_type_id', jobTypeId).eq('year', year).eq('month', month)
+  ));
+  for (const result of results) {
+    if (result.error) throw result.error;
+    if (result.count === null) throw new Error('לא ניתן לאמת את כמות הרשומות לחודש הבא.');
+  }
+  return {
+    periods: results[0].count ?? 0,
+    drafts: results[1].count ?? 0,
+    publications: results[2].count ?? 0,
+  };
+}
+
 function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
   const [state, setState] = useState<{
     isLoading: boolean;
@@ -439,6 +520,15 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
   const [form, setForm] = useState<SaveDynamicJobTypeInput | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [effectiveTiming, setEffectiveTiming] = useState<'current' | 'next'>('current');
+  const [futureMonthData, setFutureMonthData] = useState<FutureMonthDataStatus | null>(null);
+  const [futureMonthDataError, setFutureMonthDataError] = useState<string | null>(null);
+  const [futureMonthDataLoading, setFutureMonthDataLoading] = useState(false);
+  const [futureRoleChanges, setFutureRoleChanges] = useState<Record<string, RoleConfigDifference[]>>({});
+  const [futureChangesLoading, setFutureChangesLoading] = useState(false);
+  const [showRoleComparisonDetails, setShowRoleComparisonDetails] = useState(false);
+  const [loadedRoleSnapshot, setLoadedRoleSnapshot] = useState<string | null>(null);
+  const [currentRoleBaseline, setCurrentRoleBaseline] = useState<SaveDynamicJobTypeInput | null>(null);
+  const [roleEditorTab, setRoleEditorTab] = useState<'general' | 'scheduling' | 'addons' | 'permissions'>('general');
   const [isLoadingEffectiveConfig, setIsLoadingEffectiveConfig] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [testingJobType, setTestingJobType] = useState<DynamicJobType | null>(null);
@@ -520,6 +610,58 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const roles = state.data?.jobTypes;
+    if (!roles?.length) {
+      setFutureRoleChanges({});
+      return;
+    }
+    let cancelled = false;
+    const currentMonth = getIsraelMonth();
+    const nextMonth = getIsraelMonth(1);
+    setFutureChangesLoading(true);
+    void Promise.allSettled(roles.map(async (role) => {
+      const [current, upcoming] = await Promise.all([
+        dynamicSchedulingService.getEffectiveJobType(role.id, currentMonth.year, currentMonth.month),
+        dynamicSchedulingService.getEffectiveJobType(role.id, nextMonth.year, nextMonth.month),
+      ]);
+      return { id: role.id, changes: describeRoleConfigDifferences(toForm(current), toForm(upcoming)) };
+    })).then((results) => {
+      if (cancelled) return;
+      const changes: Record<string, RoleConfigDifference[]> = {};
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value.changes.length) {
+          changes[result.value.id] = result.value.changes;
+        }
+      }
+      setFutureRoleChanges(changes);
+    }).finally(() => {
+      if (!cancelled) setFutureChangesLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [state.data]);
+
+  useEffect(() => {
+    if (!isModalOpen || !form?.id || effectiveTiming !== 'next') {
+      setFutureMonthData(null);
+      setFutureMonthDataError(null);
+      setFutureMonthDataLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setFutureMonthDataLoading(true);
+    setFutureMonthData(null);
+    setFutureMonthDataError(null);
+    void fetchFutureMonthDataStatus(form.id).then((result) => {
+      if (!cancelled) setFutureMonthData(result);
+    }).catch((error: unknown) => {
+      if (!cancelled) setFutureMonthDataError(error instanceof Error ? error.message : 'בדיקת נתוני החודש הבא נכשלה');
+    }).finally(() => {
+      if (!cancelled) setFutureMonthDataLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [isModalOpen, form?.id, effectiveTiming]);
+
   const loadPermissionEditor = async (jobTypeId: string): Promise<void> => {
     setPermissionEditorLoading(true);
     setPermissionEditorError(null);
@@ -543,6 +685,10 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     const nextForm = emptyForm('');
     const defaults = permissionBlueprint;
     setEffectiveTiming('current');
+    setRoleEditorTab('general');
+    setShowRoleComparisonDetails(false);
+    setCurrentRoleBaseline(null);
+    setLoadedRoleSnapshot(JSON.stringify(nextForm));
     setForm(nextForm);
     setPermissionEditorError(null);
     setMemberPermissionKeys(defaults.filter((item) => item.audience === 'member' && item.defaultEnabled !== false).map((item) => item.permissionKey));
@@ -553,15 +699,32 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     void dailyReportService.getAdminOptions().then((data) => setDailyReportAdminUsers(data.users)).catch(() => setDailyReportAdminUsers([]));
   };
 
-  const openEdit = (jobType: DynamicJobType): void => {
+  const openEdit = (jobType: DynamicJobType, timing: 'current' | 'next' = 'current'): void => {
     if (!canManage) return;
-    setEffectiveTiming('current');
+    setEffectiveTiming(timing);
+    setShowRoleComparisonDetails(false);
+    setRoleEditorTab('general');
+    setCurrentRoleBaseline(toForm(jobType));
+    setLoadedRoleSnapshot(JSON.stringify(toForm(jobType)));
     setForm(toForm(jobType));
     setPermissionEditorError(null);
     setFormError(null);
     setIsModalOpen(true);
     void dailyReportService.getAdminOptions().then((data) => setDailyReportAdminUsers(data.users)).catch(() => setDailyReportAdminUsers([]));
     void loadPermissionEditor(jobType.id);
+    if (timing === 'next') {
+      const target = getIsraelMonth(1);
+      setIsLoadingEffectiveConfig(true);
+      void dynamicSchedulingService.getEffectiveJobType(jobType.id, target.year, target.month)
+        .then((effective) => {
+          setLoadedRoleSnapshot(JSON.stringify(toForm(effective)));
+          setForm(toForm(effective));
+        })
+        .catch((error: unknown) => {
+          setFormError(error instanceof Error ? error.message : 'טעינת הגדרת החודש הבא נכשלה.');
+        })
+        .finally(() => setIsLoadingEffectiveConfig(false));
+    }
   };
 
   const submitRuleProposal = async (): Promise<void> => {
@@ -577,6 +740,9 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
   };
 
   const switchEffectiveTiming = async (timing: 'current' | 'next'): Promise<void> => {
+    if (timing === effectiveTiming || isLoadingEffectiveConfig || isSaving) return;
+    if (form && loadedRoleSnapshot !== null && JSON.stringify(form) !== loadedRoleSnapshot &&
+      !window.confirm('יש שינויים שלא נשמרו. מעבר לחודש אחר יבטל אותם. להמשיך ללא שמירה?')) return;
     setEffectiveTiming(timing);
     if (!form?.id) return;
 
@@ -589,8 +755,19 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
         target.year,
         target.month,
       );
+      if (timing === 'next') {
+        const currentMonth = getIsraelMonth(0);
+        const currentJobType = await dynamicSchedulingService.getEffectiveJobType(
+          form.id, currentMonth.year, currentMonth.month,
+        );
+        setCurrentRoleBaseline(toForm(currentJobType));
+      } else {
+        setCurrentRoleBaseline(toForm(effectiveJobType));
+      }
+      setLoadedRoleSnapshot(JSON.stringify(toForm(effectiveJobType)));
       setForm(toForm(effectiveJobType));
     } catch (error) {
+      setEffectiveTiming(effectiveTiming);
       setFormError(
         error instanceof Error ? error.message : 'טעינת הגדרת התפקיד לחודש המבוקש נכשלה.',
       );
@@ -601,7 +778,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
   const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
-    if (!form || !canManage) return;
+    if (!form || !canManage || isLoadingEffectiveConfig) return;
 
     if (!form.name.trim()) {
       setFormError('יש להזין שם לתפקיד.');
@@ -627,13 +804,16 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
         effectiveYear: effectiveTarget.year,
         effectiveMonth: effectiveTarget.month,
         changeSummary: form.id
-          ? `עריכת תפקיד · תחולה ${effectiveTiming === 'next' ? 'מהחודש הבא' : 'מהחודש הנוכחי'}`
+          ? `עריכת תפקיד · תחולה ${effectiveTiming === 'next' ? 'מהחודש הבא' : 'מהחודש הנוכחי'} · ${currentRoleBaseline ? describeRoleConfigDifferences(currentRoleBaseline, form).map((item) => item.label).join(', ') || 'עדכון פרטים' : 'עדכון הגדרות'}`
           : 'יצירת תפקיד',
       });
 
       const relevantBlueprint = derivePermissionBlueprint(form);
       const relevantMemberKeys = new Set(relevantBlueprint.filter((item) => item.audience === 'member').map((item) => item.permissionKey));
       const relevantManagerKeys = new Set(relevantBlueprint.filter((item) => item.audience === 'manager').map((item) => item.permissionKey));
+      // Permission policies are currently global, not versioned by effective month.
+      // Do not apply next-month permission changes to the active month.
+      if (effectiveTiming !== 'next' || !form.id) {
       await dynamicPermissionEngineService.saveJobTypePolicy(
         savedJobTypeId,
         memberPermissionKeys.filter((key) => relevantMemberKeys.has(key)),
@@ -644,6 +824,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
         dashboardContextJobTypeIds.filter((jobTypeId) => jobTypeId !== savedJobTypeId),
       );
 
+      }
       setIsModalOpen(false);
       setForm(null);
       await loadData();
@@ -868,8 +1049,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
           </div>
           <h2>סוגי תפקידים דינמיים</h2>
           <p>
-            המודל החדש נמצא כרגע ב־Shadow Mode. ניתן להגדיר ולערוך אותו, אבל הוא עדיין לא משנה את
-            מנוע השיבוץ הפעיל.
+            ניהול תפקידים, שיטות שיבוץ, תוספות והרשאות במקום אחד.
           </p>
         </div>
 
@@ -891,6 +1071,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
         </div>
       ) : null}
 
+      {futureChangesLoading ? <span className="sr-only" role="status">בודק שינויי תפקידים עתידיים…</span> : null}
       <div className="dynamic-role-cards-grid">
         {state.data.jobTypes.map((jobType) => (
           <article
@@ -905,6 +1086,13 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                 <div className="dynamic-job-type-title-line">
                   <h3>{jobType.name}</h3>
                   {!jobType.isActive ? <span className="dynamic-job-type-frozen-badge">מוקפא</span> : null}
+                  {futureRoleChanges[jobType.id]?.length ? (
+                    <button type="button" title="פתיחת הגדרת החודש הבא והשוואת השינויים"
+                      onClick={() => openEdit(jobType, 'next')}
+                      style={{ border: '1px solid #e2bd72', background: '#fff6e3', color: '#795211', borderRadius: 16, padding: '4px 9px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      שינוי מתוזמן · {futureRoleChanges[jobType.id].length}
+                    </button>
+                  ) : null}
                 </div>
                 <p>{jobType.description ?? 'ללא תיאור'}</p>
                 <div className="dynamic-role-card-tags">
@@ -1242,9 +1430,9 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
               <Button variant="secondary" onClick={() => setIsModalOpen(false)} disabled={isSaving}>
                 ביטול
               </Button>
-              <Button type="submit" form="dynamic-job-type-form" disabled={isSaving}>
+              <Button type="submit" form="dynamic-job-type-form" disabled={isSaving || isLoadingEffectiveConfig}>
                 {isSaving ? <LoaderCircle className="spin" size={17} /> : <Save size={17} />}
-                שמור תפקיד
+                {form.id ? `שמור שינויים ${effectiveTiming === "next" ? "לחודש הבא" : "לחודש הנוכחי"}` : "צור תפקיד"}
               </Button>
             </>
           }
@@ -1257,42 +1445,94 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
             ) : null}
 
             {form.id ? (
-              <div className="dynamic-config-section">
-                <h3>תחולת השינוי</h3>
-                <p>
-                  בחר מאיזה חודש ההגדרה החדשה תיכנס לתוקף. שינוי לחודש הבא נשמר כגרסה עתידית ואינו
-                  משנה את הגדרת החודש הנוכחי.
-                </p>
-                <div className="dynamic-choice-grid">
-                  <label className="dynamic-choice-chip">
-                    <input
-                      type="radio"
-                      name="effective-timing"
-                      checked={effectiveTiming === 'current'}
-                      disabled={isLoadingEffectiveConfig}
-                      onChange={() => void switchEffectiveTiming('current')}
-                    />
-                    <span>החל מהחודש הנוכחי</span>
-                  </label>
-                  <label className="dynamic-choice-chip">
-                    <input
-                      type="radio"
-                      name="effective-timing"
-                      checked={effectiveTiming === 'next'}
-                      disabled={isLoadingEffectiveConfig}
-                      onChange={() => void switchEffectiveTiming('next')}
-                    />
-                    <span>החל מהחודש הבא</span>
-                  </label>
-                </div>
-                {isLoadingEffectiveConfig ? (
-                  <div className="dynamic-job-types-loading">
-                    <LoaderCircle className="spin" size={16} /> טוען את ההגדרה שתהיה פעילה בחודש הזה…
+              <div dir="rtl" style={{ position: 'sticky', top: 0, zIndex: 4, background: 'var(--surface, #fff)', padding: '9px 0', borderBottom: '1px solid #e3e9f2', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                  <strong style={{ fontSize: 14 }}>תחולת השינויים</strong>
+                  <div role="group" aria-label="בחירת חודש תחולה" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {(['current', 'next'] as const).map((timing) => (
+                      <button key={timing} type="button" disabled={isLoadingEffectiveConfig || isSaving}
+                        aria-pressed={effectiveTiming === timing}
+                        onClick={() => void switchEffectiveTiming(timing)}
+                        style={{ borderRadius: 20, padding: '7px 12px', border: '1px solid #b8ccec', cursor: 'pointer',
+                          background: effectiveTiming === timing ? '#e6f0ff' : 'transparent',
+                          color: effectiveTiming === timing ? '#1755ad' : 'inherit', fontWeight: effectiveTiming === timing ? 700 : 400 }}>
+                        {timing === 'current' ? 'החודש הנוכחי' : 'החודש הבא'}
+                      </button>
+                    ))}
                   </div>
-                ) : null}
+                </div>
+                {isLoadingEffectiveConfig ? <small role="status">טוען הגדרת חודש…</small> : null}
               </div>
             ) : null}
-
+            <nav aria-label="לשוניות הגדרת תפקיד" dir="rtl" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+              {([
+                ['general', 'כללי'],
+                ['scheduling', 'שיבוץ ואילוצים'],
+                ['addons', 'תוספות'],
+                ['permissions', 'הרשאות'],
+              ] as const).map(([key, label]) => (
+                <button key={key} type="button" onClick={() => setRoleEditorTab(key)}
+                  aria-current={roleEditorTab === key ? 'page' : undefined}
+                  style={{ padding: '10px 15px', borderRadius: 20, border: '1px solid #b9cbe7',
+                    background: roleEditorTab === key ? '#e8f1ff' : 'transparent',
+                    color: roleEditorTab === key ? '#1458bd' : 'inherit', fontWeight: 700 }}>
+                  {label}
+                </button>
+              ))}
+            </nav>
+            <div style={{ display: roleEditorTab === 'general' ? undefined : 'none' }}>
+                {effectiveTiming === 'next' && currentRoleBaseline && !isLoadingEffectiveConfig ? (
+                  <section aria-label="שינויים לחודש הבא" style={{ padding: 12, marginBottom: 14, border: '1px solid #c4d7ef', borderRadius: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <strong>שינויים לחודש הבא · {describeRoleConfigDifferences(currentRoleBaseline, form).length}</strong>
+                      <button type="button" aria-expanded={showRoleComparisonDetails}
+                        onClick={() => setShowRoleComparisonDetails((open) => !open)}
+                        style={{ background: 'transparent', border: '1px solid #c4d7ef', borderRadius: 18, padding: '5px 10px', cursor: 'pointer' }}>
+                        {showRoleComparisonDetails ? 'הסתר פירוט' : 'הצג פירוט'}
+                      </button>
+                    </div>
+                    {describeRoleConfigDifferences(currentRoleBaseline, form).length ? (
+                      <div style={{ display: 'grid', gap: 7, marginTop: 8 }}>
+                        {describeRoleConfigDifferences(currentRoleBaseline, form).map((difference) => (
+                          <div key={difference.label} style={{ fontSize: 13 }}>
+                            <strong>{difference.label}: </strong>
+                            <span>{difference.current} ← {difference.upcoming}</span>
+                            {showRoleComparisonDetails ? <p style={{ margin: '4px 0 8px', color: 'var(--text-muted, #64748b)' }}>{difference.impact}</p> : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p style={{ margin: '8px 0 0', fontSize: 13 }}>לא נמצאו הבדלים בהגדרות שנבדקות.</p>}
+                    {showRoleComparisonDetails ? (
+                      <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--text-muted, #64748b)' }}>
+                        השוואת ההגדרות היא חלקית; מצב תקופות האילוצים, הטיוטות והפרסומים מוצג בנפרד בהמשך הלשונית.
+                      </p>
+                    ) : null}
+                  </section>
+                ) : null}
+            {form.id && effectiveTiming === 'next' ? (
+              <section aria-label="מצב הנתונים בחודש הבא" style={{ border: '1px solid #c4d7ef', borderRadius: 12, padding: 12, marginBottom: 14 }}>
+                <strong>מצב הנתונים · {futureMonthName()}</strong>
+                {futureMonthDataLoading ? <p role="status">בודק אילוצים ושיבוצים קיימים…</p> : null}
+                {futureMonthDataError ? <p role="alert">לא ניתן לאמת את הנתונים: {futureMonthDataError}. אין להניח שהחודש הבא פנוי.</p> : null}
+                {futureMonthData ? (
+                  <>
+                    <p style={{ margin: '8px 0', fontSize: 13 }}>
+                      תקופות אילוצים: {futureMonthData.periods} · טיוטות שיבוץ: {futureMonthData.drafts} · לוחות שפורסמו: {futureMonthData.publications}
+                    </p>
+                    {futureMonthData.publications > 0 ? (
+                      <p style={{ fontSize: 13 }}>כבר פורסם לוח לחודש הבא. שינוי הגדרת התפקיד אינו מעדכן את הלוח שפורסם; נדרשת בדיקה ניהולית לפני שימוש בהגדרה החדשה.</p>
+                    ) : futureMonthData.drafts > 0 ? (
+                      <p style={{ fontSize: 13 }}>קיימת טיוטה לחודש הבא. שינוי כללי השיבוץ עשוי לחייב יצירת טיוטה מחדש או בדיקת התאמה.</p>
+                    ) : futureMonthData.periods > 0 ? (
+                      <p style={{ fontSize: 13 }}>קיימת תקופת אילוצים לחודש הבא. יש לבדוק את התאמת מבנה האילוצים לשינוי לפני המשך השיבוץ.</p>
+                    ) : (
+                      <p style={{ fontSize: 13 }}>לא נמצאו תקופות אילוצים, טיוטות או פרסומים לחודש הבא בטבלאות שנבדקו.</p>
+                    )}
+                    <small>בדיקה לקריאה בלבד. אין שינוי אוטומטי בנתונים קיימים. הספירה כפופה להרשאות הגישה של המשתמש.</small>
+                  </>
+                ) : null}
+              </section>
+            ) : null}
             <div className="dynamic-form-grid">
               <Input
                 label="שם התפקיד"
@@ -1320,6 +1560,8 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
               onChange={(event) => setForm({ ...form, description: event.target.value })}
             />
 
+            </div>
+            <div style={{ display: roleEditorTab === 'scheduling' ? undefined : 'none' }}>
             <div className="dynamic-config-section dynamic-form-section dynamic-scheduling-basics">
               <div className="dynamic-section-heading"><span>3</span><div><h3>שיטת שיבוץ ושכר</h3><small>בחר כיצד נבנה הלוח ומהו מודל השכר של התפקיד.</small></div></div>
               <div className="dynamic-form-grid">
@@ -1347,7 +1589,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                       schedulingStrategy,
                       availabilityConfig: { ...form.availabilityConfig, enabled: hasScheduling },
                       schedulingConfig: hasScheduling
-                        ? { ...form.schedulingConfig, rotationExchangeEnabled: selectedRotationExchange, scheduleChangeMode: selectedRotationExchange ? 'shift_exchange' : form.schedulingConfig.scheduleChangeMode }
+                        ? { ...form.schedulingConfig, rotationExchangeEnabled: selectedRotationExchange, scheduleChangeMode: selectedRotationExchange ? 'shift_exchange' : isRotationExchange(form.schedulingConfig) ? 'none' : form.schedulingConfig.scheduleChangeMode }
                         : { ...form.schedulingConfig, scheduleChangeMode: 'none' },
                       capabilities: Array.from(schedulingCapabilities),
                     });
@@ -1366,7 +1608,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                     : form.schedulingStrategy === 'none'
                     ? 'לתפקיד אין לוח שיבוצים, תקופות אילוצים או מנגנון איזון. יכולות אחרות של התפקיד ממשיכות לעבוד כרגיל.'
                     : form.schedulingStrategy === 'monthly_rotation_constraints'
-                      ? 'הסבב החודשי יהיה נקודת המוצא, והאילוצים ישמשו להתאמת הסבב. מנוע הסבב עצמו יחובר בשלב הבא.'
+                      ? 'השיבוץ מבוסס על סבב חודשי. האילוצים משמשים לזיהוי אי־זמינות ולתכנון בהתאם לכללי התפקיד.'
                       : 'המנוע בונה את החודש מתוך האילוצים, יעדי האיזון והחוקים שהוגדרו.'}
                 </small>
               </label>
@@ -1567,7 +1809,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                       </div>
                     ) : null}
 
-                    <div className="dynamic-schedule-change-mode">
+                    <div className="dynamic-schedule-change-mode" style={{ display: form.schedulingStrategy === "monthly_rotation_constraints" && isRotationExchange(form.schedulingConfig) ? "none" : undefined }}>
                       <div>
                         <strong>ניהול שינויים בשיבוץ</strong>
                         <small>בחר איזה workflow יהיה זמין לעובדי התפקיד לאחר פרסום הלוח.</small>
@@ -1815,6 +2057,8 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
               })()}
             </div>
 
+            </div>
+            <div style={{ display: roleEditorTab === 'addons' ? undefined : 'none' }}>
             <div className="dynamic-config-section dynamic-form-section">
               <div className="dynamic-section-heading"><span>4</span><div><h3>מעקב פעילות</h3><small>טיימר דינמי למעבר בין תחומי עבודה במהלך היום.</small></div></div>
               <label className="dynamic-checkbox-row"><input type="checkbox" checked={form.schedulingConfig.activityTracking?.enabled ?? false} onChange={(e)=>setForm({...form,schedulingConfig:{...form.schedulingConfig,activityTracking:{...(form.schedulingConfig.activityTracking ?? {activities:[{key:'operations',label:'תפעול'},{key:'sales',label:'מכירות'}],reminderEnabled:true,reminderTime:'20:00',autoEndEnabled:false,autoEndTime:'20:00',endReminderEnabled:true,endReminderMinutesBefore:30,continuousReminderEnabled:true,continuousReminderMinutes:240}),enabled:e.target.checked}}})}/><span>הפעל מעקב פעילות לתפקיד</span></label>
@@ -1832,10 +2076,12 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
               </div>:null}
             </div>
 
-            <div className="dynamic-config-section dynamic-availability-config dynamic-form-section" style={{ display: form.schedulingStrategy === 'none' ? 'none' : undefined }}>
+            </div>
+            <div style={{ display: roleEditorTab === 'scheduling' ? undefined : 'none' }}>
+            <div className="dynamic-config-section dynamic-availability-config dynamic-form-section" style={{ display: form.schedulingStrategy === 'availability_optimizer' ? undefined : 'none' }}>
               <div className="dynamic-section-heading"><span>4</span><div><h3>מערכת אילוצים דינמית</h3><small>הגדר אילו תשובות וחוקי קיבולת זמינים לעובדים.</small></div></div>
               <p>
-                ההגדרות נשמרות ב־Shadow Mode בלבד. הן עדיין לא מחליפות את מסכי האילוצים הפעילים.
+                הגדרות האילוצים יחולו בהתאם לגרסת התפקיד ולחודש התחולה שנבחר.
               </p>
               <label className="dynamic-choice-chip dynamic-availability-master">
                 <input
@@ -1912,7 +2158,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                     </div>
                   </div>
 
-                  <div className="dynamic-availability-subsection">
+                  <div className="dynamic-availability-subsection" style={{ display: form.schedulingStrategy === "availability_optimizer" ? undefined : "none" }}>
                     <label className="dynamic-choice-chip dynamic-availability-master">
                       <input
                         type="checkbox"
@@ -1949,7 +2195,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                     ) : null}
                   </div>
 
-                  <div className="dynamic-availability-subsection">
+                  <div className="dynamic-availability-subsection" style={{ display: form.schedulingStrategy === "availability_optimizer" ? undefined : "none" }}>
                     <label className="dynamic-choice-chip dynamic-availability-master">
                       <input
                         type="checkbox"
@@ -2100,6 +2346,8 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
             </div>
 
             
+            </div>
+            <div style={{ display: roleEditorTab === 'addons' ? undefined : 'none' }}>
             {form.schedulingConfig.shiftPattern?.workMode === 'shifts' ? (
               <div className="dynamic-config-section dynamic-form-section">
                 <div className="dynamic-section-heading"><span>4</span><div><h3>נוכחות ושעון עבודה</h3><small>מודול אופציונלי לדיווח כניסה/יציאה. המיקום נלקח רק ברגע הלחיצה ואין מעקב ברקע.</small></div></div>
@@ -2126,6 +2374,8 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                 ) : null}
               </div>
             ) : null}
+            </div>
+            <div style={{ display: roleEditorTab === 'scheduling' ? undefined : 'none' }}>
 <div className="dynamic-config-section dynamic-scheduling-rules-config dynamic-simple-rules" style={{ display: form.schedulingStrategy === 'none' ? 'none' : undefined }}>
               <div className="dynamic-section-title-row">
                 <div>
@@ -2267,6 +2517,8 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
             </div>
 
+            </div>
+            <div style={{ display: roleEditorTab === 'addons' ? undefined : 'none' }}>
               <div className="dynamic-config-section dynamic-daily-report-config" data-independent-workflow="true">
                 <div className="dynamic-section-heading"><span>+</span><div><h3>דיווחים וטפסי עבודה</h3><small>Workflow תפעולי עצמאי — זמין גם לתפקידים ללא שיבוצים.</small></div></div>
                 <label className="dynamic-choice-chip">
@@ -2309,6 +2561,15 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                   </div>
                 ) : null}
               </div>
+
+            </div>
+            <div style={{ display: roleEditorTab === 'permissions' ? undefined : 'none' }}>
+              {form.id && effectiveTiming === 'next' ? (
+                <div role="note" className="dynamic-config-section">
+                  <strong>הרשאות אינן מנוהלות כרגע לפי חודש</strong>
+                  <p>אפשר לצפות בהן כאן, אבל שינויים בהרשאות לא יישמרו בעריכה עתידית כדי שלא ייכנסו לתוקף כבר החודש. לשינוי הרשאות יש לערוך את התפקיד בחודש הנוכחי.</p>
+                </div>
+              ) : null}
 
               <div className="dynamic-permission-builder">
                 <div className="dynamic-permission-builder-heading">
@@ -2400,15 +2661,6 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                 <small className="dynamic-permission-footnote">הרשאות מערכת כלליות כגון ניהול משתמשים, הגדרות ויומן מערכת נשארות נפרדות ואינן תלויות בתפקיד עבודה.</small>
               </div>
 
-            <div className="dynamic-config-section dynamic-ai-preview">
-              <Bot size={20} />
-              <div>
-                <strong>AI Configurator — מוכן לשלב הבא</strong>
-                <p>
-                  שכבת הנתונים כבר יכולה לשמור הצעות AI, אבל בשלב הזה אין עדיין קריאה למודל ואין
-                  החלה אוטומטית.
-                </p>
-              </div>
             </div>
           </form>
         </Modal>
