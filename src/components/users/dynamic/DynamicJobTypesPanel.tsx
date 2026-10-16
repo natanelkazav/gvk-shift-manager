@@ -473,6 +473,7 @@ const describeRoleConfigDifferences = (
 
 type FutureMonthDataStatus = {
   periods: number;
+  openPeriods: number;
   drafts: number;
   publications: number;
 };
@@ -485,23 +486,31 @@ const futureMonthName = (): string => {
 
 async function fetchFutureMonthDataStatus(jobTypeId: string): Promise<FutureMonthDataStatus> {
   const { year, month } = getIsraelMonth(1);
-  const tables = [
-    'dynamic_availability_periods',
-    'dynamic_schedule_shadow_drafts',
-    'dynamic_schedule_publications',
-  ] as const;
-  const results = await Promise.all(tables.map((table) =>
-    supabase.from(table).select('id', { count: 'exact', head: true })
-      .eq('job_type_id', jobTypeId).eq('year', year).eq('month', month)
-  ));
-  for (const result of results) {
-    if (result.error) throw result.error;
-    if (result.count === null) throw new Error('לא ניתן לאמת את כמות הרשומות לחודש הבא.');
+  const { data, error } = await supabase.rpc('get_dynamic_job_type_period_summary', {
+    requested_job_type_id: jobTypeId,
+    requested_year: year,
+    requested_month: month,
+  });
+  if (error) throw error;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('לא התקבלה תשובה תקינה מבדיקת נתוני החודש הבא.');
+  }
+  const summary = data as Record<string, unknown>;
+  const count = (key: string): number => {
+    const value = summary[key];
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+      throw new Error('התקבלה תשובה לא תקינה מבדיקת נתוני החודש הבא.');
+    }
+    return value;
+  };
+  if (summary.jobTypeId !== jobTypeId || summary.year !== year || summary.month !== month) {
+    throw new Error('התקבלו נתונים עבור תפקיד או חודש אחר.');
   }
   return {
-    periods: results[0].count ?? 0,
-    drafts: results[1].count ?? 0,
-    publications: results[2].count ?? 0,
+    periods: count('availabilityPeriodCount'),
+    openPeriods: count('openAvailabilityPeriodCount'),
+    drafts: count('draftCount'),
+    publications: count('publicationCount'),
   };
 }
 
@@ -1517,7 +1526,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                 {futureMonthData ? (
                   <>
                     <p style={{ margin: '8px 0', fontSize: 13 }}>
-                      תקופות אילוצים: {futureMonthData.periods} · טיוטות שיבוץ: {futureMonthData.drafts} · לוחות שפורסמו: {futureMonthData.publications}
+                      תקופות אילוצים: {futureMonthData.periods} (מתוכן פתוחות: {futureMonthData.openPeriods}) · טיוטות שיבוץ: {futureMonthData.drafts} · לוחות שפורסמו: {futureMonthData.publications}
                     </p>
                     {futureMonthData.publications > 0 ? (
                       <p style={{ fontSize: 13 }}>כבר פורסם לוח לחודש הבא. שינוי הגדרת התפקיד אינו מעדכן את הלוח שפורסם; נדרשת בדיקה ניהולית לפני שימוש בהגדרה החדשה.</p>
@@ -1528,7 +1537,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                     ) : (
                       <p style={{ fontSize: 13 }}>לא נמצאו תקופות אילוצים, טיוטות או פרסומים לחודש הבא בטבלאות שנבדקו.</p>
                     )}
-                    <small>בדיקה לקריאה בלבד. אין שינוי אוטומטי בנתונים קיימים. הספירה כפופה להרשאות הגישה של המשתמש.</small>
+                    <small>בדיקת המצב היא לקריאה בלבד. שמירת שינויי מבנה התפקיד עשויה להפעיל סנכרון של אילוצים קיימים; יש לבדוק את ההשפעה לפני שמירה.</small>
                   </>
                 ) : null}
               </section>
