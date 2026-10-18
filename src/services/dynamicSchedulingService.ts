@@ -507,6 +507,14 @@ export const dynamicSchedulingService = {
     });
   },
 
+  async getDraftMemberPreferences(draftId: string): Promise<import('../types/dynamicScheduling').DynamicDraftMemberPreference[]> {
+    return PerformanceDebugService.measureAsync('dynamic-scheduling.draft-member-preferences', async () => {
+      const { data, error } = await supabase.rpc('get_dynamic_draft_member_preferences', { requested_draft_id: draftId });
+      if (error) throwSupabaseError('Dynamic draft member preferences', error);
+      return data as import('../types/dynamicScheduling').DynamicDraftMemberPreference[];
+    });
+  },
+
   async getDraftEditor(draftId: string): Promise<import('../types/dynamicScheduling').DynamicDraftEditorWorkspace> {
     return PerformanceDebugService.measureAsync('dynamic-scheduling.phase8.3c.draft-editor', async () => {
       const { data, error } = await supabase.rpc('get_dynamic_schedule_draft_editor', { requested_draft_id: draftId });

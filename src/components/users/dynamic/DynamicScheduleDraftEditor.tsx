@@ -1,7 +1,7 @@
 import { AlertTriangle, CalendarDays, CheckCircle2, List, LoaderCircle, Trash2, UserPlus, WandSparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
-import type { DynamicDraftEditorCandidate, DynamicDraftEditorWorkspace } from '../../../types/dynamicScheduling';
+import type { DynamicDraftEditorCandidate, DynamicDraftEditorWorkspace, DynamicDraftMemberPreference } from '../../../types/dynamicScheduling';
 import { Button } from '../../ui';
 import MonthCalendar from '../../calendar/MonthCalendar';
 import { dynamicShiftDisplayName } from '../../../utils/dynamicShiftDisplayName';
@@ -31,6 +31,7 @@ function candidateLabel(candidate: DynamicDraftEditorCandidate): string {
 
 function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Props) {
   const [workspace, setWorkspace] = useState<DynamicDraftEditorWorkspace | null>(null);
+  const [preferences, setPreferences] = useState<DynamicDraftMemberPreference[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -42,7 +43,12 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
     setBusy(true);
     setError(null);
     try {
-      setWorkspace(await dynamicSchedulingService.getDraftEditor(draftId));
+      const [draft, memberPreferences] = await Promise.all([
+        dynamicSchedulingService.getDraftEditor(draftId),
+        dynamicSchedulingService.getDraftMemberPreferences(draftId),
+      ]);
+      setWorkspace(draft);
+      setPreferences(memberPreferences);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'טעינת טיוטת השיבוץ נכשלה.');
     } finally {
@@ -86,6 +92,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
       }),
     ).values());
 
+    const preferenceMap = new Map(preferences.map((preference) => [preference.userId, preference]));
     const members = new Map<string, string>();
     workspace.slots.forEach((slot) => {
       slot.candidates.forEach((candidate) => members.set(candidate.userId, candidate.displayName));
@@ -154,12 +161,13 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
 
       return {
         userId, displayName, total, hours200Percent, counts, typeBalance,
+        preference: preferenceMap.get(userId),
         totalBalance: { expected: expectedTotal, tone: balanceTone(total, expectedTotal, memberTotalOpportunityWeight) },
       };
     }).sort((a, b) => a.displayName.localeCompare(b.displayName, 'he'));
 
     return { shiftTypes, rows };
-  }, [workspace]);
+  }, [workspace, preferences]);
 
   if (busy && !workspace) return <div className="dynamic-job-types-loading"><LoaderCircle className="spin" size={18} /> טוען טיוטה…</div>;
   if (!workspace) return error ? <div className="users-error" role="alert">{error}</div> : null;
@@ -209,6 +217,8 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
               <tr>
                 <th scope="col">עובד</th>
                 <th scope="col">סה״כ</th>
+                <th scope="col"><span>יעד חודשי</span><small>כפי שהוגש באילוצים</small></th>
+                <th scope="col"><span>מקסימום שבועי</span><small>כפי שהוגש באילוצים</small></th>
                 {show200PercentHours ? <th scope="col"><span>שעות 200%</span><small>בטיוטה</small></th> : null}
                 {draftStatistics.shiftTypes.map((shiftType) => (
                   <th scope="col" key={shiftType.key}>
@@ -223,6 +233,12 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
                 <tr key={row.userId}>
                   <th scope="row">{row.displayName}</th>
                   <td className={`balance-cell balance-${row.totalBalance.tone}`} title={`צפי יחסי לפי האילוצים: ${row.totalBalance.expected.toFixed(1)}`}><strong>{row.total}</strong></td>
+                  <td title="יעד המשמרות החודשי שהעובד הגיש; אינו תקרה קשיחה">{row.preference?.monthlyEnabled && row.preference.hasSubmission
+                    ? row.preference.monthlyTarget ?? 'לא הוגדר'
+                    : '—'}</td>
+                  <td title="מספר המשמרות המרבי לשבוע לפי הגשת העובד">{row.preference?.weeklyEnabled && row.preference.hasSubmission
+                    ? row.preference.weeklyMaximum ?? 'כמה שיותר'
+                    : '—'}</td>
                   {show200PercentHours ? (
                     <td className="balance-cell" title="סך שעות 200% במשמרות ששובצו לעובד בטיוטה"><strong>{new Intl.NumberFormat('he-IL', { maximumFractionDigits: 2 }).format(row.hours200Percent)}</strong></td>
                   ) : null}

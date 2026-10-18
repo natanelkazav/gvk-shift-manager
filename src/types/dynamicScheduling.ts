@@ -1024,6 +1024,15 @@ export interface DynamicDraftEditorSlot {
   candidates: DynamicDraftEditorCandidate[];
 }
 
+export interface DynamicDraftMemberPreference {
+  userId: string;
+  monthlyTarget: number | null;
+  weeklyMaximum: number | null;
+  monthlyEnabled: boolean;
+  weeklyEnabled: boolean;
+  hasSubmission: boolean;
+}
+
 export interface DynamicDraftEditorWorkspace {
   draftId: string;
   jobTypeId: string;
