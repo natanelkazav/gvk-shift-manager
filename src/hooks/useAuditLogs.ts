@@ -1,3 +1,4 @@
+import { effectiveAuditAction, auditActionCategory } from '../utils/auditCatalog';
 import {
   useCallback,
   useEffect,
@@ -258,8 +259,11 @@ export function useAuditLogs(
               const matchesAction =
                 filters.action ===
                   'all' ||
-                entry.action ===
+                effectiveAuditAction(entry) ===
                   filters.action;
+
+              const matchesCategory = filters.category === 'all' ||
+                auditActionCategory(effectiveAuditAction(entry), entry.entityType) === filters.category;
 
               const searchableText = [
                 entry.summary,
@@ -315,6 +319,7 @@ export function useAuditLogs(
 
               return (
                 matchesAction &&
+                matchesCategory &&
                 matchesSearch &&
                 matchesFrom &&
                 matchesTo

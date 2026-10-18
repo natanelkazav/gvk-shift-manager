@@ -551,6 +551,11 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
   const [membershipData, setMembershipData] = useState<DynamicMembershipAdminData | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [membershipSavingUserId, setMembershipSavingUserId] = useState<string | null>(null);
+  const [membershipDrafts, setMembershipDrafts] = useState<Record<string, {
+    employmentScope: DynamicMemberEmploymentScope;
+    partTimeDefinition: DynamicMembershipAdminUser['partTimeDefinition'];
+  }>>({});
+
   const [membershipError, setMembershipError] = useState<string | null>(null);
   const [showMembershipPicker, setShowMembershipPicker] = useState(false);
   const [permissionEditorLoading, setPermissionEditorLoading] = useState(false);
@@ -804,8 +809,17 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
     try {
       const effectiveTarget = getIsraelMonth(form.id && effectiveTiming === 'next' ? 1 : 0);
+      // Preserve an absent legacy preference if the user did not change its default.
+      // The UI interprets an absent value as true; don't silently write it on unrelated edits.
+      const sourceAvailability = currentRoleBaseline?.availabilityConfig;
+      const availabilityForSave = { ...form.availabilityConfig };
+      if (form.id && sourceAvailability?.showEmployeePreferences === undefined &&
+          form.availabilityConfig.showEmployeePreferences === true) {
+        delete availabilityForSave.showEmployeePreferences;
+      }
       const savedJobTypeId = await dynamicSchedulingService.saveJobType({
         ...form,
+        availabilityConfig: availabilityForSave,
         capabilities: deriveAutomaticCapabilities(form),
         name: form.name.trim(),
         code: form.code.trim().toLowerCase().replace(/\s+/g, '_'),
@@ -891,6 +905,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
   const openMemberships = async (jobType: DynamicJobType): Promise<void> => {
     setMembershipJobType(jobType);
+    setMembershipDrafts({});
     setMembershipLoading(true);
     setMembershipError(null);
     setLegacyPreview(null);
@@ -925,6 +940,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
         dynamicSchedulingService.getAdminData(),
       ]);
       setMembershipData(membership);
+      setMembershipDrafts(current => { const next = { ...current }; delete next[user.userId]; return next; });
       setState({ isLoading: false, data: admin, error: null });
       setMembershipJobType(admin.jobTypes.find((item) => item.id === membershipJobType.id) ?? membershipJobType);
     } catch (error) {
@@ -934,6 +950,35 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+
+  const updateMembershipDraft = (
+    user: DynamicMembershipAdminUser,
+    patch: Partial<{ employmentScope: DynamicMemberEmploymentScope; partTimeDefinition: DynamicMembershipAdminUser['partTimeDefinition'] }>,
+  ): void => {
+    setMembershipDrafts(current => ({
+      ...current,
+      [user.userId]: {
+        employmentScope: patch.employmentScope ?? current[user.userId]?.employmentScope ?? user.employmentScope ?? 'full_time',
+        partTimeDefinition: patch.partTimeDefinition ?? current[user.userId]?.partTimeDefinition ?? user.partTimeDefinition ?? {},
+      },
+    }));
+  };
+
+  const saveMembershipDraft = async (user: DynamicMembershipAdminUser): Promise<void> => {
+    const draft = membershipDrafts[user.userId];
+    if (!draft) return;
+    await saveMembership(user, draft);
+    // The server is authoritative; successful saves clear the local draft.
+    // saveMembership catches failures, so clear only after a refreshed value matches.
+  };
+
+  const closeMemberships = (): void => {
+    if (membershipSavingUserId || membershipBulkSaving || legacyImporting) return;
+    if (Object.keys(membershipDrafts).length > 0 &&
+        !window.confirm('יש שינויים בהגדרות העסקה שלא נשמרו. לסגור ולבטל אותם?')) return;
+    setMembershipDrafts({});
+    setMembershipJobType(null);
+  };
 
   const toggleJobTypeManager = async (user: DynamicMembershipAdminUser): Promise<void> => {
     if (!membershipJobType || !canManage) return;
@@ -1174,8 +1219,8 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
           isOpen
           title={`ניהול עובדים · ${membershipJobType.name}`}
           className="dynamic-membership-modal"
-          onClose={() => !membershipSavingUserId && !membershipBulkSaving && !legacyImporting && setMembershipJobType(null)}
-          footer={<Button variant="secondary" onClick={() => setMembershipJobType(null)} disabled={Boolean(membershipSavingUserId) || membershipBulkSaving || legacyImporting}>סגור</Button>}
+          onClose={closeMemberships}
+          footer={<Button variant="secondary" onClick={closeMemberships} disabled={Boolean(membershipSavingUserId) || membershipBulkSaving || legacyImporting}>סגור</Button>}
         >
           <div className="dynamic-membership-workspace">
             <section className="dynamic-membership-section">
@@ -1246,7 +1291,16 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
               ) : null}
 
               {!membershipLoading ? (membershipData?.users ?? []).filter((user) => user.isMember).length ? (
-                (membershipData?.users ?? []).filter((user) => user.isMember).map((user) => (
+                (membershipData?.users ?? []).filter((user) => user.isMember).map((user) => {
+                  const draft = membershipDrafts[user.userId];
+                  const selectedScope = draft?.employmentScope ?? user.employmentScope ?? 'full_time';
+                  const selectedDefinition = draft?.partTimeDefinition ?? user.partTimeDefinition ?? {};
+                  const dirty = Boolean(draft) && (
+                    selectedScope !== (user.employmentScope ?? 'full_time') ||
+                    JSON.stringify(selectedScope === 'part_time' ? selectedDefinition : {}) !==
+                    JSON.stringify(selectedScope === 'part_time' ? (user.partTimeDefinition ?? {}) : {})
+                  );
+                  return (
                   <div className="dynamic-membership-user-row" key={user.userId}>
                     <div className="dynamic-membership-user-main">
                       <span><strong>{user.displayName}</strong><small>{user.email}{user.isPrimary ? ' · תפקיד ראשי' : ''}{!user.isActive ? ' · מושבת' : ''}</small></span>
@@ -1254,9 +1308,9 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                     <div className="dynamic-membership-user-controls">
                       {membershipJobType.employmentScope === 'flexible' ? (
                         <select
-                          value={user.employmentScope ?? 'full_time'}
+                          value={selectedScope}
                           disabled={membershipSavingUserId === user.userId}
-                          onChange={(event) => void saveMembership(user,{employmentScope:event.target.value as DynamicMemberEmploymentScope})}
+                          onChange={(event) => updateMembershipDraft(user,{employmentScope:event.target.value as DynamicMemberEmploymentScope})}
                         >
                           <option value="full_time">משרה מלאה</option>
                           <option value="part_time">משרה חלקית</option>
@@ -1268,28 +1322,42 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                       <Button
                         variant="secondary"
                         disabled={membershipSavingUserId === user.userId}
-                        onClick={() => void saveMembership(user,{isMember:false})}
+                        onClick={() => {
+                          if (draft && !window.confirm('להסיר את העובד מהתפקיד? שינויים שלא נשמרו יבוטלו.')) return;
+                          void saveMembership(user,{isMember:false});
+                        }}
                       >
                         הסר מהתפקיד
                       </Button>
                     </div>
-                    {membershipJobType.employmentScope === 'flexible' && user.employmentScope === 'part_time' ? (
+                    {membershipJobType.employmentScope === 'flexible' && selectedScope === 'part_time' ? (
                       <div className="dynamic-membership-part-time">
                         <div className="dynamic-part-time-days">
                           {['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'].map((label,index)=>{
-                            const days = user.partTimeDefinition?.days ?? [];
+                            const days = selectedDefinition?.days ?? [];
                             return <label key={label}><input type="checkbox" checked={days.includes(index)} disabled={membershipSavingUserId===user.userId}
-                              onChange={(event)=>void saveMembership(user,{partTimeDefinition:{...user.partTimeDefinition,days:event.target.checked?[...days,index]:days.filter((day)=>day!==index)}})}/>{label}</label>;
+                              onChange={(event)=>updateMembershipDraft(user,{partTimeDefinition:{...selectedDefinition,days:event.target.checked?[...days,index].sort((a,b)=>a-b):days.filter((day)=>day!==index)}})}/>{label}</label>;
                           })}
                         </div>
-                        <label>משעה<input type="time" value={user.partTimeDefinition?.startTime ?? '08:00'} disabled={membershipSavingUserId===user.userId}
-                          onChange={(event)=>void saveMembership(user,{partTimeDefinition:{...user.partTimeDefinition,startTime:event.target.value}})}/></label>
-                        <label>עד שעה<input type="time" value={user.partTimeDefinition?.endTime ?? '17:00'} disabled={membershipSavingUserId===user.userId}
-                          onChange={(event)=>void saveMembership(user,{partTimeDefinition:{...user.partTimeDefinition,endTime:event.target.value}})}/></label>
+                        <label>משעה<input type="time" value={selectedDefinition?.startTime ?? '08:00'} disabled={membershipSavingUserId===user.userId}
+                          onChange={(event)=>updateMembershipDraft(user,{partTimeDefinition:{...selectedDefinition,startTime:event.target.value}})}/></label>
+                        <label>עד שעה<input type="time" value={selectedDefinition?.endTime ?? '17:00'} disabled={membershipSavingUserId===user.userId}
+                          onChange={(event)=>updateMembershipDraft(user,{partTimeDefinition:{...selectedDefinition,endTime:event.target.value}})}/></label>
+                      </div>
+                    ) : null}
+                    {membershipJobType.employmentScope === 'flexible' && draft ? (
+                      <div className="dynamic-membership-draft-actions">
+                        <span>{dirty ? 'יש שינויים שלא נשמרו' : 'אין שינוי בהגדרות'}</span>
+                        <Button variant="secondary" disabled={membershipSavingUserId===user.userId}
+                          onClick={()=>setMembershipDrafts(current=>{const next={...current};delete next[user.userId];return next;})}>ביטול</Button>
+                        <Button disabled={!dirty || membershipSavingUserId===user.userId}
+                          onClick={()=>void saveMembershipDraft(user)}>
+                          {membershipSavingUserId===user.userId ? 'שומר...' : 'שמור שינויים'}
+                        </Button>
                       </div>
                     ) : null}
                   </div>
-                ))
+                )})
               ) : (
                 <div className="dynamic-membership-empty-state">
                   <UsersRound size={24} />

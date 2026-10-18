@@ -1,6 +1,5 @@
 import { supabase } from '../lib/supabase';
 import type {
-  AuditAction,
   AuditLogEntry,
   GetAuditLogsInput,
 } from '../types/audit';
@@ -28,65 +27,12 @@ interface AuditLogDatabaseRow {
   created_at: string;
 }
 
-const supportedActions = new Set<AuditAction>([
-  'user_created',
-  'user_updated',
-  'user_activated',
-  'user_deactivated',
-  'user_permissions_updated',
-  'user_password_change_required',
-  'user_password_change_completed',
-  'user_password_reset',
-  'user_deleted',
-  'availability_period_created',
-  'availability_period_opened',
-  'availability_period_closed',
-  'availability_period_deleted',
-  'driver_availability_period_created',
-  'driver_availability_period_opened',
-  'driver_availability_period_closed',
-  'driver_availability_period_deleted',
-  'morning_driver_availability_period_created',
-  'morning_driver_availability_period_opened',
-  'morning_driver_availability_period_closed',
-  'morning_driver_availability_period_deleted',
-  'schedule_draft_saved',
-  'schedule_published',
-  'schedule_shift_updated',
-  'driver_schedule_published',
-  'driver_schedule_updated',
-  'morning_driver_schedule_published',
-  'morning_driver_schedule_updated',
-  'shift_swap_created',
-  'shift_swap_counterparty_approved',
-  'shift_swap_counterparty_rejected',
-  'shift_swap_manager_approved',
-  'shift_swap_manager_rejected',
-  'shift_swap_cancelled',
-  'notification_sent',
-  'system_event',
-]);
-
-function normalizeAction(
-  action: string,
-): AuditAction {
-  if (
-    supportedActions.has(
-      action as AuditAction,
-    )
-  ) {
-    return action as AuditAction;
-  }
-
-  return 'system_event';
-}
-
 function mapAuditLogRow(
   row: AuditLogDatabaseRow,
 ): AuditLogEntry {
   return {
     id: row.id,
-    action: normalizeAction(row.action),
+    action: row.action,
     actorUserId: row.actor_user_id,
     actorEmail: row.actor_email,
     actorDisplayName:

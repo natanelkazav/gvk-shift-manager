@@ -322,3 +322,38 @@
   background: var(--theme-surface-muted);
   color: var(--theme-text-secondary);
 }
+
+/* Readable, RTL audit details. Technical IDs remain behind disclosure. */
+.audit-readable-details { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr)); }
+.audit-readable-card { background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:12px;padding:16px;min-width:0; }
+.audit-readable-card h4 { margin:0 0 12px;font-size:0.95rem; }
+.audit-readable-card dl { margin:0;display:grid;gap:10px; }
+.audit-change-line { display:flex;justify-content:space-between;align-items:start;gap:16px;overflow-wrap:anywhere; }
+.audit-change-line dt { color:var(--theme-text-secondary);font-weight:600; }
+.audit-change-line dd { margin:0;text-align:left; }
+.audit-change-line dd > span:first-child { color:var(--theme-text-muted);text-decoration:line-through; }
+.audit-technical { grid-column:1/-1;min-width:0;font-size:.84rem;color:var(--theme-text-secondary); }
+.audit-technical summary { cursor:pointer;font-weight:600;padding:8px 0; }
+.audit-technical code,.audit-technical pre { overflow-wrap:anywhere;white-space:pre-wrap; }
+.audit-technical pre { overflow:auto;max-height:300px;padding:10px;background:var(--theme-surface);border:1px solid var(--theme-border);border-radius:8px; }
+.audit-no-details { color:var(--theme-text-muted); }
+
+.audit-change-before-after { display:flex; flex-wrap:wrap; gap:14px; }
+.audit-change-before-after > div { display:flex; flex-direction:column; gap:4px; min-width:130px; }
+.audit-change-before-after small { opacity:.75; }
+
+/* Nested configuration audit: prevent RTL/LTR keys and long values from collapsing cards. */
+.audit-readable-card .audit-change-line { display:grid; grid-template-columns:minmax(120px,35%) minmax(0,1fr); gap:12px; align-items:start; }
+.audit-readable-card .audit-change-line dt, .audit-readable-card .audit-change-line dd { min-width:0; overflow-wrap:anywhere; word-break:normal; text-align:start; }
+.audit-readable-card .audit-change-before-after { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr)); gap:12px; }
+.audit-readable-card .audit-change-before-after > div { min-width:0; white-space:pre-wrap; overflow-wrap:anywhere; }
+@media(max-width:650px) { .audit-readable-card .audit-change-line { grid-template-columns:1fr; } }
+
+/* Compact, readable audit details for shift-template changes. */
+.audit-readable-details { align-items:start; }
+.audit-readable-card dl { gap:8px; }
+.audit-readable-card { padding:14px; }
+.audit-readable-card .audit-change-line { grid-template-columns:minmax(110px,32%) minmax(0,1fr); }
+.audit-readable-card .audit-change-before-after { gap:8px; }
+.audit-readable-card .audit-change-before-after > div { min-width:0; }
+@media(max-width:650px) { .audit-readable-card .audit-change-line { grid-template-columns:1fr; } }

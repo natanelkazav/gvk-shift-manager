@@ -4355,3 +4355,7 @@
 .dynamic-weekly-rest-warning > span { display: block; }
 .dynamic-weekly-rest-warning ul { margin: 2px 0 0; padding-inline-start: 22px; display: grid; gap: 4px; }
 .dynamic-weekly-rest-warning li { line-height: 1.45; }
+
+/* Manual save for flexible job membership settings */
+.dynamic-membership-draft-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px 0; }
+.dynamic-membership-draft-actions > span { margin-inline-end:auto; font-size:0.85rem; }
