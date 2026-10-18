@@ -123,6 +123,7 @@ export interface DynamicScheduleGroup {
 export interface DynamicAvailabilityConfig {
   /** Optional for backward compatibility: existing roles keep their current preferences UI. */
   showEmployeePreferences?: boolean;
+  showWeeklyShiftLimit?: boolean;
   enabled: boolean;
   statuses: Array<'available' | 'unavailable' | 'preferred' | 'avoid'>;
   allowNotes: boolean;
@@ -707,6 +708,7 @@ export interface DynamicAvailabilityWorkspaceMember {
   minimum: number | null;
   target: number | null;
   maximum: number | null;
+  maxWeeklyShifts?: number | null;
   maxNights: number | null;
   maxWeekends: number | null;
   maxHolidays: number | null;
@@ -731,6 +733,7 @@ export interface SaveDynamicAvailabilityShadowSubmissionInput {
   minimum: number | null;
   target: number | null;
   maximum: number | null;
+  maxWeeklyShifts?: number | null;
   maxNights: number | null;
   maxWeekends: number | null;
   maxHolidays: number | null;

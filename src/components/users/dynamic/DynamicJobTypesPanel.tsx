@@ -228,6 +228,7 @@ const emptyForm = (scheduleGroupId: string): SaveDynamicJobTypeInput => ({
   payConfig: {},
   availabilityConfig: {
     showEmployeePreferences: false,
+    showWeeklyShiftLimit: false,
     enabled: false,
     statuses: ['available', 'unavailable'],
     allowNotes: true,
@@ -271,6 +272,7 @@ const toForm = (jobType: DynamicJobType): SaveDynamicJobTypeInput => ({
   payConfig: jobType.payConfig,
   availabilityConfig: {
     showEmployeePreferences: jobType.availabilityConfig?.showEmployeePreferences ?? true,
+    showWeeklyShiftLimit: jobType.availabilityConfig?.showWeeklyShiftLimit ?? false,
     enabled: Boolean(jobType.availabilityConfig?.enabled),
     statuses: jobType.availabilityConfig?.statuses?.length
       ? jobType.availabilityConfig.statuses
@@ -2270,6 +2272,14 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                         <span>יעד משמרות חודשי + ״כמה שיותר״</span>
                       </label>
                     ) : null}
+                    <label className="dynamic-choice-chip">
+                      <input type="checkbox" checked={form.availabilityConfig.showWeeklyShiftLimit ?? false}
+                        onChange={(event) => setForm({ ...form, availabilityConfig: {
+                          ...form.availabilityConfig, showWeeklyShiftLimit: event.target.checked,
+                        } })} />
+                      <span>אפשר לעובדים להגדיר מקסימום משמרות בשבוע</span>
+                    </label>
+                    <small>מגבלה קשיחה לפי מספר משמרות, מראשון עד שבת. ״כמה שיותר״ מבטל רק את התקרה האישית.</small>
                   </div>
 
                   <div className="dynamic-availability-subsection" style={{ display: form.schedulingStrategy === "availability_optimizer" ? undefined : "none" }}>

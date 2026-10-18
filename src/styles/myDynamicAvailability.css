@@ -27,3 +27,6 @@
 .my-availability-confirm-dialog{background:var(--surface,#fff);color:var(--text-primary,#17233b);border-radius:18px;padding:26px;max-width:480px;width:100%;box-shadow:0 20px 55px rgba(0,0,0,.25)}
 .my-availability-confirm-dialog h2{margin:0 0 14px;font-size:1.25rem}.my-availability-confirm-dialog p{line-height:1.7;margin:0 0 22px}
 .my-availability-confirm-actions{display:flex;gap:10px;flex-wrap:wrap}.my-availability-confirm-actions button{flex:1;min-width:165px}
+
+/* Monthly and weekly capacity preferences share the same responsive card layout. */
+.my-availability-capacity-fields{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
