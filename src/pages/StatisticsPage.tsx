@@ -37,7 +37,7 @@ type WorkspaceView = 'overview' | 'availability' | 'charts' | 'tables' | 'payrol
 const hebrewMonths = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 const isoDate=(date:Date)=>{const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,'0');const d=String(date.getDate()).padStart(2,'0');return `${y}-${m}-${d}`};
 const periodRange=(mode:StatisticsPeriodMode,anchor:Date)=>{const start=new Date(anchor);const end=new Date(anchor);if(mode==='day')return{start:isoDate(start),end:isoDate(end)};if(mode==='week'){const day=start.getDay();start.setDate(start.getDate()-day);end.setTime(start.getTime());end.setDate(end.getDate()+6);return{start:isoDate(start),end:isoDate(end)}}if(mode==='month'){start.setDate(1);end.setMonth(end.getMonth()+1,0);return{start:isoDate(start),end:isoDate(end)}}start.setMonth(0,1);end.setMonth(11,31);return{start:isoDate(start),end:isoDate(end)}};
-const shiftPeriod=(mode:StatisticsPeriodMode,anchor:Date,direction:number)=>{const next=new Date(anchor);if(mode==='day')next.setDate(next.getDate()+direction);else if(mode==='week')next.setDate(next.getDate()+direction*7);else if(mode==='month')next.setMonth(next.getMonth()+direction);else next.setFullYear(next.getFullYear()+direction);return next};
+const shiftPeriod=(mode:StatisticsPeriodMode,anchor:Date,direction:number)=>{const next=new Date(anchor);if(mode==='day')next.setDate(next.getDate()+direction);else if(mode==='week')next.setDate(next.getDate()+direction*7);else if(mode==='month')return new Date(anchor.getFullYear(),anchor.getMonth()+direction,1);else return new Date(anchor.getFullYear()+direction,0,1);return next};
 const periodLabel=(mode:StatisticsPeriodMode,anchor:Date)=>{const r=periodRange(mode,anchor);if(mode==='day')return anchor.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'});if(mode==='week')return `${new Date(`${r.start}T12:00:00`).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'})}–${new Date(`${r.end}T12:00:00`).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'})}`;if(mode==='month')return `${hebrewMonths[anchor.getMonth()]} ${anchor.getFullYear()}`;return String(anchor.getFullYear())};
 
 function personLabel(
@@ -233,43 +233,28 @@ function StatisticsPage() {
 
   const availableMonthOptions=useMemo(()=>{
     const year=periodAnchor.getFullYear();
-    return statisticalPeriods
-      .filter(item=>item.year===year)
-      .sort((a,b)=>a.month-b.month)
-      .map(item=>({
-        key:`${item.year}-${String(item.month).padStart(2,'0')}`,
-        label:hebrewMonths[item.month-1],
-      }));
-  },[statisticalPeriods,periodAnchor]);
+    return hebrewMonths.map((label,index)=>({
+      key:`${year}-${String(index+1).padStart(2,'0')}`,
+      label,
+    }));
+  },[periodAnchor]);
 
   const availableYearOptions=useMemo(()=>
-    Array.from(new Set(statisticalPeriods.map(item=>item.year))).sort((a,b)=>b-a)
+    Array.from(new Set([...statisticalPeriods.map(item=>item.year),periodAnchor.getFullYear(),new Date().getFullYear()])).sort((a,b)=>b-a)
   ,[statisticalPeriods]);
 
-  useEffect(()=>{
-    if(periodMode!=='month' || statisticalPeriods.length===0)return;
-    const allowed=new Set(statisticalPeriods.map(item=>`${item.year}-${String(item.month).padStart(2,'0')}`));
-    setSelectedMonthKeys(current=>{
-      const kept=current.filter(key=>allowed.has(key));
-      if(kept.length>0)return kept;
-      const latest=[...statisticalPeriods].sort((a,b)=>(b.year-a.year)||(b.month-a.month))[0];
-      if(!latest)return current;
-      setPeriodAnchor(new Date(latest.year,latest.month-1,1));
-      return [`${latest.year}-${String(latest.month).padStart(2,'0')}`];
-    });
-  },[periodMode,selectedJobTypeId,statisticalPeriods]);
+  // Do not force the selection back to the latest month containing data.
+  // A new month is valid even before any shifts or availability have been recorded.
 
-  useEffect(()=>{
-    if(periodMode!=='year' || statisticalPeriods.length===0)return;
-    const allowed=new Set(statisticalPeriods.map(item=>item.year));
-    setSelectedYears(current=>{
-      const kept=current.filter(year=>allowed.has(year));
-      if(kept.length>0)return kept;
-      const latest=Math.max(...allowed);
-      setPeriodAnchor(new Date(latest,0,1));
-      return [latest];
-    });
-  },[periodMode,selectedJobTypeId,statisticalPeriods]);
+  const navigatePeriod = (direction: number): void => {
+    const next = shiftPeriod(periodMode, periodAnchor, direction);
+    setPeriodAnchor(next);
+    if (periodMode === 'month') {
+      setSelectedMonthKeys([`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`]);
+    } else if (periodMode === 'year') {
+      setSelectedYears([next.getFullYear()]);
+    }
+  };
 
   const peopleOptions = useMemo(() => (
     workspace?.people
@@ -401,7 +386,7 @@ function StatisticsPage() {
           <div className="statistics-compact-period">
             <span className="statistics-compact-period-label">תקופה</span>
             <div className="statistics-compact-period-control" ref={periodPickerRef}>
-              <button type="button" className="statistics-period-arrow" aria-label="תקופה קודמת" onClick={()=>setPeriodAnchor(current=>shiftPeriod(periodMode,current,-1))}><ChevronRight size={18}/></button>
+              <button type="button" className="statistics-period-arrow" aria-label="תקופה קודמת" onClick={()=>navigatePeriod(-1)}><ChevronRight size={18}/></button>
               <div className="statistics-period-picker">
                 <button type="button" className="statistics-period-trigger" aria-haspopup="dialog" aria-expanded={isPeriodMenuOpen} onClick={()=>setIsPeriodMenuOpen(open=>!open)}>
                   <CalendarDays size={17} aria-hidden="true"/>
@@ -443,7 +428,7 @@ function StatisticsPage() {
                   <button type="button" className="statistics-period-current-button" onClick={()=>{const now=new Date();setPeriodAnchor(now);setSelectedMonthKeys([]);setSelectedYears([]);setIsPeriodMenuOpen(false)}}>חזרה לתקופה הנוכחית</button>
                 </div> : null}
               </div>
-              <button type="button" className="statistics-period-arrow" aria-label="תקופה הבאה" onClick={()=>setPeriodAnchor(current=>shiftPeriod(periodMode,current,1))}><ChevronLeft size={18}/></button>
+              <button type="button" className="statistics-period-arrow" aria-label="תקופה הבאה" onClick={()=>navigatePeriod(1)}><ChevronLeft size={18}/></button>
             </div>
           </div>
         </div>
