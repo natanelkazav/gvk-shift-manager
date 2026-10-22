@@ -8,6 +8,7 @@ import type {
   SaveDynamicAvailabilityShadowSubmissionInput,
 } from '../../../types/dynamicScheduling';
 import { Button } from '../../ui';
+import './dynamicAvailabilityShadowPreferences.css';
 
 interface Props { jobType: DynamicJobType; year: number; month: number; refreshKey: number; canEdit?: boolean; }
 
@@ -95,7 +96,7 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
 
   useEffect(() => {
     if (!member || !workspace) { setForm(null); return; }
-    const config = workspace.availabilityConfig ?? fallbackAvailabilityConfig;
+    const config = jobType.availabilityConfig ?? workspace.availabilityConfig ?? fallbackAvailabilityConfig;
     const defaults = config.monthlyCapacity ?? fallbackAvailabilityConfig.monthlyCapacity;
     const limits = config.limits ?? fallbackAvailabilityConfig.limits;
     setForm({
@@ -103,6 +104,7 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
       minimum: member.minimum ?? defaults.defaultMin,
       target: member.target ?? defaults.defaultTarget,
       maximum: null,
+      maxWeeklyShifts: member.maxWeeklyShifts ?? null,
       maxNights: member.maxNights ?? limits.defaultMaxNights,
       maxWeekends: member.maxWeekends ?? limits.defaultMaxWeekends,
       maxHolidays: member.maxHolidays ?? limits.defaultMaxHolidays,
@@ -113,13 +115,13 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
 
   const setEntry = (slotId: string, status: Status) => setForm((current) => current ? ({ ...current, entries: current.entries.map((entry) => entry.slotId === slotId ? { ...entry, status } : entry) }) : current);
 
-  const setNumber = (key: 'minimum'|'target', value: string) => setForm((current) => current ? ({ ...current, [key]: value === '' ? null : Number(value) }) : current);
+  const setNumber = (key: 'minimum'|'target'|'maxWeeklyShifts', value: string) => setForm((current) => current ? ({ ...current, [key]: value === '' ? null : Number(value) }) : current);
 
   const save = async () => {
     if (!canEdit || !form || !selectedUserId) return;
     setBusy(true); setError(null); setMessage(null);
     try {
-      await dynamicSchedulingService.saveAvailabilityShadowSubmission(jobType.id, year, month, selectedUserId, { ...form, maximum: null });
+      await dynamicSchedulingService.saveAvailabilityShadowSubmission(jobType.id, year, month, selectedUserId, { ...form, maximum: null, maxWeeklyShifts: availabilityConfig.showWeeklyShiftLimit ? form.maxWeeklyShifts : member?.maxWeeklyShifts ?? null });
       setMessage('אילוצי העובד נשמרו בהצלחה.'); await load();
     } catch (err) { setError(err instanceof Error ? err.message : 'שמירת האילוצים נכשלה.'); }
     finally { setBusy(false); }
@@ -130,7 +132,7 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
   if (busy && !workspace) return <div className="dynamic-shadow-loading"><LoaderCircle className="spin" size={18}/> טוען אילוצי עובדים...</div>;
   if (!workspace?.materialized) return <div className="dynamic-shadow-empty">יש ליצור קודם תקופת אילוצים לחודש הנבחר.</div>;
 
-  const availabilityConfig = workspace.availabilityConfig ?? fallbackAvailabilityConfig;
+  const availabilityConfig = jobType.availabilityConfig ?? workspace.availabilityConfig ?? fallbackAvailabilityConfig;
   const monthlyCapacity = availabilityConfig.monthlyCapacity ?? fallbackAvailabilityConfig.monthlyCapacity;
   const statuses = availabilityConfig.statuses?.length ? availabilityConfig.statuses : fallbackAvailabilityConfig.statuses;
   const theoreticalMaximum = calculateTheoreticalMaximum(workspace);
@@ -146,15 +148,28 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
     {form && member ? <>
 
 
-      <div className="dynamic-capacity-row">
-        {monthlyCapacity.minEnabled ? <label>מינימום<input type="number" min="0" value={form.minimum ?? ''} onChange={(e) => setNumber('minimum',e.target.value)}/></label> : null}
-        <label>
-          <span>יעד</span>
-          <input type="number" min="0" max={theoreticalMaximum || undefined} value={form.target ?? ''} onChange={(e) => setNumber('target',e.target.value)}/>
-          {theoreticalMaximum > 0 && form.target !== null && form.target >= theoreticalMaximum ? <small className="dynamic-capacity-preference">העדפת העובד: כמה שיותר</small> : form.target !== null ? <small className="dynamic-capacity-preference">העדפת העובד: {form.target} משמרות</small> : null}
-        </label>
-        <label>מצב<select className={`dynamic-submission-status is-${form.submissionStatus}`} disabled={!canEdit} value={form.submissionStatus} onChange={(e) => setForm({ ...form, submissionStatus: e.target.value as SaveDynamicAvailabilityShadowSubmissionInput['submissionStatus'] })}><option value="draft">טיוטה</option><option value="submitted">הוגש</option><option value="reopened">נפתח מחדש</option></select></label>
-      </div>
+      <section className="shadow-preferences-section" aria-label="העדפת כמות משמרות">
+        <div className="shadow-preferences-heading">העדפת כמות משמרות</div>
+        <div className="shadow-preferences-grid">
+          {availabilityConfig.showEmployeePreferences !== false && monthlyCapacity.minEnabled ? <label className="shadow-preference-card">
+            <span className="shadow-preference-title">מינימום משמרות</span>
+            <input type="number" min="0" value={form.minimum ?? ''} disabled={!canEdit} onChange={(e) => setNumber('minimum', e.target.value)}/>
+          </label> : null}
+          {availabilityConfig.showEmployeePreferences !== false && monthlyCapacity.targetEnabled ? <div className="shadow-preference-card">
+            <label className="shadow-preference-title" htmlFor="shadow-monthly-target">יעד משמרות חודשי</label>
+            <input id="shadow-monthly-target" type="number" min="0" max={theoreticalMaximum || undefined} value={form.target ?? ''} disabled={!canEdit || (theoreticalMaximum > 0 && form.target != null && form.target >= theoreticalMaximum)} onChange={(e) => setNumber('target', e.target.value)}/>
+            <label className="shadow-preference-check"><input type="checkbox" checked={form.target != null && theoreticalMaximum > 0 && form.target >= theoreticalMaximum} disabled={!canEdit || theoreticalMaximum === 0} onChange={(e) => setForm((current) => current ? ({ ...current, target: e.target.checked ? theoreticalMaximum : null }) : current)}/> כמה שיותר</label>
+            <small className="shadow-preference-original">{member.target == null ? 'העדפת העובד: לא הוזן יעד חודשי' : theoreticalMaximum > 0 && member.target >= theoreticalMaximum ? 'העדפת העובד: כמה שיותר' : `העדפת העובד: ${member.target} משמרות`}</small>
+          </div> : null}
+          {availabilityConfig.showWeeklyShiftLimit ? <div className="shadow-preference-card">
+            <label className="shadow-preference-title" htmlFor="shadow-weekly-limit">מקסימום משמרות בשבוע</label>
+            <input id="shadow-weekly-limit" type="number" min="1" value={form.maxWeeklyShifts ?? ''} disabled={!canEdit || form.maxWeeklyShifts == null} placeholder={form.maxWeeklyShifts == null ? 'כמה שיותר' : ''} onChange={(e) => setNumber('maxWeeklyShifts', e.target.value)}/>
+            <label className="shadow-preference-check"><input type="checkbox" checked={form.maxWeeklyShifts == null} disabled={!canEdit} onChange={(e) => setForm((current) => current ? ({ ...current, maxWeeklyShifts: e.target.checked ? null : 5 }) : current)}/> כמה שיותר</label>
+            <small className="shadow-preference-original">{member.maxWeeklyShifts == null ? (member.submissionId ? 'העדפת העובד: כמה שיותר (ללא מגבלה שבועית)' : 'העדפת העובד: טרם הוזנה מגבלה שבועית') : `העדפת העובד: עד ${member.maxWeeklyShifts} משמרות בשבוע`}</small>
+          </div> : null}
+        </div>
+      </section>
+      <div className="shadow-submission-row"><label>מצב הגשה<select className={`dynamic-submission-status is-${form.submissionStatus}`} disabled={!canEdit} value={form.submissionStatus} onChange={(e) => setForm({ ...form, submissionStatus: e.target.value as SaveDynamicAvailabilityShadowSubmissionInput['submissionStatus'] })}><option value="draft">טיוטה</option><option value="submitted">הוגש</option><option value="reopened">נפתח מחדש</option></select></label></div>
       <div className="dynamic-availability-grid">
         {workspace.slots.map((slot) => {
           const entry = form.entries.find((item) => item.slotId === slot.id);

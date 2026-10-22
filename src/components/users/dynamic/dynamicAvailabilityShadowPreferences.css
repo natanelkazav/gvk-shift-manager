@@ -1,0 +1,14 @@
+/* Manager-only availability preference cards; scoped to the shadow workspace. */
+.shadow-preferences-section { margin: 16px 0; padding: 16px; border: 1px solid #dbe4ef; border-radius: 14px; background: #f8fafc; direction: rtl; }
+.shadow-preferences-heading { font-weight: 700; margin-bottom: 12px; color: #1e3354; }
+.shadow-preferences-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 740px; }
+.shadow-preference-card { display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 14px; border: 1px solid #dbe4ef; border-radius: 12px; background: white; min-width: 0; }
+.shadow-preference-title { display: block; font-weight: 600; font-size: 14px; color: #1e3354; }
+.shadow-preference-card > input[type="number"] { box-sizing: border-box; width: 100%; min-width: 0; min-height: 42px; border: 1px solid #cbd5e1; border-radius: 9px; padding: 8px 12px; background: white; color: #1e3354; }
+.shadow-preference-card > input:disabled { background: #f1f5f9; }
+.shadow-preference-check { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.shadow-preference-check input { width: 17px; height: 17px; margin: 0; }
+.shadow-preference-original { display: block; font-size: 12px; color: #64748b; line-height: 1.5; }
+.shadow-submission-row { display: flex; justify-content: flex-start; margin: 12px 0 18px; }
+.shadow-submission-row > label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #64748b; }
+@media (max-width: 680px) { .shadow-preferences-grid { grid-template-columns: 1fr; } .shadow-preferences-section { padding: 12px; } }
