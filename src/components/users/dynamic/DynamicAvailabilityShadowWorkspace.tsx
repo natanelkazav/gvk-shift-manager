@@ -102,7 +102,8 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
     setForm({
       submissionStatus: member.status ?? 'draft',
       minimum: member.minimum ?? defaults.defaultMin,
-      target: member.target ?? defaults.defaultTarget,
+      target: member.targetUnlimited ? null : (member.target ?? defaults.defaultTarget),
+      targetUnlimited: Boolean(member.targetUnlimited),
       maximum: null,
       maxWeeklyShifts: member.maxWeeklyShifts ?? null,
       maxNights: member.maxNights ?? limits.defaultMaxNights,
@@ -115,7 +116,7 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
 
   const setEntry = (slotId: string, status: Status) => setForm((current) => current ? ({ ...current, entries: current.entries.map((entry) => entry.slotId === slotId ? { ...entry, status } : entry) }) : current);
 
-  const setNumber = (key: 'minimum'|'target'|'maxWeeklyShifts', value: string) => setForm((current) => current ? ({ ...current, [key]: value === '' ? null : Number(value) }) : current);
+  const setNumber = (key: 'minimum'|'target'|'maxWeeklyShifts', value: string) => setForm((current) => current ? ({ ...current, [key]: value === '' ? null : Number(value), ...(key === 'target' ? {targetUnlimited:false} : {}) }) : current);
 
   const save = async () => {
     if (!canEdit || !form || !selectedUserId) return;
@@ -157,13 +158,13 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
           </label> : null}
           {availabilityConfig.showEmployeePreferences !== false && monthlyCapacity.targetEnabled ? <div className="shadow-preference-card">
             <label className="shadow-preference-title" htmlFor="shadow-monthly-target">יעד משמרות חודשי</label>
-            <input id="shadow-monthly-target" type="number" min="0" max={theoreticalMaximum || undefined} value={form.target ?? ''} disabled={!canEdit || (theoreticalMaximum > 0 && form.target != null && form.target >= theoreticalMaximum)} onChange={(e) => setNumber('target', e.target.value)}/>
-            <label className="shadow-preference-check"><input type="checkbox" checked={form.target != null && theoreticalMaximum > 0 && form.target >= theoreticalMaximum} disabled={!canEdit || theoreticalMaximum === 0} onChange={(e) => setForm((current) => current ? ({ ...current, target: e.target.checked ? theoreticalMaximum : null }) : current)}/> כמה שיותר</label>
-            <small className="shadow-preference-original">{member.target == null ? 'העדפת העובד: לא הוזן יעד חודשי' : theoreticalMaximum > 0 && member.target >= theoreticalMaximum ? 'העדפת העובד: כמה שיותר' : `העדפת העובד: ${member.target} משמרות`}</small>
+            <input id="shadow-monthly-target" type="number" min="0" max={theoreticalMaximum || undefined} value={form.targetUnlimited ? '' : form.target ?? ''} disabled={!canEdit || Boolean(form.targetUnlimited)} onChange={(e) => setNumber('target', e.target.value)}/>
+            <label className="shadow-preference-check"><input type="checkbox" checked={Boolean(form.targetUnlimited)} disabled={!canEdit || theoreticalMaximum === 0} onChange={(e) => setForm((current) => current ? ({ ...current, targetUnlimited:e.target.checked, target:e.target.checked ? null : current.target }) : current)}/> כמה שיותר</label>
+            <small className="shadow-preference-original">{member.targetUnlimited ? 'העדפת העובד: כמה שיותר' : member.target == null ? 'העדפת העובד: לא הוזן יעד חודשי' : `העדפת העובד: ${member.target} משמרות`}</small>
           </div> : null}
           {availabilityConfig.showWeeklyShiftLimit ? <div className="shadow-preference-card">
             <label className="shadow-preference-title" htmlFor="shadow-weekly-limit">מקסימום משמרות בשבוע</label>
-            <input id="shadow-weekly-limit" type="number" min="1" value={form.maxWeeklyShifts ?? ''} disabled={!canEdit || form.maxWeeklyShifts == null} placeholder={form.maxWeeklyShifts == null ? 'כמה שיותר' : ''} onChange={(e) => setNumber('maxWeeklyShifts', e.target.value)}/>
+            <input id="shadow-weekly-limit" type="number" min="1" value={form.maxWeeklyShifts ?? ''} disabled={!canEdit || form.maxWeeklyShifts == null} placeholder="" onChange={(e) => setNumber('maxWeeklyShifts', e.target.value)}/>
             <label className="shadow-preference-check"><input type="checkbox" checked={form.maxWeeklyShifts == null} disabled={!canEdit} onChange={(e) => setForm((current) => current ? ({ ...current, maxWeeklyShifts: e.target.checked ? null : 5 }) : current)}/> כמה שיותר</label>
             <small className="shadow-preference-original">{member.maxWeeklyShifts == null ? (member.submissionId ? 'העדפת העובד: כמה שיותר (ללא מגבלה שבועית)' : 'העדפת העובד: טרם הוזנה מגבלה שבועית') : `העדפת העובד: עד ${member.maxWeeklyShifts} משמרות בשבוע`}</small>
           </div> : null}

@@ -30,3 +30,10 @@
 
 /* Monthly and weekly capacity preferences share the same responsive card layout. */
 .my-availability-capacity-fields{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+
+.my-availability-deadline { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; padding:12px 16px; margin:12px 0; border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#1e3a8a; }
+.my-availability-deadline span {font-weight:700; direction:ltr;}
+.my-availability-deadline small {color:#475569;}
+
+/* Deadline is displayed inside the relevant period selector. */
+.my-availability-period-tabs .my-period-deadline{font-size:.75rem;line-height:1.4;color:var(--color-gray-600,#64748b);white-space:normal}

@@ -234,7 +234,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
                   <th scope="row">{row.displayName}</th>
                   <td className={`balance-cell balance-${row.totalBalance.tone}`} title={`צפי יחסי לפי האילוצים: ${row.totalBalance.expected.toFixed(1)}`}><strong>{row.total}</strong></td>
                   <td title="יעד המשמרות החודשי שהעובד הגיש; אינו תקרה קשיחה">{row.preference?.monthlyEnabled && row.preference.hasSubmission
-                    ? row.preference.monthlyTarget ?? 'לא הוגדר'
+                    ? row.preference.monthlyUnlimited ? 'כמה שיותר' : row.preference.monthlyTarget ?? 'לא הוגדר'
                     : '—'}</td>
                   <td title="מספר המשמרות המרבי לשבוע לפי הגשת העובד">{row.preference?.weeklyEnabled && row.preference.hasSubmission
                     ? row.preference.weeklyMaximum ?? 'כמה שיותר'

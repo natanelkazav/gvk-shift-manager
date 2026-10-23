@@ -708,6 +708,7 @@ export interface DynamicAvailabilityWorkspaceMember {
   minimum: number | null;
   target: number | null;
   maximum: number | null;
+  targetUnlimited?: boolean;
   maxWeeklyShifts?: number | null;
   maxNights: number | null;
   maxWeekends: number | null;
@@ -733,6 +734,7 @@ export interface SaveDynamicAvailabilityShadowSubmissionInput {
   minimum: number | null;
   target: number | null;
   maximum: number | null;
+  targetUnlimited?: boolean;
   maxWeeklyShifts?: number | null;
   maxNights: number | null;
   maxWeekends: number | null;
@@ -1027,6 +1029,7 @@ export interface DynamicDraftEditorSlot {
 export interface DynamicDraftMemberPreference {
   userId: string;
   monthlyTarget: number | null;
+  monthlyUnlimited?: boolean;
   weeklyMaximum: number | null;
   monthlyEnabled: boolean;
   weeklyEnabled: boolean;
