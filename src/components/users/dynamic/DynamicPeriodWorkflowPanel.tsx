@@ -60,6 +60,18 @@ function DynamicPeriodWorkflowPanel({
     try {
       const nextState = await dynamicSchedulingService.getPeriodWorkflow(jobType.id, year, month);
       if (generation !== loadGenerationRef.current) return;
+      // The draft's saved metrics are a generation-time snapshot. Revalidate the
+      // actual assignments after every edit and whenever the workflow reloads.
+      if (nextState.draft?.id && !nextState.publication) {
+        const validation = await dynamicSchedulingService.getDraftWeeklyRestValidation(nextState.draft.id);
+        if (generation !== loadGenerationRef.current) return;
+        nextState.draft.metrics = {
+          ...nextState.draft.metrics,
+          weeklyRestRuleEnabled: true,
+          weeklyRestValid: validation.valid,
+          weeklyRestViolations: validation.violations,
+        };
+      }
       setState(nextState);
       if (nextState.period) {
         const reminderState = await dynamicSchedulingService.getDynamicAvailabilityReminderSettings(jobType.id, year, month);
@@ -413,7 +425,7 @@ function DynamicPeriodWorkflowPanel({
                   <span>העריכה כאן משפיעה על הטיוטה הדינמית של החודש בלבד עד לפרסום.</span>
                 </div>
               </div>
-              <DynamicScheduleDraftEditor draftId={state.draft.id} refreshKey={refreshKey} onChanged={() => void load()} />
+              <DynamicScheduleDraftEditor draftId={state.draft.id} refreshKey={refreshKey} onChanged={load} />
             </div>
           ) : null}
 

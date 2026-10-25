@@ -515,6 +515,16 @@ export const dynamicSchedulingService = {
     });
   },
 
+  async getDraftWeeklyRestValidation(draftId: string): Promise<import('../types/dynamicScheduling').DynamicWeeklyRestValidation> {
+    return PerformanceDebugService.measureAsync('dynamic-scheduling.draft-weekly-rest-validation', async () => {
+      const { data, error } = await supabase.rpc('get_dynamic_schedule_weekly_rest_validation', {
+        requested_draft_id: draftId,
+      });
+      if (error) throwSupabaseError('Validate edited dynamic draft weekly rest', error);
+      return data as import('../types/dynamicScheduling').DynamicWeeklyRestValidation;
+    });
+  },
+
   async getDraftEditor(draftId: string): Promise<import('../types/dynamicScheduling').DynamicDraftEditorWorkspace> {
     return PerformanceDebugService.measureAsync('dynamic-scheduling.phase8.3c.draft-editor', async () => {
       const { data, error } = await supabase.rpc('get_dynamic_schedule_draft_editor', { requested_draft_id: draftId });

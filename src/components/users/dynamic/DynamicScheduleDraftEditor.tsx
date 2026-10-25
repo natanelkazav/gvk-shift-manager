@@ -9,7 +9,7 @@ import { dynamicShiftDisplayName } from '../../../utils/dynamicShiftDisplayName'
 interface Props {
   draftId: string;
   refreshKey?: number;
-  onChanged?: () => void;
+  onChanged?: () => void | Promise<void>;
 }
 
 const availabilityLabel: Record<string, string> = {
@@ -22,6 +22,13 @@ const formatDate = (value: string): string => {
 };
 
 const formatTime = (value: string): string => value.slice(0, 5);
+
+const formatWeekday = (value: string): string => {
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+  return ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'יום שבת'][
+    new Date(Date.UTC(year, month - 1, day)).getUTCDay()
+  ];
+};
 
 function candidateLabel(candidate: DynamicDraftEditorCandidate): string {
   const status = candidate.availabilityStatus ? availabilityLabel[candidate.availabilityStatus] ?? candidate.availabilityStatus : 'לא הוגש';
@@ -39,7 +46,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [show200PercentHours, setShow200PercentHours] = useState(true);
 
-  const load = async (): Promise<void> => {
+  const load = async (strict = false): Promise<void> => {
     setBusy(true);
     setError(null);
     try {
@@ -51,6 +58,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
       setPreferences(memberPreferences);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'טעינת טיוטת השיבוץ נכשלה.');
+      if (strict) throw loadError;
     } finally {
       setBusy(false);
     }
@@ -62,9 +70,11 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
     setBusy(true); setError(null); setMessage(null);
     try {
       await action();
+      // Do not acknowledge persistence until the server has returned the
+      // updated draft and the parent has refreshed its validation state.
+      await load(true);
+      await onChanged?.();
       setMessage(success);
-      await load();
-      onChanged?.();
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : 'הפעולה נכשלה.');
     } finally { setBusy(false); }
@@ -289,13 +299,42 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
                             aria-label={`${dynamicShiftDisplayName(slot.shiftName, 'משמרת')} - עובד משובץ`}
                             onChange={(event) => {
                               const nextUserId = event.target.value;
-                              if (!nextUserId || nextUserId === assignment.userId) return;
+                              if (nextUserId === assignment.userId) return;
+                              if (!nextUserId) {
+                                void run(() => dynamicSchedulingService.removeDraftAssignment(workspace.draftId, assignment.id), 'השיבוץ הוסר. ניתן לאשר את החוסר כלא מאויש בכוונה.');
+                                return;
+                              }
                               void run(() => dynamicSchedulingService.setDraftAssignment(workspace.draftId, slot.slotId, assignment.id, nextUserId), 'השיבוץ עודכן ידנית.');
                             }}
                           >
+                            <option value="">לא מאויש — הסר שיבוץ</option>
                             {slot.candidates.map((candidate) => <option key={candidate.userId} value={candidate.userId}>{candidateLabel(candidate)}</option>)}
                           </select>
-                        )) : <span className="dynamic-draft-calendar-unassigned">לא מאויש</span>}
+                        )) : null}
+                        {missing > 0 ? (
+                          <div className="dynamic-draft-calendar-empty-assignment">
+                            <span className="dynamic-draft-calendar-unassigned">לא מאויש ({missing} חסר)</span>
+                            <select
+                              value={pendingCandidate[slot.slotId] ?? ''}
+                              disabled={busy}
+                              aria-label={`${dynamicShiftDisplayName(slot.shiftName, 'משמרת')} - שיבוץ עובד במקום לא מאויש`}
+                              onChange={(event) => {
+                                const userId = event.target.value;
+                                setPendingCandidate((current) => ({ ...current, [slot.slotId]: userId }));
+                                if (!userId) return;
+                                void run(async () => {
+                                  await dynamicSchedulingService.setDraftAssignment(workspace.draftId, slot.slotId, null, userId);
+                                  setPendingCandidate((current) => ({ ...current, [slot.slotId]: '' }));
+                                }, 'עובד שובץ במשמרת שהייתה לא מאוישת.');
+                              }}
+                            >
+                              <option value="">בחר עובד לשיבוץ…</option>
+                              {slot.candidates.filter((candidate) => !candidate.isAssignedHere).map((candidate) => (
+                                <option key={candidate.userId} value={candidate.userId}>{candidateLabel(candidate)}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : null}
                         <small>{requiredAssigned}/{slot.minWorkers} חובה{slot.intentionallyUnassignedCount > 0 ? ' · חוסר מאושר' : ''}</small>
                       </div>
                     );
@@ -318,7 +357,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
               <header>
                 <div>
                   <strong>{dynamicShiftDisplayName(slot.shiftName, 'משמרת')}</strong>
-                  <span><bdi dir="ltr">{formatDate(slot.date)}</bdi> · <bdi dir="ltr">{formatTime(slot.startTime)}–{formatTime(slot.endTime)}</bdi></span>
+                  <span>{formatWeekday(slot.date)}, <bdi dir="ltr">{formatDate(slot.date)}</bdi> · <bdi dir="ltr">{formatTime(slot.startTime)}–{formatTime(slot.endTime)}</bdi></span>
                 </div>
                 <span className="dynamic-draft-slot-coverage">{requiredAssigned}/{slot.minWorkers} חובה</span>
               </header>
@@ -331,13 +370,18 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
                       disabled={busy}
                       onChange={(event) => {
                         const nextUserId = event.target.value;
-                        if (!nextUserId || nextUserId === assignment.userId) return;
+                        if (nextUserId === assignment.userId) return;
+                        if (!nextUserId) {
+                          void run(() => dynamicSchedulingService.removeDraftAssignment(workspace.draftId, assignment.id), 'השיבוץ הוסר. ניתן לאשר את החוסר כלא מאויש בכוונה.');
+                          return;
+                        }
                         void run(
                           () => dynamicSchedulingService.setDraftAssignment(workspace.draftId, slot.slotId, assignment.id, nextUserId),
                           'השיבוץ עודכן ידנית.',
                         );
                       }}
                     >
+                      <option value="">לא מאויש — הסר שיבוץ</option>
                       {slot.candidates.map((candidate) => <option key={candidate.userId} value={candidate.userId}>{candidateLabel(candidate)}</option>)}
                     </select>
                     <div className="dynamic-draft-assignment-meta">
