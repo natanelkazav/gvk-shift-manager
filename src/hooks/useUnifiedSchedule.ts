@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useUnifiedSchedule.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור שיבוץ.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UnifiedScheduleState, LoadUnifiedScheduleRequest, UseUnifiedScheduleResult, extractTime, getErrorMessage, useUnifiedSchedule.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useMemo,
@@ -23,32 +30,50 @@ import type {
   UnifiedScheduleLoadWarnings,
 } from '../types/unifiedSchedule';
 
+/**
+ * חוזה הנתונים UnifiedScheduleState: שיבוץ / מצב.
+ */
 interface UnifiedScheduleState {
+  // data — נתונים.
   data:
     UnifiedScheduleData;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 }
 
+/**
+ * חוזה הנתונים LoadUnifiedScheduleRequest: שיבוץ / נתוני הבקשה.
+ */
 interface LoadUnifiedScheduleRequest {
+  // year — שנה.
   year: number;
 
+  // month — חודש.
   month: number;
 }
 
+/**
+ * חוזה הנתונים UseUnifiedScheduleResult: שיבוץ / תוצאה.
+ */
 interface UseUnifiedScheduleResult {
+  // state — מצב.
   state:
     UnifiedScheduleState;
 
+  // filters — מסננים.
   filters:
     UnifiedScheduleFilters;
 
+  // visibleEntries — רשומות.
   visibleEntries:
     UnifiedScheduleEntry[];
 
+  // loadMonth — חודש.
   loadMonth: (
     request:
       LoadUnifiedScheduleRequest,
@@ -62,10 +87,12 @@ interface UseUnifiedScheduleResult {
       boolean,
   ) => void;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 }
 
+// initialWarnings — הנתון initialWarnings בהקשר הפעולה.
 const initialWarnings:
   UnifiedScheduleLoadWarnings = {
     dispatcher:
@@ -78,6 +105,7 @@ const initialWarnings:
       null,
   };
 
+// initialState — מצב.
 const initialState:
   UnifiedScheduleState = {
     data: {
@@ -94,6 +122,7 @@ const initialState:
       null,
   };
 
+// initialFilters — מסננים.
 const initialFilters:
   UnifiedScheduleFilters = {
     dispatcher:
@@ -106,28 +135,38 @@ const initialFilters:
       true,
   };
 
+/**
+ * פעולה extractTime: זמן.
+ * @param value — ערך.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function extractTime(
   value:
     string | null,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return null;
   }
 
+  // directTimeMatch — זמן.
   const directTimeMatch =
     value.match(
       /^(\d{2}:\d{2})/,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר directTimeMatch.
   if (
     directTimeMatch
   ) {
     return directTimeMatch[1];
   }
 
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -154,9 +193,15 @@ function extractTime(
   ).format(date);
 }
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -166,8 +211,13 @@ function getErrorMessage(
   return 'אירעה שגיאה לא צפויה בטעינת לוח המשמרות.';
 }
 
+/**
+ * פעולה useUnifiedSchedule: חיבור מצב או הקשר עבור שיבוץ.
+ * @returns UseUnifiedScheduleResult — הפלט בהתאם לחתימה.
+ */
 export function useUnifiedSchedule():
   UseUnifiedScheduleResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -176,6 +226,7 @@ export function useUnifiedSchedule():
       initialState,
     );
 
+  // מצב מקומי: filters — מסננים; setFilters מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     filters,
     setFilters,
@@ -184,6 +235,7 @@ export function useUnifiedSchedule():
       initialFilters,
     );
 
+  // loadMonth — חודש.
   const loadMonth =
     useCallback(
       async ({
@@ -232,6 +284,7 @@ export function useUnifiedSchedule():
             ],
           );
 
+        // entries — רשומות.
         const entries:
           UnifiedScheduleEntry[] = [];
 
@@ -312,9 +365,11 @@ export function useUnifiedSchedule():
           morningDriverResult.status ===
           'fulfilled'
         ) {
+          // morningSchedule — שיבוץ.
           const morningSchedule =
             morningDriverResult.value;
 
+          // assignments — הקצאות.
           const assignments =
             morningSchedule
               ?.assignments ??
@@ -380,9 +435,11 @@ export function useUnifiedSchedule():
           onCallResult.status ===
           'fulfilled'
         ) {
+          // onCallSchedule — שיבוץ.
           const onCallSchedule =
             onCallResult.value;
 
+          // days — ימים.
           const days =
             onCallSchedule
               ?.days ??
@@ -445,11 +502,13 @@ export function useUnifiedSchedule():
             firstEntry,
             secondEntry,
           ) => {
+            // dateComparison — תאריך.
             const dateComparison =
               firstEntry.date.localeCompare(
                 secondEntry.date,
               );
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dateComparison !== 0.
             if (
               dateComparison !==
               0
@@ -467,6 +526,7 @@ export function useUnifiedSchedule():
           },
         );
 
+        // hasSuccessfulSource — מקור.
         const hasSuccessfulSource =
           dispatcherResult.status ===
             'fulfilled' ||
@@ -494,6 +554,7 @@ export function useUnifiedSchedule():
       [],
     );
 
+  // setCategoryVisibility — קבוצה ייחודית.
   const setCategoryVisibility =
     useCallback(
       (
@@ -517,6 +578,7 @@ export function useUnifiedSchedule():
       [],
     );
 
+  // ערך מחושב visibleEntries — רשומות; נשמר בין רינדורים עד שינוי התלויות.
   const visibleEntries =
     useMemo(
       () =>
@@ -547,6 +609,7 @@ export function useUnifiedSchedule():
       ],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback(
       (): void => {

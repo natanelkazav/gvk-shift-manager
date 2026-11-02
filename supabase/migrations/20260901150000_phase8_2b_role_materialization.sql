@@ -1,3 +1,9 @@
+-- קובץ: supabase/migrations/20260901150000_phase8_2b_role_materialization.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור מימוש תצורת השיבוץ לחודש.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.materialize_dynamic_job_type_snapshot, public.trigger_materialize_dynamic_job_type_version, public.get_dynamic_job_type_materialization.
+-- - מבני טבלאות: public.job_type_schedule_materializations, public.job_type_materialized_day_rules, public.job_type_materialized_shift_templates, public.job_type_materialized_pay_components.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 8.2B: materialize each effective job-type configuration into a stable,
@@ -5,6 +11,7 @@ begin;
 -- It does NOT create one physical table per role; all dynamic roles share the
 -- same normalized tables and are isolated by job_type_id + effective_month.
 
+-- הגדרת מבנה הטבלה public.job_type_schedule_materializations והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_schedule_materializations (
   id uuid primary key default gen_random_uuid(),
   job_type_id uuid not null references public.job_types(id) on delete cascade,
@@ -30,6 +37,7 @@ create table if not exists public.job_type_schedule_materializations (
     check (jsonb_typeof(source_snapshot)='object')
 );
 
+-- הגדרת מבנה הטבלה public.job_type_materialized_day_rules והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_materialized_day_rules (
   id uuid primary key default gen_random_uuid(),
   materialization_id uuid not null references public.job_type_schedule_materializations(id) on delete cascade,
@@ -47,6 +55,7 @@ create table if not exists public.job_type_materialized_day_rules (
     check (jsonb_typeof(metadata)='object')
 );
 
+-- הגדרת מבנה הטבלה public.job_type_materialized_shift_templates והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_materialized_shift_templates (
   id uuid primary key default gen_random_uuid(),
   materialization_id uuid not null references public.job_type_schedule_materializations(id) on delete cascade,
@@ -73,6 +82,7 @@ create table if not exists public.job_type_materialized_shift_templates (
 -- The UI currently records how many hours are paid at 200%, but not the exact
 -- start/end boundary inside the shift. Preserve that fact explicitly without
 -- inventing a time segment. A later payroll phase can request the boundary if needed.
+-- הגדרת מבנה הטבלה public.job_type_materialized_pay_components והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_materialized_pay_components (
   id uuid primary key default gen_random_uuid(),
   shift_template_id uuid not null references public.job_type_materialized_shift_templates(id) on delete cascade,
@@ -89,9 +99,13 @@ create table if not exists public.job_type_materialized_pay_components (
   constraint job_type_materialized_pay_components_metadata_object check(jsonb_typeof(metadata)='object')
 );
 
+-- עדכון מבנה או הגדרות הטבלה public.job_type_schedule_materializations.
 alter table public.job_type_schedule_materializations enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.job_type_materialized_day_rules.
 alter table public.job_type_materialized_day_rules enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.job_type_materialized_shift_templates.
 alter table public.job_type_materialized_shift_templates enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.job_type_materialized_pay_components.
 alter table public.job_type_materialized_pay_components enable row level security;
 
 drop trigger if exists set_job_type_schedule_materializations_updated_at on public.job_type_schedule_materializations;
@@ -109,6 +123,7 @@ create trigger set_job_type_materialized_shift_templates_updated_at
 before update on public.job_type_materialized_shift_templates
 for each row execute function public.set_updated_at();
 
+-- פונקציית מסד public.materialize_dynamic_job_type_snapshot: סוג תפקיד.
 create or replace function public.materialize_dynamic_job_type_snapshot(
   requested_job_type_id uuid,
   requested_effective_month date,
@@ -116,35 +131,56 @@ create or replace function public.materialize_dynamic_job_type_snapshot(
 )
 returns uuid
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- target_materialization_id — יעד / מימוש תצורת השיבוץ לחודש / מזהה.
   target_materialization_id uuid;
+  -- scheduling_config — תצורה.
   scheduling_config jsonb := coalesce(requested_snapshot->'schedulingConfig','{}'::jsonb);
+  -- shift_pattern — משמרת.
   shift_pattern jsonb := coalesce(requested_snapshot#>'{schedulingConfig,shiftPattern}','{}'::jsonb);
+  -- work_mode — מצב פעולה.
   work_mode text := coalesce(requested_snapshot#>>'{schedulingConfig,shiftPattern,workMode}','shifts');
+  -- strategy — שיטת שיבוץ.
   strategy text := coalesce(requested_snapshot->>'schedulingStrategy','availability_optimizer');
   employment text := coalesce(requested_snapshot->>'employmentScope','flexible');
+  -- day_source — יום / מקור.
   day_source jsonb;
+  -- shift_value — משמרת / ערך.
   shift_value jsonb;
+  -- target_shift_id — מזהה המשמרת היעד.
   target_shift_id uuid;
+  -- day_name — יום / שם.
   day_name text;
+  -- day_kind_value — יום / ערך.
   day_kind_value text;
+  -- works_value — ערך.
   works_value boolean;
+  -- shift_index — משמרת / מיקום באוסף.
   shift_index integer;
   shift_start time;
   shift_end time;
   premium_hours numeric(6,2);
+  -- shift_hours — משמרת / שעות.
   shift_hours numeric;
+  -- apply_holiday_eve — חג.
   apply_holiday_eve boolean := coalesce((shift_pattern#>>'{friday,applyToHolidayEve}')::boolean,false);
+  -- apply_holiday_end — חג.
   apply_holiday_end boolean := coalesce((shift_pattern#>>'{saturday,applyToHolidayEnd}')::boolean,false);
 begin
+  -- הסתעפות לפי התנאי requested_job_type_id is null then raise exception 'job type is required'; end if;.
   if requested_job_type_id is null then raise exception 'job type is required'; end if;
+  -- הסתעפות לפי התנאי requested_effective_month is null then raise exception 'effective month is required'; end if;.
   if requested_effective_month is null then raise exception 'effective month is required'; end if;
+  -- הסתעפות לפי התנאי jsonb_typeof(requested_snapshot)<>'object' then raise exception 'snapshot must be an object'; end if;.
   if jsonb_typeof(requested_snapshot)<>'object' then raise exception 'snapshot must be an object'; end if;
+  -- הסתעפות לפי התנאי work_mode not in ('shifts','on_call_hourly','on_call_daily') then raise exception 'invalid work mode: %',work_mode; end .
   if work_mode not in ('shifts','on_call_hourly','on_call_daily') then raise exception 'invalid work mode: %',work_mode; end if;
 
+  -- הוספת רשומות ל־public.job_type_schedule_materializations בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_schedule_materializations(
     job_type_id,effective_month,work_mode,scheduling_strategy,employment_scope,source_snapshot,schema_version,generated_at
   ) values(
@@ -161,7 +197,9 @@ begin
   returning id into target_materialization_id;
 
   -- A re-save of the same effective month is a deterministic rebuild.
+  -- מחיקת הרשומות שנבחרו מתוך public.job_type_materialized_day_rules בהתאם לקלט ולתנאים להלן.
   delete from public.job_type_materialized_day_rules where materialization_id=target_materialization_id;
+  -- מחיקת הרשומות שנבחרו מתוך public.job_type_materialized_shift_templates בהתאם לקלט ולתנאים להלן.
   delete from public.job_type_materialized_shift_templates where materialization_id=target_materialization_id;
 
   foreach day_name in array array['weekday','friday','saturday','holiday'] loop
@@ -169,6 +207,7 @@ begin
     works_value := coalesce((day_source->>'works')::boolean,true);
     day_kind_value := case day_name when 'holiday' then 'holiday_full' else day_name end;
 
+    -- הוספת רשומות ל־public.job_type_materialized_day_rules בהתאם לקלט ולתנאים להלן.
     insert into public.job_type_materialized_day_rules(materialization_id,day_kind,works,behavior,inherit_day_kind,metadata)
     values(
       target_materialization_id,
@@ -179,8 +218,11 @@ begin
       jsonb_build_object('sourceDay',day_name)
     );
 
+    -- הסתעפות לפי התנאי works_value.
     if works_value then
+      -- הסתעפות לפי התנאי work_mode='on_call_daily'.
       if work_mode='on_call_daily' then
+        -- הוספת רשומות ל־public.job_type_materialized_shift_templates בהתאם לקלט ולתנאים להלן.
         insert into public.job_type_materialized_shift_templates(
           materialization_id,source_shift_id,code,name,day_kind,start_time,end_time,required_workers,sort_order,is_active,metadata
         ) values(
@@ -189,6 +231,7 @@ begin
         );
       else
         shift_index := 0;
+        -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
         for shift_value in select value from jsonb_array_elements(coalesce(day_source->'shifts','[]'::jsonb)) loop
           shift_index := shift_index + 1;
           shift_start := coalesce(nullif(shift_value->>'startTime','')::time,time '00:00');
@@ -200,9 +243,11 @@ begin
             + 1440,
             1440
           ) / 60.0;
+          -- הסתעפות לפי התנאי shift_hours=0 then shift_hours:=24; end if;.
           if shift_hours=0 then shift_hours:=24; end if;
           premium_hours := least(premium_hours,shift_hours);
 
+          -- הוספת רשומות ל־public.job_type_materialized_shift_templates בהתאם לקלט ולתנאים להלן.
           insert into public.job_type_materialized_shift_templates(
             materialization_id,source_shift_id,code,name,day_kind,start_time,end_time,required_workers,sort_order,is_active,
             contains_200_percent,premium_200_hours,metadata
@@ -222,7 +267,9 @@ begin
             jsonb_build_object('workMode',work_mode,'sourceDefinition',shift_value)
           ) returning id into target_shift_id;
 
+          -- הסתעפות לפי התנאי coalesce((shift_value->>'contains200Percent')::boolean,false) and premium_hours>0.
           if coalesce((shift_value->>'contains200Percent')::boolean,false) and premium_hours>0 then
+            -- הוספת רשומות ל־public.job_type_materialized_pay_components בהתאם לקלט ולתנאים להלן.
             insert into public.job_type_materialized_pay_components(
               shift_template_id,component_type,multiplier,hours,label,metadata
             ) values(
@@ -236,6 +283,7 @@ begin
   end loop;
 
   -- Calendar-special-day inheritance is explicit and versioned with the role.
+  -- הוספת רשומות ל־public.job_type_materialized_day_rules בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_materialized_day_rules(materialization_id,day_kind,works,behavior,inherit_day_kind,metadata)
   values(
     target_materialization_id,'holiday_eve',true,'inherit',case when apply_holiday_eve then 'friday' else 'weekday' end,
@@ -244,6 +292,7 @@ begin
   on conflict(materialization_id,day_kind) do update set
     works=excluded.works,behavior=excluded.behavior,inherit_day_kind=excluded.inherit_day_kind,metadata=excluded.metadata;
 
+  -- הוספת רשומות ל־public.job_type_materialized_day_rules בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_materialized_day_rules(materialization_id,day_kind,works,behavior,inherit_day_kind,metadata)
   values(
     target_materialization_id,'holiday_end',true,'inherit',case when apply_holiday_end then 'saturday' else 'weekday' end,
@@ -252,6 +301,7 @@ begin
   on conflict(materialization_id,day_kind) do update set
     works=excluded.works,behavior=excluded.behavior,inherit_day_kind=excluded.inherit_day_kind,metadata=excluded.metadata;
 
+  -- הוספת רשומות ל־public.job_type_materialized_day_rules בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_materialized_day_rules(materialization_id,day_kind,works,behavior,inherit_day_kind,metadata)
   values(target_materialization_id,'chol_hamoed',true,'inherit','weekday','{"source":"default"}'::jsonb)
   on conflict(materialization_id,day_kind) do update set
@@ -261,11 +311,14 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.materialize_dynamic_job_type_snapshot(uuid,date,jsonb) from public;
 
+-- פונקציית מסד public.trigger_materialize_dynamic_job_type_version: סוג תפקיד.
 create or replace function public.trigger_materialize_dynamic_job_type_version()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -275,6 +328,7 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.trigger_materialize_dynamic_job_type_version() from public;
 
 drop trigger if exists materialize_dynamic_job_type_version on public.job_type_configuration_versions;
@@ -286,8 +340,10 @@ for each row execute function public.trigger_materialize_dynamic_job_type_versio
 -- because materialization is an idempotent rebuild for job_type + effective_month.
 do $block$
 declare
+  -- version_row — גרסה / שורה.
   version_row record;
 begin
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for version_row in
     select job_type_id,effective_month,snapshot
     from public.job_type_configuration_versions
@@ -302,6 +358,7 @@ begin
 end;
 $block$;
 
+-- פונקציית מסד public.get_dynamic_job_type_materialization: שליפה או חישוב של סוג תפקיד.
 create or replace function public.get_dynamic_job_type_materialization(
   requested_job_type_id uuid,
   requested_year integer,
@@ -309,20 +366,27 @@ create or replace function public.get_dynamic_job_type_materialization(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid();
+  -- target_month — יעד / חודש.
   target_month date;
+  -- target_materialization_id — יעד / מימוש תצורת השיבוץ לחודש / מזהה.
   target_materialization_id uuid;
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(.
   if not exists(
     select 1 from public.user_permissions up
     where up.user_id=current_user_id and up.permission_key in ('users.view','users.manage')
   ) then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי requested_month not between 1 and 12 then raise exception 'invalid month'; end if;.
   if requested_month not between 1 and 12 then raise exception 'invalid month'; end if;
 
   target_month:=make_date(requested_year,requested_month,1);
@@ -332,6 +396,7 @@ begin
   order by m.effective_month desc
   limit 1;
 
+  -- הסתעפות לפי התנאי target_materialization_id is null then return null; end if;.
   if target_materialization_id is null then return null; end if;
 
   select jsonb_build_object(
@@ -378,7 +443,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_job_type_materialization(uuid,integer,integer) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_job_type_materialization(uuid,integer,integer) to authenticated;
 
 commit;

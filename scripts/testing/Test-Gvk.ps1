@@ -1,3 +1,6 @@
+# קובץ: scripts/testing/Test-Gvk.ps1
+# מטרה: בדיקה ובקרת תקינות עבור הנתון Test-Gvk בהקשר הפעולה.
+# מטרות עיקריות: הגדרת רצף הפעולות והאפשרויות המפורטות בהמשך הקובץ.
 param(
   [ValidateSet('quick','server','db','e2e','all')]
   [string]$Mode = 'quick'

@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/dashboard/DashboardLayout.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור לוח בקרה / פריסת מסך.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DashboardLayoutProps, DashboardLayout.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
 } from 'lucide-react';
@@ -20,7 +27,11 @@ import DashboardHeader
 import DashboardSkeleton
   from './DashboardSkeleton';
 
+/**
+ * חוזה הנתונים DashboardLayoutProps: לוח בקרה / פריסת מסך / מאפייני הרכיב.
+ */
 interface DashboardLayoutProps {
+  // children — התוכן המקונן של הרכיב.
   children: (
     dashboard:
       NonNullable<
@@ -31,6 +42,10 @@ interface DashboardLayoutProps {
   ) => ReactNode;
 }
 
+/**
+ * פעולה DashboardLayout: לוח בקרה / פריסת מסך.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DashboardLayout({
   children,
 }: DashboardLayoutProps) {

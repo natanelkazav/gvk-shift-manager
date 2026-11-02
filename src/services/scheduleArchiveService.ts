@@ -1,20 +1,42 @@
+/**
+ * קובץ: src/services/scheduleArchiveService.ts
+ * מטרה: ניהול פעולות ארכוב ושליחת לוחות שיבוצים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: SendScheduleArchiveResponse, FunctionErrorResponse, blobToBase64, getFunctionErrorMessage, ScheduleArchiveService.
+ * - ריכוז פעולות העיבוד והחישוב בהתאם לפונקציות להלן.
+ */
 import {
   supabase,
 } from '../lib/supabase';
 
+/**
+ * חוזה הנתונים SendScheduleArchiveResponse: שיבוץ / ארכיון / תוצאת הפעולה.
+ */
 interface SendScheduleArchiveResponse {
   success: boolean;
+  // emailId — כתובת דוא״ל / מזהה.
   emailId: string | null;
+  // auditLogged — יומן שינויים.
   auditLogged: boolean;
 }
 
+/**
+ * חוזה הנתונים FunctionErrorResponse: שגיאה / תוצאת הפעולה.
+ */
 interface FunctionErrorResponse {
+  // error — שגיאה (אופציונלי).
   error?: string;
 }
 
+/**
+ * פעולה אסינכרונית blobToBase64: הנתון blobToBase64 בהקשר הפעולה.
+ * @param blob — הנתון blob בהקשר הפעולה.
+ * @returns Promise<string> — הפלט בהתאם לחתימה.
+ */
 async function blobToBase64(
   blob: Blob,
 ): Promise<string> {
+  // buffer — מאגר בינארי.
   const buffer =
     await blob
       .arrayBuffer();
@@ -57,6 +79,11 @@ async function blobToBase64(
   );
 }
 
+/**
+ * פעולה אסינכרונית getFunctionErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns Promise<string> — הפלט בהתאם לחתימה.
+ */
 async function getFunctionErrorMessage(
   error: unknown,
 ): Promise<string> {
@@ -80,12 +107,15 @@ async function getFunctionErrorMessage(
       context instanceof
         Response
     ) {
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // body — תוכן.
         const body =
           await context
             .json() as
             FunctionErrorResponse;
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר body.error.
         if (
           body.error
         ) {
@@ -97,6 +127,7 @@ async function getFunctionErrorMessage(
     }
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error && error.message .trim().
   if (
     error instanceof
       Error &&
@@ -109,13 +140,25 @@ async function getFunctionErrorMessage(
   return 'לא ניתן היה לשלוח את קובץ השיבוצים.';
 }
 
+/**
+ * איגוד פעולות שיבוץ / ארכיון / שירות במחלקה ScheduleArchiveService.
+ */
 class ScheduleArchiveService {
+  /**
+   * פעולה אסינכרונית sendScheduleFile: שליחת שיבוץ / קובץ.
+   * @param blob — הנתון blob בהקשר הפעולה.
+   * @param fileName — קובץ / שם.
+   * @param year — שנה.
+   * @param month — חודש.
+   * @returns Promise<SendScheduleArchiveResponse> — הפלט בהתאם לחתימה.
+   */
   async sendScheduleFile(
     blob: Blob,
     fileName: string,
     year: number,
     month: number,
   ): Promise<SendScheduleArchiveResponse> {
+    // עצירת הפעולה עם שגיאה כאשר blob.size === 0.
     if (
       blob.size ===
         0
@@ -129,6 +172,7 @@ class ScheduleArchiveService {
      * קובץ שיבוצים אמור להיות קטן משמעותית.
      * המגבלה מונעת שליחת payload חריג בטעות.
      */
+    // עצירת הפעולה עם שגיאה כאשר blob.size > 8 * 1024 * 1024.
     if (
       blob.size >
         8 *
@@ -140,11 +184,13 @@ class ScheduleArchiveService {
       );
     }
 
+    // fileBase64 — קובץ.
     const fileBase64 =
       await blobToBase64(
         blob,
       );
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -164,6 +210,7 @@ class ScheduleArchiveService {
           },
         );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (
       error
     ) {
@@ -174,6 +221,7 @@ class ScheduleArchiveService {
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data || data.success !== true.
     if (
       !data ||
       data.success !==
@@ -188,5 +236,6 @@ class ScheduleArchiveService {
   }
 }
 
+// scheduleArchiveService — שיבוץ / ארכיון / שירות.
 export const scheduleArchiveService =
   new ScheduleArchiveService();

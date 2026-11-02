@@ -1,9 +1,15 @@
+-- קובץ: supabase/migrations/20260828153000_normalize_dynamic_availability_config.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / אילוצים וזמינות / תצורה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_availability_shadow_workspace.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 6.1 compatibility fix.
 -- Early Phase-1 seed rows used a smaller availability_config shape such as
 -- {"enabled":true,"monthly_capacity":true}. Normalize every existing job type
 -- without overwriting values already configured by an administrator.
+-- עדכון רשומות ב־public.job_types בהתאם לקלט ולתנאים להלן.
 update public.job_types jt
 set availability_config = jsonb_build_object(
   'enabled', coalesce((jt.availability_config->>'enabled')::boolean, true),
@@ -37,6 +43,7 @@ set availability_config = jsonb_build_object(
 updated_at = now();
 
 -- Return a complete config even if a future/hand-written row is partially shaped.
+-- פונקציית מסד public.get_dynamic_availability_shadow_workspace: שליפה או חישוב של דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.get_dynamic_availability_shadow_workspace(
   requested_job_type_id uuid,
   requested_year integer,
@@ -44,18 +51,25 @@ create or replace function public.get_dynamic_availability_shadow_workspace(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
+  -- normalized_config — תצורה.
   normalized_config jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.vi.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.view','users.manage')) then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
 
@@ -67,6 +81,7 @@ begin
     'limits', coalesce(job.availability_config->'limits','{"maxNightsEnabled":false,"defaultMaxNights":null,"maxWeekendsEnabled":false,"defaultMaxWeekends":null,"maxHolidaysEnabled":false,"defaultMaxHolidays":null}'::jsonb)
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'materialized', period.id is not null,'mode','shadow','periodId',period.id,'jobTypeId',job.id,'jobTypeName',job.name,
     'availabilityConfig',normalized_config,
@@ -76,6 +91,7 @@ begin
 end;
 $function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_availability_shadow_workspace(uuid,integer,integer) to authenticated;
 
 commit;

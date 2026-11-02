@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/DashboardPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור לוח בקרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DashboardLocationState, DashboardPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   useEffect,
   useState,
@@ -35,13 +42,20 @@ import type { DynamicRuntimeContext }
 
 import '../styles/dashboard.css';
 
+/**
+ * חוזה הנתונים DashboardLocationState: לוח בקרה / מצב.
+ */
 interface DashboardLocationState {
   accessDenied?: boolean;
 
+  // attemptedPath — נתיב (אופציונלי).
   attemptedPath?:
     string;
 }
 
+/**
+ * פעולה DashboardPage: לוח בקרה.
+ */
 function DashboardPage() {
   const location =
     useLocation();
@@ -49,22 +63,28 @@ function DashboardPage() {
   const navigate =
     useNavigate();
 
+  // locationState — מצב.
   const locationState =
     location.state as
       | DashboardLocationState
       | null;
 
+  // מצב מקומי: dynamicContext — דינמי; setDynamicContext מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     dynamicContext,
     setDynamicContext,
   ] = useState<DynamicRuntimeContext | null>(null);
+  // מצב מקומי: dynamicFirstActive — דינמי / פעיל; setDynamicFirstActive מעדכנת אותו ומפעילה רינדור לפי React.
   const [dynamicFirstActive, setDynamicFirstActive] = useState(false);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     void Promise.all([dynamicRuntimeService.getMyRuntimeContext(), dynamicCutoverService.getState()])
       .then(([context, cutover]) => {
         if (!active) return;
+        // canUseDynamicManagement — דינמי.
         const canUseDynamicManagement =
           context.canManageDynamicScheduling ||
           context.managedRoles.length > 0;
@@ -80,6 +100,7 @@ function DashboardPage() {
     return () => { active = false; };
   }, []);
 
+  // מצב מקומי: accessDeniedMessage — הודעה; setAccessDeniedMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     accessDeniedMessage,
     setAccessDeniedMessage,
@@ -91,8 +112,10 @@ function DashboardPage() {
         : null,
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ location.pathname, locationState ?.accessDenied, navigate, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !locationState ?.accessDenied.
       if (
         !locationState
           ?.accessDenied
@@ -151,6 +174,7 @@ function DashboardPage() {
           // the application shell. Employees enter through an active Job Type
           // membership; Job Type managers can use the management dashboard
           // without also being employee members of a managed role.
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dynamicFirstActive && dynamicContext && ( dynamicContext.hasDynamicMemberships || dynamicContext.canManageDynamicScheduling || dynamicContex.
           if (
             dynamicFirstActive &&
             dynamicContext &&
@@ -167,6 +191,7 @@ function DashboardPage() {
             );
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dashboard.manager.
           if (
             dashboard.manager
           ) {
@@ -179,6 +204,7 @@ function DashboardPage() {
             );
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dashboard.dispatcher.
           if (
             dashboard.dispatcher
           ) {
@@ -191,6 +217,7 @@ function DashboardPage() {
             );
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dashboard.driver.
           if (
             dashboard.driver
           ) {
@@ -203,6 +230,7 @@ function DashboardPage() {
             );
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dashboard.morningDriver.
           if (
             dashboard.morningDriver
           ) {

@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/statistics/views/DispatcherAvailabilityInsights.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור מוקדנים / אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DispatcherAvailabilityInsightsProps, getDisplayName, formatPercent, DispatcherAvailabilityInsights.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
   CalendarCheck2,
@@ -19,11 +26,21 @@ import StatisticsBarChart
 import StatisticsPieChart
   from '../components/StatisticsPieChart';
 
+/**
+ * חוזה הנתונים DispatcherAvailabilityInsightsProps: מוקדנים / אילוצים וזמינות / מאפייני הרכיב.
+ */
 interface DispatcherAvailabilityInsightsProps {
+  // data — נתונים.
   data: StatisticsDashboardResponse;
+  // mode — מצב פעולה.
   mode: 'dashboard' | 'charts' | 'tables';
 }
 
+/**
+ * פעולה getDisplayName: שליפה או חישוב של שם תצוגה.
+ * @param row — שורה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDisplayName(
   row: DispatcherAvailabilityStatisticsRow,
 ): string {
@@ -34,28 +51,41 @@ function getDisplayName(
   );
 }
 
+/**
+ * פעולה formatPercent: עיצוב ערך לתצוגה עבור הנתון formatPercent בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatPercent(
   value: number,
 ): string {
   return `${Math.round(value * 10) / 10}%`;
 }
 
+/**
+ * פעולה DispatcherAvailabilityInsights: מוקדנים / אילוצים וזמינות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DispatcherAvailabilityInsights({
   data,
   mode,
 }: DispatcherAvailabilityInsightsProps) {
+  // summary — סיכום.
   const summary =
     data.dispatcherAvailabilitySummary;
 
+  // rows — שורות.
   const rows =
     data.dispatcherAvailabilityStatistics;
 
+  // nonSubmitters — פונקציית טיפול בהגשה.
   const nonSubmitters =
     rows.filter(
       (row) =>
         row.noSubmissionPeriods > 0,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר summary.periodCount === 0.
   if (summary.periodCount === 0) {
     return (
       <section className="statistics-section">
@@ -77,6 +107,7 @@ function DispatcherAvailabilityInsights({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר mode === 'charts'.
   if (mode === 'charts') {
     return (
       <>
@@ -138,6 +169,7 @@ function DispatcherAvailabilityInsights({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר mode === 'tables'.
   if (mode === 'tables') {
     return (
       <section className="statistics-section">

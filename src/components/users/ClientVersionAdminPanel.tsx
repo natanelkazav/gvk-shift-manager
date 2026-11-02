@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/ClientVersionAdminPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור לקוח / גרסה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ClientVersionAdminPanelProps, TargetMode, formatSeenAt, statusLabel, ClientVersionAdminPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { ChevronDown, MonitorSmartphone, RefreshCw, Send } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { APP_BUILD_ID, APP_VERSION, getAppBuildLabel } from '../../config/appBuild';
@@ -6,19 +13,37 @@ import { NotificationPriority, NotificationType } from '../../features/notificat
 import { clientVersionService, type ClientVersionOverview, type ClientVersionUserRow } from '../../services/clientVersionService';
 import { Button } from '../ui';
 
+/**
+ * חוזה הנתונים ClientVersionAdminPanelProps: לקוח / גרסה / מאפייני הרכיב.
+ */
 interface ClientVersionAdminPanelProps {
+  // canSendUpdateNotifications — התראות.
   canSendUpdateNotifications: boolean;
 }
 
+/**
+ * טיפוס TargetMode: יעד / מצב פעולה.
+ */
 type TargetMode = 'outdated' | 'all' | `job:${string}`;
 
+/**
+ * פעולה formatSeenAt: עיצוב ערך לתצוגה עבור הנתון formatSeenAt בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatSeenAt(value: string | null): string {
   if (!value) return 'לא דווח';
+  // date — תאריך.
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'לא ידוע';
   return new Intl.DateTimeFormat('he-IL', { dateStyle: 'short', timeStyle: 'short' }).format(date);
 }
 
+/**
+ * פעולה statusLabel: סטטוס / תווית.
+ * @param row — שורה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function statusLabel(row: ClientVersionUserRow): string {
   switch (row.status) {
     case 'current': return 'מעודכן';
@@ -28,18 +53,34 @@ function statusLabel(row: ClientVersionUserRow): string {
   }
 }
 
+/**
+ * פעולה ClientVersionAdminPanel: לקוח / גרסה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 export default function ClientVersionAdminPanel({ canSendUpdateNotifications }: ClientVersionAdminPanelProps) {
+  // מצב מקומי: isOpen — האם המצב פתוח; setIsOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [isOpen, setIsOpen] = useState(false);
+  // מצב מקומי: overview — הנתון overview בהקשר הפעולה; setOverview מעדכנת אותו ומפעילה רינדור לפי React.
   const [overview, setOverview] = useState<ClientVersionOverview | null>(null);
+  // מצב מקומי: isLoading — האם טעינה מתבצעת; setIsLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [isLoading, setIsLoading] = useState(false);
+  // מצב מקומי: isSending — הנתון isSending בהקשר הפעולה; setIsSending מעדכנת אותו ומפעילה רינדור לפי React.
   const [isSending, setIsSending] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: success — הנתון success בהקשר הפעולה; setSuccess מעדכנת אותו ומפעילה רינדור לפי React.
   const [success, setSuccess] = useState<string | null>(null);
+  // מצב מקומי: targetMode — יעד / מצב פעולה; setTargetMode מעדכנת אותו ומפעילה רינדור לפי React.
   const [targetMode, setTargetMode] = useState<TargetMode>('outdated');
 
+  /**
+   * פעולה אסינכרונית loadOverview: טעינת הנתון loadOverview בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const loadOverview = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       setOverview(await clientVersionService.getAdminOverview());
     } catch (loadError) {
@@ -49,27 +90,38 @@ export default function ClientVersionAdminPanel({ canSendUpdateNotifications }: 
     }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [isOpen, overview, isLoading].
   useEffect(() => {
     if (isOpen && !overview && !isLoading) void loadOverview();
   }, [isOpen, overview, isLoading]);
 
+  // ערך מחושב jobTypes — סוגי תפקידים; נשמר בין רינדורים עד שינוי התלויות.
   const jobTypes = useMemo(() => {
+    // map — מפת התאמה; מיפוי לחיפוש לפי מפתח.
     const map = new Map<string, string>();
     overview?.users.forEach((user) => user.jobTypes.forEach((jobType) => map.set(jobType.id, jobType.name)));
     return [...map.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, 'he'));
   }, [overview]);
 
+  // ערך מחושב targetUsers — יעד / משתמשים; נשמר בין רינדורים עד שינוי התלויות.
   const targetUsers = useMemo(() => {
+    // users — משתמשים.
     const users = overview?.users.filter((user) => user.isActive) ?? [];
     if (targetMode === 'all') return users;
     if (targetMode === 'outdated') return users.filter((user) => user.status === 'outdated' || user.status === 'mixed');
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר targetMode.startsWith('job:').
     if (targetMode.startsWith('job:')) {
+      // jobTypeId — מזהה סוג התפקיד.
       const jobTypeId = targetMode.slice(4);
       return users.filter((user) => user.jobTypes.some((jobType) => jobType.id === jobTypeId));
     }
     return [];
   }, [overview, targetMode]);
 
+  /**
+   * פעולה אסינכרונית sendUpdateRequest: שליחת נתוני הבקשה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const sendUpdateRequest = async (): Promise<void> => {
     if (!canSendUpdateNotifications || targetUsers.length === 0 || isSending) return;
     const confirmed = window.confirm(`לשלוח בקשת עדכון מערכת ל-${targetUsers.length} משתמשים?`);
@@ -78,7 +130,9 @@ export default function ClientVersionAdminPanel({ canSendUpdateNotifications }: 
     setIsSending(true);
     setError(null);
     setSuccess(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await notificationService.createNotification({
         userIds: targetUsers.map((user) => user.userId),
         type: NotificationType.SYSTEM,

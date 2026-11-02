@@ -1,8 +1,14 @@
+-- קובץ: supabase/migrations/20260828144500_dynamic_availability_workspace.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / אילוצים וזמינות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_availability_shadow_workspace, public.save_dynamic_availability_shadow_submission, public.compare_dynamic_availability_shadow_to_legacy.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 6: end-to-end Dynamic Availability workspace + legacy structural comparison.
 -- SHADOW ONLY. Existing production availability/schedule flows are untouched.
 
+-- פונקציית מסד public.get_dynamic_availability_shadow_workspace: שליפה או חישוב של דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.get_dynamic_availability_shadow_workspace(
   requested_job_type_id uuid,
   requested_year integer,
@@ -10,20 +16,27 @@ create or replace function public.get_dynamic_availability_shadow_workspace(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.vi.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.view','users.manage')) then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'materialized', period.id is not null,
     'mode','shadow',
@@ -57,6 +70,7 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.save_dynamic_availability_shadow_submission: שמירת דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.save_dynamic_availability_shadow_submission(
   requested_job_type_id uuid,
   requested_year integer,
@@ -66,26 +80,37 @@ create or replace function public.save_dynamic_availability_shadow_submission(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
+  -- submission_id — מזהה.
   submission_id uuid;
+  -- entry_item — רשומה / פריט.
   entry_item jsonb;
   allowed_statuses jsonb;
+  -- requested_status — סטטוס.
   requested_status text;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage') then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.job_type_memberships m where m.job_type_id=job.id and m.user_id=requested_user_id) then .
   if not exists(select 1 from public.job_type_memberships m where m.job_type_id=job.id and m.user_id=requested_user_id) then raise exception 'user is not a member of this job type'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי period.id is null then raise exception 'shadow period not materialized'; end if;.
   if period.id is null then raise exception 'shadow period not materialized'; end if;
 
+  -- הוספת רשומות ל־public.dynamic_availability_submissions בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_availability_submissions(period_id,user_id,status,min_shifts,target_shifts,max_shifts,max_nights,max_weekends,max_holidays,note,submitted_at)
   values(period.id,requested_user_id,coalesce(requested_payload->>'submissionStatus','draft'),
     nullif(requested_payload->>'minimum','')::integer,nullif(requested_payload->>'target','')::integer,nullif(requested_payload->>'maximum','')::integer,
@@ -98,19 +123,25 @@ begin
   returning id into submission_id;
 
   allowed_statuses:=coalesce(job.availability_config->'statuses','["available","unavailable"]'::jsonb);
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for entry_item in select value from jsonb_array_elements(coalesce(requested_payload->'entries','[]'::jsonb)) loop
     requested_status:=entry_item->>'status';
+    -- הסתעפות לפי התנאי not (allowed_statuses ? requested_status) then raise exception 'availability status % is not enabled for this job type',.
     if not (allowed_statuses ? requested_status) then raise exception 'availability status % is not enabled for this job type',requested_status; end if;
+    -- הסתעפות לפי התנאי not exists(select 1 from public.dynamic_availability_slots s where s.id=(entry_item->>'slotId')::uuid and s.period_id=pe.
     if not exists(select 1 from public.dynamic_availability_slots s where s.id=(entry_item->>'slotId')::uuid and s.period_id=period.id) then raise exception 'slot does not belong to period'; end if;
+    -- הוספת רשומות ל־public.dynamic_availability_entries בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_availability_entries(submission_id,slot_id,availability_status,note)
     values(submission_id,(entry_item->>'slotId')::uuid,requested_status,nullif(trim(coalesce(entry_item->>'note','')),''))
     on conflict(submission_id,slot_id) do update set availability_status=excluded.availability_status,note=excluded.note,updated_at=now();
   end loop;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('saved',true,'mode','shadow','submissionId',submission_id);
 end;
 $function$;
 
+-- פונקציית מסד public.compare_dynamic_availability_shadow_to_legacy: השוואת דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.compare_dynamic_availability_shadow_to_legacy(
   requested_job_type_id uuid,
   requested_year integer,
@@ -118,6 +149,7 @@ create or replace function public.compare_dynamic_availability_shadow_to_legacy(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -126,16 +158,20 @@ declare
   dynamic_slots integer:=0; dynamic_members integer:=0; dynamic_entries integer:=0; legacy_slots integer:=0; legacy_entries integer:=0; legacy_members integer:=0;
   supported boolean:=true; note text:=null;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.vi.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.view','users.manage')) then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי period.id is not null.
   if period.id is not null then
     select count(*) into dynamic_slots from public.dynamic_availability_slots where period_id=period.id;
     select count(*) into dynamic_members from public.job_type_memberships where job_type_id=job.id;
     select count(*) into dynamic_entries from public.dynamic_availability_entries e join public.dynamic_availability_submissions s on s.id=e.submission_id where s.period_id=period.id;
   end if;
 
+  -- הסתעפות לפי התנאי job.legacy_role='dispatcher'.
   if job.legacy_role='dispatcher' then
     select count(*) into legacy_slots from public.schedule_shifts ss join public.schedule_periods sp on sp.id=ss.period_id where sp.year=requested_year and sp.month=requested_month;
     select count(distinct da.user_id),count(*) into legacy_members,legacy_entries from public.dispatcher_availability da join public.schedule_shifts ss on ss.id=da.shift_id join public.schedule_periods sp on sp.id=ss.period_id where sp.year=requested_year and sp.month=requested_month;
@@ -144,6 +180,7 @@ begin
     note:='השוואה אוטומטית מלאה ל־Legacy עבור סוג תפקיד זה תתווסף בזמן הסבת ה־flow הישן. נתוני ה־Dynamic עדיין מוצגים במלואם.';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('mode','shadow','supported',supported,'legacyRole',job.legacy_role,'note',note,
     'dynamic',jsonb_build_object('slots',dynamic_slots,'members',dynamic_members,'entries',dynamic_entries),
     'legacy',jsonb_build_object('slots',legacy_slots,'members',legacy_members,'entries',legacy_entries),
@@ -151,13 +188,20 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_availability_shadow_workspace(uuid,integer,integer) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.save_dynamic_availability_shadow_submission(uuid,integer,integer,uuid,jsonb) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.compare_dynamic_availability_shadow_to_legacy(uuid,integer,integer) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_availability_shadow_workspace(uuid,integer,integer) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.save_dynamic_availability_shadow_submission(uuid,integer,integer,uuid,jsonb) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.compare_dynamic_availability_shadow_to_legacy(uuid,integer,integer) to authenticated;
 
+-- עדכון רשומות ב־public.scheduling_feature_flags בהתאם לקלט ולתנאים להלן.
 update public.scheduling_feature_flags
 set config=config || jsonb_build_object('phase','6','mode','shadow','availability_ui','shadow_admin_workspace','legacy_comparison','dispatcher_structural'),updated_at=now()
 where key='dynamic_job_types';

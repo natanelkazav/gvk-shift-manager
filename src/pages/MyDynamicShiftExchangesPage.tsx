@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/MyDynamicShiftExchangesPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור החלפת משמרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: formatDate, formatTime, shiftLabel, monthKey, monthLabel, requestShiftLabel, MyDynamicShiftExchangesPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { ArrowLeft, ArrowLeftRight, Check, LoaderCircle, Plus, RefreshCw, Repeat2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
@@ -13,6 +20,7 @@ import type {
 import { dynamicShiftDisplayName } from '../utils/dynamicShiftDisplayName';
 import '../styles/dynamicShiftExchanges.css';
 
+// EMPTY_OPTIONS — אפשרויות בחירה.
 const EMPTY_OPTIONS: DynamicShiftExchangeOptions = {
   hasDynamicShiftExchange: false,
   publications: [],
@@ -21,6 +29,7 @@ const EMPTY_OPTIONS: DynamicShiftExchangeOptions = {
   counterpartyShifts: [],
 };
 
+// STATUS_LABELS — סטטוס.
 const STATUS_LABELS: Record<DynamicShiftExchangeStatus, string> = {
   pending_counterparty: 'ממתין לעובד השני',
   pending_manager: 'ממתין לאישור מנהל',
@@ -31,29 +40,63 @@ const STATUS_LABELS: Record<DynamicShiftExchangeStatus, string> = {
   expired: 'פג תוקף',
 };
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(value: string | null): string {
   if (!value) return '—';
   const [year, month, day] = value.slice(0, 10).split('-');
   return `${day}/${month}/${year}`;
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(value: string | null): string {
   return value ? value.slice(0, 5) : '—';
 }
 
+/**
+ * פעולה shiftLabel: משמרת / תווית.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function shiftLabel(shift: DynamicShiftExchangeShiftOption): string {
   return `${formatDate(shift.shiftDate)} · ${dynamicShiftDisplayName(shift.shiftName, 'משמרת')} · ${formatTime(shift.startTime)}–${formatTime(shift.endTime)}`;
 }
 
+/**
+ * פעולה monthKey: חודש / מפתח.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function monthKey(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
+/**
+ * פעולה monthLabel: חודש / תווית.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function monthLabel(year: number, month: number): string {
   return new Intl.DateTimeFormat('he-IL', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1));
 }
 
+/**
+ * פעולה requestShiftLabel: נתוני הבקשה / משמרת / תווית.
+ * @param request — נתוני הבקשה.
+ * @param counterparty — הנתון counterparty בהקשר הפעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function requestShiftLabel(request: DynamicShiftExchangeRequest, counterparty = false): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר counterparty.
   if (counterparty) {
     if (!request.counterpartyAssignmentId) return 'מקבל/ת את המשמרת';
     return `${formatDate(request.counterpartyShiftDate)} · ${request.counterpartyShiftName ?? ''} · ${formatTime(request.counterpartyStartTime)}–${formatTime(request.counterpartyEndTime)}`;
@@ -61,26 +104,46 @@ function requestShiftLabel(request: DynamicShiftExchangeRequest, counterparty = 
   return `${formatDate(request.requesterShiftDate)} · ${request.requesterShiftName} · ${formatTime(request.requesterStartTime)}–${formatTime(request.requesterEndTime)}`;
 }
 
+/**
+ * פעולה MyDynamicShiftExchangesPage: החלפת משמרות.
+ */
 function MyDynamicShiftExchangesPage() {
   const { user, hasPermission } = useAuth();
+  // מצב מקומי: options — אפשרויות בחירה; setOptions מעדכנת אותו ומפעילה רינדור לפי React.
   const [options, setOptions] = useState<DynamicShiftExchangeOptions>(EMPTY_OPTIONS);
+  // מצב מקומי: requests — הנתון requests בהקשר הפעולה; setRequests מעדכנת אותו ומפעילה רינדור לפי React.
   const [requests, setRequests] = useState<DynamicShiftExchangeRequest[]>([]);
+  // מצב מקומי: loading — טעינה; setLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [loading, setLoading] = useState(true);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: success — הנתון success בהקשר הפעולה; setSuccess מעדכנת אותו ומפעילה רינדור לפי React.
   const [success, setSuccess] = useState<string | null>(null);
+  // מצב מקומי: createOpen — הנתון createOpen בהקשר הפעולה; setCreateOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [createOpen, setCreateOpen] = useState(false);
+  // מצב מקומי: selectedMonth — נבחר / חודש; setSelectedMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedMonth, setSelectedMonth] = useState('');
+  // מצב מקומי: swapType — הנתון swapType בהקשר הפעולה; setSwapType מעדכנת אותו ומפעילה רינדור לפי React.
   const [swapType, setSwapType] = useState<DynamicShiftExchangeType>('one_way');
+  // מצב מקומי: requesterAssignmentId — הקצאה / מזהה; setRequesterAssignmentId מעדכנת אותו ומפעילה רינדור לפי React.
   const [requesterAssignmentId, setRequesterAssignmentId] = useState('');
+  // מצב מקומי: counterpartyUserId — מזהה משתמש; setCounterpartyUserId מעדכנת אותו ומפעילה רינדור לפי React.
   const [counterpartyUserId, setCounterpartyUserId] = useState('');
+  // מצב מקומי: counterpartyAssignmentId — הקצאה / מזהה; setCounterpartyAssignmentId מעדכנת אותו ומפעילה רינדור לפי React.
   const [counterpartyAssignmentId, setCounterpartyAssignmentId] = useState('');
+  // מצב מקומי: busyId — מזהה; setBusyId מעדכנת אותו ומפעילה רינדור לפי React.
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  // canApprove — הנתון canApprove בהקשר הפעולה.
   const canApprove = hasPermission('shift_swaps.approve');
 
+  /**
+   * פעולה אסינכרונית loadData: טעינת נתונים.
+   */
   const loadData = async () => {
     setLoading(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       const [nextOptions, nextRequests] = await Promise.all([
         dynamicSchedulingService.getMyDynamicShiftExchangeOptions(),
@@ -95,18 +158,23 @@ function MyDynamicShiftExchangesPage() {
     }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => { void loadData(); }, []);
 
+  // ערך מחושב availableMonths — חודשים; נשמר בין רינדורים עד שינוי התלויות.
   const availableMonths = useMemo(() => {
     const unique = new Map<string, { key: string; year: number; month: number }>();
     options.publications.forEach((publication) => {
+      // key — מפתח.
       const key = monthKey(publication.year, publication.month);
       if (!unique.has(key)) unique.set(key, { key, year: publication.year, month: publication.month });
     });
     return Array.from(unique.values()).sort((a, b) => a.key.localeCompare(b.key));
   }, [options.publications]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [availableMonths, selectedMonth].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !availableMonths.length.
     if (!availableMonths.length) {
       setSelectedMonth('');
       return;
@@ -116,11 +184,14 @@ function MyDynamicShiftExchangesPage() {
     }
   }, [availableMonths, selectedMonth]);
 
+  // ערך מחושב visibleMyShifts — משמרות; נשמר בין רינדורים עד שינוי התלויות.
   const visibleMyShifts = useMemo(() => options.myShifts.filter((shift) => (
     !selectedMonth || monthKey(shift.year, shift.month) === selectedMonth
   )), [options.myShifts, selectedMonth]);
 
+  // selectedRequesterShift — נבחר / משמרת.
   const selectedRequesterShift = visibleMyShifts.find((shift) => shift.id === requesterAssignmentId) ?? null;
+  // ערך מחושב members — חברי התפקיד; נשמר בין רינדורים עד שינוי התלויות.
   const members = useMemo(() => {
     if (!selectedRequesterShift) return [];
     return options.members
@@ -128,6 +199,7 @@ function MyDynamicShiftExchangesPage() {
       .sort((a, b) => a.displayName.localeCompare(b.displayName, 'he'));
   }, [options.members, selectedRequesterShift]);
 
+  // ערך מחושב counterpartyShifts — משמרות; נשמר בין רינדורים עד שינוי התלויות.
   const counterpartyShifts = useMemo(() => {
     if (!selectedRequesterShift || !counterpartyUserId) return [];
     return options.counterpartyShifts.filter((shift) =>
@@ -140,21 +212,35 @@ function MyDynamicShiftExchangesPage() {
   const awaitingManager = canApprove ? requests.filter((request) => request.status === 'pending_manager') : [];
   const completed = requests.filter((request) => !['pending_counterparty', 'pending_manager'].includes(request.status));
 
+  /**
+   * פעולה אסינכרונית runAction: הנתון runAction בהקשר הפעולה.
+   * @param id — מזהה.
+   * @param action — הנתון action בהקשר הפעולה.
+   * @param message — הודעה.
+   */
   const runAction = async (id: string, action: () => Promise<void>, message: string) => {
     setBusyId(id); setError(null); setSuccess(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try { await action(); setSuccess(message); await loadData(); }
     catch (caught) { setError(caught instanceof Error ? caught.message : 'הפעולה נכשלה.'); }
     finally { setBusyId(null); }
   };
 
+  /**
+   * פעולה אסינכרונית respondToRequest: נתוני הבקשה.
+   * @param requestId — מזהה הבקשה.
+   * @param approve — הנתון approve בהקשר הפעולה.
+   */
   const respondToRequest = async (requestId: string, approve: boolean) => {
     setBusyId(requestId);
     setError(null);
     setSuccess(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.respondToDynamicShiftExchangeRequest(requestId, approve);
       const updatedRequests = await dynamicSchedulingService.getDynamicShiftExchangeRequests();
       setRequests(updatedRequests);
+      // updatedRequest — נתוני הבקשה.
       const updatedRequest = updatedRequests.find((request) => request.id === requestId);
       if (!updatedRequest) {
         setSuccess('התגובה נקלטה. לא ניתן לאמת כרגע את מצב הבקשה; ניתן לרענן את הרשימה.');
@@ -169,6 +255,7 @@ function MyDynamicShiftExchangesPage() {
         setSuccess('התגובה נקלטה. מצב הבקשה: ' + (STATUS_LABELS[updatedRequest.status] ?? updatedRequest.status));
       }
       // Reload options as well: approved exchanges may change which shifts can be offered.
+      // nextOptions — אפשרויות בחירה.
       const nextOptions = await dynamicSchedulingService.getMyDynamicShiftExchangeOptions();
       setOptions(nextOptions);
     } catch (caught) {
@@ -178,10 +265,16 @@ function MyDynamicShiftExchangesPage() {
     }
   };
 
+  /**
+   * פעולה אסינכרונית createRequest: יצירת נתוני הבקשה.
+   */
   const createRequest = async () => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !requesterAssignmentId || !counterpartyUserId.
     if (!requesterAssignmentId || !counterpartyUserId) { setError('יש לבחור משמרת ועובד מחליף.'); return; }
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר swapType === 'two_way' && !counterpartyAssignmentId.
     if (swapType === 'two_way' && !counterpartyAssignmentId) { setError('בהחלפה דו-כיוונית יש לבחור גם משמרת נגדית.'); return; }
     setBusyId('create'); setError(null); setSuccess(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.createDynamicShiftExchangeRequest({
         swapType,
@@ -196,6 +289,11 @@ function MyDynamicShiftExchangesPage() {
     finally { setBusyId(null); }
   };
 
+  /**
+   * פעולה renderRequest: בניית תצוגה עבור נתוני הבקשה.
+   * @param request — נתוני הבקשה.
+   * @param actions — הנתון actions בהקשר הפעולה.
+   */
   const renderRequest = (request: DynamicShiftExchangeRequest, actions?: React.ReactNode) => (
     <article className="dynamic-exchange-card" key={request.id}>
       <div className="dynamic-exchange-card-head">

@@ -1,16 +1,25 @@
+-- קובץ: supabase/migrations/20260912113000_phase9_1_3_published_schedule_unassigned_active_members.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור פורסם / שיבוץ / פעיל / חברי התפקיד.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_published_schedule_editor, public.set_dynamic_published_schedule_assignment.
+-- - מבני טבלאות: public.dynamic_schedule_published_unassigned.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Preserve the rotation/original assignee when a published position is intentionally
 -- left empty after publication. This keeps the immutable rotation truth available
 -- while user_id represents only the worker who actually performs the shift.
+-- עדכון מבנה או הגדרות הטבלה public.dynamic_schedule_published_unassigned.
 alter table public.dynamic_schedule_published_unassigned
   add column if not exists original_user_id uuid references public.profiles(id) on delete set null;
 
+-- פונקציית מסד public.get_dynamic_published_schedule_editor: שליפה או חישוב של דינמי / פורסם / שיבוץ.
 create or replace function public.get_dynamic_published_schedule_editor(
   requested_publication_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -18,14 +27,19 @@ declare
   v_actor uuid := auth.uid();
   v_publication public.dynamic_schedule_publications%rowtype;
   v_job public.job_types%rowtype;
+  -- v_current_month — חודש.
   v_current_month date := date_trunc('month', (now() at time zone 'Asia/Jerusalem')::date)::date;
+  -- v_publication_month — חודש.
   v_publication_month date;
   v_editable boolean := false;
   v_reason text := null;
+  -- v_members — חברי התפקיד.
   v_members jsonb := '[]'::jsonb;
   v_slots jsonb := '[]'::jsonb;
 begin
+  -- הסתעפות לפי התנאי v_actor is null then raise exception 'not authenticated'; end if;.
   if v_actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.user_permissions up
     where up.user_id=v_actor and up.permission_key='users.manage'
@@ -34,12 +48,15 @@ begin
   select * into v_publication
   from public.dynamic_schedule_publications
   where id=requested_publication_id;
+  -- הסתעפות לפי התנאי v_publication.id is null then raise exception 'publication not found'; end if;.
   if v_publication.id is null then raise exception 'publication not found'; end if;
 
   select * into v_job from public.job_types where id=v_publication.job_type_id;
+  -- הסתעפות לפי התנאי v_job.id is null then raise exception 'job type not found'; end if;.
   if v_job.id is null then raise exception 'job type not found'; end if;
 
   v_publication_month := make_date(v_publication.year,v_publication.month,1);
+  -- הסתעפות לפי התנאי v_publication.status <> 'published'.
   if v_publication.status <> 'published' then
     v_reason := 'לוח זה אינו פתוח לעריכה משום שהוא בארכיון.';
   elsif v_publication_month = v_current_month
@@ -96,6 +113,7 @@ begin
     on pu.publication_id=v_publication.id and pu.slot_id=sl.id
   where sl.period_id=v_publication.availability_period_id;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'publicationId',v_publication.id,
     'jobTypeId',v_job.id,
@@ -110,6 +128,7 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.set_dynamic_published_schedule_assignment: קביעת קבוצה ייחודית / דינמי / פורסם / שיבוץ.
 create or replace function public.set_dynamic_published_schedule_assignment(
   requested_publication_id uuid,
   requested_slot_id uuid,
@@ -119,6 +138,7 @@ create or replace function public.set_dynamic_published_schedule_assignment(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -126,16 +146,23 @@ declare
   v_actor uuid := auth.uid();
   v_publication public.dynamic_schedule_publications%rowtype;
   v_slot public.dynamic_availability_slots%rowtype;
+  -- v_assignment — הקצאה.
   v_assignment public.dynamic_schedule_published_assignments%rowtype;
   v_unassigned public.dynamic_schedule_published_unassigned%rowtype;
+  -- v_current_month — חודש.
   v_current_month date := date_trunc('month', (now() at time zone 'Asia/Jerusalem')::date)::date;
+  -- v_publication_month — חודש.
   v_publication_month date;
   v_required_assigned integer := 0;
   v_missing integer := 0;
+  -- v_original_user_id — מזהה משתמש.
   v_original_user_id uuid;
+  -- v_new_assignment_id — הקצאה / מזהה.
   v_new_assignment_id uuid;
 begin
+  -- הסתעפות לפי התנאי v_actor is null then raise exception 'not authenticated'; end if;.
   if v_actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.user_permissions up
     where up.user_id=v_actor and up.permission_key='users.manage'
@@ -145,19 +172,25 @@ begin
   from public.dynamic_schedule_publications
   where id=requested_publication_id
   for update;
+  -- הסתעפות לפי התנאי v_publication.id is null then raise exception 'publication not found'; end if;.
   if v_publication.id is null then raise exception 'publication not found'; end if;
+  -- הסתעפות לפי התנאי v_publication.status <> 'published' then raise exception 'published schedule is not editable'; end if;.
   if v_publication.status <> 'published' then raise exception 'published schedule is not editable'; end if;
 
   v_publication_month := make_date(v_publication.year,v_publication.month,1);
+  -- הסתעפות לפי התנאי v_publication_month not in (v_current_month,(v_current_month+interval '1 month')::date).
   if v_publication_month not in (v_current_month,(v_current_month+interval '1 month')::date) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'only current month or next published month can be edited';
   end if;
 
   select * into v_slot
   from public.dynamic_availability_slots
   where id=requested_slot_id and period_id=v_publication.availability_period_id;
+  -- הסתעפות לפי התנאי v_slot.id is null then raise exception 'slot not found in this publication'; end if;.
   if v_slot.id is null then raise exception 'slot not found in this publication'; end if;
 
+  -- הסתעפות לפי התנאי requested_user_id is not null and not exists (.
   if requested_user_id is not null and not exists (
     select 1
     from public.job_type_memberships m
@@ -166,9 +199,11 @@ begin
       and m.user_id=requested_user_id
       and p.is_active=true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'requested user is not an active member of this role';
   end if;
 
+  -- הסתעפות לפי התנאי requested_assignment_id is not null.
   if requested_assignment_id is not null then
     select * into v_assignment
     from public.dynamic_schedule_published_assignments
@@ -176,14 +211,18 @@ begin
       and publication_id=v_publication.id
       and slot_id=v_slot.id
     for update;
+    -- הסתעפות לפי התנאי v_assignment.id is null then raise exception 'assignment not found'; end if;.
     if v_assignment.id is null then raise exception 'assignment not found'; end if;
 
+    -- הסתעפות לפי התנאי requested_user_id is null.
     if requested_user_id is null then
       v_original_user_id := coalesce(v_assignment.original_user_id,v_assignment.engine_user_id,v_assignment.user_id);
 
+      -- מחיקת הרשומות שנבחרו מתוך public.dynamic_schedule_published_assignments בהתאם לקלט ולתנאים להלן.
       delete from public.dynamic_schedule_published_assignments
       where id=v_assignment.id;
 
+      -- הסתעפות לפי התנאי v_assignment.assignment_tier='required'.
       if v_assignment.assignment_tier='required' then
         select count(*)::integer into v_required_assigned
         from public.dynamic_schedule_published_assignments a
@@ -192,7 +231,9 @@ begin
           and a.assignment_tier='required';
 
         v_missing := greatest(v_slot.min_workers-v_required_assigned,0);
+        -- הסתעפות לפי התנאי v_missing>0.
         if v_missing>0 then
+          -- הוספת רשומות ל־public.dynamic_schedule_published_unassigned בהתאם לקלט ולתנאים להלן.
           insert into public.dynamic_schedule_published_unassigned(
             publication_id,slot_id,shift_date,shift_code,shift_name,
             intentionally_unassigned_count,note,original_user_id
@@ -206,11 +247,13 @@ begin
             note=excluded.note,
             original_user_id=coalesce(public.dynamic_schedule_published_unassigned.original_user_id,excluded.original_user_id);
         else
+          -- מחיקת הרשומות שנבחרו מתוך public.dynamic_schedule_published_unassigned בהתאם לקלט ולתנאים להלן.
           delete from public.dynamic_schedule_published_unassigned
           where publication_id=v_publication.id and slot_id=v_slot.id;
         end if;
       end if;
 
+      -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
       insert into public.audit_logs(action,actor_user_id,entity_type,entity_id,summary,old_values,new_values,metadata)
       values(
         'system_event',v_actor,'dynamic_schedule_publication',v_publication.id,
@@ -220,20 +263,26 @@ begin
         jsonb_build_object('job_type_id',v_publication.job_type_id,'slot_id',v_slot.id,'shift_date',v_slot.shift_date,'shift_code',v_slot.shift_code,'reason',nullif(trim(coalesce(requested_reason,'')),''))
       );
 
+      -- עדכון רשומות ב־public.dynamic_schedule_publications בהתאם לקלט ולתנאים להלן.
       update public.dynamic_schedule_publications set updated_at=now() where id=v_publication.id;
+      -- הרכבת תוצאת הפעולה והחזרתה לקורא.
       return jsonb_build_object('saved',true,'action','unassigned','publicationId',v_publication.id,'slotId',v_slot.id);
     end if;
 
+    -- הסתעפות לפי התנאי v_assignment.user_id=requested_user_id.
     if v_assignment.user_id=requested_user_id then
+      -- הרכבת תוצאת הפעולה והחזרתה לקורא.
       return jsonb_build_object('saved',true,'changed',false,'assignmentId',v_assignment.id);
     end if;
 
+    -- הסתעפות לפי התנאי exists (.
     if exists (
       select 1 from public.dynamic_schedule_published_assignments a
       where a.publication_id=v_publication.id and a.slot_id=v_slot.id
         and a.user_id=requested_user_id and a.id<>v_assignment.id
     ) then raise exception 'requested user is already assigned to this shift'; end if;
 
+    -- עדכון רשומות ב־public.dynamic_schedule_published_assignments בהתאם לקלט ולתנאים להלן.
     update public.dynamic_schedule_published_assignments
     set user_id=requested_user_id,
         manager_edited=true,
@@ -242,6 +291,7 @@ begin
         user_edited_at=null
     where id=v_assignment.id;
 
+    -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
     insert into public.audit_logs(action,actor_user_id,entity_type,entity_id,summary,old_values,new_values,metadata)
     values(
       'system_event',v_actor,'dynamic_schedule_publication',v_publication.id,
@@ -251,25 +301,32 @@ begin
       jsonb_build_object('job_type_id',v_publication.job_type_id,'slot_id',v_slot.id,'shift_date',v_slot.shift_date,'shift_code',v_slot.shift_code,'reason',nullif(trim(coalesce(requested_reason,'')),''))
     );
 
+    -- עדכון רשומות ב־public.dynamic_schedule_publications בהתאם לקלט ולתנאים להלן.
     update public.dynamic_schedule_publications set updated_at=now() where id=v_publication.id;
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object('saved',true,'action','reassigned','assignmentId',v_assignment.id,'oldUserId',v_assignment.user_id,'newUserId',requested_user_id);
   end if;
 
+  -- הסתעפות לפי התנאי requested_user_id is null then raise exception 'requested user is required when filling an unassigned position'; end if;.
   if requested_user_id is null then raise exception 'requested user is required when filling an unassigned position'; end if;
 
   select * into v_unassigned
   from public.dynamic_schedule_published_unassigned
   where publication_id=v_publication.id and slot_id=v_slot.id
   for update;
+  -- הסתעפות לפי התנאי v_unassigned.publication_id is null or v_unassigned.intentionally_unassigned_count<1.
   if v_unassigned.publication_id is null or v_unassigned.intentionally_unassigned_count<1 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'there is no intentionally unassigned position in this slot';
   end if;
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1 from public.dynamic_schedule_published_assignments a
     where a.publication_id=v_publication.id and a.slot_id=v_slot.id and a.user_id=requested_user_id
   ) then raise exception 'requested user is already assigned to this shift'; end if;
 
+  -- הוספת רשומות ל־public.dynamic_schedule_published_assignments בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_schedule_published_assignments(
     publication_id,source_assignment_id,slot_id,shift_date,shift_code,shift_name,start_time,end_time,
     user_id,assignment_tier,score,reasons,engine_user_id,manager_edited,manager_override_note,original_user_id
@@ -279,16 +336,20 @@ begin
     v_unassigned.original_user_id,true,nullif(trim(coalesce(requested_reason,'')),''),v_unassigned.original_user_id
   ) returning id into v_new_assignment_id;
 
+  -- הסתעפות לפי התנאי v_unassigned.intentionally_unassigned_count<=1.
   if v_unassigned.intentionally_unassigned_count<=1 then
+    -- מחיקת הרשומות שנבחרו מתוך public.dynamic_schedule_published_unassigned בהתאם לקלט ולתנאים להלן.
     delete from public.dynamic_schedule_published_unassigned
     where publication_id=v_publication.id and slot_id=v_slot.id;
   else
+    -- עדכון רשומות ב־public.dynamic_schedule_published_unassigned בהתאם לקלט ולתנאים להלן.
     update public.dynamic_schedule_published_unassigned
     set intentionally_unassigned_count=intentionally_unassigned_count-1,
         note=nullif(trim(coalesce(requested_reason,'')),'')
     where publication_id=v_publication.id and slot_id=v_slot.id;
   end if;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(action,actor_user_id,entity_type,entity_id,summary,new_values,metadata)
   values(
     'system_event',v_actor,'dynamic_schedule_publication',v_publication.id,
@@ -297,14 +358,20 @@ begin
     jsonb_build_object('job_type_id',v_publication.job_type_id,'slot_id',v_slot.id,'shift_date',v_slot.shift_date,'shift_code',v_slot.shift_code,'reason',nullif(trim(coalesce(requested_reason,'')),''))
   );
 
+  -- עדכון רשומות ב־public.dynamic_schedule_publications בהתאם לקלט ולתנאים להלן.
   update public.dynamic_schedule_publications set updated_at=now() where id=v_publication.id;
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('saved',true,'action','filled','assignmentId',v_new_assignment_id,'newUserId',requested_user_id);
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_published_schedule_editor(uuid) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.set_dynamic_published_schedule_assignment(uuid,uuid,uuid,uuid,text) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_published_schedule_editor(uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.set_dynamic_published_schedule_assignment(uuid,uuid,uuid,uuid,text) to authenticated;
 
 commit;

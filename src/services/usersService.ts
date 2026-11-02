@@ -1,3 +1,12 @@
+/**
+ * קובץ: src/services/usersService.ts
+ * מטרה: שליפה וניהול משתמשים דרך שירותי מסד ופעולות צד השרת.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ProfileDatabaseRow, ProfileDatabaseUpdate, FunctionErrorResponse, mapProfileRow, buildProfileUpdate, getFunctionErrorMessage, getUsers, createUser, updateUserEmail, updateUser ועוד.
+ * - קריאות RPC המופעלות בקובץ: update_user_compensation.
+ * - מקורות נתונים הנזכרים בקריאות from: profiles.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import { supabase } from '../lib/supabase';
 import { permissionsService } from './permissionsService';
 import type {
@@ -17,35 +26,60 @@ import type {
   ResetUserPasswordResult,
 } from '../types/users';
 
+/**
+ * חוזה הנתונים ProfileDatabaseRow: פרופיל / שורה.
+ */
 interface ProfileDatabaseRow {
+  // id — מזהה.
   id: string;
+  // email — כתובת דוא״ל.
   email: string;
+  // display_name — שם תצוגה.
   display_name: string;
+  // schedule_name — שיבוץ / שם.
   schedule_name: string | null;
   role: UserRole;
+  // is_active — האם הרשומה פעילה.
   is_active: boolean;
+  // must_change_password — סיסמה.
   must_change_password: boolean;
   last_login_at: string | null;
+  // created_at — מועד יצירה.
   created_at: string;
+  // updated_at — מועד עדכון.
   updated_at: string;
   hourly_rate: number | null;
   daily_duty_rate: number | null;
+  // morning_shift_rate — משמרת.
   morning_shift_rate: number | null;
 }
 
+/**
+ * חוזה הנתונים ProfileDatabaseUpdate: פרופיל.
+ */
 interface ProfileDatabaseUpdate {
+  // display_name — שם תצוגה (אופציונלי).
   display_name?: string;
+  // schedule_name — שיבוץ / שם (אופציונלי).
   schedule_name?: string | null;
   role?: UserRole;
+  // is_active — האם הרשומה פעילה (אופציונלי).
   is_active?: boolean;
+  // must_change_password — סיסמה (אופציונלי).
   must_change_password?: boolean;
+  // updated_at — מועד עדכון (אופציונלי).
   updated_at?: string;
 }
 
+/**
+ * חוזה הנתונים FunctionErrorResponse: שגיאה / תוצאת הפעולה.
+ */
 interface FunctionErrorResponse {
+  // error — שגיאה (אופציונלי).
   error?: string;
 }
 
+// PROFILE_COLUMNS — פרופיל.
 const PROFILE_COLUMNS = `
   id,
   email,
@@ -62,6 +96,11 @@ const PROFILE_COLUMNS = `
   morning_shift_rate
 `;
 
+/**
+ * פעולה mapProfileRow: המרת שמות עמודות snake_case של הפרופיל למאפייני camelCase של היישום.
+ * @param profileRow — פרופיל / שורה.
+ * @returns UserProfile — הפלט בהתאם לחתימה.
+ */
 function mapProfileRow(
   profileRow: ProfileDatabaseRow,
 ): UserProfile {
@@ -92,9 +131,15 @@ function mapProfileRow(
   };
 }
 
+/**
+ * פעולה buildProfileUpdate: הרכבת פרופיל.
+ * @param input — קלט.
+ * @returns ProfileDatabaseUpdate — הפלט בהתאם לחתימה.
+ */
 function buildProfileUpdate(
   input: UpdateUserProfileInput,
 ): ProfileDatabaseUpdate {
+  // updateData — נתונים.
   const updateData:
     ProfileDatabaseUpdate = {
       updated_at:
@@ -111,6 +156,7 @@ function buildProfileUpdate(
   if (
     input.scheduleName !== undefined
   ) {
+    // normalizedScheduleName — שיבוץ / שם.
     const normalizedScheduleName =
       input.scheduleName?.trim() ?? '';
 
@@ -140,6 +186,11 @@ function buildProfileUpdate(
   return updateData;
 }
 
+/**
+ * פעולה אסינכרונית getFunctionErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns Promise<string> — הפלט בהתאם לחתימה.
+ */
 async function getFunctionErrorMessage(
   error: unknown,
 ): Promise<string> {
@@ -157,11 +208,14 @@ async function getFunctionErrorMessage(
     if (
       context instanceof Response
     ) {
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // body — תוכן.
         const body =
           (await context.json()) as
             FunctionErrorResponse;
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר body.error.
         if (body.error) {
           return body.error;
         }
@@ -171,6 +225,7 @@ async function getFunctionErrorMessage(
     }
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error.message;
   }
@@ -178,8 +233,13 @@ async function getFunctionErrorMessage(
   return 'אירעה שגיאה בלתי צפויה.';
 }
 
+/**
+ * פעולה אסינכרונית getUsers: שליפה או חישוב של משתמשים.
+ * @returns Promise<UserProfile[]> — הפלט בהתאם לחתימה.
+ */
 async function getUsers():
   Promise<UserProfile[]> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data, error } =
     await supabase
       .from('profiles')
@@ -188,6 +248,7 @@ async function getUsers():
         ascending: true,
       });
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
     console.error(
       'GET USERS ERROR:',
@@ -208,9 +269,15 @@ async function getUsers():
   ).map(mapProfileRow);
 }
 
+/**
+ * פעולה אסינכרונית createUser: יצירת משתמש.
+ * @param input — קלט.
+ * @returns Promise<UserProfile> — הפלט בהתאם לחתימה.
+ */
 async function createUser(
   input: CreateUserInput,
 ): Promise<UserProfile> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data, error } =
     await supabase.functions.invoke<
       CreateUserResponse
@@ -239,7 +306,9 @@ async function createUser(
       },
     });
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
+    // errorMessage — הודעת שגיאה.
     const errorMessage =
       await getFunctionErrorMessage(
         error,
@@ -248,6 +317,7 @@ async function createUser(
     throw new Error(errorMessage);
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data?.user.
   if (!data?.user) {
     throw new Error(
       'המשתמש נוצר ללא נתוני פרופיל תקינים.',
@@ -257,15 +327,23 @@ async function createUser(
   return data.user;
 }
 
+/**
+ * פעולה אסינכרונית updateUserEmail: עדכון משתמש / כתובת דוא״ל.
+ * @param userId — מזהה משתמש.
+ * @param email — כתובת דוא״ל.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function updateUserEmail(
   userId: string,
   email: string,
 ): Promise<void> {
+  // normalizedEmail — כתובת דוא״ל.
   const normalizedEmail =
     email
       .trim()
       .toLowerCase();
 
+  // עצירת הפעולה עם שגיאה כאשר !normalizedEmail || !normalizedEmail.includes( '@', ).
   if (
     !normalizedEmail ||
     !normalizedEmail.includes(
@@ -277,6 +355,7 @@ async function updateUserEmail(
     );
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -284,6 +363,7 @@ async function updateUserEmail(
     await supabase.functions
       .invoke<{
         success: boolean;
+        // email — כתובת דוא״ל.
         email: string;
       }>(
         'update-user-email',
@@ -296,6 +376,7 @@ async function updateUserEmail(
         },
       );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
@@ -306,6 +387,7 @@ async function updateUserEmail(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data || data.success !== true.
   if (
     !data ||
     data.success !==
@@ -317,10 +399,17 @@ async function updateUserEmail(
   }
 }
 
+/**
+ * פעולה אסינכרונית updateUser: עדכון משתמש.
+ * @param userId — מזהה משתמש.
+ * @param input — קלט.
+ * @returns Promise<UserProfile> — הפלט בהתאם לחתימה.
+ */
 async function updateUser(
   userId: string,
   input: UpdateUserProfileInput,
 ): Promise<UserProfile> {
+  // updateData — נתונים.
   const updateData =
     buildProfileUpdate(input);
 
@@ -334,6 +423,7 @@ async function updateUser(
     );
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data, error } =
     await supabase
       .from('profiles')
@@ -342,6 +432,7 @@ async function updateUser(
       .select(PROFILE_COLUMNS)
       .single();
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
     console.error(
       'UPDATE USER ERROR:',
@@ -353,6 +444,7 @@ async function updateUser(
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר input.hourlyRate !== undefined || input.dailyDutyRate !== undefined || input.morningShiftRate !== undefined.
   if (
     input.hourlyRate !== undefined ||
     input.dailyDutyRate !== undefined ||
@@ -365,6 +457,7 @@ async function updateUser(
       input.morningShiftRate ?? null,
     );
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data: refreshedProfile,
       error: refreshedProfileError,
@@ -374,6 +467,7 @@ async function updateUser(
       .eq('id', userId)
       .single();
 
+    // עצירת הפעולה עם שגיאה כאשר refreshedProfileError || !refreshedProfile.
     if (
       refreshedProfileError ||
       !refreshedProfile
@@ -393,6 +487,12 @@ async function updateUser(
   );
 }
 
+/**
+ * פעולה אסינכרונית setUserActiveStatus: קביעת קבוצה ייחודית / משתמש / פעיל / סטטוס.
+ * @param userId — מזהה משתמש.
+ * @param isActive — האם הרשומה פעילה.
+ * @returns Promise<UserProfile> — הפלט בהתאם לחתימה.
+ */
 async function setUserActiveStatus(
   userId: string,
   isActive: boolean,
@@ -402,9 +502,15 @@ async function setUserActiveStatus(
   });
 }
 
+/**
+ * פעולה אסינכרונית getUserPermissions: שליפה או חישוב של משתמש / הרשאות.
+ * @param userId — מזהה משתמש.
+ * @returns Promise<PermissionKey[]> — הפלט בהתאם לחתימה.
+ */
 async function getUserPermissions(
   userId: string,
 ): Promise<PermissionKey[]> {
+  // עצירת הפעולה עם שגיאה כאשר !userId.trim().
   if (!userId.trim()) {
     throw new Error(
       'לא התקבל מזהה משתמש תקין לטעינת הרשאות.',
@@ -415,16 +521,24 @@ async function getUserPermissions(
     .getUserPermissions(userId);
 }
 
+/**
+ * פעולה אסינכרונית setUserPermissions: קביעת קבוצה ייחודית / משתמש / הרשאות.
+ * @param userId — מזהה משתמש.
+ * @param permissions — הרשאות.
+ * @returns Promise<PermissionKey[]> — הפלט בהתאם לחתימה.
+ */
 async function setUserPermissions(
   userId: string,
   permissions: PermissionKey[],
 ): Promise<PermissionKey[]> {
+  // עצירת הפעולה עם שגיאה כאשר !userId.trim().
   if (!userId.trim()) {
     throw new Error(
       'לא התקבל מזהה משתמש תקין לשמירת הרשאות.',
     );
   }
 
+  // uniquePermissions — הרשאות.
   const uniquePermissions = [
     ...new Set(permissions),
   ];
@@ -436,21 +550,33 @@ async function setUserPermissions(
     );
 }
 
+/**
+ * פעולה אסינכרונית updateUserCompensation: עדכון משתמש.
+ * הפעולה פונה ל־RPC: update_user_compensation.
+ * @param userId — מזהה משתמש.
+ * @param hourlyRate — הנתון hourlyRate בהקשר הפעולה.
+ * @param dailyDutyRate — הנתון dailyDutyRate בהקשר הפעולה.
+ * @param morningShiftRate — משמרת.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function updateUserCompensation(
   userId: string,
   hourlyRate: number | null,
   dailyDutyRate: number | null,
   morningShiftRate: number | null,
 ): Promise<void> {
+  // normalizedUserId — מזהה משתמש.
   const normalizedUserId =
     userId.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !normalizedUserId.
   if (!normalizedUserId) {
     throw new Error(
       'לא התקבל מזהה משתמש לעדכון השכר.',
     );
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     error,
   } = await supabase.rpc(
@@ -467,6 +593,7 @@ async function updateUserCompensation(
     },
   );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
     console.error(
       'UPDATE USER COMPENSATION ERROR:',
@@ -479,21 +606,30 @@ async function updateUserCompensation(
   }
 }
 
+/**
+ * פעולה אסינכרונית deleteUser: מחיקת משתמש.
+ * @param input — קלט.
+ * @returns Promise<DeletedUserSummary> — הפלט בהתאם לחתימה.
+ */
 async function deleteUser(
   input: DeleteUserInput,
 ): Promise<DeletedUserSummary> {
+  // normalizedUserId — מזהה משתמש.
   const normalizedUserId =
     input.userId.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !normalizedUserId.
   if (!normalizedUserId) {
     throw new Error(
       'לא התקבל מזהה משתמש למחיקה.',
     );
   }
 
+  // normalizedReason — הנתון normalizedReason בהקשר הפעולה.
   const normalizedReason =
     input.reason?.trim() || null;
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data, error } =
     await supabase.functions.invoke<
       DeleteUserResponse
@@ -508,7 +644,9 @@ async function deleteUser(
     });
 
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
+    // errorMessage — הודעת שגיאה.
     const errorMessage =
       await getFunctionErrorMessage(
         error,
@@ -517,18 +655,21 @@ async function deleteUser(
     throw new Error(errorMessage);
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data.
   if (!data) {
     throw new Error(
       'פונקציית המחיקה לא החזירה נתונים.',
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר data.success !== true.
   if (data.success !== true) {
     throw new Error(
       'השרת לא אישר שמחיקת המשתמש הצליחה.',
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data.deletedUser.
   if (!data.deletedUser) {
     throw new Error(
       'המשתמש נמחק, אך פרטי המשתמש שנמחק לא הוחזרו מהשרת.',
@@ -544,19 +685,27 @@ async function deleteUser(
   return data.deletedUser;
 }
 
+/**
+ * פעולה אסינכרונית resetUserPassword: איפוס משתמש / סיסמה.
+ * @param input — קלט.
+ * @returns Promise<ResetUserPasswordResult> — הפלט בהתאם לחתימה.
+ */
 async function resetUserPassword(
   input:
     ResetUserPasswordInput,
 ): Promise<ResetUserPasswordResult> {
+  // normalizedUserId — מזהה משתמש.
   const normalizedUserId =
     input.userId.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !normalizedUserId.
   if (!normalizedUserId) {
     throw new Error(
       'לא התקבל מזהה משתמש לאיפוס הסיסמה.',
     );
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -573,7 +722,9 @@ async function resetUserPassword(
       },
     );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
+    // errorMessage — הודעת שגיאה.
     const errorMessage =
       await getFunctionErrorMessage(
         error,
@@ -584,18 +735,21 @@ async function resetUserPassword(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data.
   if (!data) {
     throw new Error(
       'פונקציית שליחת קישור האיפוס לא החזירה נתונים.',
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר data.success !== true.
   if (data.success !== true) {
     throw new Error(
       'השרת לא אישר ששליחת קישור האיפוס הצליחה.',
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data.user.
   if (!data.user) {
     throw new Error(
       'קישור האיפוס נשלח, אך נתוני המשתמש לא הוחזרו מהשרת.',
@@ -611,6 +765,7 @@ async function resetUserPassword(
   return data.user;
 }
 
+// usersService — משתמשים / שירות.
 export const usersService = {
   getUsers,
   createUser,

@@ -1,5 +1,12 @@
+-- קובץ: supabase/migrations/20260914150000_phase10_6_1_client_version_tracking.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור לקוח / גרסה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.report_my_client_version, public.get_client_version_admin_overview.
+-- - מבני טבלאות: public.client_app_sessions.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 10.6.1 - client version presence + admin update targeting.
 
+-- הגדרת מבנה הטבלה public.client_app_sessions והאילוצים המופיעים בהמשך.
 create table if not exists public.client_app_sessions (
   user_id uuid not null references public.profiles(id) on delete cascade,
   client_id text not null,
@@ -16,12 +23,16 @@ create table if not exists public.client_app_sessions (
   constraint client_app_sessions_build_id_not_blank check (length(trim(build_id)) > 0)
 );
 
+-- הגדרת האינדקס client_app_sessions_last_seen_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists client_app_sessions_last_seen_idx
   on public.client_app_sessions(last_seen_at desc);
 
+-- עדכון מבנה או הגדרות הטבלה public.client_app_sessions.
 alter table public.client_app_sessions enable row level security;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.client_app_sessions from anon, authenticated;
 
+-- פונקציית מסד public.report_my_client_version: דוח / לקוח / גרסה.
 create or replace function public.report_my_client_version(
   requested_client_id text,
   requested_app_version text,
@@ -32,29 +43,38 @@ create or replace function public.report_my_client_version(
 )
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.profiles p
     where p.id = current_user_id and p.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
+  -- הסתעפות לפי התנאי nullif(trim(requested_client_id), '') is null.
   if nullif(trim(requested_client_id), '') is null
      or nullif(trim(requested_app_version), '') is null
      or nullif(trim(requested_build_id), '') is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid client version payload';
   end if;
 
+  -- הוספת רשומות ל־public.client_app_sessions בהתאם לקלט ולתנאים להלן.
   insert into public.client_app_sessions (
     user_id,
     client_id,
@@ -84,30 +104,41 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.report_my_client_version(text,text,text,boolean,text,text) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.report_my_client_version(text,text,text,boolean,text,text) to authenticated;
 
+-- פונקציית מסד public.get_client_version_admin_overview: שליפה או חישוב של לקוח / גרסה.
 create or replace function public.get_client_version_admin_overview(
   requested_current_version text,
   requested_current_build_id text
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- users_json — משתמשים.
   users_json jsonb;
+  -- summary_json — סיכום.
   summary_json jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
       select 1 from public.profiles p
       where p.id = current_user_id
@@ -116,6 +147,7 @@ begin
     )
     and not ('users.manage' = any(current_permissions))
     and not ('notifications.manage' = any(current_permissions)) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -204,6 +236,7 @@ begin
   into users_json, summary_json
   from user_rows u;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'currentVersion', requested_current_version,
     'currentBuildId', requested_current_build_id,
@@ -213,5 +246,7 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_client_version_admin_overview(text,text) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_client_version_admin_overview(text,text) to authenticated;

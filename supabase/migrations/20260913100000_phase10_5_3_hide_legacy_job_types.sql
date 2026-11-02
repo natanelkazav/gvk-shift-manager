@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260913100000_phase10_5_3_hide_legacy_job_types.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סוגי תפקידים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_legacy_freeze_readiness, public.get_dynamic_cutover_state, public.get_dynamic_user_assignment_editor, public.save_dynamic_user_assignments, public.get_dynamic_shifts_management_workspace.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 10.5.3 · Separate seeded Legacy Job Types from the Dynamic-first runtime.
@@ -7,6 +12,7 @@ begin;
 
 -- Remove only the synthetic memberships created by Phase 10.5.2. Real/manual
 -- Dynamic memberships are never touched.
+-- מחיקת הרשומות שנבחרו מתוך public.job_type_memberships בהתאם לקלט ולתנאים להלן.
 delete from public.job_type_memberships m
 using public.job_types jt
 where m.job_type_id = jt.id
@@ -16,6 +22,7 @@ where m.job_type_id = jt.id
 -- A previously frozen state may have been satisfied only by the synthetic
 -- bridge above. Re-open the freeze gate until every active legacy worker has a
 -- real Dynamic Job Type membership.
+-- עדכון רשומות ב־public.dynamic_cutover_settings בהתאם לקלט ולתנאים להלן.
 update public.dynamic_cutover_settings s
 set legacy_frozen = false,
     updated_at = now()
@@ -37,19 +44,27 @@ where s.singleton = true
       )
   );
 
+-- פונקציית מסד public.get_legacy_freeze_readiness: שליפה או חישוב של הנתון get_legacy_freeze_readiness בהקשר הפעולה.
 create or replace function public.get_legacy_freeze_readiness()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=public
 as $$
 declare
+  -- v_user — משתמש.
   v_user uuid := auth.uid();
+  -- v_dynamic_first — דינמי.
   v_dynamic_first boolean := false;
+  -- v_missing_count — כמות.
   v_missing_count integer := 0;
+  -- v_missing_users — משתמשים.
   v_missing_users jsonb := '[]'::jsonb;
 begin
+  -- הסתעפות לפי התנאי v_user is null then raise exception 'not authenticated'; end if;.
   if v_user is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.user_permissions up
     where up.user_id = v_user and up.permission_key = 'users.manage'
@@ -101,6 +116,7 @@ begin
     limit 25
   ) q;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'ready', v_dynamic_first and v_missing_count = 0,
     'dynamicFirstEnabled', v_dynamic_first,
@@ -110,23 +126,31 @@ begin
 end;
 $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_legacy_freeze_readiness() to authenticated;
 
 -- Dynamic runtime detection must be based only on real Dynamic Job Types.
 drop function if exists public.get_dynamic_cutover_state();
+-- פונקציית מסד public.get_dynamic_cutover_state: שליפה או חישוב של דינמי / מעבר למנגנון הדינמי / מצב.
 create function public.get_dynamic_cutover_state()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=public
 as $$
 declare
+  -- v_enabled — האם האפשרות מופעלת.
   v_enabled boolean := false;
   v_legacy_frozen boolean := false;
+  -- v_user — משתמש.
   v_user uuid := auth.uid();
+  -- v_has_membership — שיוך לתפקיד.
   v_has_membership boolean := false;
   v_is_system_admin boolean := false;
+  -- v_is_job_type_manager — סוג תפקיד.
   v_is_job_type_manager boolean := false;
+  -- v_use_dynamic — דינמי.
   v_use_dynamic boolean := false;
 begin
   select coalesce(dynamic_first_enabled, false), coalesce(legacy_frozen, false)
@@ -134,6 +158,7 @@ begin
   from public.dynamic_cutover_settings
   where singleton = true;
 
+  -- הסתעפות לפי התנאי v_user is not null.
   if v_user is not null then
     select exists(
       select 1
@@ -164,6 +189,7 @@ begin
   v_use_dynamic := coalesce(v_enabled, false)
     and (v_has_membership or v_is_system_admin or v_is_job_type_manager);
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'dynamicFirstEnabled', coalesce(v_enabled, false),
     'hasDynamicMembership', v_has_membership,
@@ -173,26 +199,34 @@ begin
 end;
 $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_cutover_state() to authenticated;
 
 -- User assignment editor: Legacy seed adapters are not assignable in the new UI.
+-- פונקציית מסד public.get_dynamic_user_assignment_editor: שליפה או חישוב של דינמי / משתמש / הקצאה.
 create or replace function public.get_dynamic_user_assignment_editor(target_user_id uuid)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare actor uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.user_permissions up
     where up.user_id = actor and up.permission_key in ('users.view','users.manage')
   ) then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי not exists (select 1 from public.profiles p where p.id = target_user_id).
   if not exists (select 1 from public.profiles p where p.id = target_user_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not found';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'userId', target_user_id,
     'assignments', coalesce((
@@ -220,41 +254,54 @@ begin
 end;
 $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_user_assignment_editor(uuid) to authenticated;
 
 -- Prevent the Dynamic-first user editor from creating new assignments to a
 -- compatibility-only Legacy seed Job Type.
+-- פונקציית מסד public.save_dynamic_user_assignments: שמירת דינמי / משתמש / הקצאות.
 create or replace function public.save_dynamic_user_assignments(
   target_user_id uuid,
   requested_assignments jsonb
 )
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
   actor uuid := auth.uid();
+  -- item — פריט.
   item jsonb;
+  -- requested_job_type_id — מזהה סוג התפקיד.
   requested_job_type_id uuid;
   requested_is_member boolean;
   requested_is_manager boolean;
   requested_employment_scope text;
+  -- requested_part_time_definition — זמן.
   requested_part_time_definition jsonb;
   configured_scope text;
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.user_permissions up
     where up.user_id = actor and up.permission_key = 'users.manage'
   ) then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי not exists (select 1 from public.profiles p where p.id = target_user_id).
   if not exists (select 1 from public.profiles p where p.id = target_user_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not found';
   end if;
+  -- הסתעפות לפי התנאי jsonb_typeof(coalesce(requested_assignments, '[]'::jsonb)) <> 'array'.
   if jsonb_typeof(coalesce(requested_assignments, '[]'::jsonb)) <> 'array' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'requested_assignments must be an array';
   end if;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for item in select value from jsonb_array_elements(coalesce(requested_assignments, '[]'::jsonb)) loop
     requested_job_type_id := nullif(item->>'jobTypeId','')::uuid;
     requested_is_member := coalesce((item->>'isMember')::boolean, false);
@@ -267,15 +314,19 @@ begin
     where jt.id = requested_job_type_id
       and jt.legacy_role is null;
 
+    -- הסתעפות לפי התנאי configured_scope is null then raise exception 'dynamic job type not found'; end if;.
     if configured_scope is null then raise exception 'dynamic job type not found'; end if;
 
+    -- הסתעפות לפי התנאי requested_is_member.
     if requested_is_member then
+      -- הסתעפות לפי התנאי configured_scope <> 'flexible'.
       if configured_scope <> 'flexible' then
         requested_employment_scope := configured_scope;
       elsif requested_employment_scope not in ('full_time','part_time','as_much_as_possible') then
         requested_employment_scope := 'full_time';
       end if;
 
+      -- הוספת רשומות ל־public.job_type_memberships בהתאם לקלט ולתנאים להלן.
       insert into public.job_type_memberships(user_id, job_type_id, is_primary, source, metadata)
       values (
         target_user_id,
@@ -295,15 +346,19 @@ begin
           ),
           updated_at = now();
     else
+      -- מחיקת הרשומות שנבחרו מתוך public.job_type_memberships בהתאם לקלט ולתנאים להלן.
       delete from public.job_type_memberships
       where user_id = target_user_id and job_type_id = requested_job_type_id;
     end if;
 
+    -- הסתעפות לפי התנאי requested_is_manager.
     if requested_is_manager then
+      -- הוספת רשומות ל־public.job_type_managers בהתאם לקלט ולתנאים להלן.
       insert into public.job_type_managers(user_id, job_type_id, created_by)
       values (target_user_id, requested_job_type_id, actor)
       on conflict (user_id, job_type_id) do nothing;
     else
+      -- מחיקת הרשומות שנבחרו מתוך public.job_type_managers בהתאם לקלט ולתנאים להלן.
       delete from public.job_type_managers
       where user_id = target_user_id and job_type_id = requested_job_type_id;
     end if;
@@ -311,17 +366,20 @@ begin
 end;
 $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.save_dynamic_user_assignments(uuid,jsonb) to authenticated;
 
 commit;
 begin;
 
+-- פונקציית מסד public.get_dynamic_shifts_management_workspace: שליפה או חישוב של דינמי / משמרות.
 create or replace function public.get_dynamic_shifts_management_workspace(
   requested_year integer,
   requested_month integer
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
@@ -329,16 +387,21 @@ declare
   actor uuid := auth.uid();
   actor_role text;
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי requested_year not between 2020 and 2100 or requested_month not between 1 and 12.
   if requested_year not between 2020 and 2100 or requested_month not between 1 and 12 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid year or month';
   end if;
 
   select p.role::text into actor_role
   from public.profiles p
   where p.id = actor and p.is_active = true;
+  -- הסתעפות לפי התנאי actor_role is null then raise exception 'user not active'; end if;.
   if actor_role is null then raise exception 'user not active'; end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.job_types jt
@@ -357,9 +420,11 @@ begin
         or public.has_dynamic_job_type_permission('rotation.generate', jt.id, actor)
       )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'year', requested_year,
     'month', requested_month,
@@ -443,6 +508,7 @@ begin
 end;
 $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_shifts_management_workspace(integer,integer) to authenticated;
 
 commit;

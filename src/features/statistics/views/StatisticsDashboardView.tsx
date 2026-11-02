@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/statistics/views/StatisticsDashboardView.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סטטיסטיקה / לוח בקרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: StatisticsDashboardViewProps, getDisplayName, StatisticsDashboardView.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   Car,
@@ -21,10 +28,15 @@ import StatisticsPieChart
 import DispatcherAvailabilityInsights
   from './DispatcherAvailabilityInsights';
 
+/**
+ * חוזה הנתונים StatisticsDashboardViewProps: סטטיסטיקה / לוח בקרה / מאפייני הרכיב.
+ */
 interface StatisticsDashboardViewProps {
+  // data — נתונים.
   data:
     StatisticsDashboardResponse;
 
+  // sectionFilter — סינון.
   sectionFilter:
     'all'
     | 'dispatchers'
@@ -32,6 +44,12 @@ interface StatisticsDashboardViewProps {
     | 'drivers';
 }
 
+/**
+ * פעולה getDisplayName: שליפה או חישוב של שם תצוגה.
+ * @param displayName — שם תצוגה.
+ * @param scheduleName — שיבוץ / שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDisplayName(
   displayName: string,
   scheduleName:
@@ -44,14 +62,20 @@ function getDisplayName(
   );
 }
 
+/**
+ * פעולה StatisticsDashboardView: סטטיסטיקה / לוח בקרה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function StatisticsDashboardView({
   data,
   sectionFilter,
 }: StatisticsDashboardViewProps) {
+  // dispatcherLeader — מוקדנים.
   const dispatcherLeader =
     data.dispatcherStatistics[0] ??
     null;
 
+  // driverLeader — כוננים.
   const driverLeader =
     data.driverStatistics[0] ??
     null;

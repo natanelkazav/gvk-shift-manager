@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/morningDriverSchedule/MorningDriverAssignmentTransferDialog.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כונני בוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: MorningDriverAssignmentTransferDialogProps, formatDate, formatTime, MorningDriverAssignmentTransferDialog.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   ArrowLeftRight,
   CalendarDays,
@@ -16,17 +23,24 @@ import type {
   MorningDriverScheduleDriver,
 } from '../../types/morningDriverSchedule';
 
+/**
+ * חוזה הנתונים MorningDriverAssignmentTransferDialogProps: כונני בוקר.
+ */
 interface MorningDriverAssignmentTransferDialogProps {
+  // assignment — הקצאה.
   assignment:
     MorningDriverScheduleAssignment;
 
   drivers:
     MorningDriverScheduleDriver[];
 
+  // currentUserId — המשתמש הנוכחי הנוכחי.
   currentUserId: string;
 
+  // isSaving — האם שמירה מתבצעת.
   isSaving: boolean;
 
+  // onClose — פונקציית סגירת התצוגה.
   onClose:
     () => void;
 
@@ -35,14 +49,21 @@ interface MorningDriverAssignmentTransferDialogProps {
   ) => Promise<void>;
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param dateValue — תאריך / ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   dateValue: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${dateValue}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -66,6 +87,11 @@ function formatDate(
   );
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
@@ -75,6 +101,10 @@ function formatTime(
   );
 }
 
+/**
+ * פעולה MorningDriverAssignmentTransferDialog: כונני בוקר.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function MorningDriverAssignmentTransferDialog({
   assignment,
   drivers,
@@ -83,12 +113,14 @@ function MorningDriverAssignmentTransferDialog({
   onClose,
   onTransfer,
 }: MorningDriverAssignmentTransferDialogProps) {
+  // מצב מקומי: selectedDriverId — נבחר / כוננים / מזהה; setSelectedDriverId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedDriverId,
     setSelectedDriverId,
   ] =
     useState('');
 
+  // ערך מחושב availableDrivers — הנתון availableDrivers בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const availableDrivers =
     useMemo(
       () =>
@@ -106,6 +138,7 @@ function MorningDriverAssignmentTransferDialog({
       ],
     );
 
+  // selectedDriver — נבחר / כוננים.
   const selectedDriver =
     availableDrivers.find(
       (

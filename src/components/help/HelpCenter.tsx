@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/help/HelpCenter.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור עזרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: topicIsVisible, topicMatchesRoute, normalizeSearchValue, topicMatchesSearch, HelpCenter.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   BookOpen,
   ChevronDown,
@@ -38,6 +45,12 @@ import type {
 
 import '../../styles/helpCenter.css';
 
+/**
+ * פעולה topicIsVisible: הנתון topicIsVisible בהקשר הפעולה.
+ * @param topic — הנתון topic בהקשר הפעולה.
+ * @param hasPermission — הרשאות.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function topicIsVisible(
   topic:
     HelpTopic,
@@ -47,10 +60,12 @@ function topicIsVisible(
       typeof useAuth
     >['hasPermission'],
 ): boolean {
+  // anyPermissions — הרשאות.
   const anyPermissions =
     topic.requiredAnyPermissions ??
     [];
 
+  // allPermissions — הרשאות.
   const allPermissions =
     topic.requiredAllPermissions ??
     [];
@@ -83,6 +98,13 @@ function topicIsVisible(
   );
 }
 
+/**
+ * פעולה topicMatchesRoute: הנתון topicMatchesRoute בהקשר הפעולה.
+ * @param topic — הנתון topic בהקשר הפעולה.
+ * @param pathname — הנתון pathname בהקשר הפעולה.
+ * @param search — הנתון search בהקשר הפעולה.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function topicMatchesRoute(
   topic:
     HelpTopic,
@@ -93,6 +115,7 @@ function topicMatchesRoute(
   search:
     string,
 ): boolean {
+  // pathMatches — נתיב.
   const pathMatches =
     topic.routePrefixes
       .includes(
@@ -112,10 +135,12 @@ function topicMatchesRoute(
               ),
           );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !pathMatches.
   if (!pathMatches) {
     return false;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !topic.contextualQuery.
   if (
     !topic.contextualQuery
   ) {
@@ -141,6 +166,11 @@ function topicMatchesRoute(
   );
 }
 
+/**
+ * פעולה normalizeSearchValue: נרמול ערך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeSearchValue(
   value:
     string,
@@ -152,6 +182,12 @@ function normalizeSearchValue(
     );
 }
 
+/**
+ * פעולה topicMatchesSearch: הנתון topicMatchesSearch בהקשר הפעולה.
+ * @param topic — הנתון topic בהקשר הפעולה.
+ * @param searchValue — ערך.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function topicMatchesSearch(
   topic:
     HelpTopic,
@@ -159,6 +195,7 @@ function topicMatchesSearch(
   searchValue:
     string,
 ): boolean {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !searchValue.
   if (!searchValue) {
     return true;
   }
@@ -181,6 +218,9 @@ function topicMatchesSearch(
     );
 }
 
+/**
+ * פעולה HelpCenter: עזרה.
+ */
 function HelpCenter() {
   const {
     hasPermission,
@@ -193,6 +233,7 @@ function HelpCenter() {
   const navigate =
     useNavigate();
 
+  // מצב מקומי: isOpen — האם המצב פתוח; setIsOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isOpen,
     setIsOpen,
@@ -201,12 +242,14 @@ function HelpCenter() {
       false,
     );
 
+  // מצב מקומי: searchQuery — הנתון searchQuery בהקשר הפעולה; setSearchQuery מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     searchQuery,
     setSearchQuery,
   ] =
     useState('');
 
+  // מצב מקומי: expandedTopicId — מזהה; setExpandedTopicId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     expandedTopicId,
     setExpandedTopicId,
@@ -215,11 +258,13 @@ function HelpCenter() {
       null,
     );
 
+  // הפניה יציבה contentRef בין רינדורים; שינוי current אינו מפעיל רינדור בפני עצמו.
   const contentRef =
     useRef<HTMLDivElement | null>(
       null,
     );
 
+  // ערך מחושב visibleTopics — הנתון visibleTopics בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const visibleTopics =
     useMemo(
       () =>
@@ -237,6 +282,7 @@ function HelpCenter() {
       ],
     );
 
+  // ערך מחושב contextualTopics — הנתון contextualTopics בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const contextualTopics =
     useMemo(
       () =>
@@ -257,11 +303,13 @@ function HelpCenter() {
       ],
     );
 
+  // normalizedSearch — הנתון normalizedSearch בהקשר הפעולה.
   const normalizedSearch =
     normalizeSearchValue(
       searchQuery,
     );
 
+  // ערך מחושב filteredTopics — הנתון filteredTopics בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const filteredTopics =
     useMemo(
       () =>
@@ -280,19 +328,23 @@ function HelpCenter() {
       ],
     );
 
+  // ערך מחושב groupedTopics — הנתון groupedTopics בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const groupedTopics =
     useMemo(
       () => {
+        // groups — קבוצות; מיפוי לחיפוש לפי מפתח.
         const groups =
           new Map<
             HelpTopic['group'],
             HelpTopic[]
           >();
 
+        // עיבוד כל פריט מתוך filteredTopics בנפרד.
         for (
           const topic
           of filteredTopics
         ) {
+          // currentItems — פריטים.
           const currentItems =
             groups.get(
               topic.group,
@@ -317,12 +369,19 @@ function HelpCenter() {
       ],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isOpen, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
       if (!isOpen) {
         return;
       }
 
+      /**
+       * פעולה handleEscape: טיפול באירוע עבור הנתון handleEscape בהקשר הפעולה.
+       * @param event — אירוע.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleEscape =
         (
           event:
@@ -355,12 +414,15 @@ function HelpCenter() {
     ],
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isOpen, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
       if (!isOpen) {
         return;
       }
 
+      // previousOverflow — הנתון previousOverflow בהקשר הפעולה.
       const previousOverflow =
         document.body.style.overflow;
 
@@ -377,8 +439,10 @@ function HelpCenter() {
     ],
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isOpen, normalizedSearch, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
       if (!isOpen) {
         return;
       }
@@ -394,11 +458,13 @@ function HelpCenter() {
     ],
   );
 
+  // defaultContextualTopicId — מזהה.
   const defaultContextualTopicId =
     contextualTopics[0]
       ?.id ??
     null;
 
+  // effectiveExpandedTopicId — מזהה.
   const effectiveExpandedTopicId =
     expandedTopicId ??
     (
@@ -407,6 +473,11 @@ function HelpCenter() {
         : null
     );
 
+  /**
+   * פעולה goToTopic: הנתון goToTopic בהקשר הפעולה.
+   * @param topic — הנתון topic בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const goToTopic =
     (
       topic:
@@ -421,6 +492,11 @@ function HelpCenter() {
       );
     };
 
+  /**
+   * פעולה renderTopic: בניית תצוגה עבור הנתון renderTopic בהקשר הפעולה.
+   * @param topic — הנתון topic בהקשר הפעולה.
+   * @param compact — הנתון compact בהקשר הפעולה.
+   */
   const renderTopic =
     (
       topic:
@@ -429,6 +505,7 @@ function HelpCenter() {
       compact =
         false,
     ) => {
+      // isExpanded — הנתון isExpanded בהקשר הפעולה.
       const isExpanded =
         effectiveExpandedTopicId ===
         topic.id;

@@ -1,9 +1,16 @@
+-- קובץ: supabase/migrations/20260914170000_phase10_6_7_cross_job_type_dashboard_context.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סוג תפקיד.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_dashboard_context_policy, public.save_dynamic_dashboard_context_policy, public.get_my_dynamic_runtime_context.
+-- - מבני טבלאות: public.job_type_dashboard_context_rules.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 10.6.7 - Generic cross Job Type dashboard context
 -- A Job Type can expose selected other Job Types on its members' dashboard,
 -- but only when assignments actually overlap the member's current/next assignment.
 
 begin;
 
+-- הגדרת מבנה הטבלה public.job_type_dashboard_context_rules והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_dashboard_context_rules (
   source_job_type_id uuid not null references public.job_types(id) on delete cascade,
   target_job_type_id uuid not null references public.job_types(id) on delete cascade,
@@ -14,31 +21,41 @@ create table if not exists public.job_type_dashboard_context_rules (
   constraint job_type_dashboard_context_rules_no_self check (source_job_type_id <> target_job_type_id)
 );
 
+-- הגדרת האינדקס job_type_dashboard_context_rules_target_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists job_type_dashboard_context_rules_target_idx
   on public.job_type_dashboard_context_rules(target_job_type_id)
   where enabled = true;
 
+-- עדכון מבנה או הגדרות הטבלה public.job_type_dashboard_context_rules.
 alter table public.job_type_dashboard_context_rules enable row level security;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.job_type_dashboard_context_rules from anon, authenticated;
 
+-- פונקציית מסד public.get_dynamic_dashboard_context_policy: שליפה או חישוב של דינמי / לוח בקרה / מדיניות.
 create or replace function public.get_dynamic_dashboard_context_policy(requested_job_type_id uuid)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
   actor uuid := auth.uid();
+  -- source_name — מקור / שם.
   source_name text;
 begin
+  -- הסתעפות לפי התנאי actor is null.
   if actor is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     public.current_user_has_permission('users.view')
     or public.current_user_has_permission('users.manage')
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -48,10 +65,13 @@ begin
   where jt.id = requested_job_type_id
     and jt.legacy_role is null;
 
+  -- הסתעפות לפי התנאי source_name is null.
   if source_name is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'dynamic job type not found';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'jobTypeId', requested_job_type_id,
     'jobTypeName', source_name,
@@ -68,40 +88,53 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_dashboard_context_policy(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_dashboard_context_policy(uuid) to authenticated;
 
+-- פונקציית מסד public.save_dynamic_dashboard_context_policy: שמירת דינמי / לוח בקרה / מדיניות.
 create or replace function public.save_dynamic_dashboard_context_policy(
   requested_job_type_id uuid,
   requested_target_job_type_ids uuid[] default array[]::uuid[]
 )
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
   actor uuid := auth.uid();
+  -- invalid_target_count — יעד / כמות.
   invalid_target_count integer;
 begin
+  -- הסתעפות לפי התנאי actor is null.
   if actor is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not public.current_user_has_permission('users.manage').
   if not public.current_user_has_permission('users.manage') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.job_types jt
     where jt.id = requested_job_type_id
       and jt.legacy_role is null
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'dynamic job type not found';
   end if;
 
+  -- הסתעפות לפי התנאי requested_job_type_id = any(coalesce(requested_target_job_type_ids, array[]::uuid[])).
   if requested_job_type_id = any(coalesce(requested_target_job_type_ids, array[]::uuid[])) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'a job type cannot expose itself as additional dashboard context';
   end if;
 
@@ -114,13 +147,17 @@ begin
    and jt.legacy_role is null
   where jt.id is null;
 
+  -- הסתעפות לפי התנאי invalid_target_count > 0.
   if invalid_target_count > 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'one or more dashboard context job types are invalid or inactive';
   end if;
 
+  -- מחיקת הרשומות שנבחרו מתוך public.job_type_dashboard_context_rules בהתאם לקלט ולתנאים להלן.
   delete from public.job_type_dashboard_context_rules r
   where r.source_job_type_id = requested_job_type_id;
 
+  -- הוספת רשומות ל־public.job_type_dashboard_context_rules בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_dashboard_context_rules (
     source_job_type_id,
     target_job_type_id,
@@ -138,26 +175,36 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.save_dynamic_dashboard_context_policy(uuid, uuid[]) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.save_dynamic_dashboard_context_policy(uuid, uuid[]) to authenticated;
 
 -- Dynamic employee dashboard context. The current/next assignment stays the anchor.
 -- For every configured target Job Type we return all published assignments whose
 -- actual time interval overlaps that anchor. Overnight shifts are handled by
 -- advancing the end timestamp to the following day when end <= start.
+-- פונקציית מסד public.get_my_dynamic_runtime_context: שליפה או חישוב של דינמי.
 create or replace function public.get_my_dynamic_runtime_context()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_month — חודש.
   current_month date := date_trunc('month', now() at time zone 'Asia/Jerusalem')::date;
+  -- can_manage — האם פעולת ניהול מותרת.
   can_manage boolean := false;
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -426,7 +473,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_runtime_context() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_runtime_context() to authenticated;
 
 commit;

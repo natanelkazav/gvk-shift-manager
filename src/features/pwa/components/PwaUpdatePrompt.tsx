@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/pwa/components/PwaUpdatePrompt.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור התקנה ועדכוני PWA.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PwaUpdatePrompt.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 /// <reference types="vite-plugin-pwa/react" />
 
 import {
@@ -18,21 +25,28 @@ import {
 
 import '../../../styles/pwaUpdate.css';
 
+// updateCheckIntervalMs — מרווח זמן.
 const updateCheckIntervalMs =
   5 * 60 * 1000;
 
+/**
+ * פעולה PwaUpdatePrompt: התקנה ועדכוני PWA.
+ */
 function PwaUpdatePrompt() {
+  // הפניה יציבה registrationRef בין רינדורים; שינוי current אינו מפעיל רינדור בפני עצמו.
   const registrationRef =
     useRef<
       ServiceWorkerRegistration | null
     >(null);
 
+  // מצב מקומי: isUpdating — הנתון isUpdating בהקשר הפעולה; setIsUpdating מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isUpdating,
     setIsUpdating,
   ] =
     useState(false);
 
+  // מצב מקומי: updateError — שגיאה; setUpdateError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     updateError,
     setUpdateError,
@@ -53,6 +67,11 @@ function PwaUpdatePrompt() {
       immediate:
         true,
 
+      /**
+       * פעולה onRegisteredSW: הנתון onRegisteredSW בהקשר הפעולה.
+       * @param _serviceWorkerUrl — שירות / כתובת יעד.
+       * @param registration — הנתון registration בהקשר הפעולה.
+       */
       onRegisteredSW(
         _serviceWorkerUrl,
         registration,
@@ -62,6 +81,10 @@ function PwaUpdatePrompt() {
           null;
       },
 
+      /**
+       * פעולה onRegisterError: שגיאה.
+       * @param error — שגיאה.
+       */
       onRegisterError(
         error,
       ) {
@@ -78,6 +101,7 @@ function PwaUpdatePrompt() {
         const registration =
           registrationRef.current;
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !registration || !navigator.onLine.
         if (
           !registration ||
           !navigator.onLine
@@ -85,6 +109,7 @@ function PwaUpdatePrompt() {
           return;
         }
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await registration.update();
         } catch (
@@ -99,8 +124,10 @@ function PwaUpdatePrompt() {
       [],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ checkForUpdate, ].
   useEffect(
     () => {
+      // intervalId — מרווח זמן / מזהה.
       const intervalId =
         window.setInterval(
           () => {
@@ -114,6 +141,10 @@ function PwaUpdatePrompt() {
           updateCheckIntervalMs,
         );
 
+      /**
+       * פעולה handleVisibilityChange: טיפול באירוע עבור הנתון handleVisibilityChange בהקשר הפעולה.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleVisibilityChange =
         (): void => {
           if (
@@ -124,11 +155,19 @@ function PwaUpdatePrompt() {
           }
         };
 
+      /**
+       * פעולה handleWindowFocus: טיפול באירוע עבור הנתון handleWindowFocus בהקשר הפעולה.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleWindowFocus =
         (): void => {
           void checkForUpdate();
         };
 
+      /**
+       * פעולה handleOnline: טיפול באירוע עבור הנתון handleOnline בהקשר הפעולה.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleOnline =
         (): void => {
           void checkForUpdate();
@@ -149,6 +188,7 @@ function PwaUpdatePrompt() {
         handleOnline,
       );
 
+      // initialCheckId — מזהה.
       const initialCheckId =
         window.setTimeout(
           () => {
@@ -187,8 +227,13 @@ function PwaUpdatePrompt() {
     ],
   );
 
+  /**
+   * פעולה אסינכרונית handleUpdateNow: טיפול באירוע עבור הנתון handleUpdateNow בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleUpdateNow =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isUpdating.
       if (
         isUpdating
       ) {
@@ -203,6 +248,7 @@ function PwaUpdatePrompt() {
         null,
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await updateServiceWorker(
           true,
@@ -225,6 +271,7 @@ function PwaUpdatePrompt() {
       }
     };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !needRefresh.
   if (
     !needRefresh
   ) {

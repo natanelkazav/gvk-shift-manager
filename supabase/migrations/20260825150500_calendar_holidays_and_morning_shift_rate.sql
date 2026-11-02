@@ -1,42 +1,62 @@
+-- קובץ: supabase/migrations/20260825150500_calendar_holidays_and_morning_shift_rate.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור לוח שנה / חגים / משמרת.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_calendar_holidays, public.update_user_compensation, public.get_payroll_statistics.
+-- - מבני טבלאות: public.profiles.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Calendar holiday labels + fixed per-shift pay for morning drivers.
 
+-- עדכון מבנה או הגדרות הטבלה public.profiles.
 alter table public.profiles
 add column if not exists morning_shift_rate numeric null;
 
+-- עדכון מבנה או הגדרות הטבלה public.profiles.
 alter table public.profiles
 drop constraint if exists profiles_morning_shift_rate_non_negative;
 
+-- עדכון מבנה או הגדרות הטבלה public.profiles.
 alter table public.profiles
 add constraint profiles_morning_shift_rate_non_negative
 check (morning_shift_rate is null or morning_shift_rate >= 0);
 
+-- פונקציית מסד public.get_calendar_holidays: שליפה או חישוב של לוח שנה / חגים.
 create or replace function public.get_calendar_holidays(
   requested_year integer,
   requested_month integer
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- first_date — תאריך.
   first_date date;
+  -- next_month — חודש.
   next_month date;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.profiles
     where id = current_user_id and is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
+  -- הסתעפות לפי התנאי requested_year < 2020 or requested_year > 2100.
   if requested_year < 2020 or requested_year > 2100
      or requested_month < 1 or requested_month > 12 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid year or month';
   end if;
 
@@ -59,11 +79,13 @@ begin
 end;
 $function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_calendar_holidays(integer, integer)
 to authenticated;
 
 drop function if exists public.update_user_compensation(uuid, numeric, numeric);
 
+-- פונקציית מסד public.update_user_compensation: עדכון משתמש.
 create or replace function public.update_user_compensation(
   target_user_id uuid,
   requested_hourly_rate numeric default null,
@@ -72,27 +94,39 @@ create or replace function public.update_user_compensation(
 )
 returns boolean
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
   target_role public.user_role;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
+  -- הסתעפות לפי התנאי not ('payroll.manage' = any(current_permissions)).
   if not ('payroll.manage' = any(current_permissions)) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'payroll manage permission required';
   end if;
 
+  -- הסתעפות לפי התנאי requested_hourly_rate is not null and requested_hourly_rate < 0.
   if requested_hourly_rate is not null and requested_hourly_rate < 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'hourly rate cannot be negative';
   end if;
+  -- הסתעפות לפי התנאי requested_daily_duty_rate is not null and requested_daily_duty_rate < 0.
   if requested_daily_duty_rate is not null and requested_daily_duty_rate < 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'daily duty rate cannot be negative';
   end if;
+  -- הסתעפות לפי התנאי requested_morning_shift_rate is not null and requested_morning_shift_rate < 0.
   if requested_morning_shift_rate is not null and requested_morning_shift_rate < 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'morning shift rate cannot be negative';
   end if;
 
@@ -101,9 +135,12 @@ begin
   where id = target_user_id
   for update;
 
+  -- הסתעפות לפי התנאי not found then raise exception 'target user was not found'; end if;.
   if not found then raise exception 'target user was not found'; end if;
 
+  -- הסתעפות לפי התנאי target_role = 'dispatcher'::public.user_role.
   if target_role = 'dispatcher'::public.user_role then
+    -- עדכון רשומות ב־public.profiles בהתאם לקלט ולתנאים להלן.
     update public.profiles
     set hourly_rate = requested_hourly_rate,
         daily_duty_rate = null,
@@ -111,6 +148,7 @@ begin
         updated_at = now()
     where id = target_user_id;
   elsif target_role = 'on_call'::public.user_role then
+    -- עדכון רשומות ב־public.profiles בהתאם לקלט ולתנאים להלן.
     update public.profiles
     set hourly_rate = null,
         daily_duty_rate = requested_daily_duty_rate,
@@ -118,6 +156,7 @@ begin
         updated_at = now()
     where id = target_user_id;
   elsif target_role = 'morning_driver'::public.user_role then
+    -- עדכון רשומות ב־public.profiles בהתאם לקלט ולתנאים להלן.
     update public.profiles
     set hourly_rate = null,
         daily_duty_rate = null,
@@ -125,6 +164,7 @@ begin
         updated_at = now()
     where id = target_user_id;
   else
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'compensation can be configured only for dispatchers, morning drivers and on-call drivers';
   end if;
 
@@ -132,29 +172,40 @@ begin
 end;
 $function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.update_user_compensation(uuid, numeric, numeric, numeric)
 to authenticated;
 
+-- פונקציית מסד public.get_payroll_statistics: שליפה או חישוב של חישובי שכר / סטטיסטיקה.
 create or replace function public.get_payroll_statistics(
   requested_years integer[] default null::integer[],
   requested_months integer[] default null::integer[]
 ) returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
   dispatchers_json jsonb := '[]'::jsonb;
   drivers_json jsonb := '[]'::jsonb;
+  -- morning_drivers_json — כונני בוקר.
   morning_drivers_json jsonb := '[]'::jsonb;
+  -- projected_dispatcher_pay — מוקדנים.
   projected_dispatcher_pay numeric := 0;
+  -- projected_driver_pay — כוננים.
   projected_driver_pay numeric := 0;
+  -- projected_morning_driver_pay — כונני בוקר.
   projected_morning_driver_pay numeric := 0;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
+  -- הסתעפות לפי התנאי not ('payroll.view' = any(current_permissions)) then raise exception 'payroll view permission required'; end if;.
   if not ('payroll.view' = any(current_permissions)) then raise exception 'payroll view permission required'; end if;
 
   with dispatcher_totals as (
@@ -212,6 +263,7 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object('userId',user_id,'displayName',display_name,'scheduleName',schedule_name,'shiftRate',morning_shift_rate,'totalShifts',total_shifts,'projectedPay',projected_pay) order by coalesce(schedule_name,display_name)),'[]'::jsonb),coalesce(sum(projected_pay),0)
   into morning_drivers_json,projected_morning_driver_pay from rows;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('dispatchers',dispatchers_json,'drivers',drivers_json,'morningDrivers',morning_drivers_json,'projectedDispatcherPay',projected_dispatcher_pay,'projectedDriverPay',projected_driver_pay,'projectedMorningDriverPay',projected_morning_driver_pay,'actualPayAvailable',false,'attendanceAvailable',false);
 end;
 $function$;

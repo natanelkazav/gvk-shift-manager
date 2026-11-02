@@ -1,15 +1,22 @@
+-- קובץ: supabase/migrations/20260912190000_phase10_1_dynamic_shifts_workspace.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / משמרות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_shifts_management_workspace, public.set_dynamic_period_submission_deadline.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 10.1: Dynamic-first /shifts management workspace.
 -- This creates a generic management surface keyed only by job_type_id.
 -- Legacy availability/schedule roles remain untouched as a rollback layer.
 
 begin;
 
+-- פונקציית מסד public.get_dynamic_shifts_management_workspace: שליפה או חישוב של דינמי / משמרות.
 create or replace function public.get_dynamic_shifts_management_workspace(
   requested_year integer,
   requested_month integer
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
@@ -18,8 +25,11 @@ declare
   actor_role text;
   transition_manager boolean := false;
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי requested_year not between 2020 and 2100 or requested_month not between 1 and 12.
   if requested_year not between 2020 and 2100 or requested_month not between 1 and 12 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid year or month';
   end if;
 
@@ -27,6 +37,7 @@ begin
   from public.profiles p
   where p.id = actor and p.is_active = true;
 
+  -- הסתעפות לפי התנאי actor_role is null then raise exception 'user not active'; end if;.
   if actor_role is null then raise exception 'user not active'; end if;
 
   transition_manager := exists (
@@ -41,12 +52,15 @@ begin
       )
   );
 
+  -- הסתעפות לפי התנאי actor_role <> 'admin'.
   if actor_role <> 'admin'
      and not transition_manager
      and not exists (select 1 from public.job_type_managers jm where jm.user_id = actor) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'year', requested_year,
     'month', requested_month,
@@ -147,6 +161,7 @@ begin
 end;
 $$;
 
+-- פונקציית מסד public.set_dynamic_period_submission_deadline: קביעת מועד אחרון להגשת אילוצים.
 create or replace function public.set_dynamic_period_submission_deadline(
   requested_job_type_id uuid,
   requested_year integer,
@@ -155,15 +170,19 @@ create or replace function public.set_dynamic_period_submission_deadline(
 )
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
   actor uuid := auth.uid();
+  -- target_period — יעד / תקופה.
   target_period public.dynamic_availability_periods%rowtype;
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     public.has_dynamic_job_type_permission('availability.open_period', requested_job_type_id, actor)
     or exists (
@@ -171,6 +190,7 @@ begin
       where up.user_id = actor and up.permission_key = 'users.manage'
     )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -180,14 +200,18 @@ begin
     and ap.year = requested_year
     and ap.month = requested_month;
 
+  -- הסתעפות לפי התנאי target_period.id is null then raise exception 'dynamic period not found'; end if;.
   if target_period.id is null then raise exception 'dynamic period not found'; end if;
+  -- הסתעפות לפי התנאי target_period.status in ('archived') then raise exception 'archived period cannot be changed'; end if;.
   if target_period.status in ('archived') then raise exception 'archived period cannot be changed'; end if;
 
+  -- עדכון רשומות ב־public.dynamic_availability_periods בהתאם לקלט ולתנאים להלן.
   update public.dynamic_availability_periods
   set submission_deadline = requested_deadline,
       updated_at = now()
   where id = target_period.id;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(action, actor_user_id, entity_type, entity_id, summary, metadata)
   values(
     'system_event', actor, 'dynamic_availability_period', target_period.id,
@@ -202,9 +226,13 @@ begin
 end;
 $$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_shifts_management_workspace(integer, integer) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.set_dynamic_period_submission_deadline(uuid, integer, integer, timestamptz) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_shifts_management_workspace(integer, integer) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.set_dynamic_period_submission_deadline(uuid, integer, integer, timestamptz) to authenticated;
 
 commit;

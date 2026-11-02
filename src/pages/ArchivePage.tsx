@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/ArchivePage.tsx
+ * מטרה: מימוש מסך המשתמש עבור ארכיון.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: getPeriodTitle, formatDateTime, ArchivePage, loadInitialArchive.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
   Archive,
@@ -31,6 +38,7 @@ import type {
 
 import '../styles/archive.css';
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -46,9 +54,15 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+/**
+ * פעולה getPeriodTitle: שליפה או חישוב של תקופה / כותרת.
+ * @param period — תקופה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getPeriodTitle(
   period: UnifiedArchivePeriod,
 ): string {
+  // monthName — חודש / שם.
   const monthName =
     hebrewMonths[
       period.month - 1
@@ -58,16 +72,24 @@ function getPeriodTitle(
   return `${monthName} ${period.year}`;
 }
 
+/**
+ * פעולה formatDateTime: עיצוב ערך לתצוגה עבור תאריך / זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDateTime(
   value: string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return 'לא הוגדר';
   }
 
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -90,7 +112,11 @@ function formatDateTime(
   );
 }
 
+/**
+ * פעולה ArchivePage: ארכיון.
+ */
 function ArchivePage() {
+  // מצב מקומי: periods — תקופות; setPeriods מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     periods,
     setPeriods,
@@ -99,12 +125,14 @@ function ArchivePage() {
       [],
     );
 
+  // מצב מקומי: isLoading — האם טעינה מתבצעת; setIsLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isLoading,
     setIsLoading,
   ] =
     useState(true);
 
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     error,
     setError,
@@ -113,18 +141,27 @@ function ArchivePage() {
       null,
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(
     () => {
+      // isCancelled — הנתון isCancelled בהקשר הפעולה.
       let isCancelled =
         false;
 
+      /**
+       * פעולה אסינכרונית loadInitialArchive: טעינת ארכיון.
+       * @returns Promise<void> — הפלט בהתאם לחתימה.
+       */
       async function loadInitialArchive():
         Promise<void> {
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // response — תוצאת הפעולה.
           const response =
             await archiveService
               .getPeriods();
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
           if (isCancelled) {
             return;
           }
@@ -139,6 +176,7 @@ function ArchivePage() {
         } catch (
           loadError
         ) {
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
           if (isCancelled) {
             return;
           }
@@ -170,8 +208,13 @@ function ArchivePage() {
     [],
   );
 
+  /**
+   * פעולה אסינכרונית handleRefresh: טיפול באירוע עבור הנתון handleRefresh בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleRefresh =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading.
       if (isLoading) {
         return;
       }
@@ -184,7 +227,9 @@ function ArchivePage() {
         null,
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // response — תוצאת הפעולה.
         const response =
           await archiveService
             .getPeriods();
@@ -208,6 +253,7 @@ function ArchivePage() {
       }
     };
 
+  // ערך מחושב years — שנים; נשמר בין רינדורים עד שינוי התלויות.
   const years =
     useMemo(
       () =>

@@ -1,17 +1,27 @@
+-- קובץ: supabase/migrations/20261013223000_my_oncall_coverage_conflicts.sql
+-- מטרה: הצגת התנגשויות בין הכוננות האישית לבין אילוצי הזמינות והצורך בכיסוי.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_oncall_coverage_conflicts.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Read-only, authenticated conflict lookup for published daily on-call rotations.
 -- A conflict is a currently assigned future shift whose employee explicitly submitted "unavailable".
 -- Do not infer a conflict from missing entries or from a shift already transferred to another employee.
+-- פונקציית מסד public.get_my_oncall_coverage_conflicts: שליפה או חישוב של הנתון get_my_oncall_coverage_conflicts בהקשר הפעולה.
 create or replace function public.get_my_oncall_coverage_conflicts()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
   v_actor uuid := auth.uid();
+  -- v_result — תוצאה.
   v_result jsonb;
 begin
+  -- הסתעפות לפי התנאי v_actor is null.
   if v_actor is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -58,5 +68,7 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_oncall_coverage_conflicts() from public, anon;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_oncall_coverage_conflicts() to authenticated;

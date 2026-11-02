@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useDispatcherAvailability.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור מוקדנים / אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DispatcherAvailabilityStatistics, UseDispatcherAvailabilityResult, getErrorMessage, calculateStatistics, runInBatches, useDispatcherAvailability.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useEffect,
@@ -16,7 +23,11 @@ import type {
   SubmitAvailabilityResult,
 } from '../types/dispatcherAvailability';
 
+/**
+ * חוזה הנתונים DispatcherAvailabilityStatistics: מוקדנים / אילוצים וזמינות / סטטיסטיקה.
+ */
 interface DispatcherAvailabilityStatistics {
+  // total — סך הכול.
   total: number;
   answered: number;
   unanswered: number;
@@ -25,22 +36,31 @@ interface DispatcherAvailabilityStatistics {
   completionPercentage: number;
 }
 
+/**
+ * חוזה הנתונים UseDispatcherAvailabilityResult: מוקדנים / אילוצים וזמינות / תוצאה.
+ */
 interface UseDispatcherAvailabilityResult {
+  // state — מצב.
   state:
     DispatcherAvailabilityState;
 
+  // statistics — סטטיסטיקה.
   statistics:
     DispatcherAvailabilityStatistics;
 
   isDirty: boolean;
 
+  // isSavingDraft — האם שמירה מתבצעת.
   isSavingDraft: boolean;
 
+  // isSubmitting — האם הגשה מתבצעת.
   isSubmitting: boolean;
 
+  // lastSubmitResult — תוצאה.
   lastSubmitResult:
     SubmitAvailabilityResult | null;
 
+  // loadAvailability — אילוצים וזמינות.
   loadAvailability:
     () => Promise<void>;
 
@@ -53,16 +73,20 @@ interface UseDispatcherAvailabilityResult {
   markAllAvailable:
     () => void;
 
+  // saveAvailabilityDraft — אילוצים וזמינות / טיוטה.
   saveAvailabilityDraft:
     () => Promise<void>;
 
+  // submitAvailability — אילוצים וזמינות.
   submitAvailability:
     () => Promise<SubmitAvailabilityResult>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   DispatcherAvailabilityState = {
     data: null,
@@ -70,9 +94,15 @@ const initialState:
     error: null,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -82,10 +112,16 @@ function getErrorMessage(
   return 'אירעה שגיאה בלתי צפויה בניהול האילוצים.';
 }
 
+/**
+ * פעולה calculateStatistics: חישוב סטטיסטיקה.
+ * @param shifts — משמרות.
+ * @returns DispatcherAvailabilityStatistics — הפלט בהתאם לחתימה.
+ */
 function calculateStatistics(
   shifts:
     DispatcherAvailabilityShift[],
 ): DispatcherAvailabilityStatistics {
+  // total — סך הכול.
   const total =
     shifts.length;
 
@@ -132,6 +168,13 @@ function calculateStatistics(
   };
 }
 
+/**
+ * פעולה אסינכרונית runInBatches: הנתון runInBatches בהקשר הפעולה.
+ * @param items — פריטים.
+ * @param batchSize — הנתון batchSize בהקשר הפעולה.
+ * @param action — הנתון action בהקשר הפעולה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function runInBatches<T>(
   items: T[],
   batchSize: number,
@@ -159,8 +202,13 @@ async function runInBatches<T>(
   }
 }
 
+/**
+ * פעולה useDispatcherAvailability: חיבור מצב או הקשר עבור מוקדנים / אילוצים וזמינות.
+ * @returns UseDispatcherAvailabilityResult — הפלט בהתאם לחתימה.
+ */
 export function useDispatcherAvailability():
   UseDispatcherAvailabilityResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -169,6 +217,7 @@ export function useDispatcherAvailability():
       initialState,
     );
 
+  // מצב מקומי: dirtyShiftIds — מזהה המשמרת; setDirtyShiftIds מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     dirtyShiftIds,
     setDirtyShiftIds,
@@ -178,18 +227,21 @@ export function useDispatcherAvailability():
         new Set(),
     );
 
+  // מצב מקומי: isSavingDraft — האם שמירה מתבצעת; setIsSavingDraft מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isSavingDraft,
     setIsSavingDraft,
   ] =
     useState(false);
 
+  // מצב מקומי: isSubmitting — האם הגשה מתבצעת; setIsSubmitting מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isSubmitting,
     setIsSubmitting,
   ] =
     useState(false);
 
+  // מצב מקומי: lastSubmitResult — תוצאה; setLastSubmitResult מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     lastSubmitResult,
     setLastSubmitResult,
@@ -198,6 +250,7 @@ export function useDispatcherAvailability():
       null,
     );
 
+  // loadAvailability — אילוצים וזמינות.
   const loadAvailability =
     useCallback(
       async (): Promise<void> => {
@@ -213,7 +266,9 @@ export function useDispatcherAvailability():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await dispatcherAvailabilityService
               .getMyOpenAvailability();
@@ -254,6 +309,7 @@ export function useDispatcherAvailability():
       [],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ loadAvailability, ].
   useEffect(
     () => {
       void loadAvailability();
@@ -263,6 +319,7 @@ export function useDispatcherAvailability():
     ],
   );
 
+  // setShiftAvailability — קבוצה ייחודית / משמרת / אילוצים וזמינות.
   const setShiftAvailability =
     useCallback(
       (
@@ -275,6 +332,7 @@ export function useDispatcherAvailability():
           (
             currentState,
           ) => {
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentState.data || currentState.data .submission .status === 'submitted'.
             if (
               !currentState.data ||
               currentState.data
@@ -285,6 +343,7 @@ export function useDispatcherAvailability():
               return currentState;
             }
 
+            // updatedShifts — משמרות.
             const updatedShifts =
               currentState.data
                 .shifts
@@ -319,6 +378,7 @@ export function useDispatcherAvailability():
           (
             currentIds,
           ) => {
+            // nextIds — הנתון nextIds בהקשר הפעולה; אוסף ערכים ייחודיים.
             const nextIds =
               new Set(
                 currentIds,
@@ -346,6 +406,7 @@ export function useDispatcherAvailability():
           (
             currentState,
           ) => {
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentState.data || currentState.data .submission .status === 'submitted'.
             if (
               !currentState.data ||
               currentState.data
@@ -403,9 +464,11 @@ export function useDispatcherAvailability():
       ],
     );
 
+  // saveAvailabilityDraft — אילוצים וזמינות / טיוטה.
   const saveAvailabilityDraft =
     useCallback(
       async (): Promise<void> => {
+        // עצירת הפעולה עם שגיאה כאשר !state.data.
         if (
           !state.data
         ) {
@@ -414,6 +477,7 @@ export function useDispatcherAvailability():
           );
         }
 
+        // עצירת הפעולה עם שגיאה כאשר state.data .submission .status === 'submitted'.
         if (
           state.data
             .submission
@@ -425,6 +489,7 @@ export function useDispatcherAvailability():
           );
         }
 
+        // shiftsToSave — משמרות.
         const shiftsToSave =
           state.data
             .shifts
@@ -439,6 +504,7 @@ export function useDispatcherAvailability():
                   null,
             );
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר shiftsToSave.length === 0.
         if (
           shiftsToSave.length ===
           0
@@ -460,6 +526,7 @@ export function useDispatcherAvailability():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await runInBatches(
             shiftsToSave,
@@ -480,6 +547,7 @@ export function useDispatcherAvailability():
             },
           );
 
+          // refreshedData — נתונים.
           const refreshedData =
             await dispatcherAvailabilityService
               .getMyOpenAvailability();
@@ -524,9 +592,11 @@ export function useDispatcherAvailability():
       ],
     );
 
+  // submitAvailability — אילוצים וזמינות.
   const submitAvailability =
     useCallback(
       async (): Promise<SubmitAvailabilityResult> => {
+        // עצירת הפעולה עם שגיאה כאשר !state.data.
         if (
           !state.data
         ) {
@@ -535,10 +605,12 @@ export function useDispatcherAvailability():
           );
         }
 
+        // עצירת הפעולה עם שגיאה כאשר dirtyShiftIds.size > 0.
         if (
           dirtyShiftIds.size >
           0
         ) {
+          // errorMessage — הודעת שגיאה.
           const errorMessage =
             'יש לשמור את השינויים לפני הגשת האילוצים.';
 
@@ -557,6 +629,7 @@ export function useDispatcherAvailability():
           );
         }
 
+        // עצירת הפעולה עם שגיאה כאשר state.data .submission .status === 'submitted'.
         if (
           state.data
             .submission
@@ -568,17 +641,20 @@ export function useDispatcherAvailability():
           );
         }
 
+        // currentStatistics — סטטיסטיקה.
         const currentStatistics =
           calculateStatistics(
             state.data
               .shifts,
           );
 
+        // עצירת הפעולה עם שגיאה כאשר currentStatistics .unanswered > 0.
         if (
           currentStatistics
             .unanswered >
           0
         ) {
+          // errorMessage — הודעת שגיאה.
           const errorMessage =
             `נותרו ${currentStatistics.unanswered} משמרות שטרם סומנו.`;
 
@@ -615,7 +691,9 @@ export function useDispatcherAvailability():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await dispatcherAvailabilityService
               .submitMyAvailability();
@@ -624,6 +702,7 @@ export function useDispatcherAvailability():
             (
               currentState,
             ) => {
+              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentState.data.
               if (
                 !currentState.data
               ) {
@@ -691,6 +770,7 @@ export function useDispatcherAvailability():
       ],
     );
 
+  // ערך מחושב statistics — סטטיסטיקה; נשמר בין רינדורים עד שינוי התלויות.
   const statistics =
     useMemo(
       () =>
@@ -704,6 +784,7 @@ export function useDispatcherAvailability():
       ],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback(
       (): void => {

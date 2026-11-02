@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/statistics/views/ActivityTrackingStatistics.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור מעקב פעילות וזמני עבודה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: Mode, ActivityTrackingStatistics.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { useEffect,useMemo,useState } from 'react';
 import { CalendarDays,Clock3,Gauge,Pencil,TrendingUp } from 'lucide-react';
 import Modal from '../../../components/ui/Modal';
@@ -5,29 +12,68 @@ import StatisticsPieChart from '../components/StatisticsPieChart';
 import StatisticsStackedBarChart from '../components/StatisticsStackedBarChart';
 import { activityTrackingService } from '../../../services/activityTrackingService';
 import type { ActivityRange,StatisticsPeriodMode } from '../../../types/activityTracking';
+/**
+ * טיפוס Mode: מצב פעולה.
+ */
 type Mode='overview'|'charts'|'tables'|'availability'|'payroll';
+/**
+ * פעולה hhmm: הנתון hhmm בהקשר הפעולה.
+ * @param hours — שעות.
+ */
 const hhmm=(hours:number)=>{const mins=Math.round(hours*60);return `${Math.floor(mins/60)}:${String(mins%60).padStart(2,'0')}`};
+/**
+ * פעולה shortDate: תאריך.
+ * @param value — ערך.
+ */
 const shortDate=(value:string)=>new Date(`${value}T12:00:00`).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'});
+/**
+ * פעולה sundayOf: הנתון sundayOf בהקשר הפעולה.
+ * @param value — ערך.
+ */
 const sundayOf=(value:string)=>{const d=new Date(`${value}T12:00:00`);d.setDate(d.getDate()-d.getDay());return d.toISOString().slice(0,10)};
+/**
+ * פעולה ActivityTrackingStatistics: מעקב פעילות וזמני עבודה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 export default function ActivityTrackingStatistics({jobTypeId,mode,selectedUserIds,rangeStart,rangeEnd,ranges,periodMode,canEdit=true,includeInactive=false}:{jobTypeId:string;mode:Mode;selectedUserIds:string[];rangeStart:string;rangeEnd:string;ranges?:Array<{start:string;end:string}>;periodMode:StatisticsPeriodMode;canEdit?:boolean;includeInactive?:boolean}){
+ // מצב מקומי: data — נתונים; setData מעדכנת אותו ומפעילה רינדור לפי React.
  const[data,setData]=useState<ActivityRange|null>(null);const[error,setError]=useState<string|null>(null);const[editing,setEditing]=useState<ActivityRange['rows'][number]|null>(null);const[start,setStart]=useState('');const[end,setEnd]=useState('');const[reason,setReason]=useState('');
  const requestedRanges=ranges?.length?ranges:[{start:rangeStart,end:rangeEnd}];
+ /**
+  * פעולה אסינכרונית loadRange: טעינת הנתון loadRange בהקשר הפעולה.
+  */
  const loadRange=async()=>{const results=await Promise.all(requestedRanges.map(range=>activityTrackingService.getRange(jobTypeId,range.start,range.end,includeInactive)));return{rangeStart:requestedRanges[0].start,rangeEnd:requestedRanges[requestedRanges.length-1].end,rows:results.flatMap(result=>result.rows)} as ActivityRange};
+ /**
+  * פעולה reload: הנתון reload בהקשר הפעולה.
+  */
  const reload=()=>loadRange().then(setData);
+ // rangesKey — מפתח.
  const rangesKey=requestedRanges.map(range=>`${range.start}:${range.end}`).join('|');
+ // תופעת לוואי לאחר רינדור בהתאם לתלויות [jobTypeId,rangesKey,includeInactive].
  useEffect(()=>{let active=true;loadRange().then(x=>{if(active){setData(x);setError(null)}}).catch(e=>{if(active){setData(null);setError(e?.message??'')}});return()=>{active=false}},[jobTypeId,rangesKey,includeInactive]);
+ // ערך מחושב rows — שורות; נשמר בין רינדורים עד שינוי התלויות.
  const rows=useMemo(()=>selectedUserIds.length?(data?.rows??[]).filter(r=>selectedUserIds.includes(r.userId)):(data?.rows??[]),[data,selectedUserIds]);
+ // ערך מחושב totals — הנתון totals בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
  const totals=useMemo(()=>{const m=new Map<string,{key:string;label:string;value:number}>();for(const r of rows){const x=m.get(r.activityKey)??{key:r.activityKey,label:r.activityLabel,value:0};x.value+=Number(r.hours);m.set(r.activityKey,x)}return [...m.values()].sort((a,b)=>b.value-a.value)},[rows]);
+ // total — סך הכול.
  const total=totals.reduce((s,x)=>s+x.value,0);
+ // ערך מחושב workDays — ימים; נשמר בין רינדורים עד שינוי התלויות.
  const workDays=useMemo(()=>new Set(rows.map(r=>`${r.userId}:${r.workDate}`)).size,[rows]);
+ // avgPerDay — יום.
  const avgPerDay=workDays?total/workDays:0;
+ // ערך מחושב dayTotals — יום; נשמר בין רינדורים עד שינוי התלויות.
  const dayTotals=useMemo(()=>{const m=new Map<string,number>();for(const r of rows)m.set(`${r.userId}:${r.workDate}`,(m.get(`${r.userId}:${r.workDate}`)??0)+Number(r.hours));return [...m.values()]},[rows]);
+ // longestDay — יום.
  const longestDay=dayTotals.length?Math.max(...dayTotals):0;
  const leading=totals[0];const leadingPct=total&&leading?Math.round(leading.value/total*100):0;
+ // ערך מחושב daily — הנתון daily בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
  const daily=useMemo(()=>{const m=new Map<string,Map<string,number>>();for(const r of rows){const d=m.get(r.workDate)??new Map<string,number>();d.set(r.activityLabel,(d.get(r.activityLabel)??0)+Number(r.hours));m.set(r.workDate,d)}return [...m].sort(([a],[b])=>a.localeCompare(b))},[rows]);
+ // ערך מחושב trend — הנתון trend בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
  const trend=useMemo(()=>{const series=new Map<string,string>();const buckets=new Map<string,{label:string;values:Record<string,number>}>();for(const r of rows){series.set(r.activityKey,r.activityLabel);let key=r.workDate,label=shortDate(r.workDate);if(periodMode==='month'){key=sundayOf(r.workDate);label=`שבוע ${shortDate(key)}`}else if(periodMode==='year'){key=r.workDate.slice(0,7);label=new Date(`${key}-01T12:00:00`).toLocaleDateString('he-IL',{month:'short'})}const b=buckets.get(key)??{label,values:{}};b.values[r.activityKey]=(b.values[r.activityKey]??0)+Number(r.hours);buckets.set(key,b)}return{series:[...series].map(([key,label])=>({key,label})),items:[...buckets].sort(([a],[b])=>a.localeCompare(b)).map(([key,b])=>({key,label:b.label,values:Object.fromEntries(Object.entries(b.values).map(([k,v])=>[k,Math.round(v*100)/100]))}))}},[rows,periodMode]);
  if(error?.includes('not allowed')||(!data&&!error))return null;if(!data)return null;
+ // periodText — תקופה.
  const periodText=requestedRanges.length>1?`${requestedRanges.length} תקופות נבחרו`:`${new Date(`${rangeStart}T12:00:00`).toLocaleDateString('he-IL')} – ${new Date(`${rangeEnd}T12:00:00`).toLocaleDateString('he-IL')}`;
+ // summary — סיכום.
  const summary=<div className="statistics-summary-grid activity-kpi-grid"><article><Clock3 size={22}/><div><span>סה״כ זמן</span><strong>{hhmm(total)} שעות</strong></div></article><article><CalendarDays size={22}/><div><span>ימי עבודה מתועדים</span><strong>{workDays}</strong></div></article><article><Gauge size={22}/><div><span>ממוצע ליום עבודה</span><strong>{hhmm(avgPerDay)} שעות</strong></div></article><article><TrendingUp size={22}/><div><span>יום העבודה הארוך ביותר</span><strong>{hhmm(longestDay)} שעות</strong></div></article>{leading?<article><div><span>הפעילות המרכזית</span><strong>{leading.label} · {leadingPct}%</strong></div></article>:null}</div>;
  if(mode==='overview')return <section className="statistics-section activity-statistics"><header><div><h2>סיכום פעילות</h2><p>{periodText}</p></div></header>{summary}<div className="activity-overview-breakdown">{totals.map(x=><div key={x.key}><span>{x.label}</span><strong>{hhmm(x.value)} שעות</strong><small>{total?Math.round(x.value/total*100):0}% מהזמן</small></div>)}</div></section>;
  if(mode==='charts')return <section className="statistics-section activity-statistics"><header><div><h2>ניתוח פעילות</h2><p>{periodText}</p></div></header><div className="statistics-charts-grid"><StatisticsPieChart title="חלוקת זמן לפי פעילות" description="איזה חלק מזמן העבודה הושקע בכל תחום." slices={totals.map(x=>({label:x.label,value:Math.round(x.value*100)/100}))} valueFormatter={hhmm}/><StatisticsStackedBarChart title="מגמת פעילות לאורך התקופה" description={periodMode==='year'?'חלוקה חודשית לפי תחומי פעילות.':periodMode==='month'?'חלוקה שבועית לפי תחומי פעילות.':'חלוקה יומית לפי תחומי פעילות.'} series={trend.series} items={trend.items} unitLabel="שעות" valueFormatter={hhmm}/></div><div className="activity-daily-summary"><h3>פירוט יומי לפי פעילות</h3><p>סיכום נקי של הזמן בכל פעילות בכל יום, ללא פירוק למקטעים.</p>{daily.length?<table><thead><tr><th>תאריך</th><th>פעילות</th><th>זמן</th><th>חלק מהיום</th></tr></thead><tbody>{daily.flatMap(([date,items])=>{const dayTotal=[...items.values()].reduce((s,v)=>s+v,0);return [...items].map(([activity,hours],i)=><tr key={`${date}-${activity}`}><td>{i===0?new Date(`${date}T12:00:00`).toLocaleDateString('he-IL'):''}</td><td>{activity}</td><td>{hhmm(hours)}</td><td>{dayTotal?Math.round(hours/dayTotal*100):0}%</td></tr>)})}</tbody></table>:<p>אין נתוני פעילות בתקופה שנבחרה.</p>}</div></section>;

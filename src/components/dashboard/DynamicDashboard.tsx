@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/dashboard/DynamicDashboard.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי / לוח בקרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DynamicDashboardProps, formatDate, formatTime, getAvailabilityText, DynamicDashboard.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
   CalendarClock,
@@ -20,10 +27,14 @@ import type {
   DynamicRuntimeRole,
 } from '../../types/dynamicRuntime';
 
+/**
+ * חוזה הנתונים DynamicDashboardProps: דינמי / לוח בקרה / מאפייני הרכיב.
+ */
 interface DynamicDashboardProps {
   context: DynamicRuntimeContext;
 }
 
+// workModeLabels — מצב פעולה.
 const workModeLabels: Record<DynamicRuntimeRole['workMode'], string> = {
   none: 'ללא שיבוץ',
   shifts: 'משמרות',
@@ -31,12 +42,18 @@ const workModeLabels: Record<DynamicRuntimeRole['workMode'], string> = {
   on_call_daily: 'כוננות יומית',
 };
 
+// strategyLabels — שיטת שיבוץ.
 const strategyLabels: Record<DynamicRuntimeRole['schedulingStrategy'], string> = {
   none: 'ללא שיבוצים',
   availability_optimizer: 'שיבוץ לפי אילוצים',
   monthly_rotation_constraints: 'סבב חודשי + אילוצים',
 };
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(value: string): string {
   const [year, month, day] = value.split('-').map(Number);
   return new Intl.DateTimeFormat('he-IL', {
@@ -46,11 +63,23 @@ function formatDate(value: string): string {
   }).format(new Date(year, month - 1, day));
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(value: string): string {
   return value.slice(0, 5);
 }
 
+/**
+ * פעולה getAvailabilityText: שליפה או חישוב של אילוצים וזמינות.
+ * @param role — הנתון role בהקשר הפעולה.
+ * @param period — תקופה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getAvailabilityText(role: DynamicRuntimeRole, period?: MyDynamicAvailabilityPeriod): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר period.
   if (period) {
     const suffix = `${String(period.month).padStart(2,'0')}/${period.year}`;
     return `${period.submissionStatus==='submitted'?'האילוצים הוגשו':'מולאו'} · ${period.filledCount}/${period.slotCount} · ${suffix}`;
@@ -58,6 +87,7 @@ function getAvailabilityText(role: DynamicRuntimeRole, period?: MyDynamicAvailab
   if (!role.availabilityEnabled) return 'התפקיד אינו משתמש במערכת אילוצים';
   if (!role.availability) return 'אין כרגע תקופת אילוצים פעילה';
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר role.availability.submissionStatus === 'submitted'.
   if (role.availability.submissionStatus === 'submitted') {
     return `האילוצים הוגשו · ${role.availability.filledCount}/${role.availability.slotCount}`;
   }
@@ -65,11 +95,22 @@ function getAvailabilityText(role: DynamicRuntimeRole, period?: MyDynamicAvailab
   return `מולאו ${role.availability.filledCount}/${role.availability.slotCount} משמרות`;
 }
 
+/**
+ * פעולה DynamicDashboard: דינמי / לוח בקרה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicDashboard({ context }: DynamicDashboardProps) {
+  // מצב מקומי: periods — תקופות; setPeriods מעדכנת אותו ומפעילה רינדור לפי React.
   const [periods, setPeriods] = useState<MyDynamicAvailabilityPeriod[]>([]);
+  // מצב מקומי: coverageConflicts — הנתון coverageConflicts בהקשר הפעולה; setCoverageConflicts מעדכנת אותו ומפעילה רינדור לפי React.
   const [coverageConflicts, setCoverageConflicts] = useState<MyOnCallCoverageConflict[]>([]);
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
+    /**
+     * פעולה refresh: רענון הנתון refresh בהקשר הפעולה.
+     */
     const refresh = () => { void dynamicSchedulingService.getMyOnCallCoverageConflicts()
       .then((items) => { if (active) setCoverageConflicts(items); })
       .catch((error) => console.error('Failed to load on-call coverage conflicts', error)); };
@@ -79,7 +120,12 @@ function DynamicDashboard({ context }: DynamicDashboardProps) {
     return () => { active = false; window.removeEventListener('focus', refresh); window.removeEventListener('gvk:dynamic-schedule-changed', refresh); };
   }, []);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => { let active = true; dynamicSchedulingService.getMyDynamicAvailabilityPeriods().then(data => { if (active) setPeriods(data); }).catch(() => {}); return () => { active = false; }; }, []);
+  /**
+   * פעולה getRelevantPeriod: שליפה או חישוב של תקופה.
+   * @param jobTypeId — מזהה סוג התפקיד.
+   */
   const getRelevantPeriod = (jobTypeId: string) => {
     const matches = periods.filter(p => p.jobTypeId === jobTypeId && (p.periodStatus === 'open' || p.periodStatus === 'closed'));
     return matches.sort((a,b) => (a.periodStatus === 'open' ? 0 : 1) - (b.periodStatus === 'open' ? 0 : 1) || (b.year-a.year) || (b.month-a.month))[0];

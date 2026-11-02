@@ -1,3 +1,11 @@
+/**
+ * קובץ: supabase/functions/process-monthly-schedule-archive/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת process-monthly-schedule-archive.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ProfileRow, DispatcherShiftRow, DriverDayRow, MorningAssignmentRow, MorningAvailabilityShiftRow, ExportDispatcherShift, ExportDriverDay, ExportMorningAssignment, DayRowDefinition, jsonResponse ועוד.
+ * - מקורות נתונים הנזכרים בקריאות from: profiles, dynamic_schedule_publications, job_types, dynamic_schedule_published_assignments, dynamic_availability_slots, monthly_schedule_archive_runs, audit_logs.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import ExcelJS from 'npm:exceljs@4.4.0';
 
 import {
@@ -8,22 +16,29 @@ import {
   scheduleExportTemplateBase64,
 } from './templateBase64.ts';
 
+// archiveSubject — ארכיון.
 const archiveSubject =
   'GVK_MONTHLY_TEAMS_ARCHIVE';
 
+// TEMPLATE_SHEET_NAME — תבנית / שם.
 const TEMPLATE_SHEET_NAME =
   'לוח זמנים ריק לכוננים';
 
+// FIRST_DATA_ROW — נתונים / שורה.
 const FIRST_DATA_ROW = 2;
+// ROWS_PER_DAY — שורות / יום.
 const ROWS_PER_DAY = 3;
+// MAX_DAYS — ימים.
 const MAX_DAYS = 31;
 
+// LAST_TEMPLATE_ROW — תבנית / שורה.
 const LAST_TEMPLATE_ROW =
   FIRST_DATA_ROW +
   MAX_DAYS *
     ROWS_PER_DAY -
   1;
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -39,6 +54,7 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+// hebrewWeekdays — הנתון hebrewWeekdays בהקשר הפעולה.
 const hebrewWeekdays = [
   'ראשון',
   'שני',
@@ -49,77 +65,144 @@ const hebrewWeekdays = [
   'שבת',
 ];
 
+/**
+ * חוזה הנתונים ProfileRow: פרופיל / שורה.
+ */
 interface ProfileRow {
+  // id — מזהה.
   id: string;
+  // display_name — שם תצוגה.
   display_name:
     string | null;
+  // schedule_name — שיבוץ / שם.
   schedule_name:
     string | null;
 }
 
+/**
+ * חוזה הנתונים DispatcherShiftRow: מוקדנים / משמרת / שורה.
+ */
 interface DispatcherShiftRow {
+  // id — מזהה.
   id: string;
+  // shift_date — תאריך המשמרת.
   shift_date: string;
+  // starts_at — מועד התחלה.
   starts_at: string;
+  // ends_at — מועד סיום.
   ends_at: string;
+  // is_premium — תעריף מוגדל.
   is_premium: boolean;
+  // holiday_name — חג / שם.
   holiday_name:
     string | null;
+  // assigned_user_id — מזהה העובד המשובץ.
   assigned_user_id:
     string | null;
 }
 
+/**
+ * חוזה הנתונים DriverDayRow: כוננים / יום / שורה.
+ */
 interface DriverDayRow {
+  // duty_date — תאריך.
   duty_date: string;
+  // assigned_user_id — מזהה העובד המשובץ.
   assigned_user_id:
     string | null;
 }
 
+/**
+ * חוזה הנתונים MorningAssignmentRow: הקצאה / שורה.
+ */
 interface MorningAssignmentRow {
+  // availability_shift_id — מזהה המשמרת.
   availability_shift_id: string;
+  // assignment_slot — הקצאה.
   assignment_slot: number;
+  // assigned_user_id — מזהה העובד המשובץ.
   assigned_user_id:
     string | null;
 }
 
+/**
+ * חוזה הנתונים MorningAvailabilityShiftRow: אילוצים וזמינות / משמרת / שורה.
+ */
 interface MorningAvailabilityShiftRow {
+  // id — מזהה.
   id: string;
+  // shift_date — תאריך המשמרת.
   shift_date: string;
+  // start_time — שעת התחלה.
   start_time: string;
+  // end_time — שעת סיום.
   end_time: string;
 }
 
+/**
+ * חוזה הנתונים ExportDispatcherShift: ייצוא / מוקדנים / משמרת.
+ */
 interface ExportDispatcherShift {
+  // shiftDate — תאריך המשמרת.
   shiftDate: string;
+  // startsAt — מועד התחלה.
   startsAt: string;
+  // endsAt — מועד סיום.
   endsAt: string;
+  // isPremium — תעריף מוגדל.
   isPremium: boolean;
+  // holidayName — חג / שם.
   holidayName:
     string | null;
+  // assignedUserName — משתמש / שם.
   assignedUserName:
     string | null;
 }
 
+/**
+ * חוזה הנתונים ExportDriverDay: ייצוא / כוננים / יום.
+ */
 interface ExportDriverDay {
+  // dutyDate — תאריך.
   dutyDate: string;
+  // assignedUserName — משתמש / שם.
   assignedUserName:
     string | null;
 }
 
+/**
+ * חוזה הנתונים ExportMorningAssignment: ייצוא / הקצאה.
+ */
 interface ExportMorningAssignment {
+  // shiftDate — תאריך המשמרת.
   shiftDate: string;
+  // startTime — שעת התחלה.
   startTime: string;
+  // endTime — שעת סיום.
   endTime: string;
+  // assignmentSlot — הקצאה.
   assignmentSlot: number;
+  // assignedUserName — משתמש / שם.
   assignedUserName:
     string | null;
 }
 
+/**
+ * חוזה הנתונים DayRowDefinition: יום / שורה.
+ */
 interface DayRowDefinition {
+  // dispatcherHours — מוקדנים / שעות.
   dispatcherHours: string;
+  // morningDriverHours — כונני בוקר.
   morningDriverHours: string;
 }
 
+/**
+ * פעולה jsonResponse: תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 function jsonResponse(
   body: unknown,
   status = 200,
@@ -138,9 +221,15 @@ function jsonResponse(
   );
 }
 
+/**
+ * פעולה requiredEnv: הנתון requiredEnv בהקשר הפעולה.
+ * @param name — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function requiredEnv(
   name: string,
 ): string {
+  // value — ערך.
   const value =
     Deno.env
       .get(
@@ -148,6 +237,7 @@ function requiredEnv(
       )
       ?.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !value.
   if (!value) {
     throw new Error(
       `Missing environment variable: ${name}`,
@@ -157,6 +247,11 @@ function requiredEnv(
   return value;
 }
 
+/**
+ * פעולה padNumber: הנתון padNumber בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function padNumber(
   value: number,
 ): string {
@@ -167,6 +262,13 @@ function padNumber(
     );
 }
 
+/**
+ * פעולה createDateKey: יצירת תאריך / מפתח.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @param day — יום.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function createDateKey(
   year: number,
   month: number,
@@ -185,6 +287,12 @@ function createDateKey(
   );
 }
 
+/**
+ * פעולה getDaysInMonth: שליפה או חישוב של ימים / חודש.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns number — הפלט בהתאם לחתימה.
+ */
 function getDaysInMonth(
   year: number,
   month: number,
@@ -196,10 +304,17 @@ function getDaysInMonth(
   ).getDate();
 }
 
+/**
+ * פעולה getIsraelMonth: שליפה או חישוב של חודש.
+ * @returns { year: number; month: number; day: number; } — הפלט בהתאם לחתימה.
+ */
 function getIsraelMonth():
   {
+    // year — שנה.
     year: number;
+    // month — חודש.
     month: number;
+    // day — יום.
     day: number;
   } {
   const parts =
@@ -220,6 +335,7 @@ function getIsraelMonth():
         new Date(),
       );
 
+  // values — ערכים.
   const values =
     Object.fromEntries(
       parts.map(
@@ -248,10 +364,16 @@ function getIsraelMonth():
   };
 }
 
+/**
+ * פעולה normalizeTime: נרמול זמן.
+ * @param value — ערך.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function normalizeTime(
   value:
     string | null,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return null;
   }
@@ -264,6 +386,7 @@ function normalizeTime(
       /^(\d{1,2}):(\d{2})/,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר plainMatch.
   if (plainMatch) {
     return `${padNumber(
       Number(
@@ -272,11 +395,13 @@ function normalizeTime(
     )}:${plainMatch[2]}`;
   }
 
+  // date — תאריך.
   const date =
     new Date(
       trimmed,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -307,6 +432,12 @@ function normalizeTime(
     );
 }
 
+/**
+ * פעולה createShiftRange: יצירת משמרת.
+ * @param startTime — שעת התחלה.
+ * @param endTime — שעת סיום.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function createShiftRange(
   startTime:
     string | null,
@@ -323,6 +454,7 @@ function createShiftRange(
       endTime,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !start || !end.
   if (
     !start ||
     !end
@@ -333,12 +465,19 @@ function createShiftRange(
   return `${start}-${end}`;
 }
 
+/**
+ * פעולה getDayRows: שליפה או חישוב של יום / שורות.
+ * @param weekdayNumber — הנתון weekdayNumber בהקשר הפעולה.
+ * @param weekendOrHoliday — חג.
+ * @returns DayRowDefinition[] — הפלט בהתאם לחתימה.
+ */
 function getDayRows(
   weekdayNumber:
     number,
   weekendOrHoliday:
     boolean,
 ): DayRowDefinition[] {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר weekendOrHoliday || weekdayNumber === 5 || weekdayNumber === 6.
   if (
     weekendOrHoliday ||
     weekdayNumber === 5 ||
@@ -388,6 +527,13 @@ function getDayRows(
   ];
 }
 
+/**
+ * פעולה getTemplateSourceRow: שליפה או חישוב של תבנית / מקור / שורה.
+ * @param weekdayNumber — הנתון weekdayNumber בהקשר הפעולה.
+ * @param rowOffset — שורה / מיקום תחילת התוצאות.
+ * @param weekendOrHoliday — חג.
+ * @returns number — הפלט בהתאם לחתימה.
+ */
 function getTemplateSourceRow(
   weekdayNumber:
     number,
@@ -396,6 +542,7 @@ function getTemplateSourceRow(
   weekendOrHoliday:
     boolean,
 ): number {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר weekdayNumber === 6 || weekendOrHoliday.
   if (
     weekdayNumber === 6 ||
     weekendOrHoliday
@@ -404,6 +551,7 @@ function getTemplateSourceRow(
       rowOffset;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר weekdayNumber === 5.
   if (
     weekdayNumber === 5
   ) {
@@ -415,6 +563,11 @@ function getTemplateSourceRow(
     rowOffset;
 }
 
+/**
+ * פעולה deepClone: הנתון deepClone בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns T — הפלט בהתאם לחתימה.
+ */
 function deepClone<T>(
   value: T,
 ): T {
@@ -425,6 +578,13 @@ function deepClone<T>(
   ) as T;
 }
 
+/**
+ * פעולה copyTemplateRowStyle: תבנית / שורה.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @param sourceRowNumber — מקור / שורה.
+ * @param targetRowNumber — יעד / שורה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function copyTemplateRowStyle(
   worksheet:
     ExcelJS.Worksheet,
@@ -433,11 +593,13 @@ function copyTemplateRowStyle(
   targetRowNumber:
     number,
 ): void {
+  // sourceRow — מקור / שורה.
   const sourceRow =
     worksheet.getRow(
       sourceRowNumber,
     );
 
+  // targetRow — יעד / שורה.
   const targetRow =
     worksheet.getRow(
       targetRowNumber,
@@ -466,6 +628,13 @@ function copyTemplateRowStyle(
   }
 }
 
+/**
+ * פעולה copyFill: הנתון copyFill בהקשר הפעולה.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @param sourceAddress — מקור.
+ * @param targetAddress — יעד.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function copyFill(
   worksheet:
     ExcelJS.Worksheet,
@@ -488,6 +657,11 @@ function copyFill(
       );
 }
 
+/**
+ * פעולה isNightShiftRange: בדיקת תנאי עבור משמרת.
+ * @param range — הנתון range בהקשר הפעולה.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function isNightShiftRange(
   range:
     string,
@@ -500,6 +674,14 @@ function isNightShiftRange(
   );
 }
 
+/**
+ * פעולה applyShiftHourStyle: החלת משמרת.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @param row — שורה.
+ * @param isPremium — תעריף מוגדל.
+ * @param isNight — הנתון isNight בהקשר הפעולה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function applyShiftHourStyle(
   worksheet:
     ExcelJS.Worksheet,
@@ -510,6 +692,7 @@ function applyShiftHourStyle(
   isNight:
     boolean,
 ): void {
+  // sourceRow — מקור / שורה.
   const sourceRow =
     isPremium
       ? 2
@@ -530,6 +713,11 @@ function applyShiftHourStyle(
   );
 }
 
+/**
+ * פעולה clearTemplateValues: תבנית / ערכים.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function clearTemplateValues(
   worksheet:
     ExcelJS.Worksheet,
@@ -557,6 +745,15 @@ function clearTemplateValues(
   }
 }
 
+/**
+ * פעולה setExportDate: קביעת קבוצה ייחודית / ייצוא / תאריך.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @param address — הנתון address בהקשר הפעולה.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @param day — יום.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function setExportDate(
   worksheet:
     ExcelJS.Worksheet,
@@ -590,12 +787,19 @@ function setExportDate(
     'dd/mm/yyyy';
 }
 
+/**
+ * פעולה hideUnusedRows: שורות.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @param daysInMonth — ימים / חודש.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function hideUnusedRows(
   worksheet:
     ExcelJS.Worksheet,
   daysInMonth:
     number,
 ): void {
+  // firstUnusedRow — שורה.
   const firstUnusedRow =
     FIRST_DATA_ROW +
     daysInMonth *
@@ -618,6 +822,11 @@ function hideUnusedRows(
   }
 }
 
+/**
+ * פעולה hasWeekendOrHolidayLayout: בדיקת קיום עבור חג / פריסת מסך.
+ * @param shifts — משמרות.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function hasWeekendOrHolidayLayout(
   shifts:
     ExportDispatcherShift[],
@@ -657,10 +866,17 @@ function hasWeekendOrHolidayLayout(
   );
 }
 
+/**
+ * פעולה createFileName: יצירת קובץ / שם.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function createFileName(
   year: number,
   month: number,
 ): string {
+  // monthName — חודש / שם.
   const monthName =
     hebrewMonths[
       month - 1
@@ -674,6 +890,11 @@ function createFileName(
   )}.xlsx`;
 }
 
+/**
+ * פעולה base64ToBytes: הנתון base64ToBytes בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns Uint8Array — הפלט בהתאם לחתימה.
+ */
 function base64ToBytes(
   value: string,
 ): Uint8Array {
@@ -702,6 +923,11 @@ function base64ToBytes(
   return bytes;
 }
 
+/**
+ * פעולה bytesToBase64: הנתון bytesToBase64 בהקשר הפעולה.
+ * @param bytes — הנתון bytes בהקשר הפעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function bytesToBase64(
   bytes:
     Uint8Array,
@@ -737,6 +963,12 @@ function bytesToBase64(
   );
 }
 
+/**
+ * פעולה אסינכרונית loadProfileMap: טעינת פרופיל / מפת התאמה.
+ * @param adminClient — לקוח.
+ * @param userIds — מזהה משתמש.
+ * @returns Promise< Map< string, string > > — הפלט בהתאם לחתימה.
+ */
 async function loadProfileMap(
   adminClient:
     ReturnType<
@@ -750,6 +982,7 @@ async function loadProfileMap(
     string
   >
 > {
+  // uniqueIds — הנתון uniqueIds בהקשר הפעולה.
   const uniqueIds =
     Array.from(
       new Set(
@@ -759,6 +992,7 @@ async function loadProfileMap(
       ),
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר uniqueIds.length === 0.
   if (
     uniqueIds.length ===
       0
@@ -766,6 +1000,7 @@ async function loadProfileMap(
     return new Map();
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -782,6 +1017,7 @@ async function loadProfileMap(
         uniqueIds,
       );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
@@ -809,29 +1045,51 @@ async function loadProfileMap(
   );
 }
 
+/**
+ * חוזה הנתונים DynamicPublishedAssignment: דינמי / פורסם / הקצאה.
+ */
 interface DynamicPublishedAssignment {
+  // id — מזהה.
   id: string;
+  // shift_date — תאריך המשמרת.
   shift_date: string;
+  // shift_code — משמרת.
   shift_code: string | null;
+  // shift_name — משמרת / שם.
   shift_name: string | null;
+  // start_time — שעת התחלה.
   start_time: string;
+  // end_time — שעת סיום.
   end_time: string;
+  // user_id — מזהה משתמש.
   user_id: string | null;
+  // slot_id — מזהה.
   slot_id: string | null;
 }
 
 /** The export is intentionally restricted to the three original Teams columns. */
+/**
+ * פעולה אסינכרונית loadMonthData: טעינת חודש / נתונים.
+ * @param adminClient — לקוח.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns Promise<{ dispatcherShifts: ExportDispatcherShift[]; driverDays: ExportDriverDay[]; morningAssignments: ExportMorningAssignment[]; — הפלט בהתאם לחתימה.
+ */
 async function loadMonthData(
   adminClient: ReturnType<typeof createClient>,
   year: number,
   month: number,
 ): Promise<{
+  // dispatcherShifts — מוקדנים / משמרות.
   dispatcherShifts: ExportDispatcherShift[];
+  // driverDays — כוננים / ימים.
   driverDays: ExportDriverDay[];
+  // morningAssignments — הקצאות.
   morningAssignments: ExportMorningAssignment[];
 }> {
   // Resolve the *published* dynamic job types for this month, rather than
   // legacy_role codes. The manual export panel also excludes legacy roles.
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data: publications, error: publicationsError } = await adminClient
     .from('dynamic_schedule_publications')
     .select('id, job_type_id, status, config_snapshot')
@@ -840,24 +1098,33 @@ async function loadMonthData(
     .in('status', ['published', 'archived']);
   if (publicationsError) throw publicationsError;
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data: jobs, error: jobsError } = await adminClient
     .from('job_types')
     .select('id, name, code, legacy_role');
   if (jobsError) throw jobsError;
+  // jobById — מזהה; מיפוי לחיפוש לפי מפתח.
   const jobById = new Map((jobs ?? []).map((job) => [job.id, job]));
 
+  /**
+   * טיפוס ArchiveRole: ארכיון.
+   */
   type ArchiveRole = 'dispatcher' | 'on_call' | 'morning_driver';
   const candidates: Record<ArchiveRole, Array<{ id: string; job_type_id: string }>> = {
     dispatcher: [], on_call: [], morning_driver: [],
   };
+  // עיבוד כל פריט מתוך publications ?? [] בנפרד.
   for (const publication of publications ?? []) {
     const job = jobById.get(publication.job_type_id);
     // Never silently export a legacy job type or an orphaned publication.
     if (!job || job.legacy_role) continue;
     const snapshot = publication.config_snapshot as {
+      // jobType — סוג תפקיד (אופציונלי).
       jobType?: { shiftPattern?: { workMode?: unknown } };
     } | null;
+    // mode — מצב פעולה.
     const mode = snapshot?.jobType?.shiftPattern?.workMode;
+    // name — שם.
     const name = String(job.name ?? '');
     let role: ArchiveRole | null = null;
     if (mode === 'shifts' && /מוקד|dispatcher|dispatch/i.test(name)) role = 'dispatcher';
@@ -870,8 +1137,10 @@ async function loadMonthData(
   const labels: Record<ArchiveRole, string> = {
     dispatcher: 'לוח המוקדנים', on_call: 'לוח הכוננים', morning_driver: 'לוח כונני הבוקר',
   };
+  // selected — נבחר.
   const selected = roles.map((role) => {
     const matching = candidates[role];
+    // עצירת הפעולה עם שגיאה כאשר matching.length !== 1.
     if (matching.length !== 1) {
       throw new Error(
         `לא ניתן לזהות פרסום יחיד עבור ${labels[role]} בחודש ${month}/${year}: נמצאו ${matching.length}. ` +
@@ -881,6 +1150,7 @@ async function loadMonthData(
     return matching[0];
   });
 
+  // results — תוצאות.
   const results = await Promise.all(selected.map((publication) =>
     adminClient
       .from('dynamic_schedule_published_assignments')
@@ -889,20 +1159,28 @@ async function loadMonthData(
       .order('shift_date')
       .order('start_time')
   ));
+  // עיבוד כל פריט מתוך results בנפרד.
   for (const result of results) if (result.error) throw result.error;
   const [dispatchers, drivers, mornings] = results.map((result) =>
     (result.data ?? []) as DynamicPublishedAssignment[]
   );
+  // עצירת הפעולה עם שגיאה כאשר !dispatchers.length || !drivers.length || !mornings.length.
   if (!dispatchers.length || !drivers.length || !mornings.length) {
     throw new Error('אחד הלוחות המפורסמים ריק; הארכיון נעצר כדי לא לשלוח קובץ חסר.');
   }
 
+  // profileMap — פרופיל / מפת התאמה.
   const profileMap = await loadProfileMap(adminClient, [
     ...dispatchers, ...drivers, ...mornings,
   ].map((row) => row.user_id ?? ''));
+  /**
+   * פעולה getName: שליפה או חישוב של שם.
+   * @param id — מזהה.
+   */
   const getName = (id: string | null) => id ? profileMap.get(id) ?? null : null;
 
   // Published assignments are the authoritative edited assignments, not rotation seeds.
+  // dispatcherShifts — מוקדנים / משמרות.
   const dispatcherShifts: ExportDispatcherShift[] = dispatchers.map((row) => ({
     shiftDate: row.shift_date,
     startsAt: row.start_time,
@@ -913,24 +1191,30 @@ async function loadMonthData(
   }));
 
   // Preserve premium / holiday formatting using the original availability slot snapshot.
+  // slotIds — הנתון slotIds בהקשר הפעולה.
   const slotIds = Array.from(new Set(dispatchers.map((row) => row.slot_id).filter((id): id is string => !!id)));
+  // עצירת הפעולה עם שגיאה כאשר dispatchers.some((row) => !row.slot_id).
   if (dispatchers.some((row) => !row.slot_id)) {
     throw new Error('חלק ממשמרות המוקדנים חסרות מזהה משמרת מקורית; לא ניתן לאמת רכיבי 200%.');
   }
   if (slotIds.length) {
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const { data: slots, error: slotsError } = await adminClient
       .from('dynamic_availability_slots')
       .select('id, holiday_name, pay_segments_snapshot')
       .in('id', slotIds);
     if (slotsError) throw slotsError;
+    // slotMap — מפת התאמה; מיפוי לחיפוש לפי מפתח.
     const slotMap = new Map((slots ?? []).map((slot) => [slot.id, slot]));
     dispatchers.forEach((row, index) => {
       const slot = row.slot_id ? slotMap.get(row.slot_id) : null;
       dispatcherShifts[index].holidayName = slot?.holiday_name ?? null;
+      // עצירת הפעולה עם שגיאה כאשר !slot.
       if (!slot) {
         throw new Error(`לא נמצאו נתוני משמרת מקוריים עבור ${row.shift_date} (${row.slot_id ?? 'ללא מזהה משמרת'}).`);
       }
       const segments: unknown = slot.pay_segments_snapshot;
+      // עצירת הפעולה עם שגיאה כאשר !Array.isArray(segments).
       if (!Array.isArray(segments)) {
         throw new Error(`מבנה רכיבי התעריף אינו תקין עבור ${row.shift_date} (${row.slot_id}).`);
       }
@@ -946,21 +1230,28 @@ async function loadMonthData(
     });
   }
 
+  // driverByDate — כוננים / תאריך; מיפוי לחיפוש לפי מפתח.
   const driverByDate = new Map<string, string | null>();
+  // עיבוד כל פריט מתוך drivers בנפרד.
   for (const row of drivers) {
+    // עצירת הפעולה עם שגיאה כאשר driverByDate.has(row.shift_date) && driverByDate.get(row.shift_date) !== row.user_id.
     if (driverByDate.has(row.shift_date) && driverByDate.get(row.shift_date) !== row.user_id) {
       throw new Error(`נמצאו שני כוננים שונים בתאריך ${row.shift_date}; התבנית תומכת בכונן אחד בלבד.`);
     }
     driverByDate.set(row.shift_date, row.user_id);
   }
+  // driverDays — כוננים / ימים.
   const driverDays: ExportDriverDay[] = [...driverByDate].map(([dutyDate, userId]) => ({
     dutyDate,
     assignedUserName: getName(userId),
   }));
 
   const morningBySlot = new Map<string, number>();
+  // morningAssignments — הקצאות.
   const morningAssignments: ExportMorningAssignment[] = mornings.map((row) => {
+    // key — מפתח.
     const key = `${row.shift_date}|${createShiftRange(row.start_time, row.end_time)}`;
+    // assignmentSlot — הקצאה.
     const assignmentSlot = (morningBySlot.get(key) ?? 0) + 1;
     morningBySlot.set(key, assignmentSlot);
     return {
@@ -973,20 +1264,26 @@ async function loadMonthData(
   });
 
   // Fail closed if any actual shift cannot fit the unchanged Teams workbook template.
+  // עיבוד כל פריט מתוך dispatcherShifts בנפרד.
   for (const row of dispatcherShifts) {
+    // day — יום.
     const day = new Date(`${row.shiftDate}T12:00:00Z`).getUTCDay();
     const ranges = [
       ...getDayRows(day, false), ...getDayRows(day, true),
     ].map((item) => item.dispatcherHours);
+    // עצירת הפעולה עם שגיאה כאשר !ranges.includes(createShiftRange(row.startsAt, row.endsAt) ?? '').
     if (!ranges.includes(createShiftRange(row.startsAt, row.endsAt) ?? '')) {
       throw new Error(`משמרת מוקדן ${row.shiftDate} ${row.startsAt}-${row.endsAt} אינה תואמת לתבנית Teams.`);
     }
   }
+  // עיבוד כל פריט מתוך morningAssignments בנפרד.
   for (const row of morningAssignments) {
+    // day — יום.
     const day = new Date(`${row.shiftDate}T12:00:00Z`).getUTCDay();
     const ranges = [
       ...getDayRows(day, false), ...getDayRows(day, true),
     ].map((item) => item.morningDriverHours);
+    // עצירת הפעולה עם שגיאה כאשר !ranges.includes(createShiftRange(row.startTime, row.endTime) ?? '').
     if (!ranges.includes(createShiftRange(row.startTime, row.endTime) ?? '')) {
       throw new Error(`משמרת כונן בוקר ${row.shiftDate} ${row.startTime}-${row.endTime} אינה תואמת לתבנית Teams.`);
     }
@@ -995,6 +1292,13 @@ async function loadMonthData(
   return { dispatcherShifts, driverDays, morningAssignments };
 }
 
+/**
+ * פעולה אסינכרונית createWorkbook: יצירת הנתון createWorkbook בהקשר הפעולה.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @param data — נתונים.
+ * @returns Promise<{ fileName: string; fileBase64: string; }> — הפלט בהתאם לחתימה.
+ */
 async function createWorkbook(
   year:
     number,
@@ -1007,13 +1311,16 @@ async function createWorkbook(
       >
     >,
 ): Promise<{
+  // fileName — קובץ / שם.
   fileName: string;
+  // fileBase64 — קובץ.
   fileBase64: string;
 }> {
   const workbook =
     new ExcelJS
       .Workbook();
 
+  // templateBytes — תבנית.
   const templateBytes =
     base64ToBytes(
       scheduleExportTemplateBase64,
@@ -1028,6 +1335,7 @@ async function createWorkbook(
       TEMPLATE_SHEET_NAME,
     );
 
+  // עצירת הפעולה עם שגיאה כאשר !worksheet.
   if (
     !worksheet
   ) {
@@ -1036,24 +1344,28 @@ async function createWorkbook(
     );
   }
 
+  // dispatcherMap — מוקדנים / מפת התאמה; מיפוי לחיפוש לפי מפתח.
   const dispatcherMap =
     new Map<
       string,
       ExportDispatcherShift
     >();
 
+  // shiftsByDate — משמרות / תאריך; מיפוי לחיפוש לפי מפתח.
   const shiftsByDate =
     new Map<
       string,
       ExportDispatcherShift[]
     >();
 
+  // holidayNotes — חג / הערות; מיפוי לחיפוש לפי מפתח.
   const holidayNotes =
     new Map<
       string,
       Set<string>
     >();
 
+  // עיבוד כל פריט מתוך data .dispatcherShifts בנפרד.
   for (
     const shift
     of data
@@ -1074,6 +1386,7 @@ async function createWorkbook(
       );
     }
 
+    // dateShifts — תאריך / משמרות.
     const dateShifts =
       shiftsByDate.get(
         shift.shiftDate,
@@ -1089,6 +1402,7 @@ async function createWorkbook(
       dateShifts,
     );
 
+    // holiday — חג.
     const holiday =
       shift.holidayName
         ?.trim();
@@ -1115,6 +1429,7 @@ async function createWorkbook(
     }
   }
 
+  // driverMap — כוננים / מפת התאמה; מיפוי לחיפוש לפי מפתח.
   const driverMap =
     new Map(
       data.driverDays
@@ -1134,6 +1449,7 @@ async function createWorkbook(
       ExportMorningAssignment[]
     >();
 
+  // עיבוד כל פריט מתוך data .morningAssignments בנפרד.
   for (
     const assignment
     of data
@@ -1158,9 +1474,11 @@ async function createWorkbook(
       continue;
     }
 
+    // key — מפתח.
     const key =
       `${assignment.shiftDate}|${range}`;
 
+    // values — ערכים.
     const values =
       morningGrouped.get(
         key,
@@ -1177,12 +1495,14 @@ async function createWorkbook(
     );
   }
 
+  // morningMap — מפת התאמה; מיפוי לחיפוש לפי מפתח.
   const morningMap =
     new Map<
       string,
       string
     >();
 
+  // עיבוד כל פריט מתוך morningGrouped בנפרד.
   for (
     const [
       key,
@@ -1229,6 +1549,7 @@ async function createWorkbook(
     worksheet,
   );
 
+  // notesHeader — הערות.
   const notesHeader =
     worksheet.getCell(
       'H1',
@@ -1251,6 +1572,7 @@ async function createWorkbook(
     .width =
       32;
 
+  // daysInMonth — ימים / חודש.
   const daysInMonth =
     getDaysInMonth(
       year,
@@ -1263,6 +1585,7 @@ async function createWorkbook(
       daysInMonth;
     day += 1
   ) {
+    // date — תאריך.
     const date =
       new Date(
         Date.UTC(
@@ -1276,6 +1599,7 @@ async function createWorkbook(
     const weekdayNumber =
       date.getUTCDay();
 
+    // dateKey — תאריך / מפתח.
     const dateKey =
       createDateKey(
         year,
@@ -1283,17 +1607,20 @@ async function createWorkbook(
         day,
       );
 
+    // dayShifts — יום / משמרות.
     const dayShifts =
       shiftsByDate.get(
         dateKey,
       ) ??
       [];
 
+    // weekendOrHoliday — חג.
     const weekendOrHoliday =
       hasWeekendOrHolidayLayout(
         dayShifts,
       );
 
+    // firstRow — שורה.
     const firstRow =
       FIRST_DATA_ROW +
       (
@@ -1301,6 +1628,7 @@ async function createWorkbook(
       ) *
         ROWS_PER_DAY;
 
+    // rows — שורות.
     const rows =
       getDayRows(
         weekdayNumber,
@@ -1312,6 +1640,7 @@ async function createWorkbook(
         definition,
         rowOffset,
       ) => {
+        // targetRow — יעד / שורה.
         const targetRow =
           firstRow +
           rowOffset;
@@ -1326,6 +1655,7 @@ async function createWorkbook(
           targetRow,
         );
 
+        // shift — משמרת.
         const shift =
           dispatcherMap.get(
             `${dateKey}|${definition.dispatcherHours}`,
@@ -1409,11 +1739,13 @@ async function createWorkbook(
           ?.assignedUserName ??
         null;
 
+    // lastNoteRow — הערה / שורה.
     const lastNoteRow =
       firstRow +
       ROWS_PER_DAY -
       1;
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       worksheet.unMergeCells(
         `H${firstRow}:H${lastNoteRow}`,
@@ -1426,6 +1758,7 @@ async function createWorkbook(
       `H${firstRow}:H${lastNoteRow}`,
     );
 
+    // notesCell — הערות.
     const notesCell =
       worksheet.getCell(
         `H${firstRow}`,
@@ -1466,6 +1799,7 @@ async function createWorkbook(
     daysInMonth,
   );
 
+  // output — פלט.
   const output =
     await workbook.xlsx
       .writeBuffer();
@@ -1489,6 +1823,17 @@ async function createWorkbook(
   };
 }
 
+/**
+ * פעולה אסינכרונית sendArchiveEmail: שליחת ארכיון / כתובת דוא״ל.
+ * @param resendApiKey — מפתח.
+ * @param fromEmail — כתובת דוא״ל.
+ * @param recipientEmail — כתובת דוא״ל.
+ * @param fileName — קובץ / שם.
+ * @param fileBase64 — קובץ.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns Promise<string | null> — הפלט בהתאם לחתימה.
+ */
 async function sendArchiveEmail(
   resendApiKey:
     string,
@@ -1505,6 +1850,7 @@ async function sendArchiveEmail(
   month:
     number,
 ): Promise<string | null> {
+  // response — תוצאת הפעולה.
   const response =
     await fetch(
       'https://api.resend.com/emails',
@@ -1562,10 +1908,12 @@ async function sendArchiveEmail(
       },
     );
 
+  // responseText — תוצאת הפעולה.
   const responseText =
     await response
       .text();
 
+  // עצירת הפעולה עם שגיאה כאשר !response.ok.
   if (
     !response.ok
   ) {
@@ -1574,11 +1922,14 @@ async function sendArchiveEmail(
     );
   }
 
+  // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
   try {
+    // responseBody — תוצאת הפעולה / תוכן.
     const responseBody =
       JSON.parse(
         responseText,
       ) as {
+        // id — מזהה (אופציונלי).
         id?: unknown;
       };
 
@@ -1592,12 +1943,19 @@ async function sendArchiveEmail(
 }
 
 
+/**
+ * פעולה אסינכרונית archiveDynamicPublications: ארכיון / דינמי.
+ * @param adminClient — לקוח.
+ * @param year — שנה.
+ * @param month — חודש.
+ */
 const archiveDynamicPublications = async (
   adminClient: ReturnType<typeof createClient>,
   year: number,
   month: number,
 ) => {
   const archivedAt = new Date().toISOString();
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data, error } = await adminClient
     .from('dynamic_schedule_publications')
     .update({ status: 'archived', updated_at: archivedAt })
@@ -1612,6 +1970,7 @@ Deno.serve(
     request:
       Request,
   ): Promise<Response> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !==
         'POST'
@@ -1625,6 +1984,7 @@ Deno.serve(
       );
     }
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       const cronSecret =
         requiredEnv(
@@ -1638,6 +1998,7 @@ Deno.serve(
           )
           ?.trim();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר suppliedSecret !== cronSecret.
       if (
         suppliedSecret !==
           cronSecret
@@ -1651,9 +2012,11 @@ Deno.serve(
         );
       }
 
+      // israelDate — תאריך.
       const israelDate =
         getIsraelMonth();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר israelDate.day !== 1.
     if (
       israelDate.day !==
         1
@@ -1667,6 +2030,7 @@ Deno.serve(
       });
     }
 
+  // previousMonthDate — חודש / תאריך.
   const previousMonthDate =
     new Date(
       Date.UTC(
@@ -1676,40 +2040,48 @@ Deno.serve(
       ),
     );
 
+  // year — שנה.
   const year =
     previousMonthDate
       .getUTCFullYear();
 
+  // month — חודש.
   const month =
     previousMonthDate
       .getUTCMonth() +
       1;
 
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         requiredEnv(
           'SUPABASE_URL',
         );
 
+      // serviceRoleKey — שירות / מפתח.
       const serviceRoleKey =
         requiredEnv(
           'SUPABASE_SERVICE_ROLE_KEY',
         );
 
+      // resendApiKey — מפתח.
       const resendApiKey =
         requiredEnv(
           'RESEND_API_KEY',
         );
 
+      // fromEmail — כתובת דוא״ל.
       const fromEmail =
         requiredEnv(
           'RESEND_FROM_EMAIL',
         );
 
+      // recipientEmail — כתובת דוא״ל.
       const recipientEmail =
         requiredEnv(
           'SCHEDULE_ARCHIVE_RECIPIENT_EMAIL',
         );
 
+      // adminClient — לקוח.
       const adminClient =
         createClient(
           supabaseUrl,
@@ -1724,6 +2096,7 @@ Deno.serve(
           },
         );
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           existingRun,
@@ -1748,17 +2121,20 @@ Deno.serve(
           )
           .maybeSingle();
 
+      // עצירת הפעולה עם שגיאה כאשר existingError.
       if (
         existingError
       ) {
         throw existingError;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר existingRun ?.status === 'sent'.
       if (
         existingRun
           ?.status ===
           'sent'
       ) {
+        // dynamicArchive — דינמי / ארכיון.
         const dynamicArchive = await archiveDynamicPublications(adminClient, year, month);
         return jsonResponse({
           skipped: true, reason: 'already_sent', year, month,
@@ -1766,12 +2142,14 @@ Deno.serve(
         });
       }
 
+      // runId — מזהה.
       let runId:
         string;
 
       if (
         existingRun
       ) {
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           data:
             updatedRun,
@@ -1810,6 +2188,7 @@ Deno.serve(
             )
             .single();
 
+        // עצירת הפעולה עם שגיאה כאשר updateError || !updatedRun.
         if (
           updateError ||
           !updatedRun
@@ -1823,6 +2202,7 @@ Deno.serve(
         runId =
           updatedRun.id;
       } else {
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           data:
             insertedRun,
@@ -1846,6 +2226,7 @@ Deno.serve(
             )
             .single();
 
+        // עצירת הפעולה עם שגיאה כאשר insertError || !insertedRun.
         if (
           insertError ||
           !insertedRun
@@ -1854,6 +2235,7 @@ Deno.serve(
            * אם שתי ריצות הגיעו יחד, ה-unique
            * על year/month ימנע כפילות.
            */
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר insertError ?.code === '23505'.
           if (
             insertError
               ?.code ===
@@ -1879,7 +2261,9 @@ Deno.serve(
           insertedRun.id;
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // monthData — חודש / נתונים.
         const monthData =
           await loadMonthData(
             adminClient,
@@ -1887,6 +2271,7 @@ Deno.serve(
             month,
           );
 
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           fileName,
           fileBase64,
@@ -1897,6 +2282,7 @@ Deno.serve(
             monthData,
           );
 
+        // emailId — כתובת דוא״ל / מזהה.
         const emailId =
           await sendArchiveEmail(
             resendApiKey,
@@ -1912,6 +2298,7 @@ Deno.serve(
           new Date()
             .toISOString();
 
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           error:
             runUpdateError,
@@ -1948,8 +2335,10 @@ Deno.serve(
           );
         }
 
+        // dynamicArchive — דינמי / ארכיון.
         const dynamicArchive = await archiveDynamicPublications(adminClient, year, month);
 
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           error:
             auditError,
@@ -2020,6 +2409,7 @@ Deno.serve(
       } catch (
         processError
       ) {
+        // message — הודעה.
         const message =
           processError instanceof
             Error

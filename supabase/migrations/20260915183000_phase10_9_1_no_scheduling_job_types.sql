@@ -1,54 +1,89 @@
+-- קובץ: supabase/migrations/20260915183000_phase10_9_1_no_scheduling_job_types.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סוגי תפקידים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.save_dynamic_job_type, public.get_dynamic_job_type_active_features.
+-- - מבני טבלאות: public.job_types, public.job_type_schedule_materializations.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 10.9.1 — Job Types without scheduling.
 -- "none" is a first-class strategy for operational roles that use capabilities
 -- such as Daily Reports but do not own a schedule/availability workflow.
 
+-- עדכון מבנה או הגדרות הטבלה public.job_types.
 alter table public.job_types
   drop constraint if exists job_types_scheduling_strategy_valid;
+-- עדכון מבנה או הגדרות הטבלה public.job_types.
 alter table public.job_types
   add constraint job_types_scheduling_strategy_valid
   check (scheduling_strategy in ('none','availability_optimizer','monthly_rotation_constraints'));
 
+-- עדכון מבנה או הגדרות הטבלה public.job_type_schedule_materializations.
 alter table public.job_type_schedule_materializations
   drop constraint if exists job_type_schedule_materializations_strategy_valid;
+-- עדכון מבנה או הגדרות הטבלה public.job_type_schedule_materializations.
 alter table public.job_type_schedule_materializations
   add constraint job_type_schedule_materializations_strategy_valid
   check (scheduling_strategy in ('none','availability_optimizer','monthly_rotation_constraints'));
 
+-- פונקציית מסד public.save_dynamic_job_type: שמירת סוג תפקיד.
 create or replace function public.save_dynamic_job_type(requested_payload jsonb)
 returns uuid
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid();
+  -- target_id — יעד / מזהה.
   target_id uuid;
+  -- target_group_id — יעד / קבוצה / מזהה.
   target_group_id uuid;
+  -- target_code — יעד.
   target_code text;
+  -- target_name — יעד / שם.
   target_name text;
+  -- target_description — יעד.
   target_description text;
+  -- target_scope — יעד.
   target_scope text;
+  -- target_pay_model — יעד.
   target_pay_model text;
+  -- target_strategy — יעד / שיטת שיבוץ.
   target_strategy text;
+  -- target_is_active — האם הרשומה פעילה היעד.
   target_is_active boolean;
+  -- target_pay_config — יעד / תצורה.
   target_pay_config jsonb;
+  -- target_availability_config — יעד / אילוצים וזמינות / תצורה.
   target_availability_config jsonb;
+  -- target_scheduling_config — יעד / תצורה.
   target_scheduling_config jsonb;
+  -- target_statistics_config — יעד / סטטיסטיקה / תצורה.
   target_statistics_config jsonb;
+  -- target_ai_config — יעד / תצורה.
   target_ai_config jsonb;
+  -- target_legacy_role — יעד.
   target_legacy_role text;
+  -- target_month — יעד / חודש.
   target_month date;
+  -- current_month — חודש.
   current_month date := date_trunc('month', now() at time zone 'Asia/Jerusalem')::date;
+  -- next_month — חודש.
   next_month date := (date_trunc('month', now() at time zone 'Asia/Jerusalem') + interval '1 month')::date;
   snapshot jsonb;
+  -- capability_value — ערך.
   capability_value jsonb;
+  -- permission_value — הרשאות / ערך.
   permission_value jsonb;
   is_new boolean := false;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.profiles p where p.id=current_user_id and p.is_active=true) then raise exception 'user n.
   if not exists(select 1 from public.profiles p where p.id=current_user_id and p.is_active=true) then raise exception 'user not active'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage') then raise exception 'not allowed'; end if;
 
   target_id:=nullif(requested_payload->>'id','')::uuid;
@@ -65,6 +100,7 @@ begin
   target_scheduling_config:=coalesce(requested_payload->'schedulingConfig','{}'::jsonb);
   target_statistics_config:=coalesce(requested_payload->'statisticsConfig','{}'::jsonb);
 
+  -- הסתעפות לפי התנאי nullif(requested_payload->>'effectiveYear','') is null.
   if nullif(requested_payload->>'effectiveYear','') is null
      or nullif(requested_payload->>'effectiveMonth','') is null then
     target_month := current_month;
@@ -76,27 +112,40 @@ begin
     );
   end if;
 
+  -- הסתעפות לפי התנאי target_month not in (current_month,next_month).
   if target_month not in (current_month,next_month) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type changes may only target the current or next month';
   end if;
 
   -- New dynamic roles are independent. Their schedule group is an internal implementation detail, not a legacy affiliation.
+  -- הסתעפות לפי התנאי target_id is null and target_group_id is null.
   if target_id is null and target_group_id is null then
+    -- הוספת רשומות ל־public.schedule_groups בהתאם לקלט ולתנאים להלן.
     insert into public.schedule_groups(code,name,description,legacy_kind,config)
     values('job_' || target_code, target_name || ' · מערך עצמאי', 'מערך פנימי שנוצר אוטומטית עבור סוג התפקיד ' || target_name, null, jsonb_build_object('ownerJobTypeCode',target_code,'independent',true))
     returning id into target_group_id;
   elsif target_group_id is null or not exists(select 1 from public.schedule_groups sg where sg.id=target_group_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'schedule group not found';
   end if;
+  -- הסתעפות לפי התנאי target_code='' or target_code !~ '^[a-z0-9_]+$' then raise exception 'invalid job type code'; end if;.
   if target_code='' or target_code !~ '^[a-z0-9_]+$' then raise exception 'invalid job type code'; end if;
+  -- הסתעפות לפי התנאי target_name='' then raise exception 'job type name is required'; end if;.
   if target_name='' then raise exception 'job type name is required'; end if;
+  -- הסתעפות לפי התנאי target_scope not in ('full_time','part_time','flexible') then raise exception 'invalid employment scope'; end if;.
   if target_scope not in ('full_time','part_time','flexible') then raise exception 'invalid employment scope'; end if;
+  -- הסתעפות לפי התנאי target_pay_model not in ('hourly','per_shift','per_day','mixed','none') then raise exception 'invalid pay model'; end if.
   if target_pay_model not in ('hourly','per_shift','per_day','mixed','none') then raise exception 'invalid pay model'; end if;
+  -- הסתעפות לפי התנאי target_strategy not in ('none','availability_optimizer','monthly_rotation_constraints') then raise exception 'invalid sc.
   if target_strategy not in ('none','availability_optimizer','monthly_rotation_constraints') then raise exception 'invalid scheduling strategy'; end if;
 
+  -- הסתעפות לפי התנאי target_id is null.
   if target_id is null then
+    -- הסתעפות לפי התנאי target_month <> current_month then raise exception 'new job types must start in the current month'; end if;.
     if target_month <> current_month then raise exception 'new job types must start in the current month'; end if;
     is_new := true;
+    -- הוספת רשומות ל־public.job_types בהתאם לקלט ולתנאים להלן.
     insert into public.job_types(
       schedule_group_id,code,name,description,is_active,employment_scope,pay_model,pay_config,
       availability_config,scheduling_strategy,scheduling_config,statistics_config,ai_config
@@ -107,9 +156,12 @@ begin
   else
     select jt.legacy_role,jt.ai_config into target_legacy_role,target_ai_config
     from public.job_types jt where jt.id=target_id;
+    -- הסתעפות לפי התנאי not found then raise exception 'job type not found'; end if;.
     if not found then raise exception 'job type not found'; end if;
 
+    -- הסתעפות לפי התנאי target_month=current_month.
     if target_month=current_month then
+      -- עדכון רשומות ב־public.job_types בהתאם לקלט ולתנאים להלן.
       update public.job_types set
         schedule_group_id=target_group_id,
         code=case when legacy_role is null then target_code else code end,
@@ -127,16 +179,23 @@ begin
     end if;
   end if;
 
+  -- הסתעפות לפי התנאי target_month=current_month.
   if target_month=current_month then
+    -- מחיקת הרשומות שנבחרו מתוך public.job_type_capabilities בהתאם לקלט ולתנאים להלן.
     delete from public.job_type_capabilities where job_type_id=target_id;
+    -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
     for capability_value in select value from jsonb_array_elements(coalesce(requested_payload->'capabilities','[]'::jsonb)) loop
+      -- הוספת רשומות ל־public.job_type_capabilities בהתאם לקלט ולתנאים להלן.
       insert into public.job_type_capabilities(job_type_id,capability_key,enabled,source)
       values(target_id,trim(both '"' from capability_value::text),true,'manual')
       on conflict(job_type_id,capability_key) do update set enabled=true,source='manual';
     end loop;
 
+    -- מחיקת הרשומות שנבחרו מתוך public.job_type_default_permissions בהתאם לקלט ולתנאים להלן.
     delete from public.job_type_default_permissions where job_type_id=target_id;
+    -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
     for permission_value in select value from jsonb_array_elements(coalesce(requested_payload->'defaultPermissions','[]'::jsonb)) loop
+      -- הוספת רשומות ל־public.job_type_default_permissions בהתאם לקלט ולתנאים להלן.
       insert into public.job_type_default_permissions(job_type_id,permission_key,source)
       values(target_id,trim(both '"' from permission_value::text),'manual')
       on conflict(job_type_id,permission_key) do nothing;
@@ -166,6 +225,7 @@ begin
     );
   end if;
 
+  -- הוספת רשומות ל־public.job_type_configuration_versions בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_configuration_versions(
     job_type_id,effective_month,snapshot,change_summary,created_by
   ) values(
@@ -185,46 +245,57 @@ $function$;
 -- A no-scheduling role receives no schedule, availability, rotation or exchange
 -- permissions. Other enabled capabilities (Daily Reports, statistics, payroll)
 -- remain independent.
+-- פונקציית מסד public.get_dynamic_job_type_active_features: שליפה או חישוב של סוג תפקיד.
 create or replace function public.get_dynamic_job_type_active_features(requested_job_type_id uuid)
 returns text[]
 language plpgsql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
   jt public.job_types%rowtype;
   features text[] := array[]::text[];
+  -- change_mode — מצב פעולה.
   change_mode text;
 begin
   select * into jt from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי not found then return array[]::text[]; end if;.
   if not found then return array[]::text[]; end if;
 
+  -- הסתעפות לפי התנאי coalesce(jt.scheduling_strategy,'availability_optimizer') <> 'none'.
   if coalesce(jt.scheduling_strategy,'availability_optimizer') <> 'none' then
     features:=array_append(features,'schedule');
 
+    -- הסתעפות לפי התנאי coalesce((jt.availability_config->>'enabled')::boolean,false).
     if coalesce((jt.availability_config->>'enabled')::boolean,false) then
       features:=array_append(features,'availability');
     end if;
 
     change_mode:=coalesce(jt.scheduling_config->>'scheduleChangeMode','none');
+    -- הסתעפות לפי התנאי change_mode='shift_exchange'.
     if change_mode='shift_exchange' then
       features:=array_append(features,'shift_exchange');
     elsif change_mode='self_edit' then
       features:=array_append(features,'self_edit');
     end if;
 
+    -- הסתעפות לפי התנאי jt.scheduling_strategy='monthly_rotation_constraints'.
     if jt.scheduling_strategy='monthly_rotation_constraints' then
       features:=array_append(features,'monthly_rotation');
     end if;
   end if;
 
+  -- הסתעפות לפי התנאי coalesce((jt.statistics_config->>'enabled')::boolean,false).
   if coalesce((jt.statistics_config->>'enabled')::boolean,false) then
     features:=array_append(features,'statistics');
   end if;
+  -- הסתעפות לפי התנאי coalesce(jt.pay_model,'none')<>'none'.
   if coalesce(jt.pay_model,'none')<>'none' then
     features:=array_append(features,'payroll');
   end if;
+  -- הסתעפות לפי התנאי exists(.
   if exists(
     select 1 from public.job_type_capabilities c
     where c.job_type_id=jt.id and c.capability_key='daily_reports' and c.enabled=true
@@ -237,6 +308,7 @@ end;
 $$;
 
 -- Normalize current no-scheduling roles defensively.
+-- עדכון רשומות ב־public.job_types בהתאם לקלט ולתנאים להלן.
 update public.job_types
 set availability_config = jsonb_set(coalesce(availability_config,'{}'::jsonb), '{enabled}', 'false'::jsonb, true),
     scheduling_config = jsonb_set(coalesce(scheduling_config,'{}'::jsonb), '{scheduleChangeMode}', '"none"'::jsonb, true)

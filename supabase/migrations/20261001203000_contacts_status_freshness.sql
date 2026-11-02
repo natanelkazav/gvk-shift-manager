@@ -1,8 +1,15 @@
+-- קובץ: supabase/migrations/20261001203000_contacts_status_freshness.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור אנשי קשר / סטטוס.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_contacts_directory, public.get_recent_contact_changes.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Contact status freshness is calculated at read time.
 -- New/updated are attention states for 7 days; needs_review stays until the record is corrected.
+-- פונקציית מסד public.get_contacts_directory: שליפה או חישוב של אנשי קשר.
 create or replace function public.get_contacts_directory(requested_client_id uuid default null)
 returns jsonb
 language sql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $$
@@ -38,9 +45,11 @@ as $$
     and (requested_client_id is null or r.client_id=requested_client_id)
 $$;
 
+-- פונקציית מסד public.get_recent_contact_changes: שליפה או חישוב של איש קשר.
 create or replace function public.get_recent_contact_changes()
 returns jsonb
 language sql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $$
@@ -87,4 +96,5 @@ as $$
   join public.contact_clients c on c.id=x.client_id
 $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_contacts_directory(uuid), public.get_recent_contact_changes() to authenticated;

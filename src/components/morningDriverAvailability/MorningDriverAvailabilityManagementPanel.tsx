@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/morningDriverAvailability/MorningDriverAvailabilityManagementPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כונני בוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: MorningDriverAvailabilityManagementPanelProps, formatDate, formatTime, formatDateTime, getAvailabilityLabel, MorningDriverAvailabilityManagementPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CheckCircle2,
   CircleAlert,
@@ -31,17 +38,24 @@ import type {
   MorningDriverAvailabilityStatus,
 } from '../../types/morningDriverAvailability';
 
+/**
+ * חוזה הנתונים MorningDriverAvailabilityManagementPanelProps: כונני בוקר.
+ */
 interface MorningDriverAvailabilityManagementPanelProps {
+  // data — נתונים.
   data:
     MorningDriverAvailabilityManagementData | null;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
 
+  // reopeningUserId — מזהה משתמש.
   reopeningUserId:
     string | null;
 
   isClosing: boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 
@@ -52,31 +66,43 @@ interface MorningDriverAvailabilityManagementPanelProps {
     userId: string,
   ) => void;
 
+  // onClosePeriod — פונקציית סגירת התצוגה.
   onClosePeriod: (
     force: boolean,
   ) => void;
 
+  // onReopenPeriod — תקופה.
   onReopenPeriod:
     () => void;
 
+  // onDeletePeriod — תקופה.
   onDeletePeriod:
     () => void;
 
+  // onPrepareSchedule — שיבוץ.
   onPrepareSchedule:
     () => void;
 
+  // onGoToSchedule — שיבוץ.
   onGoToSchedule:
     () => void;
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -96,6 +122,11 @@ function formatDate(
   );
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
@@ -105,19 +136,27 @@ function formatTime(
   );
 }
 
+/**
+ * פעולה formatDateTime: עיצוב ערך לתצוגה עבור תאריך / זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDateTime(
   value:
     string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return 'לא הוגדר';
   }
 
+  // date — תאריך.
   const date =
     new Date(
       value,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -140,10 +179,16 @@ function formatDateTime(
   );
 }
 
+/**
+ * פעולה getAvailabilityLabel: שליפה או חישוב של אילוצים וזמינות / תווית.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getAvailabilityLabel(
   status:
     MorningDriverAvailabilityStatus | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר status === 'available'.
   if (
     status ===
     'available'
@@ -151,6 +196,7 @@ function getAvailabilityLabel(
     return 'זמין';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר status === 'unavailable'.
   if (
     status ===
     'unavailable'
@@ -161,6 +207,10 @@ function getAvailabilityLabel(
   return 'טרם סומן';
 }
 
+/**
+ * פעולה MorningDriverAvailabilityManagementPanel: כונני בוקר.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function MorningDriverAvailabilityManagementPanel({
   data,
   isLoading,
@@ -175,6 +225,7 @@ function MorningDriverAvailabilityManagementPanel({
   onPrepareSchedule,
   onGoToSchedule,
 }: MorningDriverAvailabilityManagementPanelProps) {
+  // ערך מחושב submissionsByUserId — מזהה משתמש; נשמר בין רינדורים עד שינוי התלויות.
   const submissionsByUserId =
     useMemo(
       () =>
@@ -195,15 +246,18 @@ function MorningDriverAvailabilityManagementPanel({
       ],
     );
 
+  // ערך מחושב entriesByShiftAndUser — רשומות / משמרת / משתמש; נשמר בין רינדורים עד שינוי התלויות.
   const entriesByShiftAndUser =
     useMemo(
       () => {
+        // entriesMap — רשומות / מפת התאמה; מיפוי לחיפוש לפי מפתח.
         const entriesMap =
           new Map<
             string,
             MorningDriverAvailabilityStatus
           >();
 
+        // עיבוד כל פריט מתוך data?.entries ?? [] בנפרד.
         for (
           const entry
           of data?.entries ??
@@ -222,6 +276,7 @@ function MorningDriverAvailabilityManagementPanel({
       ],
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading.
   if (
     isLoading
   ) {
@@ -242,6 +297,7 @@ function MorningDriverAvailabilityManagementPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error && !data.
   if (
     error &&
     !data
@@ -278,6 +334,7 @@ function MorningDriverAvailabilityManagementPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
   if (
     !data
   ) {
@@ -657,6 +714,7 @@ function MorningDriverAvailabilityManagementPanel({
                       (
                         driver,
                       ) => {
+                        // status — סטטוס.
                         const status =
                           entriesByShiftAndUser.get(
                             `${shift.id}:${driver.id}`,

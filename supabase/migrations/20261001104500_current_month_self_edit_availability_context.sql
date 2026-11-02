@@ -1,30 +1,49 @@
+-- קובץ: supabase/migrations/20261001104500_current_month_self_edit_availability_context.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור חודש / אילוצים וזמינות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_dynamic_self_edit_workspace.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Preserve submitted availability context when editing a published schedule in the current month.
 -- Returns each active role member with the availability originally submitted for that exact slot.
 
+-- פונקציית מסד public.get_my_dynamic_self_edit_workspace: שליפה או חישוב של דינמי.
 create or replace function public.get_my_dynamic_self_edit_workspace(
   requested_publication_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_publication — יעד.
   target_publication public.dynamic_schedule_publications%rowtype;
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
+  -- current_month — חודש.
   current_month date := date_trunc('month', (now() at time zone 'Asia/Jerusalem')::date)::date;
+  -- publication_month — חודש.
   publication_month date;
+  -- change_mode — מצב פעולה.
   change_mode text;
   editable boolean := false;
   reason text := null;
+  -- can_view_others — האם צפייה מותרת.
   can_view_others boolean := false;
   can_self_edit boolean := false;
+  -- can_edit_all — האם עריכה מותרת.
   can_edit_all boolean := false;
+  -- members_json — חברי התפקיד.
   members_json jsonb;
+  -- assignments_json — הקצאות.
   assignments_json jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -32,10 +51,13 @@ begin
   from public.dynamic_schedule_publications
   where id = requested_publication_id;
 
+  -- הסתעפות לפי התנאי target_publication.id is null.
   if target_publication.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'publication not found';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.job_type_memberships m
@@ -44,6 +66,7 @@ begin
       and m.user_id = current_user_id
       and p.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -52,7 +75,9 @@ begin
   where id = target_publication.job_type_id
     and legacy_role is null;
 
+  -- הסתעפות לפי התנאי target_job.id is null.
   if target_job.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'dynamic job type not found';
   end if;
 
@@ -62,14 +87,18 @@ begin
     'none'
   );
 
+  -- הסתעפות לפי התנאי change_mode <> 'self_edit'.
   if change_mode <> 'self_edit' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'self edit is not enabled for this role';
   end if;
 
   can_self_edit := public.has_dynamic_job_type_permission('schedule.self_edit', target_job.id, current_user_id);
   can_edit_all := public.has_dynamic_job_type_permission('schedule.edit_all', target_job.id, current_user_id);
 
+  -- הסתעפות לפי התנאי not can_self_edit and not can_edit_all.
   if not can_self_edit and not can_edit_all then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -81,6 +110,7 @@ begin
 
   publication_month := make_date(target_publication.year, target_publication.month, 1);
 
+  -- הסתעפות לפי התנאי target_publication.status <> 'published'.
   if target_publication.status <> 'published' then
     editable := false;
     reason := 'לוח זה אינו פתוח לעריכה משום שהוא בארכיון.';
@@ -158,6 +188,7 @@ begin
   where a.publication_id = target_publication.id
     and (can_view_others or a.user_id = current_user_id);
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'publicationId', target_publication.id,
     'jobTypeId', target_job.id,
@@ -174,6 +205,8 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_self_edit_workspace(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_self_edit_workspace(uuid) to authenticated;
 

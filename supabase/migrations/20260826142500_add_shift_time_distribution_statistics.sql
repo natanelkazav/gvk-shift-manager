@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260826142500_add_shift_time_distribution_statistics.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור משמרת / זמן / סטטיסטיקה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_shift_time_distribution_statistics.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- ============================================================
 -- GVK Shift Manager
 -- Shift-time distribution statistics for stacked bar charts.
@@ -8,59 +13,77 @@
 --   including per-draft/per-schedule time overrides.
 -- ============================================================
 
+-- פונקציית מסד public.get_shift_time_distribution_statistics: שליפה או חישוב של משמרת / זמן / סטטיסטיקה.
 create or replace function public.get_shift_time_distribution_statistics(
   requested_year integer default null,
   requested_month integer default null
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- dispatcher_rows — מוקדנים / שורות.
   dispatcher_rows jsonb;
+  -- morning_driver_rows — כונני בוקר.
   morning_driver_rows jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile_row
     where profile_row.id = current_user_id
       and profile_row.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
   current_permissions :=
     coalesce(public.get_my_permissions(), array[]::text[]);
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'statistics.view' = any(current_permissions)
     or 'users.manage' = any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_year is not null.
   if requested_year is not null
     and (requested_year < 2020 or requested_year > 2100)
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics year is invalid';
   end if;
 
+  -- הסתעפות לפי התנאי requested_month is not null.
   if requested_month is not null
     and (requested_month < 1 or requested_month > 12)
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics month is invalid';
   end if;
 
+  -- הסתעפות לפי התנאי requested_month is not null.
   if requested_month is not null
     and requested_year is null
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics year is required when month is selected';
   end if;
 
@@ -186,6 +209,7 @@ begin
       shift_time
   ) row_data;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'dispatchers', dispatcher_rows,
     'morningDrivers', morning_driver_rows,
@@ -194,6 +218,7 @@ begin
 end;
 $function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute
 on function public.get_shift_time_distribution_statistics(integer, integer)
 to authenticated;

@@ -1,9 +1,19 @@
+/**
+ * קובץ: src/components/settings/ThemeSettings.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור הגדרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ThemeSettings.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { Check, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { themeService, type AppTheme } from '../../services/themeService';
 
+// options — אפשרויות בחירה.
 const options: Array<{
+  // value — ערך.
   value: AppTheme;
+  // title — כותרת.
   title: string;
   description: string;
   icon: typeof Sun;
@@ -22,11 +32,20 @@ const options: Array<{
   },
 ];
 
+/**
+ * פעולה ThemeSettings: הגדרות.
+ */
 export default function ThemeSettings() {
+  // מצב מקומי: savedTheme — הנתון savedTheme בהקשר הפעולה; setSavedTheme מעדכנת אותו ומפעילה רינדור לפי React.
   const [savedTheme, setSavedTheme] = useState<AppTheme>(() => themeService.get());
+  // מצב מקומי: selectedTheme — נבחר; setSelectedTheme מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedTheme, setSelectedTheme] = useState<AppTheme>(() => themeService.get());
+  // מצב מקומי: savedMessage — הודעה; setSavedMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [savedMessage, setSavedMessage] = useState(false);
 
+  /**
+   * פעולה save: שמירת הנתון save בהקשר הפעולה.
+   */
   const save = () => {
     themeService.set(selectedTheme);
     setSavedTheme(selectedTheme);
@@ -39,6 +58,7 @@ export default function ThemeSettings() {
       <div className="theme-options" role="radiogroup" aria-label="ערכת נושא">
         {options.map((option) => {
           const Icon = option.icon;
+          // selected — נבחר.
           const selected = selectedTheme === option.value;
           return (
             <button

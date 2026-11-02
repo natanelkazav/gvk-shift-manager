@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/DriverSchedulePage.tsx
+ * מטרה: מימוש מסך המשתמש עבור כוננים / שיבוץ.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DriverScheduleWorkspaceTab, DriverScheduleWorkspaceTabDefinition, getDefaultPeriod, formatDate, DriverSchedulePage, DriverScheduleViewMode.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   CalendarPlus,
@@ -58,6 +65,7 @@ import {
   useMyDriverAvailability,
 } from '../hooks/useMyDriverAvailability';
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -73,6 +81,7 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+// periodStatusLabels — תקופה / סטטוס.
 const periodStatusLabels: Record<
   DriverAvailabilityPeriodStatus,
   string
@@ -83,6 +92,9 @@ const periodStatusLabels: Record<
   archived: 'בארכיון',
 };
 
+/**
+ * טיפוס DriverScheduleWorkspaceTab: כוננים / שיבוץ.
+ */
 type DriverScheduleWorkspaceTab =
   | 'schedule'
   | 'periods'
@@ -90,21 +102,33 @@ type DriverScheduleWorkspaceTab =
   | 'create-period'
   | 'my-availability';
 
+/**
+ * חוזה הנתונים DriverScheduleWorkspaceTabDefinition: כוננים / שיבוץ.
+ */
 interface DriverScheduleWorkspaceTabDefinition {
+  // id — מזהה.
   id: DriverScheduleWorkspaceTab;
+  // label — תווית.
   label: string;
   description: string;
   icon: typeof CalendarDays;
   isVisible: boolean;
 }
 
+/**
+ * פעולה getDefaultPeriod: שליפה או חישוב של תקופה.
+ * @returns { month: number; year: number; } — הפלט בהתאם לחתימה.
+ */
 function getDefaultPeriod(): {
+  // month — חודש.
   month: number;
+  // year — שנה.
   year: number;
 } {
   const now =
     new Date();
 
+  // nextMonthDate — חודש / תאריך.
   const nextMonthDate =
     new Date(
       now.getFullYear(),
@@ -121,16 +145,24 @@ function getDefaultPeriod(): {
   };
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return 'לא הוגדר';
   }
 
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -148,6 +180,9 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה DriverSchedulePage: כוננים / שיבוץ.
+ */
 function DriverSchedulePage() {
   const {
     user:
@@ -159,21 +194,25 @@ function DriverSchedulePage() {
   } =
     useAuth();
 
+  // canSubmitAvailability — אילוצים וזמינות.
   const canSubmitAvailability =
     hasPermission(
       'driver_availability.view',
     );
 
+  // canManageAvailability — האם פעולת ניהול מותרת.
   const canManageAvailability =
     hasPermission(
       'driver_availability.manage',
     );
 
+  // canViewPersonalSchedule — האם צפייה מותרת.
   const canViewPersonalSchedule =
     hasPermission(
       'driver_schedule.view',
     );
 
+  // canViewTeamSchedule — האם צפייה מותרת.
   const canViewTeamSchedule =
     hasPermission(
       'driver_schedule.view_team',
@@ -199,21 +238,25 @@ function DriverSchedulePage() {
       clearScheduleDraftError,
   } =
     useDriverScheduleDraft();
+  // canEditSchedule — האם עריכה מותרת.
   const canEditSchedule =
     hasPermission(
       'driver_schedule.edit',
     );
 
+  // canEditPublishedSchedule — האם עריכה מותרת.
   const canEditPublishedSchedule =
     hasPermission(
       'driver_schedule.edit_any',
     );
 
+  // canTransferMyDuties — הנתון canTransferMyDuties בהקשר הפעולה.
   const canTransferMyDuties =
     profile?.role ===
       'on_call' &&
     canViewPersonalSchedule;
 
+  // ערך מחושב defaultPeriod — תקופה; נשמר בין רינדורים עד שינוי התלויות.
   const defaultPeriod =
     useMemo(
       () =>
@@ -221,6 +264,7 @@ function DriverSchedulePage() {
       [],
     );
 
+  // מצב מקומי: selectedMonth — נבחר / חודש; setSelectedMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedMonth,
     setSelectedMonth,
@@ -229,6 +273,7 @@ function DriverSchedulePage() {
       defaultPeriod.month,
     );
 
+  // מצב מקומי: selectedYear — נבחר / שנה; setSelectedYear מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedYear,
     setSelectedYear,
@@ -237,23 +282,27 @@ function DriverSchedulePage() {
       defaultPeriod.year,
     );
 
+  // draftHolidayLabels — טיוטה / חג.
   const draftHolidayLabels = useCalendarHolidays(
     selectedYear,
     selectedMonth,
   );
 
+  // מצב מקומי: title — כותרת; setTitle מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     title,
     setTitle,
   ] =
     useState('');
 
+  // מצב מקומי: instructions — הנתון instructions בהקשר הפעולה; setInstructions מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     instructions,
     setInstructions,
   ] =
     useState('');
 
+  // מצב מקומי: submissionDeadline — מועד אחרון להגשת אילוצים; setSubmissionDeadline מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     submissionDeadline,
     setSubmissionDeadline,
@@ -292,6 +341,7 @@ const {
 } =
   useDriverAvailabilityManagement();
 
+// מצב מקומי: selectedManagementPeriodId — מזהה התקופה; setSelectedManagementPeriodId מעדכנת אותו ומפעילה רינדור לפי React.
 const [
   selectedManagementPeriodId,
   setSelectedManagementPeriodId,
@@ -301,6 +351,7 @@ const [
   );
 
 
+// מצב מקומי: activeWorkspaceTab — פעיל; setActiveWorkspaceTab מעדכנת אותו ומפעילה רינדור לפי React.
 const [
   activeWorkspaceTab,
   setActiveWorkspaceTab,
@@ -311,6 +362,7 @@ const [
   const now =
   new Date();
 
+// מצב מקומי: viewedScheduleMonth — שיבוץ / חודש; setViewedScheduleMonth מעדכנת אותו ומפעילה רינדור לפי React.
 const [
   viewedScheduleMonth,
   setViewedScheduleMonth,
@@ -322,6 +374,7 @@ const [
     month:
       now.getMonth() + 1,
   });
+  // מצב מקומי: scheduleViewMode — שיבוץ / מצב פעולה; setScheduleViewMode מעדכנת אותו ומפעילה רינדור לפי React.
   const [
   scheduleViewMode,
   setScheduleViewMode,
@@ -329,6 +382,7 @@ const [
   useState<DriverScheduleViewMode>(
     'calendar',
   );
+  // מצב מקומי: selectedEditDay — נבחר / יום; setSelectedEditDay מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedEditDay,
     setSelectedEditDay,
@@ -341,6 +395,7 @@ const [
       null,
     );
 
+  // מצב מקומי: selectedTransferDay — נבחר / יום; setSelectedTransferDay מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedTransferDay,
     setSelectedTransferDay,
@@ -352,9 +407,11 @@ const [
     >(
       null,
     );
+  // ערך מחושב availableYears — שנים; נשמר בין רינדורים עד שינוי התלויות.
   const availableYears =
     useMemo(
       () => {
+        // currentYear — שנה.
         const currentYear =
           new Date()
             .getFullYear();
@@ -368,6 +425,7 @@ const [
       [],
     );
 
+// תופעת לוואי לאחר רינדור בהתאם לתלויות [ canManageAvailability, canSubmitAvailability, canViewPersonalSchedule, canViewTeamSchedule, canEditSchedule, canEditPublishedSchedule, loadPeriods, loadMyAvai.
 useEffect(() => {
   if (canManageAvailability) {
     void loadPeriods();
@@ -383,6 +441,7 @@ if (
   canEditSchedule ||
   canEditPublishedSchedule
 ) {
+  // currentDate — תאריך.
   const currentDate =
     new Date();
 
@@ -403,6 +462,11 @@ if (
   loadScheduleByMonth,
 ]);
 
+  /**
+   * פעולה אסינכרונית handleCreatePeriod: טיפול באירוע עבור תקופה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleCreatePeriod =
     async (
       event:
@@ -410,6 +474,7 @@ if (
     ): Promise<void> => {
       event.preventDefault();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canManageAvailability || state.isCreating.
       if (
         !canManageAvailability ||
         state.isCreating
@@ -419,6 +484,7 @@ if (
 
       clearError();
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await createPeriod({
           year:
@@ -453,11 +519,18 @@ if (
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleOpenPeriod: טיפול באירוע עבור תקופה.
+   * @param periodId — מזהה התקופה.
+   * @param periodTitle — תקופה / כותרת.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleOpenPeriod =
     async (
       periodId: string,
       periodTitle: string,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canManageAvailability || state.openingPeriodId.
       if (
         !canManageAvailability ||
         state.openingPeriodId
@@ -471,12 +544,14 @@ if (
           'לאחר הפתיחה הכוננים יוכלו לסמן את הזמינות שלהם לכל יום בחודש.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
       clearError();
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await openPeriod(
           periodId,
@@ -494,11 +569,18 @@ if (
          */
       }
     };
+/**
+ * פעולה אסינכרונית handleClosePeriod: טיפול באירוע עבור תקופה.
+ * @param periodId — מזהה התקופה.
+ * @param periodTitle — תקופה / כותרת.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 const handleClosePeriod =
   async (
     periodId: string,
     periodTitle: string,
   ): Promise<void> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canManageAvailability || state.closingPeriodId.
     if (
       !canManageAvailability ||
       state.closingPeriodId
@@ -513,12 +595,14 @@ const handleClosePeriod =
         'סימונים שכבר נשמרו לא ישתנו.',
       );
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
     if (!confirmed) {
       return;
     }
 
     clearError();
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await closePeriod(
         periodId,
@@ -539,11 +623,18 @@ const handleClosePeriod =
     }
   };
 
+  /**
+   * פעולה אסינכרונית handleReopenPeriod: טיפול באירוע עבור תקופה.
+   * @param periodId — מזהה התקופה.
+   * @param periodTitle — תקופה / כותרת.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleReopenPeriod =
     async (
       periodId: string,
       periodTitle: string,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canManageAvailability || state.reopeningPeriodId.
       if (
         !canManageAvailability ||
         state.reopeningPeriodId
@@ -557,12 +648,14 @@ const handleClosePeriod =
           'הכוננים יוכלו שוב לערוך, לשמור ולהגיש את הזמינות שלהם.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
       clearError();
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await reopenPeriod(
           periodId,
@@ -582,11 +675,18 @@ const handleClosePeriod =
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleDeletePeriod: טיפול באירוע עבור תקופה.
+   * @param periodId — מזהה התקופה.
+   * @param periodTitle — תקופה / כותרת.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleDeletePeriod =
     async (
       periodId: string,
       periodTitle: string,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canManageAvailability || state.deletingPeriodId.
       if (
         !canManageAvailability ||
         state.deletingPeriodId
@@ -600,6 +700,7 @@ const handleClosePeriod =
           'הפעולה תמחק את כל ימי הכוננות, סימוני הזמינות וההגשות של החודש.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !firstConfirmation.
       if (!firstConfirmation) {
         return;
       }
@@ -609,12 +710,14 @@ const handleClosePeriod =
           'אישור אחרון: לא ניתן לבטל את המחיקה.\n\nהאם להמשיך?',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !finalConfirmation.
       if (!finalConfirmation) {
         return;
       }
 
       clearError();
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await deletePeriod(
           periodId,
@@ -635,11 +738,18 @@ const handleClosePeriod =
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleCreateScheduleDraft: טיפול באירוע עבור שיבוץ / טיוטה.
+   * @param availabilityPeriodId — תקופת אילוצים.
+   * @param periodTitle — תקופה / כותרת.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleCreateScheduleDraft =
   async (
     availabilityPeriodId: string,
     periodTitle: string,
   ): Promise<void> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canEditSchedule || scheduleDraftState.isCreating.
     if (
       !canEditSchedule ||
       scheduleDraftState.isCreating
@@ -653,12 +763,14 @@ const handleClosePeriod =
         'המערכת תמשיך את רוטציית חמשת הכוננים מהחודשים הקודמים. אילוצים שהוגשו ישמשו כחריגים בלבד, והיעדר הגשה לא יחסום את השיבוץ.',
       );
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
     if (!confirmed) {
       return;
     }
 
     clearScheduleDraftError();
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await createDriverScheduleDraft(
         availabilityPeriodId,
@@ -670,6 +782,7 @@ const handleClosePeriod =
        */
     }
   };
+  // createdPeriodTitle — תקופה / כותרת.
   const createdPeriodTitle =
     state.lastCreatedResult
       ? (
@@ -690,6 +803,7 @@ const handleClosePeriod =
         )
       : null;
 
+  // openedPeriodTitle — תקופה / כותרת.
   const openedPeriodTitle =
     state.lastOpenedResult
       ? `${
@@ -705,14 +819,19 @@ const handleClosePeriod =
         }`
       : null;
 
+  // hasAnyScheduleAccess — שיבוץ.
   const hasAnyScheduleAccess =
     canViewPersonalSchedule ||
     canViewTeamSchedule ||
     canEditSchedule ||
     canEditPublishedSchedule;
+/**
+ * טיפוס DriverScheduleViewMode: כוננים / שיבוץ / מצב פעולה.
+ */
 type DriverScheduleViewMode =
   | 'calendar'
   | 'list';
+// ערך מחושב workspaceTabs — הנתון workspaceTabs בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
 const workspaceTabs =
   useMemo<DriverScheduleWorkspaceTabDefinition[]>(
     () => [
@@ -773,26 +892,32 @@ const effectiveWorkspaceTab =
     : visibleWorkspaceTabs[0]?.id ??
       'schedule';
 
+// isTransferableScheduleMonth — שיבוץ / חודש.
 const isTransferableScheduleMonth =
   (() => {
+    // period — תקופה.
     const period =
       scheduleDraftState
         .data
         ?.period ??
       null;
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !period.
     if (!period) {
       return false;
     }
 
+    // currentDate — תאריך.
     const currentDate =
       new Date();
 
+    // currentPeriodValue — תקופה / ערך.
     const currentPeriodValue =
       currentDate.getFullYear() *
         12 +
       currentDate.getMonth();
 
+    // schedulePeriodValue — תקופת שיבוץ.
     const schedulePeriodValue =
       period.year * 12 +
       period.month - 1;
@@ -805,6 +930,7 @@ const isTransferableScheduleMonth =
     );
   })();
 
+// transferableDutyDays — ימים.
 const transferableDutyDays =
   (
     scheduleDraftState
@@ -813,6 +939,7 @@ const transferableDutyDays =
     []
   ).filter(
     (day) => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canTransferMyDuties || !authenticatedUser?.id || !isTransferableScheduleMonth || scheduleDraftState .data ?.period ?.status !== 'published'.
       if (
         !canTransferMyDuties ||
         !authenticatedUser?.id ||
@@ -829,6 +956,7 @@ const transferableDutyDays =
         return false;
       }
 
+      // todayKey — מפתח.
       const todayKey =
         new Intl.DateTimeFormat(
           'en-CA',
@@ -853,6 +981,7 @@ const transferableDutyDays =
     },
   );
 
+// isBusy — הנתון isBusy בהקשר הפעולה.
 const isBusy =
   state.isLoading ||
   state.isCreating ||
@@ -970,6 +1099,7 @@ const isBusy =
           {visibleWorkspaceTabs.map(
             (tab) => {
               const Icon = tab.icon;
+              // isActive — האם הרשומה פעילה.
               const isActive =
                 effectiveWorkspaceTab ===
                 tab.id;
@@ -1382,6 +1512,7 @@ const isBusy =
               <div className="driver-availability-periods-list">
                 {state.periods.map(
                   (period) => {
+                    // periodTitle — תקופה / כותרת.
                     const periodTitle =
                       period.title ??
                       `${
@@ -1648,6 +1779,7 @@ const isBusy =
                 );
               }}
               onOpenPeriod={() => {
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !managementState.data.
                 if (!managementState.data) {
                   return;
                 }
@@ -1659,6 +1791,7 @@ const isBusy =
                 );
               }}
               onClosePeriod={() => {
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !managementState.data.
                 if (!managementState.data) {
                   return;
                 }
@@ -1670,6 +1803,7 @@ const isBusy =
                 );
               }}
               onReopenPeriod={() => {
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !managementState.data.
                 if (!managementState.data) {
                   return;
                 }
@@ -1681,6 +1815,7 @@ const isBusy =
                 );
               }}
               onDeletePeriod={() => {
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !managementState.data.
                 if (!managementState.data) {
                   return;
                 }
@@ -1692,6 +1827,7 @@ const isBusy =
                 );
               }}
               onPrepareSchedule={() => {
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !managementState.data.
                 if (!managementState.data) {
                   return;
                 }
@@ -2002,6 +2138,7 @@ const isBusy =
               'לאחר ההגשה לא יהיה ניתן לערוך את האילוצים ללא פתיחה מחדש על ידי מנהל.\n\nהאם להגיש את האילוצים?',
             );
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
           if (!confirmed) {
             return;
           }
@@ -2258,6 +2395,7 @@ effectiveWorkspaceTab ===
                     'לאחר הפרסום הלוח יינעל לעריכה.',
                   );
 
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
                 if (!confirmed) {
                   return;
                 }
@@ -2388,6 +2526,7 @@ effectiveWorkspaceTab ===
                   onSave={async (
                     request,
                   ) => {
+                    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
                     try {
                       await updateScheduleDay(
                         request,
@@ -2558,6 +2697,7 @@ effectiveWorkspaceTab ===
             onSave={async (
               request,
             ) => {
+              // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
               try {
                 await updateScheduleDay(
                   request,
@@ -2611,6 +2751,7 @@ effectiveWorkspaceTab ===
           onTransfer={async (
             newDriverId,
           ) => {
+            // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
             try {
               await transferMyDuty({
                 scheduleDayId:

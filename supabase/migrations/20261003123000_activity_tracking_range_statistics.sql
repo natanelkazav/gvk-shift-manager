@@ -1,5 +1,11 @@
+-- קובץ: supabase/migrations/20261003123000_activity_tracking_range_statistics.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור מעקב פעילות וזמני עבודה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_activity_tracking_range.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
+-- פונקציית מסד public.get_activity_tracking_range: שליפה או חישוב של מעקב פעילות וזמני עבודה.
 create or replace function public.get_activity_tracking_range(
   requested_job_type_id uuid,
   requested_start date,
@@ -7,24 +13,29 @@ create or replace function public.get_activity_tracking_range(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=public
 as $$
 declare
   actor uuid:=auth.uid();
+  -- result — תוצאה.
   result jsonb;
   can_team boolean;
   can_own boolean;
   safe_start date:=least(requested_start,requested_end);
   safe_end date:=greatest(requested_start,requested_end);
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי safe_end-safe_start > 370 then raise exception 'range too large'; end if;.
   if safe_end-safe_start > 370 then raise exception 'range too large'; end if;
 
   can_team:=public.has_dynamic_job_type_permission('activity_tracking.view_team',requested_job_type_id,actor)
     or exists(select 1 from public.user_permissions up where up.user_id=actor and up.permission_key in('statistics.view','users.manage'));
   can_own:=public.has_dynamic_job_type_permission('activity_tracking.view_own',requested_job_type_id,actor)
     and exists(select 1 from public.job_type_memberships m where m.job_type_id=requested_job_type_id and m.user_id=actor);
+  -- הסתעפות לפי התנאי not (can_team or can_own) then raise exception 'not allowed'; end if;.
   if not (can_team or can_own) then raise exception 'not allowed'; end if;
 
   select jsonb_build_object(
@@ -51,7 +62,9 @@ begin
   return result;
 end $$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_activity_tracking_range(uuid,date,date) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_activity_tracking_range(uuid,date,date) to authenticated;
 
 commit;

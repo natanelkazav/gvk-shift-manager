@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/services/scheduleExportService.ts
+ * מטרה: הכנת נתוני לוח השיבוצים וייצואם לקובץ לפי הפריסה שנבחרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ScheduleExportResult, ScheduleExportFile, DayRowDefinition, padNumber, createDateKey, getDaysInMonth, normalizeTime, createShiftRange, getDayRows, getTemplateSourceRow ועוד.
+ * - ריכוז פעולות העיבוד והחישוב בהתאם לפונקציות להלן.
+ */
 import type ExcelJS from 'exceljs';
 
 import {
@@ -24,20 +31,27 @@ import type {
   MorningDriverScheduleAssignment,
 } from '../types/morningDriverSchedule';
 
+// TEMPLATE_URL — תבנית / כתובת יעד.
 const TEMPLATE_URL =
   '/templates/schedule-export-template.xlsx';
 
+// TEMPLATE_SHEET_NAME — תבנית / שם.
 const TEMPLATE_SHEET_NAME =
   'לוח זמנים ריק לכוננים';
 
+// FIRST_DATA_ROW — נתונים / שורה.
 const FIRST_DATA_ROW = 2;
+// ROWS_PER_DAY — שורות / יום.
 const ROWS_PER_DAY = 3;
+// MAX_DAYS — ימים.
 const MAX_DAYS = 31;
+// LAST_TEMPLATE_ROW — תבנית / שורה.
 const LAST_TEMPLATE_ROW =
   FIRST_DATA_ROW +
   MAX_DAYS * ROWS_PER_DAY -
   1;
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -53,6 +67,7 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+// hebrewWeekdays — הנתון hebrewWeekdays בהקשר הפעולה.
 const hebrewWeekdays = [
   'ראשון',
   'שני',
@@ -63,25 +78,48 @@ const hebrewWeekdays = [
   'שבת',
 ];
 
+/**
+ * חוזה הנתונים ScheduleExportResult: שיבוץ / ייצוא / תוצאה.
+ */
 interface ScheduleExportResult {
+  // fileName — קובץ / שם.
   fileName: string;
+  // year — שנה.
   year: number;
+  // month — חודש.
   month: number;
+  // dispatcherShifts — מוקדנים / משמרות.
   dispatcherShifts: number;
+  // driverDuties — כוננים.
   driverDuties: number;
+  // morningDriverAssignments — כונני בוקר.
   morningDriverAssignments: number;
 }
 
+/**
+ * חוזה הנתונים ScheduleExportFile: שיבוץ / ייצוא / קובץ.
+ */
 interface ScheduleExportFile {
   blob: Blob;
+  // result — תוצאה.
   result: ScheduleExportResult;
 }
 
+/**
+ * חוזה הנתונים DayRowDefinition: יום / שורה.
+ */
 interface DayRowDefinition {
+  // dispatcherHours — מוקדנים / שעות.
   dispatcherHours: string;
+  // morningDriverHours — כונני בוקר.
   morningDriverHours: string;
 }
 
+/**
+ * פעולה padNumber: הנתון padNumber בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function padNumber(
   value: number,
 ): string {
@@ -89,6 +127,13 @@ function padNumber(
     .padStart(2, '0');
 }
 
+/**
+ * פעולה createDateKey: יצירת תאריך / מפתח.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @param day — יום.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function createDateKey(
   year: number,
   month: number,
@@ -101,6 +146,12 @@ function createDateKey(
   ].join('-');
 }
 
+/**
+ * פעולה getDaysInMonth: שליפה או חישוב של ימים / חודש.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns number — הפלט בהתאם לחתימה.
+ */
 function getDaysInMonth(
   year: number,
   month: number,
@@ -112,21 +163,30 @@ function getDaysInMonth(
   ).getDate();
 }
 
+/**
+ * פעולה normalizeTime: נרמול זמן.
+ * @param value — ערך.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function normalizeTime(
   value: string | null,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return null;
   }
 
+  // trimmedValue — ערך.
   const trimmedValue =
     value.trim();
 
+  // plainTimeMatch — זמן.
   const plainTimeMatch =
     trimmedValue.match(
       /^(\d{1,2}):(\d{2})/,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר plainTimeMatch.
   if (plainTimeMatch) {
     return `${padNumber(
       Number(
@@ -135,11 +195,13 @@ function normalizeTime(
     )}:${plainTimeMatch[2]}`;
   }
 
+  // date — תאריך.
   const date =
     new Date(
       trimmedValue,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -165,20 +227,29 @@ function normalizeTime(
     .replace(/\s/g, '');
 }
 
+/**
+ * פעולה createShiftRange: יצירת משמרת.
+ * @param startTime — שעת התחלה.
+ * @param endTime — שעת סיום.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function createShiftRange(
   startTime: string | null,
   endTime: string | null,
 ): string | null {
+  // normalizedStart — הנתון normalizedStart בהקשר הפעולה.
   const normalizedStart =
     normalizeTime(
       startTime,
     );
 
+  // normalizedEnd — הנתון normalizedEnd בהקשר הפעולה.
   const normalizedEnd =
     normalizeTime(
       endTime,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedStart || !normalizedEnd.
   if (
     !normalizedStart ||
     !normalizedEnd
@@ -189,10 +260,17 @@ function createShiftRange(
   return `${normalizedStart}-${normalizedEnd}`;
 }
 
+/**
+ * פעולה getDayRows: שליפה או חישוב של יום / שורות.
+ * @param weekdayNumber — הנתון weekdayNumber בהקשר הפעולה.
+ * @param useWeekendOrHolidayLayout — חג / פריסת מסך.
+ * @returns DayRowDefinition[] — הפלט בהתאם לחתימה.
+ */
 function getDayRows(
   weekdayNumber: number,
   useWeekendOrHolidayLayout: boolean,
 ): DayRowDefinition[] {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר useWeekendOrHolidayLayout || weekdayNumber === 5 || weekdayNumber === 6.
   if (
     useWeekendOrHolidayLayout ||
     weekdayNumber === 5 ||
@@ -242,11 +320,19 @@ function getDayRows(
   ];
 }
 
+/**
+ * פעולה getTemplateSourceRow: שליפה או חישוב של תבנית / מקור / שורה.
+ * @param weekdayNumber — הנתון weekdayNumber בהקשר הפעולה.
+ * @param rowOffset — שורה / מיקום תחילת התוצאות.
+ * @param useWeekendOrHolidayLayout — חג / פריסת מסך.
+ * @returns number — הפלט בהתאם לחתימה.
+ */
 function getTemplateSourceRow(
   weekdayNumber: number,
   rowOffset: number,
   useWeekendOrHolidayLayout: boolean,
 ): number {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר weekdayNumber === 6 || useWeekendOrHolidayLayout.
   if (
     weekdayNumber === 6 ||
     useWeekendOrHolidayLayout
@@ -254,6 +340,7 @@ function getTemplateSourceRow(
     return 2 + rowOffset;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר weekdayNumber === 5.
   if (weekdayNumber === 5) {
     return 20 + rowOffset;
   }
@@ -261,6 +348,11 @@ function getTemplateSourceRow(
   return 5 + rowOffset;
 }
 
+/**
+ * פעולה deepClone: הנתון deepClone בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns T — הפלט בהתאם לחתימה.
+ */
 function deepClone<T>(
   value: T,
 ): T {
@@ -269,16 +361,25 @@ function deepClone<T>(
   ) as T;
 }
 
+/**
+ * פעולה copyTemplateRowStyle: תבנית / שורה.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @param sourceRowNumber — מקור / שורה.
+ * @param targetRowNumber — יעד / שורה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function copyTemplateRowStyle(
   worksheet: ExcelJS.Worksheet,
   sourceRowNumber: number,
   targetRowNumber: number,
 ): void {
+  // sourceRow — מקור / שורה.
   const sourceRow =
     worksheet.getRow(
       sourceRowNumber,
     );
 
+  // targetRow — יעד / שורה.
   const targetRow =
     worksheet.getRow(
       targetRowNumber,
@@ -292,11 +393,13 @@ function copyTemplateRowStyle(
     columnNumber <= 8;
     columnNumber += 1
   ) {
+    // sourceCell — מקור.
     const sourceCell =
       sourceRow.getCell(
         columnNumber,
       );
 
+    // targetCell — יעד.
     const targetCell =
       targetRow.getCell(
         columnNumber,
@@ -309,6 +412,11 @@ function copyTemplateRowStyle(
   }
 }
 
+/**
+ * פעולה createDispatcherMap: בניית מפת מוקדנים ומוני ההקצאות המשמשים לבדיקות ולניקוד.
+ * @param shifts — משמרות.
+ * @returns Map< string, DispatcherScheduleMonthShift > — הפלט בהתאם לחתימה.
+ */
 function createDispatcherMap(
   shifts:
     DispatcherScheduleMonthShift[],
@@ -316,6 +424,7 @@ function createDispatcherMap(
   string,
   DispatcherScheduleMonthShift
 > {
+  // map — מפת התאמה; מיפוי לחיפוש לפי מפתח.
   const map =
     new Map<
       string,
@@ -332,6 +441,7 @@ function createDispatcherMap(
           shift.endsAt,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !range.
       if (!range) {
         return;
       }
@@ -346,6 +456,11 @@ function createDispatcherMap(
   return map;
 }
 
+/**
+ * פעולה createDispatcherShiftsByDate: יצירת מוקדנים / משמרות / תאריך.
+ * @param shifts — משמרות.
+ * @returns Map< string, DispatcherScheduleMonthShift[] > — הפלט בהתאם לחתימה.
+ */
 function createDispatcherShiftsByDate(
   shifts:
     DispatcherScheduleMonthShift[],
@@ -353,6 +468,7 @@ function createDispatcherShiftsByDate(
   string,
   DispatcherScheduleMonthShift[]
 > {
+  // map — מפת התאמה; מיפוי לחיפוש לפי מפתח.
   const map =
     new Map<
       string,
@@ -363,6 +479,7 @@ function createDispatcherShiftsByDate(
     (
       shift,
     ) => {
+      // current — הנתון current בהקשר הפעולה.
       const current =
         map.get(
           shift.shiftDate,
@@ -382,10 +499,16 @@ function createDispatcherShiftsByDate(
   return map;
 }
 
+/**
+ * פעולה createHolidayNoteMap: יצירת חג / הערה / מפת התאמה.
+ * @param shifts — משמרות.
+ * @returns Map<string, string> — הפלט בהתאם לחתימה.
+ */
 function createHolidayNoteMap(
   shifts:
     DispatcherScheduleMonthShift[],
 ): Map<string, string> {
+  // notesByDate — הערות / תאריך; מיפוי לחיפוש לפי מפתח.
   const notesByDate =
     new Map<
       string,
@@ -396,14 +519,17 @@ function createHolidayNoteMap(
     (
       shift,
     ) => {
+      // holidayName — חג / שם.
       const holidayName =
         shift.holidayName
           ?.trim();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !holidayName.
       if (!holidayName) {
         return;
       }
 
+      // existingNotes — הערות.
       const existingNotes =
         notesByDate.get(
           shift.shiftDate,
@@ -440,6 +566,11 @@ function createHolidayNoteMap(
   );
 }
 
+/**
+ * פעולה createDriverMap: יצירת כוננים / מפת התאמה.
+ * @param days — ימים.
+ * @returns Map< string, DriverScheduleDay > — הפלט בהתאם לחתימה.
+ */
 function createDriverMap(
   days:
     DriverScheduleDay[],
@@ -447,6 +578,7 @@ function createDriverMap(
   string,
   DriverScheduleDay
 > {
+  // map — מפת התאמה; מיפוי לחיפוש לפי מפתח.
   const map =
     new Map<
       string,
@@ -467,6 +599,11 @@ function createDriverMap(
   return map;
 }
 
+/**
+ * פעולה createMorningDriverMap: יצירת כונני בוקר.
+ * @param assignments — הקצאות.
+ * @returns Map<string, { hours: string; names: string }> — הפלט בהתאם לחתימה.
+ */
 function createMorningDriverMap(
   assignments: MorningDriverScheduleAssignment[],
 ): Map<string, { hours: string; names: string }> {
@@ -474,15 +611,19 @@ function createMorningDriverMap(
 
   assignments.forEach((assignment) => {
     if (!assignment.assignedUserName) return;
+    // key — מפתח.
     const key = `${assignment.shiftDate}|${assignment.shiftType}`;
+    // current — הנתון current בהקשר הפעולה.
     const current = grouped.get(key) ?? [];
     current.push(assignment);
     grouped.set(key, current);
   });
 
+  // result — תוצאה; מיפוי לחיפוש לפי מפתח.
   const result = new Map<string, { hours: string; names: string }>();
   grouped.forEach((values, key) => {
     const first = values[0];
+    // hours — שעות.
     const hours = createShiftRange(first.startTime, first.endTime);
     if (!hours) return;
     const names = Array.from(
@@ -498,6 +639,11 @@ function createMorningDriverMap(
   return result;
 }
 
+/**
+ * פעולה isNightShiftRange: בדיקת תנאי עבור משמרת.
+ * @param range — הנתון range בהקשר הפעולה.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function isNightShiftRange(
   range: string,
 ): boolean {
@@ -509,16 +655,25 @@ function isNightShiftRange(
   );
 }
 
+/**
+ * פעולה copyFill: הנתון copyFill בהקשר הפעולה.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @param sourceAddress — מקור.
+ * @param targetAddress — יעד.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function copyFill(
   worksheet: ExcelJS.Worksheet,
   sourceAddress: string,
   targetAddress: string,
 ): void {
+  // sourceCell — מקור.
   const sourceCell =
     worksheet.getCell(
       sourceAddress,
     );
 
+  // targetCell — יעד.
   const targetCell =
     worksheet.getCell(
       targetAddress,
@@ -530,12 +685,21 @@ function copyFill(
     );
 }
 
+/**
+ * פעולה applyShiftHourStyle: החלת משמרת.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @param row — שורה.
+ * @param isPremium — תעריף מוגדל.
+ * @param isNight — הנתון isNight בהקשר הפעולה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function applyShiftHourStyle(
   worksheet: ExcelJS.Worksheet,
   row: number,
   isPremium: boolean,
   isNight: boolean,
 ): void {
+  // sourceRow — מקור / שורה.
   const sourceRow =
     isPremium
       ? 2
@@ -556,6 +720,11 @@ function applyShiftHourStyle(
   );
 }
 
+/**
+ * פעולה clearTemplateValues: תבנית / ערכים.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function clearTemplateValues(
   worksheet: ExcelJS.Worksheet,
 ): void {
@@ -579,6 +748,15 @@ function clearTemplateValues(
   }
 }
 
+/**
+ * פעולה setExportDate: קביעת קבוצה ייחודית / ייצוא / תאריך.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @param address — הנתון address בהקשר הפעולה.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @param day — יום.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function setExportDate(
   worksheet: ExcelJS.Worksheet,
   address: string,
@@ -606,10 +784,17 @@ function setExportDate(
     'dd/mm/yyyy';
 }
 
+/**
+ * פעולה hideUnusedRows: שורות.
+ * @param worksheet — הנתון worksheet בהקשר הפעולה.
+ * @param daysInMonth — ימים / חודש.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function hideUnusedRows(
   worksheet: ExcelJS.Worksheet,
   daysInMonth: number,
 ): void {
+  // firstUnusedRow — שורה.
   const firstUnusedRow =
     FIRST_DATA_ROW +
     daysInMonth *
@@ -628,6 +813,11 @@ function hideUnusedRows(
   }
 }
 
+/**
+ * פעולה hasWeekendOrHolidayDispatcherLayout: בדיקת קיום עבור חג / מוקדנים / פריסת מסך.
+ * @param shifts — משמרות.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function hasWeekendOrHolidayDispatcherLayout(
   shifts:
     DispatcherScheduleMonthShift[],
@@ -665,6 +855,13 @@ function hasWeekendOrHolidayDispatcherLayout(
   );
 }
 
+/**
+ * פעולה validatePublishedSchedules: בדיקת תקינות של פורסם.
+ * @param dispatcherStatus — מוקדנים / סטטוס.
+ * @param driverStatus — כוננים / סטטוס.
+ * @param morningDriverStatus — כונני בוקר.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function validatePublishedSchedules(
   dispatcherStatus:
     string | null,
@@ -703,6 +900,7 @@ function validatePublishedSchedules(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר missing.length > 0.
   if (
     missing.length > 0
   ) {
@@ -712,8 +910,13 @@ function validatePublishedSchedules(
   }
 }
 
+/**
+ * פעולה אסינכרונית loadTemplate: טעינת תבנית.
+ * @returns Promise<ExcelJS.Workbook> — הפלט בהתאם לחתימה.
+ */
 async function loadTemplate():
   Promise<ExcelJS.Workbook> {
+  // response — תוצאת הפעולה.
   const response =
     await fetch(
       TEMPLATE_URL,
@@ -723,16 +926,19 @@ async function loadTemplate():
       },
     );
 
+  // עצירת הפעולה עם שגיאה כאשר !response.ok.
   if (!response.ok) {
     throw new Error(
       'לא ניתן היה לטעון את תבנית קובץ האקסל.',
     );
   }
 
+  // arrayBuffer — מאגר בינארי.
   const arrayBuffer =
     await response
       .arrayBuffer();
 
+  // excelJsModule — Excel.
   const excelJsModule =
     await import(
       'exceljs'
@@ -750,16 +956,24 @@ async function loadTemplate():
   return workbook;
 }
 
+/**
+ * פעולה createFileName: יצירת קובץ / שם.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function createFileName(
   year: number,
   month: number,
 ): string {
+  // monthName — חודש / שם.
   const monthName =
     hebrewMonths[
       month - 1
     ] ??
     padNumber(month);
 
+  // shortYear — שנה.
   const shortYear =
     padNumber(
       year % 100,
@@ -768,9 +982,15 @@ function createFileName(
   return `לוח שיבוצים ${monthName} ${shortYear}.xlsx`;
 }
 
+/**
+ * פעולה אסינכרונית createWorkbookBlob: יצירת הנתון createWorkbookBlob בהקשר הפעולה.
+ * @param workbook — הנתון workbook בהקשר הפעולה.
+ * @returns Promise<Blob> — הפלט בהתאם לחתימה.
+ */
 async function createWorkbookBlob(
   workbook: ExcelJS.Workbook,
 ): Promise<Blob> {
+  // buffer — מאגר בינארי.
   const buffer =
     await workbook.xlsx
       .writeBuffer();
@@ -786,10 +1006,17 @@ async function createWorkbookBlob(
   );
 }
 
+/**
+ * פעולה downloadWorkbookBlob: הנתון downloadWorkbookBlob בהקשר הפעולה.
+ * @param blob — הנתון blob בהקשר הפעולה.
+ * @param fileName — קובץ / שם.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function downloadWorkbookBlob(
   blob: Blob,
   fileName: string,
 ): void {
+  // url — כתובת יעד.
   const url =
     URL.createObjectURL(
       blob,
@@ -821,11 +1048,21 @@ function downloadWorkbookBlob(
   );
 }
 
+/**
+ * איגוד פעולות שיבוץ / ייצוא / שירות במחלקה ScheduleExportService.
+ */
 class ScheduleExportService {
+  /**
+   * פעולה אסינכרונית createMonthFile: יצירת חודש / קובץ.
+   * @param year — שנה.
+   * @param month — חודש.
+   * @returns Promise<ScheduleExportFile> — הפלט בהתאם לחתימה.
+   */
   async createMonthFile(
     year: number,
     month: number,
   ): Promise<ScheduleExportFile> {
+    // עצירת הפעולה עם שגיאה כאשר !Number.isInteger(year) || year < 2020 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12.
     if (
       !Number.isInteger(year) ||
       year < 2020 ||
@@ -880,6 +1117,7 @@ class ScheduleExportService {
         null,
     );
 
+    // עצירת הפעולה עם שגיאה כאשר !driverSchedule || !morningDriverSchedule.
     if (
       !driverSchedule ||
       !morningDriverSchedule
@@ -894,38 +1132,45 @@ class ScheduleExportService {
         TEMPLATE_SHEET_NAME,
       );
 
+    // עצירת הפעולה עם שגיאה כאשר !worksheet.
     if (!worksheet) {
       throw new Error(
         'גיליון התבנית הנדרש לא נמצא בקובץ.',
       );
     }
 
+    // dispatcherMap — מוקדנים / מפת התאמה.
     const dispatcherMap =
       createDispatcherMap(
         dispatcherSchedule.shifts,
       );
 
+    // dispatcherShiftsByDate — מוקדנים / משמרות / תאריך.
     const dispatcherShiftsByDate =
       createDispatcherShiftsByDate(
         dispatcherSchedule.shifts,
       );
 
+    // driverMap — כוננים / מפת התאמה.
     const driverMap =
       createDriverMap(
         driverSchedule.days,
       );
 
+    // holidayNoteMap — חג / הערה / מפת התאמה.
     const holidayNoteMap =
       createHolidayNoteMap(
         dispatcherSchedule.shifts,
       );
 
+    // morningDriverMap — כונני בוקר.
     const morningDriverMap =
       createMorningDriverMap(
         morningDriverSchedule
           .assignments,
       );
 
+    // daysInMonth — ימים / חודש.
     const daysInMonth =
       getDaysInMonth(
         year,
@@ -941,6 +1186,7 @@ class ScheduleExportService {
      * אין להכניס לכאן אזהרות פנימיות של מנוע
      * השיבוץ (driverDuty.notes).
      */
+    // notesHeader — הערות.
     const notesHeader =
       worksheet.getCell(
         'H1',
@@ -964,6 +1210,7 @@ class ScheduleExportService {
       day <= daysInMonth;
       day += 1
     ) {
+      // date — תאריך.
       const date =
         new Date(
           year,
@@ -978,6 +1225,7 @@ class ScheduleExportService {
       const weekdayNumber =
         date.getDay();
 
+      // dateKey — תאריך / מפתח.
       const dateKey =
         createDateKey(
           year,
@@ -985,21 +1233,25 @@ class ScheduleExportService {
           day,
         );
 
+      // dayDispatcherShifts — יום / מוקדנים / משמרות.
       const dayDispatcherShifts =
         dispatcherShiftsByDate.get(
           dateKey,
         ) ?? [];
 
+      // weekendOrHolidayLayout — חג / פריסת מסך.
       const weekendOrHolidayLayout =
         hasWeekendOrHolidayDispatcherLayout(
           dayDispatcherShifts,
         );
 
+      // firstRow — שורה.
       const firstRow =
         FIRST_DATA_ROW +
         (day - 1) *
           ROWS_PER_DAY;
 
+      // rows — שורות.
       const rows =
         getDayRows(
           weekdayNumber,
@@ -1011,6 +1263,7 @@ class ScheduleExportService {
           rowDefinition,
           rowOffset,
         ) => {
+          // targetRow — יעד / שורה.
           const targetRow =
             firstRow +
             rowOffset;
@@ -1025,6 +1278,7 @@ class ScheduleExportService {
             targetRow,
           );
 
+          // dispatcherShift — מוקדנים / משמרת.
           const dispatcherShift =
             dispatcherMap.get(
               `${dateKey}|${rowDefinition.dispatcherHours}`,
@@ -1043,6 +1297,7 @@ class ScheduleExportService {
               ?.assignedUserName ??
             null;
 
+          // morningShiftType — משמרת.
           const morningShiftType =
             weekdayNumber === 5 && rowOffset === 0
               ? 'friday_morning'
@@ -1052,6 +1307,7 @@ class ScheduleExportService {
                   ? 'weekday_evening'
                   : null;
 
+          // morningAssignment — הקצאה.
           const morningAssignment = morningShiftType
             ? morningDriverMap.get(`${dateKey}|${morningShiftType}`)
             : undefined;
@@ -1095,6 +1351,7 @@ class ScheduleExportService {
         ] ??
         '';
 
+      // driverDuty — כוננים.
       const driverDuty =
         driverMap.get(
           dateKey,
@@ -1107,6 +1364,7 @@ class ScheduleExportService {
           ?.assignedUserName ??
         null;
 
+      // holidayNote — חג / הערה.
       const holidayNote =
         holidayNoteMap.get(
           dateKey,
@@ -1121,6 +1379,7 @@ class ScheduleExportService {
         }`,
       );
 
+      // notesCell — הערות.
       const notesCell =
         worksheet.getCell(
           `H${firstRow}`,
@@ -1183,6 +1442,7 @@ class ScheduleExportService {
       daysInMonth,
     );
 
+    // fileName — קובץ / שם.
     const fileName =
       createFileName(
         year,
@@ -1231,10 +1491,17 @@ class ScheduleExportService {
     };
   }
 
+  /**
+   * פעולה אסינכרונית exportMonth: ייצוא ייצוא / חודש.
+   * @param year — שנה.
+   * @param month — חודש.
+   * @returns Promise<ScheduleExportResult> — הפלט בהתאם לחתימה.
+   */
   async exportMonth(
     year: number,
     month: number,
   ): Promise<ScheduleExportResult> {
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       blob,
       result,
@@ -1253,6 +1520,7 @@ class ScheduleExportService {
   }
 }
 
+// scheduleExportService — שיבוץ / ייצוא / שירות.
 export const scheduleExportService =
   new ScheduleExportService();
 

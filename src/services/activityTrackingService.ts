@@ -1,6 +1,14 @@
+/**
+ * קובץ: src/services/activityTrackingService.ts
+ * מטרה: הפעלת מעקב יום העבודה, טעינת מקטעי פעילות והגדרות מעקב דרך שכבת השירות.
+ * מטרות עיקריות:
+ * - קריאות RPC המופעלות בקובץ: can_view_own_activity_statistics, get_my_activity_tracking_settings, save_my_activity_tracking_settings, reset_my_activity_tracking_settings, get_my_activity_tracking_context, switch_my_activity, pause_my_activity, end_my_activity_day, get_activity_tracking_week, get_activity_tracking_range, get_activity_tracking_periods, update_activity_tracking_segment.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import { supabase } from '../lib/supabase';
 import { PerformanceDebugService } from './performanceDebugService';
 import type { ActivityPersonalSettingsRole,ActivityRange,ActivityRoleContext,ActivityWeek } from '../types/activityTracking';
+// activityTrackingService — מעקב פעילות וזמני עבודה.
 export const activityTrackingService={
  canViewOwnStatistics:()=>PerformanceDebugService.measureAsync('activityTracking.canViewOwnStatistics',async()=>{const{data,error}=await supabase.rpc('can_view_own_activity_statistics');if(error)throw error;return data===true;}),
  getMySettings:()=>PerformanceDebugService.measureAsync('activityTracking.getMySettings',async()=>{const{data,error}=await supabase.rpc('get_my_activity_tracking_settings');if(error)throw error;return(data??[]) as ActivityPersonalSettingsRole[];}),

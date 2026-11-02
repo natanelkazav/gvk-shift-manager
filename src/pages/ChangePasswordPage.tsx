@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/ChangePasswordPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור סיסמה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: getErrorMessage, ChangePasswordPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   KeyRound,
   LogOut,
@@ -18,9 +25,15 @@ import {
 import { authService } from '../services/authService';
 import '../styles/change-password.css';
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error.message;
   }
@@ -28,6 +41,9 @@ function getErrorMessage(
   return 'אירעה שגיאה בלתי צפויה.';
 }
 
+/**
+ * פעולה ChangePasswordPage: סיסמה.
+ */
 function ChangePasswordPage() {
   const navigate = useNavigate();
 
@@ -38,16 +54,19 @@ function ChangePasswordPage() {
     signOut,
   } = useAuth();
 
+  // מצב מקומי: newPassword — סיסמה; setNewPassword מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     newPassword,
     setNewPassword,
   ] = useState('');
 
+  // מצב מקומי: confirmPassword — סיסמה; setConfirmPassword מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     confirmPassword,
     setConfirmPassword,
   ] = useState('');
 
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     error,
     setError,
@@ -55,25 +74,34 @@ function ChangePasswordPage() {
     null,
   );
 
+  // מצב מקומי: isSaving — האם שמירה מתבצעת; setIsSaving מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isSaving,
     setIsSaving,
   ] = useState(false);
 
+  /**
+   * פעולה validateForm: בדיקת תקינות של הנתון validateForm בהקשר הפעולה.
+   * @returns string | null — הפלט בהתאם לחתימה.
+   */
   const validateForm =
     (): string | null => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !newPassword.
       if (!newPassword) {
         return 'יש להזין סיסמה חדשה.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר newPassword.length < 8.
       if (newPassword.length < 8) {
         return 'הסיסמה החדשה חייבת להכיל לפחות שמונה תווים.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmPassword.
       if (!confirmPassword) {
         return 'יש להזין את הסיסמה החדשה פעם נוספת.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר newPassword !== confirmPassword.
       if (
         newPassword !==
         confirmPassword
@@ -84,20 +112,28 @@ function ChangePasswordPage() {
       return null;
     };
 
+  /**
+   * פעולה אסינכרונית handleSubmit: טיפול באירוע עבור הנתון handleSubmit בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSubmit =
     async (
       event: FormEvent<HTMLFormElement>,
     ): Promise<void> => {
       event.preventDefault();
 
+      // validationError — אימות נתונים / שגיאה.
       const validationError =
         validateForm();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר validationError.
       if (validationError) {
         setError(validationError);
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !user.
       if (!user) {
         setError(
           'לא נמצאה התחברות פעילה. יש להתחבר מחדש.',
@@ -109,6 +145,7 @@ function ChangePasswordPage() {
       setIsSaving(true);
       setError(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await authService.changePassword(
           user.id,
@@ -131,14 +168,20 @@ function ChangePasswordPage() {
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleSignOut: טיפול באירוע עבור הנתון handleSignOut בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSignOut =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isSaving.
       if (isSaving) {
         return;
       }
 
       setError(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await signOut();
 

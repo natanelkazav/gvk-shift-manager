@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/sw.ts
+ * מטרה: הפעלת Service Worker עבור מטמון PWA וטיפול באירועי התראות Push.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PushNotificationPayload, NotificationClickData, parsePushPayload, getStringValue, parseNotificationClickData, createTargetUrl, sendClickMessageToClient, ExtendedNotificationOptions.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 /// <reference lib="webworker" />
 
 import {
@@ -5,19 +12,27 @@ import {
   precacheAndRoute,
 } from 'workbox-precaching';
 
+// self — הנתון self בהקשר הפעולה.
 declare const self:
   ServiceWorkerGlobalScope & {
+    // __WB_MANIFEST — מפת יכולות והרשאות.
     __WB_MANIFEST:
       Array<{
+        // url — כתובת יעד.
         url: string;
         revision:
           string | null;
       }>;
   };
 
+/**
+ * חוזה הנתונים PushNotificationPayload: התראות Push / התראות.
+ */
 interface PushNotificationPayload {
+  // title — כותרת (אופציונלי).
   title?: string;
 
+  // body — תוכן (אופציונלי).
   body?: string;
 
   icon?: string;
@@ -26,34 +41,46 @@ interface PushNotificationPayload {
 
   tag?: string;
 
+  // url — כתובת יעד (אופציונלי).
   url?: string;
 
+  // data — נתונים (אופציונלי).
   data?: Record<
     string,
     unknown
   >;
 }
 
+/**
+ * חוזה הנתונים NotificationClickData: התראות / נתונים.
+ */
 interface NotificationClickData {
+  // url — כתובת יעד.
   url:
     string;
 
+  // notificationId — התראות / מזהה.
   notificationId:
     string | null;
 
+  // recipientId — מזהה.
   recipientId:
     string | null;
 }
 
+// defaultNotificationTitle — התראות / כותרת.
 const defaultNotificationTitle =
   'צוות GVK';
 
+// defaultNotificationBody — התראות / תוכן.
 const defaultNotificationBody =
   'התקבלה התראה חדשה.';
 
+// defaultNotificationUrl — התראות / כתובת יעד.
 const defaultNotificationUrl =
   '/';
 
+// notificationClickMessageType — התראות / הודעה.
 const notificationClickMessageType =
   'GVK_NOTIFICATION_CLICKED';
 
@@ -63,16 +90,23 @@ precacheAndRoute(
 
 cleanupOutdatedCaches();
 
+/**
+ * פעולה parsePushPayload: פענוח קלט עבור התראות Push.
+ * @param event — אירוע.
+ * @returns PushNotificationPayload — הפלט בהתאם לחתימה.
+ */
 function parsePushPayload(
   event:
     PushEvent,
 ): PushNotificationPayload {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !event.data.
   if (
     !event.data
   ) {
     return {};
   }
 
+  // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
   try {
     return event.data
       .json() as
@@ -89,9 +123,15 @@ function parsePushPayload(
   }
 }
 
+/**
+ * פעולה getStringValue: שליפה או חישוב של ערך.
+ * @param value — ערך.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function getStringValue(
   value: unknown,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value !== 'string'.
   if (
     typeof value !==
       'string'
@@ -99,6 +139,7 @@ function getStringValue(
     return null;
   }
 
+  // normalizedValue — ערך.
   const normalizedValue =
     value.trim();
 
@@ -106,9 +147,15 @@ function getStringValue(
     null;
 }
 
+/**
+ * פעולה parseNotificationClickData: פענוח קלט עבור התראות / נתונים.
+ * @param value — ערך.
+ * @returns NotificationClickData — הפלט בהתאם לחתימה.
+ */
 function parseNotificationClickData(
   value: unknown,
 ): NotificationClickData {
+  // data — נתונים.
   const data =
     typeof value ===
         'object' &&
@@ -140,10 +187,16 @@ function parseNotificationClickData(
   };
 }
 
+/**
+ * פעולה createTargetUrl: יצירת יעד / כתובת יעד.
+ * @param clickData — נתונים.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function createTargetUrl(
   clickData:
     NotificationClickData,
 ): string {
+  // targetUrl — יעד / כתובת יעד.
   const targetUrl =
     new URL(
       clickData.url,
@@ -177,6 +230,12 @@ function createTargetUrl(
   return targetUrl.href;
 }
 
+/**
+ * פעולה אסינכרונית sendClickMessageToClient: שליחת הודעה / לקוח.
+ * @param client — לקוח.
+ * @param clickData — נתונים.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function sendClickMessageToClient(
   client:
     WindowClient,
@@ -200,11 +259,15 @@ async function sendClickMessageToClient(
       ),
   });
 }
+/**
+ * חוזה הנתונים ExtendedNotificationOptions: התראות / אפשרויות בחירה.
+ */
 interface ExtendedNotificationOptions
   extends NotificationOptions {
   vibrate?: number[];
 }
 
+// skipWaitingMessageType — הודעה.
 const skipWaitingMessageType =
   'SKIP_WAITING';
 
@@ -214,6 +277,7 @@ self.addEventListener(
     event:
       ExtendableMessageEvent,
   ) => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof event.data !== 'object' || event.data === null.
     if (
       typeof event.data !==
         'object' ||
@@ -223,11 +287,13 @@ self.addEventListener(
       return;
     }
 
+    // message — הודעה.
     const message =
       event.data as {
         type?: unknown;
       };
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר message.type !== skipWaitingMessageType.
     if (
       message.type !==
         skipWaitingMessageType
@@ -263,14 +329,17 @@ self.addEventListener(
         event,
       );
 
+    // title — כותרת.
     const title =
       payload.title?.trim() ||
       defaultNotificationTitle;
 
+    // notificationUrl — התראות / כתובת יעד.
     const notificationUrl =
       payload.url?.trim() ||
       defaultNotificationUrl;
 
+    // options — אפשרויות בחירה.
     const options:
       ExtendedNotificationOptions = {
         body:
@@ -334,11 +403,13 @@ self.addEventListener(
      */
     event.notification.close();
 
+    // clickData — נתונים.
     const clickData =
       parseNotificationClickData(
         event.notification.data,
       );
 
+    // targetUrl — יעד / כתובת יעד.
     const targetUrl =
       createTargetUrl(
         clickData,
@@ -357,14 +428,17 @@ self.addEventListener(
           async (
             clients,
           ) => {
+            // עיבוד כל פריט מתוך clients בנפרד.
             for (
               const client
               of clients
             ) {
+              // windowClient — לקוח.
               const windowClient =
                 client as
                   WindowClient;
 
+              // clientUrl — לקוח / כתובת יעד.
               const clientUrl =
                 new URL(
                   windowClient.url,

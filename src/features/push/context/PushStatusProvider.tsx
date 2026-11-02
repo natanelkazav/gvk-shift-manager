@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/push/context/PushStatusProvider.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור התראות Push / סטטוס.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PushStatusProvider.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   useEffect,
   type PropsWithChildren,
@@ -11,9 +18,14 @@ import {
   usePushStatus,
 } from '../hooks/usePushStatus';
 
+/**
+ * פעולה PushStatusProvider: התראות Push / סטטוס.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 export function PushStatusProvider({
   children,
 }: PropsWithChildren) {
+  // pushStatus — התראות Push / סטטוס.
   const pushStatus =
     usePushStatus();
 
@@ -22,8 +34,10 @@ export function PushStatusProvider({
   } =
     pushStatus;
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ loadStatus, ].
   useEffect(
     () => {
+      // timeoutId — משך המתנה / מזהה.
       const timeoutId =
         window.setTimeout(
           () => {
@@ -43,13 +57,22 @@ export function PushStatusProvider({
     ],
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ loadStatus, ].
   useEffect(
     () => {
+      /**
+       * פעולה handleFocus: טיפול באירוע עבור הנתון handleFocus בהקשר הפעולה.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleFocus =
         (): void => {
           void loadStatus();
         };
 
+      /**
+       * פעולה handleVisibilityChange: טיפול באירוע עבור הנתון handleVisibilityChange בהקשר הפעולה.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleVisibilityChange =
         (): void => {
           if (

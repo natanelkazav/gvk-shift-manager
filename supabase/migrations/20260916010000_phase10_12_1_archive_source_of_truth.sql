@@ -1,13 +1,22 @@
+-- קובץ: supabase/migrations/20260916010000_phase10_12_1_archive_source_of_truth.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור ארכיון / מקור.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_archive_periods.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
+-- פונקציית מסד public.get_dynamic_archive_periods: שליפה או חישוב של דינמי / ארכיון / תקופות.
 create or replace function public.get_dynamic_archive_periods()
 returns jsonb language plpgsql security definer set search_path=''
 as $function$
 declare v_actor uuid:=auth.uid();
 begin
+ -- הסתעפות לפי התנאי v_actor is null then raise exception 'not authenticated'; end if;.
  if v_actor is null then raise exception 'not authenticated'; end if;
+ -- הסתעפות לפי התנאי not (exists(select 1 from public.user_permissions up where up.user_id=v_actor and up.permission_key in ('users.view','us.
  if not (exists(select 1 from public.user_permissions up where up.user_id=v_actor and up.permission_key in ('users.view','users.manage'))
          or exists(select 1 from public.job_type_managers jm where jm.user_id=v_actor))
  then raise exception 'not allowed'; end if;
+ -- הרכבת תוצאת הפעולה והחזרתה לקורא.
  return jsonb_build_object('generatedAt',now(),'periods',coalesce((
   with months as (
    select p.year,p.month from public.dynamic_schedule_publications p
@@ -43,6 +52,8 @@ begin
   ) order by m.year desc,m.month desc) from months m
  ),'[]'::jsonb));
 end;$function$;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_archive_periods() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_archive_periods() to authenticated;
 commit;

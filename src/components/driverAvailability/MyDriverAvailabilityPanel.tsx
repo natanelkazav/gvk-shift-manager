@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/driverAvailability/MyDriverAvailabilityPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כוננים / אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: EditableDriverAvailabilityEntry, MyDriverAvailabilityPanelProps, DriverAvailabilityDayView, formatDate, formatDateTime, getStatusLabel, getStatusIcon, MyDriverAvailabilityPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   CheckCircle2,
@@ -25,45 +32,64 @@ import type {
   SubmitDriverAvailabilityResponse,
 } from '../../types/driverAvailability';
 
+/**
+ * חוזה הנתונים EditableDriverAvailabilityEntry: כוננים / אילוצים וזמינות / רשומה.
+ */
 interface EditableDriverAvailabilityEntry {
+  // dayId — מזהה היום.
   dayId: string;
 
+  // availabilityStatus — מצב הזמינות.
   availabilityStatus:
     DriverAvailabilityStatus | null;
 
+  // note — הערה.
   note: string;
 }
 
+/**
+ * חוזה הנתונים MyDriverAvailabilityPanelProps: כוננים / אילוצים וזמינות / מאפייני הרכיב.
+ */
 interface MyDriverAvailabilityPanelProps {
+  // data — נתונים.
   data:
     DriverAvailabilityPersonalData | null;
 
+  // draftEntries — טיוטה / רשומות.
   draftEntries:
     EditableDriverAvailabilityEntry[];
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
 
+  // isSaving — האם שמירה מתבצעת.
   isSaving: boolean;
 
   isDirty: boolean;
 
+  // isSubmitting — האם הגשה מתבצעת.
   isSubmitting: boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 
+  // lastSaveResult — תוצאה.
   lastSaveResult:
     SaveDriverAvailabilityResponse | null;
 
+  // lastSubmitResult — תוצאה.
   lastSubmitResult:
     SubmitDriverAvailabilityResponse | null;
 
+  // onSetDayStatus — קבוצה ייחודית / יום / סטטוס.
   onSetDayStatus: (
     dayId: string,
     status:
       DriverAvailabilityStatus,
   ) => void;
 
+  // onSetDayNote — קבוצה ייחודית / יום / הערה.
   onSetDayNote: (
     dayId: string,
     note: string,
@@ -75,6 +101,7 @@ interface MyDriverAvailabilityPanelProps {
   onSave:
     () => void;
 
+  // onSubmit — פונקציית טיפול בהגשה.
   onSubmit:
     () => void;
 
@@ -82,16 +109,23 @@ interface MyDriverAvailabilityPanelProps {
     () => void;
 }
 
+/**
+ * חוזה הנתונים DriverAvailabilityDayView: כוננים / אילוצים וזמינות / יום.
+ */
 interface DriverAvailabilityDayView {
+  // day — יום.
   day:
     DriverAvailabilityDay;
 
+  // availabilityStatus — מצב הזמינות.
   availabilityStatus:
     DriverAvailabilityStatus | null;
 
+  // note — הערה.
   note: string;
 }
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -107,14 +141,21 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -133,17 +174,25 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה formatDateTime: עיצוב ערך לתצוגה עבור תאריך / זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDateTime(
   value:
     string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return 'לא הוגדר';
   }
 
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -161,6 +210,11 @@ function formatDateTime(
   ).format(date);
 }
 
+/**
+ * פעולה getStatusLabel: שליפה או חישוב של סטטוס / תווית.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getStatusLabel(
   status:
     DriverAvailabilityStatus | null,
@@ -177,6 +231,10 @@ function getStatusLabel(
   }
 }
 
+/**
+ * פעולה getStatusIcon: שליפה או חישוב של סטטוס.
+ * @param status — סטטוס.
+ */
 function getStatusIcon(
   status:
     DriverAvailabilityStatus | null,
@@ -193,6 +251,10 @@ function getStatusIcon(
   }
 }
 
+/**
+ * פעולה MyDriverAvailabilityPanel: כוננים / אילוצים וזמינות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function MyDriverAvailabilityPanel({
   data,
   draftEntries,
@@ -210,17 +272,20 @@ function MyDriverAvailabilityPanel({
   onSubmit,
   onRefresh,
 }: MyDriverAvailabilityPanelProps) {
+  // ערך מחושב dayViews — יום; נשמר בין רינדורים עד שינוי התלויות.
   const dayViews =
     useMemo<
       DriverAvailabilityDayView[]
     >(
       () => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data?.period.
         if (
           !data?.period
         ) {
           return [];
         }
 
+        // draftEntriesByDayId — מזהה היום; מיפוי לחיפוש לפי מפתח.
         const draftEntriesByDayId =
           new Map<
             string,
@@ -247,6 +312,7 @@ function MyDriverAvailabilityPanel({
           )
           .map(
             (day) => {
+              // draftEntry — טיוטה / רשומה.
               const draftEntry =
                 draftEntriesByDayId.get(
                   day.id,
@@ -274,18 +340,23 @@ function MyDriverAvailabilityPanel({
       ],
     );
 
+  // ערך מחושב summary — סיכום; נשמר בין רינדורים עד שינוי התלויות.
   const summary =
     useMemo(
       () => {
+        // availableCount — מספר הסימונים כזמין.
         let availableCount =
           0;
 
+        // unavailableCount — מספר הסימונים כלא זמין.
         let unavailableCount =
           0;
 
+        // unmarkedCount — מספר הפריטים שטרם סומנו.
         let unmarkedCount =
           0;
 
+        // עיבוד כל פריט מתוך dayViews בנפרד.
         for (
           const item
           of dayViews
@@ -332,6 +403,7 @@ function MyDriverAvailabilityPanel({
       ],
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading.
   if (isLoading) {
     return (
       <section className="my-driver-availability-panel">
@@ -355,6 +427,7 @@ function MyDriverAvailabilityPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error.
   if (error) {
     return (
       <section className="my-driver-availability-panel">
@@ -394,6 +467,7 @@ function MyDriverAvailabilityPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data?.period.
   if (
     !data?.period
   ) {
@@ -435,6 +509,7 @@ function MyDriverAvailabilityPanel({
     );
   }
 
+  // periodTitle — תקופה / כותרת.
   const periodTitle =
     data.period.title ??
     `${
@@ -443,18 +518,22 @@ function MyDriverAvailabilityPanel({
       ]
     } ${data.period.year}`;
 
+  // submissionStatus — מצב ההגשה.
   const submissionStatus =
     data.submission?.status ??
     'draft';
 
+  // isSubmitted — הוגש.
   const isSubmitted =
     submissionStatus ===
     'submitted';
 
+  // isPeriodOpen — תקופה.
   const isPeriodOpen =
     data.period.status ===
     'open';
 
+// isEditable — הנתון isEditable בהקשר הפעולה.
 const isEditable =
   isPeriodOpen &&
   !isSubmitted &&
@@ -752,6 +831,7 @@ const isEditable =
             availabilityStatus,
             note,
           }) => {
+            // StatusIcon — סטטוס.
             const StatusIcon =
               getStatusIcon(
                 availabilityStatus,

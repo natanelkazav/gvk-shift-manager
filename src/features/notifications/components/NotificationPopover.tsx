@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/notifications/components/NotificationPopover.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור התראות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: formatNotificationDate, NotificationPopover.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CheckCheck,
   LoaderCircle,
@@ -19,15 +26,22 @@ import {
   NotificationType,
 } from '../types/notificationTypes';
 
+/**
+ * פעולה formatNotificationDate: עיצוב ערך לתצוגה עבור התראות / תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatNotificationDate(
   value:
     string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       value,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -50,6 +64,9 @@ function formatNotificationDate(
   );
 }
 
+/**
+ * פעולה NotificationPopover: התראות.
+ */
 function NotificationPopover() {
   const navigate =
     useNavigate();
@@ -58,6 +75,7 @@ function NotificationPopover() {
     hasPermission,
   } = useAuth();
 
+  // canApproveShiftSwaps — החלפת משמרות.
   const canApproveShiftSwaps =
     hasPermission(
       'shift_swaps.approve',
@@ -71,6 +89,7 @@ function NotificationPopover() {
   } =
     useNotificationContext();
 
+  // visibleNotifications — התראות.
   const visibleNotifications =
     state.notifications
       .slice(
@@ -78,6 +97,13 @@ function NotificationPopover() {
         6,
       );
 
+/**
+ * פעולה אסינכרונית handleNotificationClick: טיפול באירוע עבור התראות.
+ * @param recipientId — מזהה.
+ * @param url — כתובת יעד.
+ * @param type — הנתון type בהקשר הפעולה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 const handleNotificationClick =
   async (
     recipientId:
@@ -89,6 +115,7 @@ const handleNotificationClick =
     type:
       string,
   ): Promise<void> => {
+    // targetUrl — יעד / כתובת יעד.
     const targetUrl =
       canApproveShiftSwaps &&
       type ===
@@ -108,6 +135,10 @@ const handleNotificationClick =
     }
   };
 
+  /**
+   * פעולה אסינכרונית handleMarkAllAsRead: טיפול באירוע עבור הנתון handleMarkAllAsRead בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleMarkAllAsRead =
     async (): Promise<void> => {
       await markAllAsRead();

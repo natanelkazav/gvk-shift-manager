@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/schedule/AssignmentCandidatesPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור הקצאה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AssignmentCandidatesStatistics, AssignmentCandidatesPanelProps, BalanceMetricKey, getBalanceCellClassName, getBalanceCellTitle, formatDate, formatTime, getSchedulingIssueLabel, getShiftClassName, getShiftStatusLabel ועוד.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
   CalendarDays,
@@ -30,64 +37,93 @@ import type {
 import { Button } from '../ui';
 import EditableSchedulingAssignments from './EditableSchedulingAssignments';
 
+/**
+ * חוזה הנתונים AssignmentCandidatesStatistics: הקצאה / סטטיסטיקה.
+ */
 interface AssignmentCandidatesStatistics {
+  // totalShifts — סך הכול / משמרות.
   totalShifts: number;
+  // noAvailableShifts — משמרות.
   noAvailableShifts: number;
+  // singleAvailableShifts — משמרות.
   singleAvailableShifts: number;
+  // multipleAvailableShifts — משמרות.
   multipleAvailableShifts: number;
 }
 
+/**
+ * חוזה הנתונים AssignmentCandidatesPanelProps: הקצאה / מאפייני הרכיב.
+ */
 interface AssignmentCandidatesPanelProps {
+  // data — נתונים.
   data:
     AssignmentCandidatesData | null;
 
+  // statistics — סטטיסטיקה.
   statistics:
     AssignmentCandidatesStatistics;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
+  // isGeneratingDraft — טיוטה.
   isGeneratingDraft: boolean;
+  // isSavingSchedule — האם שמירה מתבצעת.
   isSavingSchedule: boolean;
+  // hasSavedSchedule — שיבוץ.
   hasSavedSchedule: boolean;
 
+  // error — שגיאה.
   error: string | null;
+  // draftError — טיוטה / שגיאה.
   draftError: string | null;
 
+  // draft — טיוטה.
   draft:
     SchedulingDraft | null;
 
+  // editableAssignments — הקצאות.
   editableAssignments:
     SchedulingDraft['assignments'];
 
+  // editableDispatcherSummaries — מוקדנים.
   editableDispatcherSummaries:
     SchedulingDraft['dispatcherSummaries'];
 
+  // validation — אימות נתונים.
   validation:
     EditableSchedulingValidationResult;
 
+  // intentionallyUnassignedShiftIds — מזהה המשמרת.
   intentionallyUnassignedShiftIds:
     string[];
 
+  // isDraftDirty — טיוטה.
   isDraftDirty: boolean;
 
   onRefresh:
     () => Promise<void>;
 
+  // onGenerateDraft — טיוטה.
   onGenerateDraft:
     () => void;
 
+  // onAssignDispatcher — מוקדנים.
   onAssignDispatcher: (
     shiftId: string,
     userId: string,
   ) => void;
 
+  // onRemoveAssignment — הקצאה.
   onRemoveAssignment: (
     shiftId: string,
   ) => void;
 
+  // onMarkShiftIntentionallyUnassigned — משמרת.
   onMarkShiftIntentionallyUnassigned: (
     shiftId: string,
   ) => void;
 
+  // onResetShiftAssignment — משמרת / הקצאה.
   onResetShiftAssignment: (
     shiftId: string,
   ) => void;
@@ -95,13 +131,18 @@ interface AssignmentCandidatesPanelProps {
   onResetAllChanges:
     () => void;
 
+  // onSaveSchedule — שיבוץ.
   onSaveSchedule:
     () => Promise<void>;
 
+  // onClose — פונקציית סגירת התצוגה.
   onClose:
     () => void;
 }
 
+/**
+ * טיפוס BalanceMetricKey: מפתח.
+ */
 type BalanceMetricKey =
   | 'weekdayEveningShifts'
   | 'weekdayNightShifts'
@@ -115,6 +156,7 @@ type BalanceMetricKey =
   | 'holidayShifts'
   | 'totalShifts';
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -130,6 +172,13 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+/**
+ * פעולה getBalanceCellClassName: שליפה או חישוב של שם.
+ * @param summaries — הנתון summaries בהקשר הפעולה.
+ * @param metric — הנתון metric בהקשר הפעולה.
+ * @param currentValue — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getBalanceCellClassName(
   summaries:
     SchedulingDraft['dispatcherSummaries'],
@@ -139,19 +188,23 @@ function getBalanceCellClassName(
 
   currentValue: number,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר summaries.length === 0.
   if (summaries.length === 0) {
     return '';
   }
 
+  // values — ערכים.
   const values =
     summaries.map(
       (summary) =>
         summary[metric],
     );
 
+  // minimumValue — ערך.
   const minimumValue =
     Math.min(...values);
 
+  // maximumValue — ערך.
   const maximumValue =
     Math.max(...values);
 
@@ -159,6 +212,7 @@ function getBalanceCellClassName(
     maximumValue -
     minimumValue;
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר maximumValue === minimumValue.
   if (
     maximumValue ===
     minimumValue
@@ -166,6 +220,7 @@ function getBalanceCellClassName(
     return 'assignment-draft-balance-cell-balanced';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר currentValue === minimumValue.
   if (
     currentValue ===
     minimumValue
@@ -173,6 +228,7 @@ function getBalanceCellClassName(
     return 'assignment-draft-balance-cell-low';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר currentValue === maximumValue.
   if (
     currentValue ===
     maximumValue
@@ -185,6 +241,13 @@ function getBalanceCellClassName(
   return 'assignment-draft-balance-cell-warning';
 }
 
+/**
+ * פעולה getBalanceCellTitle: שליפה או חישוב של כותרת.
+ * @param summaries — הנתון summaries בהקשר הפעולה.
+ * @param metric — הנתון metric בהקשר הפעולה.
+ * @param currentValue — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getBalanceCellTitle(
   summaries:
     SchedulingDraft['dispatcherSummaries'],
@@ -194,22 +257,27 @@ function getBalanceCellTitle(
 
   currentValue: number,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר summaries.length === 0.
   if (summaries.length === 0) {
     return '';
   }
 
+  // values — ערכים.
   const values =
     summaries.map(
       (summary) =>
         summary[metric],
     );
 
+  // minimumValue — ערך.
   const minimumValue =
     Math.min(...values);
 
+  // maximumValue — ערך.
   const maximumValue =
     Math.max(...values);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר minimumValue === maximumValue.
   if (
     minimumValue ===
     maximumValue
@@ -217,6 +285,7 @@ function getBalanceCellTitle(
     return 'חלוקה שווה בין המוקדנים';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר currentValue === minimumValue.
   if (
     currentValue ===
     minimumValue
@@ -224,6 +293,7 @@ function getBalanceCellTitle(
     return 'הכמות הנמוכה ביותר בקטגוריה';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר currentValue === maximumValue.
   if (
     currentValue ===
     maximumValue
@@ -234,14 +304,21 @@ function getBalanceCellTitle(
   return 'כמות ביניים בקטגוריה';
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -260,12 +337,22 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
   return value.slice(0, 5);
 }
 
+/**
+ * פעולה getSchedulingIssueLabel: שליפה או חישוב של תווית.
+ * @param issueType — הנתון issueType בהקשר הפעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getSchedulingIssueLabel(
   issueType:
     SchedulingDraft['issues'][number]['type'],
@@ -291,6 +378,11 @@ function getSchedulingIssueLabel(
   }
 }
 
+/**
+ * פעולה getShiftClassName: שליפה או חישוב של משמרת / שם.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getShiftClassName(
   shift:
     AssignmentCandidateShift,
@@ -312,6 +404,11 @@ function getShiftClassName(
   }
 }
 
+/**
+ * פעולה getShiftStatusLabel: שליפה או חישוב של משמרת / סטטוס / תווית.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getShiftStatusLabel(
   shift:
     AssignmentCandidateShift,
@@ -333,6 +430,10 @@ function getShiftStatusLabel(
   }
 }
 
+/**
+ * פעולה getShiftStatusIcon: שליפה או חישוב של משמרת / סטטוס.
+ * @param shift — משמרת.
+ */
 function getShiftStatusIcon(
   shift:
     AssignmentCandidateShift,
@@ -369,9 +470,14 @@ function getShiftStatusIcon(
   }
 }
 
+/**
+ * פעולה AssignmentCandidateCard: הקצאה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function AssignmentCandidateCard({
   shift,
 }: {
+  // shift — משמרת.
   shift:
     AssignmentCandidateShift;
 }) {
@@ -534,12 +640,14 @@ function AssignmentCandidateCard({
                 displayName,
                 index,
               ) => {
+                // scheduleName — שיבוץ / שם.
                 const scheduleName =
                   shift
                     .availableScheduleNames[
                       index
                     ];
 
+                // userId — מזהה משתמש.
                 const userId =
                   shift
                     .availableUserIds[
@@ -572,6 +680,10 @@ function AssignmentCandidateCard({
   );
 }
 
+/**
+ * פעולה AssignmentCandidatesPanel: הקצאה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function AssignmentCandidatesPanel({
   data,
   statistics,
@@ -597,6 +709,7 @@ function AssignmentCandidatesPanel({
   onSaveSchedule,
   onClose,
 }: AssignmentCandidatesPanelProps) {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading.
   if (isLoading) {
     return (
       <section className="assignment-candidates-panel">
@@ -616,6 +729,7 @@ function AssignmentCandidatesPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error.
   if (error) {
     return (
       <section className="assignment-candidates-panel">
@@ -661,16 +775,19 @@ function AssignmentCandidatesPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
   if (!data) {
     return null;
   }
 
+  // periodTitle — תקופה / כותרת.
   const periodTitle =
     data.period.title ??
     `${hebrewMonths[
       data.period.month - 1
     ]} ${data.period.year}`;
 
+  // noAvailableShifts — משמרות.
   const noAvailableShifts =
     data.shifts.filter(
       (shift) =>
@@ -678,6 +795,7 @@ function AssignmentCandidatesPanel({
         'no_available',
     );
 
+  // singleAvailableShifts — משמרות.
   const singleAvailableShifts =
     data.shifts.filter(
       (shift) =>
@@ -685,6 +803,7 @@ function AssignmentCandidatesPanel({
         'single_available',
     );
 
+  // multipleAvailableShifts — משמרות.
   const multipleAvailableShifts =
     data.shifts.filter(
       (shift) =>
@@ -692,6 +811,7 @@ function AssignmentCandidatesPanel({
         'multiple_available',
     );
 
+  // unassignedCount — כמות.
   const unassignedCount =
     data.shifts.length -
     editableAssignments.length;
@@ -1461,6 +1581,7 @@ function AssignmentCandidatesPanel({
                       issue,
                       index,
                     ) => {
+                      // shift — משמרת.
                       const shift =
                         data.shifts.find(
                           (

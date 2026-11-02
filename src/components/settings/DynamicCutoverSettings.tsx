@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/settings/DynamicCutoverSettings.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי / מעבר למנגנון הדינמי / הגדרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DynamicCutoverSettings.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { useEffect, useState } from 'react';
 import {
   LockKeyhole,
@@ -12,17 +19,30 @@ import type {
   LegacyFreezeReadiness,
 } from '../../types/dynamicCutover';
 
+/**
+ * פעולה DynamicCutoverSettings: דינמי / מעבר למנגנון הדינמי / הגדרות.
+ */
 export default function DynamicCutoverSettings() {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [state, setState] = useState<DynamicCutoverState | null>(null);
+  // מצב מקומי: readiness — הנתון readiness בהקשר הפעולה; setReadiness מעדכנת אותו ומפעילה רינדור לפי React.
   const [readiness, setReadiness] = useState<LegacyFreezeReadiness | null>(null);
+  // מצב מקומי: saving — שמירה; setSaving מעדכנת אותו ומפעילה רינדור לפי React.
   const [saving, setSaving] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * פעולה אסינכרונית reloadReadiness: הנתון reloadReadiness בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const reloadReadiness = async (): Promise<void> => {
     setReadiness(await dynamicCutoverService.getLegacyFreezeReadiness());
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     void Promise.all([
       dynamicCutoverService.getState(),
@@ -42,8 +62,13 @@ export default function DynamicCutoverSettings() {
     };
   }, []);
 
+  /**
+   * פעולה אסינכרונית toggleDynamicFirst: החלפת בחירה עבור דינמי.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const toggleDynamicFirst = async (): Promise<void> => {
     if (!state || saving) return;
+    // next — הנתון next בהקשר הפעולה.
     const next = !state.dynamicFirstEnabled;
     const question = next
       ? 'להפעיל Dynamic-first? המערכת החדשה תהפוך לברירת המחדל למשתמשים דינמיים ולמנהלים.'
@@ -51,6 +76,7 @@ export default function DynamicCutoverSettings() {
         ? 'לא ניתן לחזור ל-Legacy-first בזמן שה-Legacy מוקפא. יש לבטל קודם את ההקפאה.'
         : 'לבצע Rollback ל-Legacy-first? הנתונים הדינמיים לא יימחקו.';
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !next && state.legacyFrozen.
     if (!next && state.legacyFrozen) {
       setError(question);
       return;
@@ -59,6 +85,7 @@ export default function DynamicCutoverSettings() {
     if (!window.confirm(question)) return;
     setSaving(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       setState(await dynamicCutoverService.setEnabled(next));
       await reloadReadiness();
@@ -69,8 +96,13 @@ export default function DynamicCutoverSettings() {
     }
   };
 
+  /**
+   * פעולה אסינכרונית toggleLegacyFreeze: החלפת בחירה עבור הנתון toggleLegacyFreeze בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const toggleLegacyFreeze = async (): Promise<void> => {
     if (!state || saving) return;
+    // next — הנתון next בהקשר הפעולה.
     const next = !state.legacyFrozen;
     const question = next
       ? 'להקפיא את Legacy? העבודה השוטפת תישאר Dynamic-first, והמסכים הישנים יישארו זמינים רק דרך אזור השחזור.'
@@ -79,6 +111,7 @@ export default function DynamicCutoverSettings() {
 
     setSaving(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       setState(await dynamicCutoverService.setLegacyFrozen(next));
       await reloadReadiness();

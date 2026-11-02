@@ -1,8 +1,15 @@
+/*
+ * קובץ: src/styles/layout.css
+ * מטרה: הגדרת עיצוב ופריסה עבור פריסת מסך.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .app-layout  */
 .app-layout {
   display: flex;
   min-height: 100vh;
 }
 
+/* כללי עיצוב עבור .app-sidebar  */
 .app-sidebar {
   position: fixed;
   top: 0;
@@ -19,6 +26,7 @@
   transition: transform var(--transition-normal);
 }
 
+/* כללי עיצוב עבור .app-sidebar-header  */
 .app-sidebar-header {
   display: flex;
   align-items: flex-start;
@@ -26,6 +34,7 @@
   gap: var(--space-3);
 }
 
+/* כללי עיצוב עבור .app-logo  */
 .app-logo {
   display: flex;
   flex-direction: column;
@@ -34,16 +43,19 @@
   margin-bottom: var(--space-8);
 }
 
+/* כללי עיצוב עבור .app-logo strong  */
 .app-logo strong {
   font-size: 1.25rem;
 }
 
+/* כללי עיצוב עבור .app-logo span  */
 .app-logo span {
   color: var(--color-gray-300);
   font-size: var(--font-size-sm);
 }
 
 .sidebar-close-button,
+/* כללי עיצוב עבור .sidebar-menu-button  */
 .sidebar-menu-button {
   display: none;
   align-items: center;
@@ -57,24 +69,29 @@
   color: inherit;
 }
 
+/* כללי עיצוב עבור .sidebar-close-button:hover  */
 .sidebar-close-button:hover {
   background: var(--color-gray-800);
 }
 
+/* כללי עיצוב עבור .sidebar-menu-button  */
 .sidebar-menu-button {
   color: var(--color-gray-700);
 }
 
+/* כללי עיצוב עבור .sidebar-menu-button:hover  */
 .sidebar-menu-button:hover {
   background: var(--color-gray-100);
 }
 
+/* כללי עיצוב עבור .app-navigation  */
 .app-navigation {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
+/* כללי עיצוב עבור .navigation-link  */
 .navigation-link {
   display: flex;
   align-items: center;
@@ -89,24 +106,29 @@
     color var(--transition-fast);
 }
 
+/* כללי עיצוב עבור .navigation-link:hover  */
 .navigation-link:hover {
   background: var(--color-gray-800);
   color: var(--color-white);
 }
 
+/* כללי עיצוב עבור .navigation-link-active  */
 .navigation-link-active {
   background: var(--color-primary-600);
   color: var(--color-white);
 }
 
+/* כללי עיצוב עבור .navigation-link-active:hover  */
 .navigation-link-active:hover {
   background: var(--color-primary-700);
 }
 
+/* כללי עיצוב עבור .navigation-link-icon  */
 .navigation-link-icon {
   flex: 0 0 auto;
 }
 
+/* כללי עיצוב עבור .app-content-wrapper  */
 .app-content-wrapper {
   display: flex;
   flex: 1;
@@ -115,6 +137,7 @@
   margin-right: var(--sidebar-width);
 }
 
+/* כללי עיצוב עבור .app-header  */
 .app-header {
   position: sticky;
   top: 0;
@@ -129,23 +152,27 @@
   backdrop-filter: blur(12px);
 }
 
+/* כללי עיצוב עבור .app-header-start  */
 .app-header-start {
   display: flex;
   align-items: center;
   gap: var(--space-3);
 }
 
+/* כללי עיצוב עבור .app-header-brand  */
 .app-header-brand {
   font-weight: 700;
   color: var(--color-gray-900);
 }
 
+/* כללי עיצוב עבור .app-user  */
 .app-user {
   display: flex;
   align-items: center;
   gap: var(--space-3);
 }
 
+/* כללי עיצוב עבור .app-user-avatar  */
 .app-user-avatar {
   display: grid;
   width: 40px;
@@ -157,22 +184,26 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .app-user-details  */
 .app-user-details {
   display: flex;
   flex-direction: column;
 }
 
+/* כללי עיצוב עבור .app-user-name  */
 .app-user-name {
   color: var(--color-gray-900);
   font-size: var(--font-size-sm);
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .app-user-role  */
 .app-user-role {
   color: var(--color-gray-500);
   font-size: var(--font-size-xs);
 }
 
+/* כללי עיצוב עבור .app-main  */
 .app-main {
   flex: 1;
   width: 100%;
@@ -181,10 +212,12 @@
   margin: 0 auto;
 }
 
+/* כללי עיצוב עבור .sidebar-backdrop  */
 .sidebar-backdrop {
   display: none;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 800px) */
 @media (max-width: 800px) {
   .app-sidebar {
     width: min(300px, 88vw);
@@ -227,11 +260,13 @@
     display: none;
   }
 }
+/* כללי עיצוב עבור .sidebar-footer  */
 .sidebar-footer {
   margin-top: auto;
   padding-top: var(--space-6);
 }
 
+/* כללי עיצוב עבור .sidebar-sign-out-button  */
 .sidebar-sign-out-button {
   display: flex;
   width: 100%;
@@ -251,16 +286,19 @@
     border-color var(--transition-fast);
 }
 
+/* כללי עיצוב עבור .sidebar-sign-out-button:hover:not(:disabled)  */
 .sidebar-sign-out-button:hover:not(:disabled) {
   border-color: rgb(255 255 255 / 20%);
   background: var(--color-gray-800);
   color: var(--color-white);
 }
 
+/* כללי עיצוב עבור .sidebar-sign-out-button:disabled  */
 .sidebar-sign-out-button:disabled {
   cursor: wait;
   opacity: 0.55;
 }
+/* כללי עיצוב עבור .notification-bell-button  */
 .notification-bell-button {
   position: relative;
   display: inline-flex;
@@ -282,6 +320,7 @@
     transform 150ms ease;
 }
 
+/* כללי עיצוב עבור .notification-bell-button:hover:not(:disabled)  */
 .notification-bell-button:hover:not(:disabled) {
   border-color: #bfdbfe;
   background: #eff6ff;
@@ -289,16 +328,19 @@
   transform: translateY(-1px);
 }
 
+/* כללי עיצוב עבור .notification-bell-button:focus-visible  */
 .notification-bell-button:focus-visible {
   outline: 3px solid rgb(37 99 235 / 25%);
   outline-offset: 2px;
 }
 
+/* כללי עיצוב עבור .notification-bell-button:disabled  */
 .notification-bell-button:disabled {
   cursor: wait;
   opacity: 0.6;
 }
 
+/* כללי עיצוב עבור .notification-bell-badge  */
 .notification-bell-badge {
   position: absolute;
   top: -4px;
@@ -317,17 +359,20 @@
   font-weight: 700;
   line-height: 1;
 }
+/* כללי עיצוב עבור .app-header-actions  */
 .app-header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-inline-start: auto;
 }
+/* כללי עיצוב עבור .notification-bell-container  */
 .notification-bell-container {
   position: relative;
   display: inline-flex;
 }
 
+/* כללי עיצוב עבור .notification-popover  */
 .notification-popover {
   position: absolute;
   top: calc(100% + 12px);
@@ -349,6 +394,7 @@
     0 18px 45px rgb(15 23 42 / 18%);
 }
 
+/* כללי עיצוב עבור .notification-popover-header  */
 .notification-popover-header {
   display: flex;
   align-items: flex-start;
@@ -358,22 +404,26 @@
   border-bottom: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .notification-popover-header > div  */
 .notification-popover-header > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .notification-popover-header strong  */
 .notification-popover-header strong {
   color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
+/* כללי עיצוב עבור .notification-popover-header span  */
 .notification-popover-header span {
   color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .notification-popover-mark-all  */
 .notification-popover-mark-all {
   display: inline-flex;
   align-items: center;
@@ -388,16 +438,19 @@
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .notification-popover-mark-all:disabled  */
 .notification-popover-mark-all:disabled {
   cursor: wait;
   opacity: 0.55;
 }
 
+/* כללי עיצוב עבור .notification-popover-content  */
 .notification-popover-content {
   max-height: 420px;
   overflow-y: auto;
 }
 
+/* כללי עיצוב עבור .notification-popover-state  */
 .notification-popover-state {
   display: flex;
   align-items: center;
@@ -409,14 +462,17 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .notification-popover-error  */
 .notification-popover-error {
   color: #b91c1c;
 }
 
+/* כללי עיצוב עבור .notification-popover-spinner  */
 .notification-popover-spinner {
   animation: notification-popover-spin 800ms linear infinite;
 }
 
+/* כללי עיצוב עבור .notification-popover-item  */
 .notification-popover-item {
   display: flex;
   width: 100%;
@@ -432,24 +488,29 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .notification-popover-item:hover  */
 .notification-popover-item:hover {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .notification-popover-item-unread  */
 .notification-popover-item-unread {
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .notification-popover-item-unread:hover  */
 .notification-popover-item-unread:hover {
   background: #dbeafe;
 }
 
+/* כללי עיצוב עבור .notification-popover-item-title  */
 .notification-popover-item-title {
   color: var(--theme-text-strong);
   font-size: 0.82rem;
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .notification-popover-item-body  */
 .notification-popover-item-body {
   overflow: hidden;
   color: var(--theme-text-secondary);
@@ -459,11 +520,13 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .notification-popover-item-date  */
 .notification-popover-item-date {
   color: #94a3b8;
   font-size: 0.65rem;
 }
 
+/* כללי עיצוב עבור .notification-popover-footer  */
 .notification-popover-footer {
   width: 100%;
   padding: 13px 16px;
@@ -478,16 +541,19 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .notification-popover-footer:hover  */
 .notification-popover-footer:hover {
   background: var(--theme-surface-muted);
 }
 
+/* הגדרת שלבי האנימציה @keyframes notification-popover-spin */
 @keyframes notification-popover-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 600px) */
 @media (max-width: 600px) {
   .notification-popover {
     position: fixed;
@@ -499,6 +565,7 @@
   }
 }
 
+/* כללי עיצוב עבור .navigation-link-badge  */
 .navigation-link-badge {
   display: inline-grid;
   min-width: 22px;
@@ -514,24 +581,28 @@
   line-height: 1;
 }
 
+/* כללי עיצוב עבור .navigation-link-active .navigation-link-badge  */
 .navigation-link-active .navigation-link-badge {
   background: var(--theme-surface);
   color: var(--color-primary-700);
 }
 
 
+/* כללי עיצוב עבור .push-permission-banner  */
 .push-permission-banner {
   margin-block-end: 20px;
   border-inline-start: 5px solid #2563eb;
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .push-permission-header  */
 .push-permission-header {
   display: flex;
   align-items: flex-start;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .push-permission-icon  */
 .push-permission-icon {
   display: inline-flex;
   flex: 0 0 auto;
@@ -544,16 +615,19 @@
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .push-permission-content  */
 .push-permission-content {
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .push-permission-content h3  */
 .push-permission-content h3 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
+/* כללי עיצוב עבור .push-permission-content p  */
 .push-permission-content p {
   margin: 6px 0 0;
   color: var(--theme-text-secondary);
@@ -561,6 +635,7 @@
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .push-permission-actions  */
 .push-permission-actions {
   display: flex;
   flex-wrap: wrap;
@@ -568,6 +643,7 @@
   margin-block-start: 18px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 600px) */
 @media (max-width: 600px) {
   .push-permission-actions {
     flex-direction: column;
@@ -585,36 +661,43 @@
 
 /* Dark theme: keep the shell consistently dark. The base gray palette is
  * inverted for legacy content, so the navigation shell needs explicit tones. */
+/* כללי עיצוב עבור :root[data-theme='dark'] .app-sidebar  */
 :root[data-theme='dark'] .app-sidebar {
   background: #0f172a;
   color: #f8fafc;
 }
 
 :root[data-theme='dark'] .app-logo span,
+/* כללי עיצוב עבור :root[data-theme='dark'] .navigation-link  */
 :root[data-theme='dark'] .navigation-link {
   color: #cbd5e1;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .navigation-link:hover  */
 :root[data-theme='dark'] .navigation-link:hover {
   background: #1e293b;
   color: #ffffff;
 }
 
 :root[data-theme='dark'] .navigation-link-active,
+/* כללי עיצוב עבור :root[data-theme='dark'] .navigation-link-active:hover  */
 :root[data-theme='dark'] .navigation-link-active:hover {
   color: #ffffff;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .app-header  */
 :root[data-theme='dark'] .app-header {
   border-bottom-color: var(--theme-border);
   background: rgb(11 18 32 / 92%);
 }
 
 :root[data-theme='dark'] .app-header-brand,
+/* כללי עיצוב עבור :root[data-theme='dark'] .app-user-name  */
 :root[data-theme='dark'] .app-user-name {
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .app-user-role  */
 :root[data-theme='dark'] .app-user-role {
   color: var(--theme-text-muted);
 }

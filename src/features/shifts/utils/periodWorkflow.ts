@@ -1,3 +1,13 @@
+/**
+ * קובץ: src/features/shifts/utils/periodWorkflow.ts
+ * מטרה: פונקציות עזר לעיבוד וחישוב עבור תקופה / תהליך עבודה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: WorkflowAvailabilityStatus, WorkflowScheduleStatus, WorkflowPublicationStatus, WorkflowStep, PeriodWorkflowInput, PeriodWorkflowState, getPublicationStatus, getNextAction, getBlockingReason, getRecommendation ועוד.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
+/**
+ * טיפוס WorkflowAvailabilityStatus: מצב הזמינות.
+ */
 export type WorkflowAvailabilityStatus =
   | 'missing'
   | 'draft'
@@ -5,17 +15,26 @@ export type WorkflowAvailabilityStatus =
   | 'closed'
   | 'archived';
 
+/**
+ * טיפוס WorkflowScheduleStatus: תהליך עבודה / שיבוץ / סטטוס.
+ */
 export type WorkflowScheduleStatus =
   | 'missing'
   | 'draft'
   | 'published'
   | 'archived';
 
+/**
+ * טיפוס WorkflowPublicationStatus: תהליך עבודה / סטטוס.
+ */
 export type WorkflowPublicationStatus =
   | 'notPublished'
   | 'published'
   | 'archived';
 
+/**
+ * טיפוס WorkflowStep: תהליך עבודה.
+ */
 export type WorkflowStep =
   | 'createAvailability'
   | 'openAvailability'
@@ -26,48 +45,67 @@ export type WorkflowStep =
   | 'completed'
   | 'archived';
 
+/**
+ * חוזה הנתונים PeriodWorkflowInput: תקופה / תהליך עבודה / קלט.
+ */
 export interface PeriodWorkflowInput {
+  // availabilityStatus — מצב הזמינות.
   availabilityStatus:
     WorkflowAvailabilityStatus;
 
+  // scheduleStatus — שיבוץ / סטטוס.
   scheduleStatus:
     WorkflowScheduleStatus;
 
+  // hasScheduleWarnings — שיבוץ (אופציונלי).
   hasScheduleWarnings?:
     boolean;
 
+  // hasUnassignedScheduleItems — שיבוץ / פריטים (אופציונלי).
   hasUnassignedScheduleItems?:
     boolean;
 }
 
+/**
+ * חוזה הנתונים PeriodWorkflowState: תקופה / תהליך עבודה / מצב.
+ */
 export interface PeriodWorkflowState {
+  // availabilityStatus — מצב הזמינות.
   availabilityStatus:
     WorkflowAvailabilityStatus;
 
+  // scheduleStatus — שיבוץ / סטטוס.
   scheduleStatus:
     WorkflowScheduleStatus;
 
+  // publicationStatus — סטטוס.
   publicationStatus:
     WorkflowPublicationStatus;
 
   nextAction:
     WorkflowStep;
 
+  // canCreateAvailability — אילוצים וזמינות.
   canCreateAvailability:
     boolean;
 
+  // canOpenAvailability — אילוצים וזמינות.
   canOpenAvailability:
     boolean;
 
+  // canCloseAvailability — אילוצים וזמינות.
   canCloseAvailability:
     boolean;
 
+  // canCreateSchedule — שיבוץ.
   canCreateSchedule:
     boolean;
 
+  // canReviewSchedule — שיבוץ.
   canReviewSchedule:
     boolean;
 
+  // canPublishSchedule — שיבוץ.
   canPublishSchedule:
     boolean;
 
@@ -81,10 +119,16 @@ export interface PeriodWorkflowState {
     string;
 }
 
+/**
+ * פעולה getPublicationStatus: שליפה או חישוב של סטטוס.
+ * @param scheduleStatus — שיבוץ / סטטוס.
+ * @returns WorkflowPublicationStatus — הפלט בהתאם לחתימה.
+ */
 function getPublicationStatus(
   scheduleStatus:
     WorkflowScheduleStatus,
 ): WorkflowPublicationStatus {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleStatus === 'published'.
   if (
     scheduleStatus ===
     'published'
@@ -92,6 +136,7 @@ function getPublicationStatus(
     return 'published';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleStatus === 'archived'.
   if (
     scheduleStatus ===
     'archived'
@@ -102,6 +147,11 @@ function getPublicationStatus(
   return 'notPublished';
 }
 
+/**
+ * פעולה getNextAction: שליפה או חישוב של הנתון getNextAction בהקשר הפעולה.
+ * @param input — קלט.
+ * @returns WorkflowStep — הפלט בהתאם לחתימה.
+ */
 function getNextAction(
   input:
     PeriodWorkflowInput,
@@ -115,6 +165,7 @@ function getNextAction(
       false,
   } = input;
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר availabilityStatus === 'archived' || scheduleStatus === 'archived'.
   if (
     availabilityStatus ===
       'archived' ||
@@ -124,6 +175,7 @@ function getNextAction(
     return 'archived';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleStatus === 'published'.
   if (
     scheduleStatus ===
     'published'
@@ -131,6 +183,7 @@ function getNextAction(
     return 'completed';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר availabilityStatus === 'missing'.
   if (
     availabilityStatus ===
     'missing'
@@ -138,6 +191,7 @@ function getNextAction(
     return 'createAvailability';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר availabilityStatus === 'draft'.
   if (
     availabilityStatus ===
     'draft'
@@ -145,6 +199,7 @@ function getNextAction(
     return 'openAvailability';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר availabilityStatus === 'open'.
   if (
     availabilityStatus ===
     'open'
@@ -152,6 +207,7 @@ function getNextAction(
     return 'closeAvailability';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר availabilityStatus === 'closed' && scheduleStatus === 'missing'.
   if (
     availabilityStatus ===
       'closed' &&
@@ -161,6 +217,7 @@ function getNextAction(
     return 'createSchedule';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleStatus === 'draft' && ( hasScheduleWarnings || hasUnassignedScheduleItems ).
   if (
     scheduleStatus ===
       'draft' &&
@@ -172,6 +229,7 @@ function getNextAction(
     return 'reviewSchedule';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleStatus === 'draft'.
   if (
     scheduleStatus ===
     'draft'
@@ -182,6 +240,12 @@ function getNextAction(
   return 'createAvailability';
 }
 
+/**
+ * פעולה getBlockingReason: שליפה או חישוב של הנתון getBlockingReason בהקשר הפעולה.
+ * @param input — קלט.
+ * @param nextAction — הנתון nextAction בהקשר הפעולה.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function getBlockingReason(
   input:
     PeriodWorkflowInput,
@@ -198,6 +262,7 @@ function getBlockingReason(
       false,
   } = input;
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר nextAction === 'archived'.
   if (
     nextAction ===
     'archived'
@@ -205,6 +270,7 @@ function getBlockingReason(
     return 'התקופה נמצאת בארכיון ולא ניתן לבצע בה פעולות נוספות.';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר nextAction === 'closeAvailability'.
   if (
     nextAction ===
       'closeAvailability'
@@ -212,6 +278,7 @@ function getBlockingReason(
     return 'יש לסגור את תקופת האילוצים לפני יצירת השיבוץ.';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר availabilityStatus !== 'closed' && scheduleStatus === 'missing'.
   if (
     availabilityStatus !==
       'closed' &&
@@ -221,6 +288,7 @@ function getBlockingReason(
     return 'ניתן ליצור שיבוץ רק לאחר סגירת תקופת האילוצים.';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleStatus === 'draft' && hasUnassignedScheduleItems.
   if (
     scheduleStatus ===
       'draft' &&
@@ -229,6 +297,7 @@ function getBlockingReason(
     return 'לא ניתן לפרסם לפני השלמת כל השיבוצים החסרים.';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleStatus === 'draft' && hasScheduleWarnings.
   if (
     scheduleStatus ===
       'draft' &&
@@ -240,6 +309,11 @@ function getBlockingReason(
   return null;
 }
 
+/**
+ * פעולה getRecommendation: שליפה או חישוב של הנתון getRecommendation בהקשר הפעולה.
+ * @param nextAction — הנתון nextAction בהקשר הפעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getRecommendation(
   nextAction:
     WorkflowStep,
@@ -276,15 +350,22 @@ function getRecommendation(
   }
 }
 
+/**
+ * פעולה calculateWorkflowState: חישוב תהליך עבודה / מצב.
+ * @param input — קלט.
+ * @returns PeriodWorkflowState — הפלט בהתאם לחתימה.
+ */
 export function calculateWorkflowState(
   input:
     PeriodWorkflowInput,
 ): PeriodWorkflowState {
+  // nextAction — הנתון nextAction בהקשר הפעולה.
   const nextAction =
     getNextAction(
       input,
     );
 
+  // publicationStatus — סטטוס.
   const publicationStatus =
     getPublicationStatus(
       input.scheduleStatus,

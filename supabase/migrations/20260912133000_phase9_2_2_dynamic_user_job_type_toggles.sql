@@ -1,7 +1,14 @@
+-- קובץ: supabase/migrations/20260912133000_phase9_2_2_dynamic_user_job_type_toggles.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סוג תפקיד.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.has_dynamic_job_type_permission, public.get_user_dynamic_job_type_permission_editor, public.save_user_dynamic_job_type_permissions.
+-- - מבני טבלאות: public.user_job_type_permissions.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 9.2.2: per-user, per-Job-Type dynamic permission toggles.
 -- The available options are derived from each Job Type's active capabilities.
 -- Member/manager relationships provide defaults only; explicit user overrides win.
 
+-- הגדרת מבנה הטבלה public.user_job_type_permissions והאילוצים המופיעים בהמשך.
 create table if not exists public.user_job_type_permissions (
   user_id uuid not null references public.profiles(id) on delete cascade,
   job_type_id uuid not null references public.job_types(id) on delete cascade,
@@ -13,11 +20,13 @@ create table if not exists public.user_job_type_permissions (
   primary key (user_id, job_type_id, permission_key)
 );
 
+-- הגדרת האינדקס user_job_type_permissions_job_type_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists user_job_type_permissions_job_type_idx
   on public.user_job_type_permissions(job_type_id, user_id);
 
 -- Explicit user overrides take precedence. Without an override, the Job Type's
 -- member/manager defaults are used according to the user's relationship.
+-- פונקציית מסד public.has_dynamic_job_type_permission: בדיקת קיום עבור סוג תפקיד.
 create or replace function public.has_dynamic_job_type_permission(
   requested_permission_key text,
   requested_job_type_id uuid,
@@ -26,23 +35,28 @@ create or replace function public.has_dynamic_job_type_permission(
 returns boolean
 language plpgsql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
+  -- explicit_value — ערך.
   explicit_value boolean;
   features text[];
 begin
+  -- הסתעפות לפי התנאי requested_user_id is null.
   if requested_user_id is null then
     return false;
   end if;
 
   features := public.get_dynamic_job_type_active_features(requested_job_type_id);
+  -- הסתעפות לפי התנאי coalesce(array_length(features, 1), 0) = 0.
   if coalesce(array_length(features, 1), 0) = 0 then
     return false;
   end if;
 
   -- The permission must actually belong to an active capability of this Job Type.
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.dynamic_permission_manifest dm
@@ -59,6 +73,7 @@ begin
     and ujtp.job_type_id = requested_job_type_id
     and ujtp.permission_key = requested_permission_key;
 
+  -- הסתעפות לפי התנאי found.
   if found then
     return explicit_value;
   end if;
@@ -98,32 +113,41 @@ begin
 end;
 $$;
 
+-- פונקציית מסד public.get_user_dynamic_job_type_permission_editor: שליפה או חישוב של סוג תפקיד.
 create or replace function public.get_user_dynamic_job_type_permission_editor(target_user_id uuid)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
   actor uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי actor is null.
   if actor is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי actor <> target_user_id and not exists (.
   if actor <> target_user_id and not exists (
     select 1
     from public.user_permissions up
     where up.user_id = actor
       and up.permission_key in ('users.view', 'users.manage')
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (select 1 from public.profiles p where p.id = target_user_id).
   if not exists (select 1 from public.profiles p where p.id = target_user_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not found';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'jobTypes',
     coalesce((
@@ -220,44 +244,59 @@ begin
 end;
 $$;
 
+-- פונקציית מסד public.save_user_dynamic_job_type_permissions: שמירת סוג תפקיד.
 create or replace function public.save_user_dynamic_job_type_permissions(
   target_user_id uuid,
   requested_permissions jsonb default '[]'::jsonb
 )
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
   actor uuid := auth.uid();
+  -- item — פריט.
   item jsonb;
+  -- requested_job_type_id — מזהה סוג התפקיד.
   requested_job_type_id uuid;
+  -- requested_permission_key — מפתח ההרשאה.
   requested_permission_key text;
+  -- requested_enabled — האם האפשרות מופעלת.
   requested_enabled boolean;
+  -- inherited_enabled — האם האפשרות מופעלת.
   inherited_enabled boolean;
   features text[];
 begin
+  -- הסתעפות לפי התנאי actor is null.
   if actor is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions up
     where up.user_id = actor
       and up.permission_key = 'users.manage'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (select 1 from public.profiles p where p.id = target_user_id).
   if not exists (select 1 from public.profiles p where p.id = target_user_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not found';
   end if;
 
+  -- מחיקת הרשומות שנבחרו מתוך public.user_job_type_permissions בהתאם לקלט ולתנאים להלן.
   delete from public.user_job_type_permissions
   where user_id = target_user_id;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for item in
     select value from jsonb_array_elements(coalesce(requested_permissions, '[]'::jsonb))
   loop
@@ -265,12 +304,14 @@ begin
     requested_permission_key := nullif(item->>'permissionKey', '');
     requested_enabled := coalesce((item->>'enabled')::boolean, false);
 
+    -- הסתעפות לפי התנאי requested_job_type_id is null or requested_permission_key is null.
     if requested_job_type_id is null or requested_permission_key is null then
       continue;
     end if;
 
     features := public.get_dynamic_job_type_active_features(requested_job_type_id);
 
+    -- הסתעפות לפי התנאי not exists (.
     if not exists (
       select 1
       from public.dynamic_permission_manifest dm
@@ -312,7 +353,9 @@ begin
 
     -- Keep only actual overrides. If the toggle equals the inherited default,
     -- no row is needed and future capability changes remain dynamic.
+    -- הסתעפות לפי התנאי requested_enabled is distinct from inherited_enabled.
     if requested_enabled is distinct from inherited_enabled then
+      -- הוספת רשומות ל־public.user_job_type_permissions בהתאם לקלט ולתנאים להלן.
       insert into public.user_job_type_permissions(
         user_id,
         job_type_id,
@@ -341,6 +384,9 @@ begin
 end;
 $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant select on public.user_job_type_permissions to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_user_dynamic_job_type_permission_editor(uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.save_user_dynamic_job_type_permissions(uuid,jsonb) to authenticated;

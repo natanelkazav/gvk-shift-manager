@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/shifts/utils/periodWorkflowAdapters.ts
+ * מטרה: פונקציות עזר לעיבוד וחישוב עבור תקופה / תהליך עבודה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AvailabilityPeriodLike, DispatcherSchedulePeriodLike, DispatcherScheduleShiftLike, DriverSchedulePeriodLike, DriverScheduleStatisticsLike, MorningDriverSchedulePeriodLike, MorningDriverScheduleStatisticsLike, CreateDispatcherWorkflowStateRequest, CreateDriverWorkflowStateRequest, CreateMorningDriverWorkflowStateRequest ועוד.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   calculateWorkflowState,
   type PeriodWorkflowState,
@@ -5,41 +12,70 @@ import {
   type WorkflowScheduleStatus,
 } from './periodWorkflow';
 
+/**
+ * חוזה הנתונים AvailabilityPeriodLike: תקופת אילוצים.
+ */
 interface AvailabilityPeriodLike {
+  // status — סטטוס.
   status:
     string;
 }
 
+/**
+ * חוזה הנתונים DispatcherSchedulePeriodLike: תקופת שיבוץ.
+ */
 interface DispatcherSchedulePeriodLike {
+  // status — סטטוס.
   status:
     string;
 }
 
+/**
+ * חוזה הנתונים DispatcherScheduleShiftLike: מוקדנים / שיבוץ / משמרת.
+ */
 interface DispatcherScheduleShiftLike {
+  // assignedUserId — מזהה העובד המשובץ.
   assignedUserId:
     string | null;
     isIntentionallyUnassigned?: boolean;
 }
 
+/**
+ * חוזה הנתונים DriverSchedulePeriodLike: תקופת שיבוץ.
+ */
 interface DriverSchedulePeriodLike {
+  // status — סטטוס.
   status:
     string;
 }
 
+/**
+ * חוזה הנתונים DriverScheduleStatisticsLike: כוננים / שיבוץ / סטטיסטיקה.
+ */
 interface DriverScheduleStatisticsLike {
+  // unassignedDays — ימים.
   unassignedDays:
     number;
 
+  // warningCount — כמות.
   warningCount:
     number;
 }
 
+/**
+ * חוזה הנתונים MorningDriverSchedulePeriodLike: תקופת שיבוץ.
+ */
 interface MorningDriverSchedulePeriodLike {
+  // status — סטטוס.
   status:
     string;
 }
 
+/**
+ * חוזה הנתונים MorningDriverScheduleStatisticsLike: כונני בוקר.
+ */
 interface MorningDriverScheduleStatisticsLike {
+  // unassignedAssignments — הקצאות.
   unassignedAssignments:
     number;
 
@@ -50,39 +86,62 @@ interface MorningDriverScheduleStatisticsLike {
     number;
 }
 
+/**
+ * חוזה הנתונים CreateDispatcherWorkflowStateRequest: מוקדנים / תהליך עבודה / מצב / נתוני הבקשה.
+ */
 interface CreateDispatcherWorkflowStateRequest {
+  // availabilityPeriod — תקופת אילוצים.
   availabilityPeriod:
     AvailabilityPeriodLike | null;
 
+  // schedulePeriod — תקופת שיבוץ.
   schedulePeriod:
     DispatcherSchedulePeriodLike | null;
 
+  // shifts — משמרות.
   shifts:
     DispatcherScheduleShiftLike[];
 }
 
+/**
+ * חוזה הנתונים CreateDriverWorkflowStateRequest: כוננים / תהליך עבודה / מצב / נתוני הבקשה.
+ */
 interface CreateDriverWorkflowStateRequest {
+  // availabilityPeriod — תקופת אילוצים.
   availabilityPeriod:
     AvailabilityPeriodLike | null;
 
+  // schedulePeriod — תקופת שיבוץ.
   schedulePeriod:
     DriverSchedulePeriodLike | null;
 
+  // statistics — סטטיסטיקה.
   statistics:
     DriverScheduleStatisticsLike | null;
 }
 
+/**
+ * חוזה הנתונים CreateMorningDriverWorkflowStateRequest: כונני בוקר.
+ */
 interface CreateMorningDriverWorkflowStateRequest {
+  // availabilityPeriod — תקופת אילוצים.
   availabilityPeriod:
     AvailabilityPeriodLike | null;
 
+  // schedulePeriod — תקופת שיבוץ.
   schedulePeriod:
     MorningDriverSchedulePeriodLike | null;
 
+  // statistics — סטטיסטיקה.
   statistics:
     MorningDriverScheduleStatisticsLike | null;
 }
 
+/**
+ * פעולה normalizeAvailabilityStatus: נרמול מצב הזמינות.
+ * @param status — סטטוס.
+ * @returns WorkflowAvailabilityStatus — הפלט בהתאם לחתימה.
+ */
 function normalizeAvailabilityStatus(
   status:
     string | null | undefined,
@@ -107,6 +166,11 @@ function normalizeAvailabilityStatus(
   }
 }
 
+/**
+ * פעולה normalizeScheduleStatus: נרמול שיבוץ / סטטוס.
+ * @param status — סטטוס.
+ * @returns WorkflowScheduleStatus — הפלט בהתאם לחתימה.
+ */
 function normalizeScheduleStatus(
   status:
     string | null | undefined,
@@ -129,16 +193,23 @@ function normalizeScheduleStatus(
   }
 }
 
+/**
+ * פעולה createDispatcherWorkflowState: יצירת מוקדנים / תהליך עבודה / מצב.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ * @returns PeriodWorkflowState — הפלט בהתאם לחתימה.
+ */
 export function createDispatcherWorkflowState({
   availabilityPeriod,
   schedulePeriod,
   shifts,
 }: CreateDispatcherWorkflowStateRequest): PeriodWorkflowState {
+  // scheduleStatus — שיבוץ / סטטוס.
   const scheduleStatus =
     normalizeScheduleStatus(
       schedulePeriod?.status,
     );
 
+  // hasUnassignedScheduleItems — שיבוץ / פריטים.
   const hasUnassignedScheduleItems =
     scheduleStatus ===
       'draft' &&
@@ -165,11 +236,17 @@ export function createDispatcherWorkflowState({
   });
 }
 
+/**
+ * פעולה createDriverWorkflowState: יצירת כוננים / תהליך עבודה / מצב.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ * @returns PeriodWorkflowState — הפלט בהתאם לחתימה.
+ */
 export function createDriverWorkflowState({
   availabilityPeriod,
   schedulePeriod,
   statistics,
 }: CreateDriverWorkflowStateRequest): PeriodWorkflowState {
+  // scheduleStatus — שיבוץ / סטטוס.
   const scheduleStatus =
     normalizeScheduleStatus(
       schedulePeriod?.status,
@@ -199,11 +276,17 @@ export function createDriverWorkflowState({
   });
 }
 
+/**
+ * פעולה createMorningDriverWorkflowState: יצירת כונני בוקר.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ * @returns PeriodWorkflowState — הפלט בהתאם לחתימה.
+ */
 export function createMorningDriverWorkflowState({
   availabilityPeriod,
   schedulePeriod,
   statistics,
 }: CreateMorningDriverWorkflowStateRequest): PeriodWorkflowState {
+  // scheduleStatus — שיבוץ / סטטוס.
   const scheduleStatus =
     normalizeScheduleStatus(
       schedulePeriod?.status,

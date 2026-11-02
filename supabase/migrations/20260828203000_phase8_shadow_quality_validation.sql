@@ -1,37 +1,55 @@
+-- קובץ: supabase/migrations/20260828203000_phase8_shadow_quality_validation.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור טיוטות שיבוץ במנגנון הדינמי / אימות נתונים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_schedule_shadow_validation.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 8: validation/parallel-run layer for Dynamic Scheduling.
 -- SHADOW ONLY. Reads the generated Shadow draft and, where a compatible
 -- legacy dispatcher schedule exists, compares it shift-by-shift.
 
+-- פונקציית מסד public.get_dynamic_schedule_shadow_validation: שליפה או חישוב של דינמי / שיבוץ / טיוטות שיבוץ במנגנון הדינמי / אימות נתונים.
 create or replace function public.get_dynamic_schedule_shadow_validation(
   requested_draft_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- draft_row — טיוטה / שורה.
   draft_row public.dynamic_schedule_shadow_drafts%rowtype;
+  -- job_row — שורה.
   job_row public.job_types%rowtype;
   legacy_supported boolean := false;
+  -- legacy_period_id — מזהה התקופה.
   legacy_period_id uuid := null;
+  -- slot_rows — שורות.
   slot_rows jsonb := '[]'::jsonb;
+  -- worker_rows — שורות.
   worker_rows jsonb := '[]'::jsonb;
+  -- metrics_row — שורה.
   metrics_row jsonb := '{}'::jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions permission_row
     where permission_row.user_id=current_user_id
       and permission_row.permission_key in ('users.view','users.manage')
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -40,7 +58,9 @@ begin
   from public.dynamic_schedule_shadow_drafts draft_item
   where draft_item.id=requested_draft_id;
 
+  -- הסתעפות לפי התנאי draft_row.id is null.
   if draft_row.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'draft not found';
   end if;
 
@@ -51,6 +71,7 @@ begin
 
   legacy_supported := job_row.legacy_role='dispatcher';
 
+  -- הסתעפות לפי התנאי legacy_supported.
   if legacy_supported then
     select period_item.id
     into legacy_period_id
@@ -279,6 +300,7 @@ begin
   into metrics_row
   from metric_calc;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'draftId', draft_row.id,
     'mode', 'shadow',
@@ -301,9 +323,12 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_schedule_shadow_validation(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_schedule_shadow_validation(uuid) to authenticated;
 
+-- עדכון רשומות ב־public.scheduling_feature_flags בהתאם לקלט ולתנאים להלן.
 update public.scheduling_feature_flags
 set config = config || jsonb_build_object(
   'phase','8',

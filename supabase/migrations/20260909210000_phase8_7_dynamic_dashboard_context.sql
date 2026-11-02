@@ -1,21 +1,34 @@
+-- קובץ: supabase/migrations/20260909210000_phase8_7_dynamic_dashboard_context.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / לוח בקרה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_dynamic_runtime_context.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 8.7: one generic runtime context for Dashboard and Dynamic-first navigation.
 -- The RPC intentionally knows only job_type_id + configuration. It does not branch
 -- on dispatcher/on_call/morning_driver and therefore works for future customer roles.
+-- פונקציית מסד public.get_my_dynamic_runtime_context: שליפה או חישוב של דינמי.
 create or replace function public.get_my_dynamic_runtime_context()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_month — חודש.
   current_month date := date_trunc('month', now() at time zone 'Asia/Jerusalem')::date;
+  -- can_manage — האם פעולת ניהול מותרת.
   can_manage boolean := false;
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -177,7 +190,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_runtime_context() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_runtime_context() to authenticated;
 
 commit;

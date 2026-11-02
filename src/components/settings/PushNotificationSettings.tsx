@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/settings/PushNotificationSettings.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור התראות Push / התראות / הגדרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ReminderUnit, getReminderPickerValue, ReminderWheelPickerProps, ReminderWheelPicker, PushDeviceState, getPermissionLabel, getErrorMessage, PushNotificationSettingsProps, PushNotificationSettings.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   Bell,
   BellOff,
@@ -32,10 +39,14 @@ import {
   CardTitle,
 } from '../ui';
 
+/**
+ * טיפוס ReminderUnit: תזכורות.
+ */
 type ReminderUnit =
   | 'minutes'
   | 'hours';
 
+// reminderMinuteOptions — תזכורות / אפשרויות בחירה.
 const reminderMinuteOptions =
   Array.from(
     {
@@ -49,6 +60,7 @@ const reminderMinuteOptions =
       index,
   );
 
+// reminderHourOptions — תזכורות / אפשרויות בחירה.
 const reminderHourOptions =
   Array.from(
     {
@@ -62,12 +74,19 @@ const reminderHourOptions =
       index,
   );
 
+/**
+ * פעולה getReminderPickerValue: שליפה או חישוב של תזכורות / ערך.
+ * @param totalMinutes — סך הכול / דקות.
+ * @returns { value: number; unit: ReminderUnit; } — הפלט בהתאם לחתימה.
+ */
 function getReminderPickerValue(
   totalMinutes: number,
 ): {
+  // value — ערך.
   value: number;
   unit: ReminderUnit;
 } {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר totalMinutes >= 60 && totalMinutes % 60 === 0.
   if (
     totalMinutes >= 60 &&
     totalMinutes % 60 === 0
@@ -94,24 +113,36 @@ function getReminderPickerValue(
   };
 }
 
+/**
+ * חוזה הנתונים ReminderWheelPickerProps: תזכורות / מאפייני הרכיב.
+ */
 interface ReminderWheelPickerProps {
+  // minutes — דקות.
   minutes: number;
+  // disabled — האם האפשרות מושבתת.
   disabled: boolean;
+  // onChange — פונקציית דיווח על שינוי.
   onChange: (
     minutes: number,
   ) => void;
 }
 
+/**
+ * פעולה ReminderWheelPicker: תזכורות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function ReminderWheelPicker({
   minutes,
   disabled,
   onChange,
 }: ReminderWheelPickerProps) {
+  // pickerValue — ערך.
   const pickerValue =
     getReminderPickerValue(
       minutes,
     );
 
+  // options — אפשרויות בחירה.
   const options =
     pickerValue.unit ===
       'hours'
@@ -140,6 +171,7 @@ function ReminderWheelPicker({
           onChange={(
             event,
           ) => {
+            // value — ערך.
             const value =
               Number(
                 event.target.value,
@@ -188,10 +220,12 @@ function ReminderWheelPicker({
                 .value as
                 ReminderUnit;
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר unit === 'hours'.
             if (
               unit ===
                 'hours'
             ) {
+              // hours — שעות.
               const hours =
                 minutes === 0
                   ? 0
@@ -244,15 +278,22 @@ function ReminderWheelPicker({
   );
 }
 
+/**
+ * חוזה הנתונים PushDeviceState: התראות Push / מצב.
+ */
 interface PushDeviceState {
   isSupported: boolean;
+  // permission — הרשאות.
   permission: PushPermissionState;
   isSubscribed: boolean;
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
   isChanging: boolean;
+  // error — שגיאה.
   error: string | null;
 }
 
+// initialDeviceState — מצב.
 const initialDeviceState:
   PushDeviceState = {
     isSupported:
@@ -269,6 +310,11 @@ const initialDeviceState:
       null,
   };
 
+/**
+ * פעולה getPermissionLabel: שליפה או חישוב של הרשאות / תווית.
+ * @param permission — הרשאות.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getPermissionLabel(
   permission:
     PushPermissionState,
@@ -291,9 +337,15 @@ function getPermissionLabel(
   }
 }
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -303,11 +355,20 @@ function getErrorMessage(
   return 'אירעה שגיאה בניהול התראות ה־Push.';
 }
 
+/**
+ * חוזה הנתונים PushNotificationSettingsProps: התראות Push / התראות / הגדרות / מאפייני הרכיב.
+ */
 interface PushNotificationSettingsProps {
+  // showShiftReminderPreferences — משמרת / תזכורות.
   showShiftReminderPreferences: boolean;
+  // showDriverDutyReminderPreferences — כוננים / תזכורות.
   showDriverDutyReminderPreferences: boolean;
 }
 
+/**
+ * פעולה PushNotificationSettings: התראות Push / התראות / הגדרות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function PushNotificationSettings({
   showShiftReminderPreferences,
   showDriverDutyReminderPreferences,
@@ -321,6 +382,7 @@ function PushNotificationSettings({
   } =
     useNotificationPreferences();
 
+  // מצב מקומי: deviceState — מצב; setDeviceState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     deviceState,
     setDeviceState,
@@ -329,6 +391,7 @@ function PushNotificationSettings({
       initialDeviceState,
     );
 
+  // מצב מקומי: pushEnabled — התראות Push / האם האפשרות מופעלת; setPushEnabled מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     pushEnabled,
     setPushEnabled,
@@ -337,6 +400,7 @@ function PushNotificationSettings({
       true,
     );
 
+  // מצב מקומי: shiftRemindersEnabled — משמרת / תזכורות / האם האפשרות מופעלת; setShiftRemindersEnabled מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     shiftRemindersEnabled,
     setShiftRemindersEnabled,
@@ -345,6 +409,7 @@ function PushNotificationSettings({
       true,
     );
 
+  // מצב מקומי: reminderMinutes — תזכורות / דקות; setReminderMinutes מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     reminderMinutes,
     setReminderMinutes,
@@ -353,6 +418,7 @@ function PushNotificationSettings({
       10,
     );
 
+  // מצב מקומי: driverDutyRemindersEnabled — כוננים / תזכורות / האם האפשרות מופעלת; setDriverDutyRemindersEnabled מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     driverDutyRemindersEnabled,
     setDriverDutyRemindersEnabled,
@@ -361,6 +427,7 @@ function PushNotificationSettings({
       false,
     );
 
+  // מצב מקומי: driverDutyReminderTime — כוננים / תזכורות / זמן; setDriverDutyReminderTime מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     driverDutyReminderTime,
     setDriverDutyReminderTime,
@@ -369,6 +436,7 @@ function PushNotificationSettings({
       '09:00',
     );
 
+  // מצב מקומי: hasLoadedForm — הנתון hasLoadedForm בהקשר הפעולה; setHasLoadedForm מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     hasLoadedForm,
     setHasLoadedForm,
@@ -377,6 +445,7 @@ function PushNotificationSettings({
       false,
     );
 
+  // loadDeviceStatus — סטטוס.
   const loadDeviceStatus =
     useCallback(
       async (): Promise<void> => {
@@ -392,7 +461,9 @@ function PushNotificationSettings({
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // status — סטטוס.
           const status =
             await pushNotificationService
               .getStatus();
@@ -432,10 +503,16 @@ function PushNotificationSettings({
       [],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ loadDeviceStatus, loadPreferences, ].
   useEffect(
     () => {
+      /**
+       * פעולה אסינכרונית loadInitialData: טעינת נתונים.
+       * @returns Promise<void> — הפלט בהתאם לחתימה.
+       */
       const loadInitialData =
         async (): Promise<void> => {
+          // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
           try {
             const preferences =
               await loadPreferences();
@@ -497,6 +574,10 @@ function PushNotificationSettings({
       ],
     );
 
+  /**
+   * פעולה אסינכרונית handleEnablePush: טיפול באירוע עבור התראות Push.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleEnablePush =
     async (): Promise<void> => {
       setDeviceState(
@@ -511,6 +592,7 @@ function PushNotificationSettings({
         }),
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await pushNotificationService
           .enablePush();
@@ -541,6 +623,10 @@ function PushNotificationSettings({
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleDisablePush: טיפול באירוע עבור התראות Push.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleDisablePush =
     async (): Promise<void> => {
       const confirmed =
@@ -548,6 +634,7 @@ function PushNotificationSettings({
           'האם לבטל את התראות ה־Push במכשיר הזה?',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
@@ -564,6 +651,7 @@ function PushNotificationSettings({
         }),
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await pushNotificationService
           .disablePush();
@@ -587,6 +675,11 @@ function PushNotificationSettings({
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleSavePreferences: טיפול באירוע עבור הנתון handleSavePreferences בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSavePreferences =
     async (
       event:
@@ -595,6 +688,7 @@ function PushNotificationSettings({
       event.preventDefault();
       clearError();
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await persistPreferences(
           pushEnabled,
@@ -604,12 +698,14 @@ function PushNotificationSettings({
       }
     };
 
+  // isBusy — הנתון isBusy בהקשר הפעולה.
   const isBusy =
     preferencesState.isLoading ||
     preferencesState.isSaving ||
     deviceState.isLoading ||
     deviceState.isChanging;
 
+  // hasReminderPreferences — תזכורות.
   const hasReminderPreferences =
     showShiftReminderPreferences ||
     showDriverDutyReminderPreferences;

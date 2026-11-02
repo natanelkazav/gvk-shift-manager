@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/dynamic/DynamicRoleWorkspaceModal.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DynamicRoleWorkspaceModalProps, WorkspaceTab, DynamicRoleWorkspaceModal.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   Archive,
   CalendarDays,
@@ -12,27 +19,54 @@ import { Button, Modal } from '../../ui';
 import DynamicPeriodWorkflowPanel from './DynamicPeriodWorkflowPanel';
 import DynamicMonthlyRotationPanel from './DynamicMonthlyRotationPanel';
 
+/**
+ * חוזה הנתונים DynamicRoleWorkspaceModalProps: דינמי / מאפייני הרכיב.
+ */
 interface DynamicRoleWorkspaceModalProps {
+  // jobType — סוג תפקיד.
   jobType: DynamicJobType;
+  // onClose — פונקציית סגירת התצוגה.
   onClose: () => void;
 }
 
+/**
+ * טיפוס WorkspaceTab: הנתון WorkspaceTab בהקשר הפעולה.
+ */
 type WorkspaceTab = 'overview' | 'workflow' | 'rotation' | 'history';
 
+/**
+ * פעולה monthLabel: חודש / תווית.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const monthLabel = (year: number, month: number): string =>
   new Intl.DateTimeFormat('he-IL', { month: 'long', year: 'numeric' }).format(
     new Date(Date.UTC(year, month - 1, 1)),
   );
 
+/**
+ * פעולה DynamicRoleWorkspaceModal: דינמי.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicRoleWorkspaceModal({ jobType, onClose }: DynamicRoleWorkspaceModalProps) {
+  // מצב מקומי: workspace — הנתון workspace בהקשר הפעולה; setWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspace, setWorkspace] = useState<DynamicRoleWorkspace | null>(null);
+  // מצב מקומי: isLoading — האם טעינה מתבצעת; setIsLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [isLoading, setIsLoading] = useState(true);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: tab — הנתון tab בהקשר הפעולה; setTab מעדכנת אותו ומפעילה רינדור לפי React.
   const [tab, setTab] = useState<WorkspaceTab>('overview');
 
+  /**
+   * פעולה אסינכרונית load: טעינת הנתון load בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const load = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       setWorkspace(await dynamicSchedulingService.getRoleWorkspace(jobType.id));
     } catch (loadError) {
@@ -42,6 +76,7 @@ function DynamicRoleWorkspaceModal({ jobType, onClose }: DynamicRoleWorkspaceMod
     }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [jobType.id].
   useEffect(() => {
     void load();
   }, [jobType.id]);

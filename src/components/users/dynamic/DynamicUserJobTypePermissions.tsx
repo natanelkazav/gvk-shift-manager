@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/dynamic/DynamicUserJobTypePermissions.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סוג תפקיד.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DynamicUserJobTypePermissionsProps, PermissionCategory, buildCategories, DynamicUserJobTypePermissions.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { ChevronDown, RotateCcw, ShieldCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type {
@@ -6,20 +13,37 @@ import type {
   DynamicUserJobTypePermissionSelection,
 } from '../../../types/dynamicPermissionEngine';
 
+/**
+ * חוזה הנתונים DynamicUserJobTypePermissionsProps: סוג תפקיד.
+ */
 interface DynamicUserJobTypePermissionsProps {
   editor: DynamicUserJobTypePermissionEditor;
+  // isDisabled — האם האפשרות מושבתת (אופציונלי).
   isDisabled?: boolean;
+  // onChange — פונקציית דיווח על שינוי.
   onChange: (permissions: DynamicUserJobTypePermissionSelection[]) => void;
 }
 
+/**
+ * חוזה הנתונים PermissionCategory: הרשאות.
+ */
 interface PermissionCategory {
+  // id — מזהה.
   id: string;
+  // title — כותרת.
   title: string;
   description: string;
+  // permissions — הרשאות.
   permissions: DynamicUserJobTypePermission[];
 }
 
 
+/**
+ * פעולה buildCategories: הרכבת הנתון buildCategories בהקשר הפעולה.
+ * @param permissions — הרשאות.
+ * @param audience — הנתון audience בהקשר הפעולה.
+ * @returns PermissionCategory[] — הפלט בהתאם לחתימה.
+ */
 function buildCategories(
   permissions: DynamicUserJobTypePermission[],
   audience: 'member' | 'manager',
@@ -58,14 +82,21 @@ function buildCategories(
   return categories;
 }
 
+/**
+ * פעולה DynamicUserJobTypePermissions: סוג תפקיד.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicUserJobTypePermissions({
   editor,
   isDisabled = false,
   onChange,
 }: DynamicUserJobTypePermissionsProps) {
+  // מצב מקומי: openJobTypes — סוגי תפקידים; setOpenJobTypes מעדכנת אותו ומפעילה רינדור לפי React.
   const [openJobTypes, setOpenJobTypes] = useState<Set<string>>(() => new Set());
+  // מצב מקומי: openCategories — הנתון openCategories בהקשר הפעולה; setOpenCategories מעדכנת אותו ומפעילה רינדור לפי React.
   const [openCategories, setOpenCategories] = useState<Set<string>>(() => new Set());
 
+  // ערך מחושב selections — הנתון selections בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const selections = useMemo(
     () => editor.jobTypes.flatMap((jobType) =>
       jobType.permissions.map((permission) => ({
@@ -77,6 +108,13 @@ function DynamicUserJobTypePermissions({
     [editor],
   );
 
+  /**
+   * פעולה setPermission: קביעת קבוצה ייחודית / הרשאות.
+   * @param jobTypeId — מזהה סוג התפקיד.
+   * @param permissionKey — מפתח ההרשאה.
+   * @param enabled — האם האפשרות מופעלת.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const setPermission = (jobTypeId: string, permissionKey: string, enabled: boolean): void => {
     if (isDisabled) return;
     onChange(
@@ -88,6 +126,13 @@ function DynamicUserJobTypePermissions({
     );
   };
 
+  /**
+   * פעולה setCategoryPermissions: קביעת קבוצה ייחודית / הרשאות.
+   * @param jobTypeId — מזהה סוג התפקיד.
+   * @param permissions — הרשאות.
+   * @param enabled — האם האפשרות מופעלת.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const setCategoryPermissions = (
     jobTypeId: string,
     permissions: DynamicUserJobTypePermission[],
@@ -104,11 +149,16 @@ function DynamicUserJobTypePermissions({
     );
   };
 
+  // overrideCount — כמות.
   const overrideCount = editor.jobTypes.reduce(
     (total, jobType) => total + jobType.permissions.filter((permission) => permission.hasOverride).length,
     0,
   );
 
+  /**
+   * פעולה resetToDefaults: איפוס הנתון resetToDefaults בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const resetToDefaults = (): void => {
     if (isDisabled || overrideCount === 0) return;
     onChange(
@@ -120,6 +170,7 @@ function DynamicUserJobTypePermissions({
     );
   };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר editor.jobTypes.length === 0.
   if (editor.jobTypes.length === 0) {
     return <div className="permission-policy-note">אין כרגע סוגי תפקידים דינמיים פעילים.</div>;
   }
@@ -144,16 +195,26 @@ function DynamicUserJobTypePermissions({
 
       <div className="user-permissions-groups">
         {editor.jobTypes.map((jobType) => {
+          // isOpen — האם המצב פתוח.
           const isOpen = openJobTypes.has(jobType.jobTypeId);
+          // memberPermissions — הרשאות.
           const memberPermissions = jobType.permissions.filter((permission) => permission.audience === 'member');
+          // managerPermissions — הרשאות.
           const managerPermissions = jobType.permissions.filter((permission) => permission.audience === 'manager');
           const memberCategories = buildCategories(memberPermissions, 'member');
           const managerCategories = buildCategories(managerPermissions, 'manager');
+          // enabledMemberCategories — האם האפשרות מופעלת.
           const enabledMemberCategories = memberCategories.filter((category) => category.permissions.some((permission) => permission.enabled)).length;
+          // enabledManagerCategories — האם האפשרות מופעלת.
           const enabledManagerCategories = managerCategories.filter((category) => category.permissions.some((permission) => permission.enabled)).length;
 
+          /**
+           * פעולה toggleOpen: החלפת בחירה עבור הנתון toggleOpen בהקשר הפעולה.
+           * @returns void — הפלט בהתאם לחתימה.
+           */
           const toggleOpen = (): void => {
             setOpenJobTypes((current) => {
+              // next — הנתון next בהקשר הפעולה; אוסף ערכים ייחודיים.
               const next = new Set(current);
               if (next.has(jobType.jobTypeId)) next.delete(jobType.jobTypeId);
               else next.add(jobType.jobTypeId);
@@ -161,6 +222,10 @@ function DynamicUserJobTypePermissions({
             });
           };
 
+          /**
+           * פעולה renderPermission: בניית תצוגה עבור הרשאות.
+           * @param permission — הרשאות.
+           */
           const renderPermission = (permission: DynamicUserJobTypePermission) => (
             <label
               key={`${jobType.jobTypeId}-${permission.permissionKey}-${permission.audience}`}
@@ -195,11 +260,19 @@ function DynamicUserJobTypePermissions({
             </label>
           );
 
+          /**
+           * פעולה renderCategory: בניית תצוגה עבור הנתון renderCategory בהקשר הפעולה.
+           * @param category — הנתון category בהקשר הפעולה.
+           */
           const renderCategory = (category: PermissionCategory) => {
+            // categoryKey — מפתח.
             const categoryKey = `${jobType.jobTypeId}:${category.id}`;
             const categoryOpen = openCategories.has(categoryKey);
+            // enabledCount — האם האפשרות מופעלת / כמות.
             const enabledCount = category.permissions.filter((permission) => permission.enabled).length;
+            // allEnabled — האם האפשרות מופעלת.
             const allEnabled = enabledCount === category.permissions.length;
+            // partiallyEnabled — האם האפשרות מופעלת.
             const partiallyEnabled = enabledCount > 0 && !allEnabled;
 
             return (
@@ -210,6 +283,7 @@ function DynamicUserJobTypePermissions({
                     className="dynamic-permission-category-expand"
                     aria-expanded={categoryOpen}
                     onClick={() => setOpenCategories((current) => {
+                      // next — הנתון next בהקשר הפעולה; אוסף ערכים ייחודיים.
                       const next = new Set(current);
                       if (next.has(categoryKey)) next.delete(categoryKey);
                       else next.add(categoryKey);

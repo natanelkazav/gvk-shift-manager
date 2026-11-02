@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useDriverAvailabilityManagement.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור כוננים / אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DriverAvailabilityManagementState, UseDriverAvailabilityManagementResult, normalizeDriverAvailabilityManagementError, useDriverAvailabilityManagement.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useState,
@@ -11,27 +18,40 @@ import type {
   DriverAvailabilityManagementData,
 } from '../types/driverAvailability';
 
+/**
+ * חוזה הנתונים DriverAvailabilityManagementState: כוננים / אילוצים וזמינות / מצב.
+ */
 interface DriverAvailabilityManagementState {
+  // data — נתונים.
   data:
     DriverAvailabilityManagementData | null;
 
+  // selectedPeriodId — מזהה התקופה.
   selectedPeriodId:
     string | null;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 }
 
+/**
+ * חוזה הנתונים UseDriverAvailabilityManagementResult: כוננים / אילוצים וזמינות / תוצאה.
+ */
 interface UseDriverAvailabilityManagementResult {
+  // state — מצב.
   state:
     DriverAvailabilityManagementState;
 
+  // loadManagementData — נתונים.
   loadManagementData: (
     periodId: string,
   ) => Promise<DriverAvailabilityManagementData>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 
@@ -39,6 +59,7 @@ interface UseDriverAvailabilityManagementResult {
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   DriverAvailabilityManagementState = {
     data: null,
@@ -51,17 +72,25 @@ const initialState:
     error: null,
   };
 
+/**
+ * פעולה normalizeDriverAvailabilityManagementError: נרמול כוננים / אילוצים וזמינות / שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeDriverAvailabilityManagementError(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
+    // normalizedMessage — הודעה.
     const normalizedMessage =
       error.message
         .trim()
         .toLowerCase();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'not authenticated', ).
     if (
       normalizedMessage.includes(
         'not authenticated',
@@ -70,6 +99,7 @@ function normalizeDriverAvailabilityManagementError(
       return 'לא נמצאה התחברות פעילה. יש להתחבר מחדש.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'user not active', ).
     if (
       normalizedMessage.includes(
         'user not active',
@@ -78,6 +108,7 @@ function normalizeDriverAvailabilityManagementError(
       return 'המשתמש אינו פעיל.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'not allowed', ).
     if (
       normalizedMessage.includes(
         'not allowed',
@@ -86,6 +117,7 @@ function normalizeDriverAvailabilityManagementError(
       return 'אין לך הרשאה לצפות בנתוני ניהול אילוצי הכוננים.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability period id is required', ).
     if (
       normalizedMessage.includes(
         'driver availability period id is required',
@@ -94,6 +126,7 @@ function normalizeDriverAvailabilityManagementError(
       return 'מזהה תקופת אילוצי הכוננים חסר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability period not found', ).
     if (
       normalizedMessage.includes(
         'driver availability period not found',
@@ -102,6 +135,7 @@ function normalizeDriverAvailabilityManagementError(
       return 'תקופת אילוצי הכוננים לא נמצאה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'לא התקבלה תשובה בעת טעינת נתוני ניהול אילוצי הכוננים', ).
     if (
       normalizedMessage.includes(
         'לא התקבלה תשובה בעת טעינת נתוני ניהול אילוצי הכוננים',
@@ -116,8 +150,13 @@ function normalizeDriverAvailabilityManagementError(
   return 'לא ניתן היה לטעון את נתוני ניהול אילוצי הכוננים.';
 }
 
+/**
+ * פעולה useDriverAvailabilityManagement: חיבור מצב או הקשר עבור כוננים / אילוצים וזמינות.
+ * @returns UseDriverAvailabilityManagementResult — הפלט בהתאם לחתימה.
+ */
 export function useDriverAvailabilityManagement():
   UseDriverAvailabilityManagementResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -126,17 +165,21 @@ export function useDriverAvailabilityManagement():
       initialState,
     );
 
+  // loadManagementData — נתונים.
   const loadManagementData =
     useCallback(
       async (
         periodId: string,
       ): Promise<DriverAvailabilityManagementData> => {
+        // normalizedPeriodId — מזהה התקופה.
         const normalizedPeriodId =
           periodId.trim();
 
+        // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
         if (
           !normalizedPeriodId
         ) {
+          // missingPeriodError — תקופה / שגיאה.
           const missingPeriodError =
             new Error(
               'Driver availability period id is required.',
@@ -180,7 +223,9 @@ export function useDriverAvailabilityManagement():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await driverAvailabilityService
               .getManagementData(
@@ -206,6 +251,7 @@ export function useDriverAvailabilityManagement():
 
           return data;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeDriverAvailabilityManagementError(
               error,
@@ -232,6 +278,7 @@ export function useDriverAvailabilityManagement():
       [],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback(
       (): void => {

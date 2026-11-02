@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/statistics/views/PayrollStatisticsView.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור חישובי שכר / סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PayrollStatisticsViewProps, formatCurrency, PayrollStatisticsView.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   Clock3,
   WalletCards,
@@ -17,18 +24,33 @@ import type {
   PayrollStatisticsResponse,
 } from '../../../types/statistics';
 
+/**
+ * חוזה הנתונים PayrollStatisticsViewProps: חישובי שכר / סטטיסטיקה / מאפייני הרכיב.
+ */
 interface PayrollStatisticsViewProps {
+  // years — שנים.
   years: number[];
+  // months — חודשים.
   months: number[];
+  // dispatcherIds — מוקדנים.
   dispatcherIds: string[];
+  // driverIds — כוננים.
   driverIds: string[];
+  // morningDriverIds — כונני בוקר.
   morningDriverIds: string[];
+  // mode — מצב פעולה.
   mode: 'dispatchers' | 'drivers' | 'morning_drivers';
 }
 
+/**
+ * פעולה formatCurrency: עיצוב ערך לתצוגה עבור הנתון formatCurrency בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatCurrency(
   value: number | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר value === null.
   if (value === null) {
     return 'לא הוגדר';
   }
@@ -43,6 +65,10 @@ function formatCurrency(
   ).format(value);
 }
 
+/**
+ * פעולה PayrollStatisticsView: חישובי שכר / סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function PayrollStatisticsView({
   years,
   months,
@@ -55,30 +81,42 @@ function PayrollStatisticsView({
     hasPermission,
   } = useAuth();
 
+  // מצב מקומי: data — נתונים; setData מעדכנת אותו ומפעילה רינדור לפי React.
   const [data, setData] =
     useState<PayrollStatisticsResponse | null>(
       null,
     );
 
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] =
     useState<string | null>(null);
 
+  // מצב מקומי: isLoading — האם טעינה מתבצעת; setIsLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [isLoading, setIsLoading] =
     useState(true);
 
+  // canViewAttendance — האם צפייה מותרת.
   const canViewAttendance =
     hasPermission(
       'attendance.view',
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [months, years].
   useEffect(() => {
+    // isCancelled — הנתון isCancelled בהקשר הפעולה.
     let isCancelled = false;
 
+    /**
+     * פעולה אסינכרונית load: טעינת הנתון load בהקשר הפעולה.
+     * @returns Promise<void> — הפלט בהתאם לחתימה.
+     */
     const load = async (): Promise<void> => {
       setIsLoading(true);
       setError(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // response — תוצאת הפעולה.
         const response =
           await statisticsService
             .getPayrollStatistics(
@@ -113,6 +151,7 @@ function PayrollStatisticsView({
     };
   }, [months, years]);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading.
   if (isLoading) {
     return (
       <div className="statistics-loading">
@@ -121,6 +160,7 @@ function PayrollStatisticsView({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error.
   if (error) {
     return (
       <div
@@ -132,6 +172,7 @@ function PayrollStatisticsView({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
   if (!data) {
     return null;
   }
@@ -156,6 +197,7 @@ function PayrollStatisticsView({
             ),
         );
 
+  // visibleMorningDrivers — כונני בוקר.
   const visibleMorningDrivers =
     morningDriverIds.length === 0
       ? (data.morningDrivers ?? [])
@@ -166,6 +208,7 @@ function PayrollStatisticsView({
             ),
         );
 
+  // projectedDispatcherPay — מוקדנים.
   const projectedDispatcherPay =
     visibleDispatchers.reduce(
       (sum, row) =>
@@ -174,6 +217,7 @@ function PayrollStatisticsView({
       0,
     );
 
+  // projectedDriverPay — כוננים.
   const projectedDriverPay =
     visibleDrivers.reduce(
       (sum, row) =>
@@ -182,6 +226,7 @@ function PayrollStatisticsView({
       0,
     );
 
+  // projectedMorningDriverPay — כונני בוקר.
   const projectedMorningDriverPay =
     visibleMorningDrivers.reduce(
       (sum, row) =>

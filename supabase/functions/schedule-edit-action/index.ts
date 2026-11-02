@@ -1,7 +1,16 @@
+/**
+ * קובץ: supabase/functions/schedule-edit-action/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת schedule-edit-action.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: createJsonResponse, getRequiredEnvironmentVariable, getStringValue, deliverNotification.
+ * - קריאות RPC המופעלות בקובץ: update_current_schedule_shift.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   createClient,
 } from 'npm:@supabase/supabase-js@2';
 
+// corsHeaders — הנתון corsHeaders בהקשר הפעולה.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
 
@@ -16,6 +25,12 @@ const corsHeaders = {
     'POST, OPTIONS',
 };
 
+/**
+ * פעולה createJsonResponse: יצירת תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 function createJsonResponse(
   body: unknown,
   status = 200,
@@ -37,9 +52,15 @@ function createJsonResponse(
   );
 }
 
+/**
+ * פעולה getRequiredEnvironmentVariable: שליפה או חישוב של הנתון getRequiredEnvironmentVariable בהקשר הפעולה.
+ * @param name — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getRequiredEnvironmentVariable(
   name: string,
 ): string {
+  // value — ערך.
   const value =
     Deno.env
       .get(
@@ -47,6 +68,7 @@ function getRequiredEnvironmentVariable(
       )
       ?.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !value.
   if (
     !value
   ) {
@@ -58,9 +80,15 @@ function getRequiredEnvironmentVariable(
   return value;
 }
 
+/**
+ * פעולה getStringValue: שליפה או חישוב של ערך.
+ * @param value — ערך.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function getStringValue(
   value: unknown,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value !== 'string'.
   if (
     typeof value !==
       'string'
@@ -74,12 +102,21 @@ function getStringValue(
   );
 }
 
+/**
+ * פעולה אסינכרונית deliverNotification: התראות.
+ * @param supabaseUrl — כתובת יעד.
+ * @param supabaseAnonKey — מפתח.
+ * @param authorizationHeader — הנתון authorizationHeader בהקשר הפעולה.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function deliverNotification(
   supabaseUrl: string,
   supabaseAnonKey: string,
   authorizationHeader: string,
   notificationId: string,
 ): Promise<void> {
+  // response — תוצאת הפעולה.
   const response =
     await fetch(
       `${supabaseUrl}/functions/v1/send-notification`,
@@ -105,12 +142,14 @@ async function deliverNotification(
       },
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר response.ok.
   if (
     response.ok
   ) {
     return;
   }
 
+  // responseBody — תוצאת הפעולה / תוכן.
   const responseBody =
     await response
       .text()
@@ -137,6 +176,7 @@ Deno.serve(
     request:
       Request,
   ): Promise<Response> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method === 'OPTIONS'.
     if (
       request.method ===
         'OPTIONS'
@@ -150,6 +190,7 @@ Deno.serve(
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !==
         'POST'
@@ -163,12 +204,15 @@ Deno.serve(
       );
     }
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         getRequiredEnvironmentVariable(
           'SUPABASE_URL',
         );
 
+      // supabaseAnonKey — מפתח.
       const supabaseAnonKey =
         getRequiredEnvironmentVariable(
           'SUPABASE_ANON_KEY',
@@ -181,6 +225,7 @@ Deno.serve(
           )
           ?.trim();
 
+      // עצירת הפעולה עם שגיאה כאשר !authorizationHeader.
       if (
         !authorizationHeader
       ) {
@@ -189,17 +234,23 @@ Deno.serve(
         );
       }
 
+      // rawBody — תוכן.
       let rawBody: {
+        // shiftId — מזהה המשמרת (אופציונלי).
         shiftId?: unknown;
+        // newUserId — מזהה העובד לאחר השינוי (אופציונלי).
         newUserId?: unknown;
         reason?: unknown;
       };
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         rawBody =
           await request
             .json() as {
+              // shiftId — מזהה המשמרת (אופציונלי).
               shiftId?: unknown;
+              // newUserId — מזהה העובד לאחר השינוי (אופציונלי).
               newUserId?: unknown;
               reason?: unknown;
             };
@@ -213,11 +264,13 @@ Deno.serve(
         );
       }
 
+      // shiftId — מזהה המשמרת.
       const shiftId =
         getStringValue(
           rawBody.shiftId,
         );
 
+      // newUserId — מזהה העובד לאחר השינוי.
       const newUserId =
         getStringValue(
           rawBody.newUserId,
@@ -228,6 +281,7 @@ Deno.serve(
           rawBody.reason,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !shiftId || !newUserId.
       if (
         !shiftId ||
         !newUserId
@@ -241,6 +295,7 @@ Deno.serve(
         );
       }
 
+      // userClient — משתמש / לקוח.
       const userClient =
         createClient(
           supabaseUrl,
@@ -263,6 +318,7 @@ Deno.serve(
           },
         );
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           userData,
@@ -273,6 +329,7 @@ Deno.serve(
         await userClient.auth
           .getUser();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר userError || !userData.user.
       if (
         userError ||
         !userData.user
@@ -286,6 +343,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data,
         error,
@@ -304,12 +362,14 @@ Deno.serve(
           },
         );
 
+      // עצירת הפעולה עם שגיאה כאשר error.
       if (
         error
       ) {
         throw error;
       }
 
+      // עצירת הפעולה עם שגיאה כאשר !data || typeof data !== 'object'.
       if (
         !data ||
         typeof data !==
@@ -320,22 +380,31 @@ Deno.serve(
         );
       }
 
+      // result — תוצאה.
       const result =
         data as {
+          // notificationIds — התראות (אופציונלי).
           notificationIds?: unknown;
 
+          // previousUserId — מזהה העובד לפני השינוי (אופציונלי).
           previousUserId?: unknown;
 
+          // previousUserName — משתמש / שם (אופציונלי).
           previousUserName?: unknown;
 
+          // newUserId — מזהה העובד לאחר השינוי (אופציונלי).
           newUserId?: unknown;
 
+          // newUserName — משתמש / שם (אופציונלי).
           newUserName?: unknown;
 
+          // shiftDate — תאריך המשמרת (אופציונלי).
           shiftDate?: unknown;
 
+          // startsAt — מועד התחלה (אופציונלי).
           startsAt?: unknown;
 
+          // endsAt — מועד סיום (אופציונלי).
           endsAt?: unknown;
 
           [
@@ -345,6 +414,7 @@ Deno.serve(
             unknown;
         };
 
+      // notificationIds — התראות.
       const notificationIds =
         Array.isArray(
           result.notificationIds,

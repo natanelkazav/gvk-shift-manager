@@ -1,3 +1,11 @@
+/**
+ * קובץ: src/services/assignmentCandidatesService.ts
+ * מטרה: טעינת משמרות ומועמדים לצורך הצעת שיבוץ ובדיקת זמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AssignmentCandidateDatabaseRow, mapCandidateShift, getAssignmentCandidates.
+ * - קריאות RPC המופעלות בקובץ: get_availability_assignment_candidates.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import { supabase } from '../lib/supabase';
 import type {
   AssignmentCandidateShift,
@@ -5,51 +13,82 @@ import type {
   AssignmentCandidatesData,
 } from '../types/assignmentCandidates';
 
+/**
+ * חוזה הנתונים AssignmentCandidateDatabaseRow: הקצאה / שורה.
+ */
 interface AssignmentCandidateDatabaseRow {
+  // period_id — מזהה התקופה.
   period_id: string;
+  // period_year — תקופה / שנה.
   period_year: number;
+  // period_month — תקופה / חודש.
   period_month: number;
+  // period_title — תקופה / כותרת.
   period_title: string | null;
+  // period_status — תקופה / סטטוס.
   period_status: 'closed';
 
+  // shift_slot_id — משמרת / מזהה.
   shift_slot_id: string;
+  // shift_date — תאריך המשמרת.
   shift_date: string;
   weekday_number: number;
+  // weekday_name — שם.
   weekday_name: string;
+  // start_time — שעת התחלה.
   start_time: string;
+  // end_time — שעת סיום.
   end_time: string;
+  // ends_next_day — יום.
   ends_next_day: boolean;
+  // schedule_type — סוג יום השיבוץ.
   schedule_type: string;
+  // holiday_name — חג / שם.
   holiday_name: string | null;
+  // is_premium — תעריף מוגדל.
   is_premium: boolean;
+  // sort_order — סדר המיון.
   sort_order: number;
 
+  // total_dispatchers — סך הכול.
   total_dispatchers: number;
   available_dispatchers: number;
   unavailable_dispatchers: number;
 
+  // assignment_state — הקצאה / מצב.
   assignment_state:
     AssignmentCandidateState;
 
+  // sole_available_user_id — מזהה משתמש.
   sole_available_user_id:
     string | null;
 
+  // sole_available_display_name — שם תצוגה.
   sole_available_display_name:
     string | null;
 
+  // sole_available_schedule_name — שיבוץ / שם.
   sole_available_schedule_name:
     string | null;
 
+  // available_user_ids — מזהה משתמש.
   available_user_ids:
     string[] | null;
 
+  // available_display_names — שם תצוגה.
   available_display_names:
     string[] | null;
 
+  // available_schedule_names — שיבוץ.
   available_schedule_names:
     (string | null)[] | null;
 }
 
+/**
+ * פעולה mapCandidateShift: המרת נתוני משמרת ממקור המועמדים למבנה הפנימי של מנוע השיבוץ.
+ * @param row — שורה.
+ * @returns AssignmentCandidateShift — הפלט בהתאם לחתימה.
+ */
 function mapCandidateShift(
   row:
     AssignmentCandidateDatabaseRow,
@@ -120,18 +159,27 @@ function mapCandidateShift(
   };
 }
 
+/**
+ * פעולה אסינכרונית getAssignmentCandidates: שליפה או חישוב של הקצאה.
+ * הפעולה פונה ל־RPC: get_availability_assignment_candidates.
+ * @param periodId — מזהה התקופה.
+ * @returns Promise<AssignmentCandidatesData> — הפלט בהתאם לחתימה.
+ */
 async function getAssignmentCandidates(
   periodId: string,
 ): Promise<AssignmentCandidatesData> {
+  // normalizedPeriodId — מזהה התקופה.
   const normalizedPeriodId =
     periodId.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
   if (!normalizedPeriodId) {
     throw new Error(
       'לא התקבל מזהה תקופת אילוצים תקין.',
     );
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -143,6 +191,7 @@ async function getAssignmentCandidates(
     },
   );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
     console.error(
       'GET ASSIGNMENT CANDIDATES ERROR:',
@@ -154,9 +203,11 @@ async function getAssignmentCandidates(
       },
     );
 
+    // normalizedMessage — הודעה.
     const normalizedMessage =
       error.message.toLowerCase();
 
+    // עצירת הפעולה עם שגיאה כאשר normalizedMessage.includes( 'not authenticated', ).
     if (
       normalizedMessage.includes(
         'not authenticated',
@@ -167,6 +218,7 @@ async function getAssignmentCandidates(
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר normalizedMessage.includes( 'not active', ).
     if (
       normalizedMessage.includes(
         'not active',
@@ -177,6 +229,7 @@ async function getAssignmentCandidates(
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר normalizedMessage.includes( 'not allowed', ).
     if (
       normalizedMessage.includes(
         'not allowed',
@@ -187,6 +240,7 @@ async function getAssignmentCandidates(
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר normalizedMessage.includes( 'must be closed', ).
     if (
       normalizedMessage.includes(
         'must be closed',
@@ -197,6 +251,7 @@ async function getAssignmentCandidates(
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר normalizedMessage.includes( 'not found', ).
     if (
       normalizedMessage.includes(
         'not found',
@@ -212,6 +267,7 @@ async function getAssignmentCandidates(
     );
   }
 
+  // rows — שורות.
   const rows =
     (
       data as
@@ -219,15 +275,18 @@ async function getAssignmentCandidates(
         | null
     ) ?? [];
 
+  // עצירת הפעולה עם שגיאה כאשר rows.length === 0.
   if (rows.length === 0) {
     throw new Error(
       'לא נמצאו משמרות להכנת השיבוץ.',
     );
   }
 
+  // firstRow — שורה.
   const firstRow =
     rows[0];
 
+  // shifts — משמרות.
   const shifts =
     rows
       .map(mapCandidateShift)
@@ -236,6 +295,7 @@ async function getAssignmentCandidates(
           firstShift,
           secondShift,
         ) => {
+          // stateOrder — מצב.
           const stateOrder:
             Record<
               AssignmentCandidateState,
@@ -246,6 +306,7 @@ async function getAssignmentCandidates(
               multiple_available: 3,
             };
 
+          // stateComparison — מצב.
           const stateComparison =
             stateOrder[
               firstShift
@@ -256,17 +317,20 @@ async function getAssignmentCandidates(
                 .assignmentState
             ];
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר stateComparison !== 0.
           if (
             stateComparison !== 0
           ) {
             return stateComparison;
           }
 
+          // dateComparison — תאריך.
           const dateComparison =
             firstShift.date.localeCompare(
               secondShift.date,
             );
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dateComparison !== 0.
           if (
             dateComparison !== 0
           ) {
@@ -302,6 +366,7 @@ async function getAssignmentCandidates(
   };
 }
 
+// assignmentCandidatesService — הקצאה / שירות.
 export const assignmentCandidatesService = {
   getAssignmentCandidates,
 };

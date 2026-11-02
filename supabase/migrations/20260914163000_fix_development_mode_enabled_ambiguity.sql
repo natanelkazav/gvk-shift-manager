@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260914163000_fix_development_mode_enabled_ambiguity.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור מצב פיתוח / מצב פעולה / האם האפשרות מופעלת.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_development_mode, public.set_my_development_mode.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 10.6.5: fix PostgreSQL 42702 ambiguity in the personal development-mode RPC.
 --
 -- get_my_development_mode() RETURNS TABLE(enabled, enabled_at, expires_at).
@@ -10,13 +15,16 @@
 
 begin;
 
+-- פונקציית מסד public.get_my_development_mode: שליפה או חישוב של מצב פיתוח / מצב פעולה.
 create or replace function public.get_my_development_mode()
 returns table(enabled boolean, enabled_at timestamptz, expires_at timestamptz)
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 begin
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles p
@@ -24,11 +32,13 @@ begin
       and p.role = 'admin'
       and p.is_active = true
   ) then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return query
     select false, null::timestamptz, null::timestamptz;
     return;
   end if;
 
+  -- עדכון רשומות ב־public.admin_development_sessions בהתאם לקלט ולתנאים להלן.
   update public.admin_development_sessions as ads
   set enabled = false,
       updated_at = now()
@@ -37,6 +47,7 @@ begin
     and ads.expires_at is not null
     and ads.expires_at <= now();
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return query
   select coalesce(ads.enabled, false), ads.enabled_at, ads.expires_at
   from (select auth.uid() as user_id) as me
@@ -47,18 +58,21 @@ $$;
 
 -- Recreate the setter as well with fully-qualified table references in every
 -- read path, so future changes do not reintroduce the same output-column clash.
+-- פונקציית מסד public.set_my_development_mode: קביעת קבוצה ייחודית / מצב פיתוח / מצב פעולה.
 create or replace function public.set_my_development_mode(
   requested_enabled boolean,
   requested_duration_minutes integer default 60
 )
 returns table(enabled boolean, enabled_at timestamptz, expires_at timestamptz)
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
   resolved_expires_at timestamptz;
 begin
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles p
@@ -66,19 +80,24 @@ begin
       and p.role = 'admin'
       and p.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'development mode is available to system administrators only'
       using errcode = '42501';
   end if;
 
+  -- הסתעפות לפי התנאי requested_enabled.
   if requested_enabled then
+    -- הסתעפות לפי התנאי requested_duration_minutes is null.
     if requested_duration_minutes is null
        or requested_duration_minutes < 5
        or requested_duration_minutes > 1440 then
+      -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
       raise exception 'development mode duration must be between 5 and 1440 minutes';
     end if;
     resolved_expires_at := now() + make_interval(mins => requested_duration_minutes);
   end if;
 
+  -- הוספת רשומות ל־public.admin_development_sessions בהתאם לקלט ולתנאים להלן.
   insert into public.admin_development_sessions(
     user_id,
     enabled,
@@ -99,6 +118,7 @@ begin
         expires_at = excluded.expires_at,
         updated_at = now();
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(action, actor_user_id, entity_type, summary, metadata)
   values (
     'system_event',
@@ -115,6 +135,7 @@ begin
     )
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return query
   select ads.enabled, ads.enabled_at, ads.expires_at
   from public.admin_development_sessions as ads
@@ -122,9 +143,13 @@ begin
 end;
 $$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_development_mode() from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.set_my_development_mode(boolean, integer) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_development_mode() to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.set_my_development_mode(boolean, integer) to authenticated;
 
 commit;

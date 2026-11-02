@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/layouts/AppLayout.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור פריסת מסך.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NavigationItem, getNavigationLabel, getInitial, AppLayout.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   ContactRound,
   Archive,
@@ -72,22 +79,30 @@ import '../styles/layout.css';
 import { DevelopmentModeProvider } from '../features/developmentMode/DevelopmentModeProvider';
 import DevelopmentModeBanner from '../features/developmentMode/DevelopmentModeBanner';
 
+/**
+ * חוזה הנתונים NavigationItem: ניווט / פריט.
+ */
 interface NavigationItem {
+  // label — תווית.
   label: string;
 
+  // path — נתיב.
   path: string;
 
   end?: boolean;
 
   icon: typeof LayoutDashboard;
 
+  // requiredPermissions — הרשאות.
   requiredPermissions:
     readonly PermissionKey[];
 
+  // runtimeMode — מצב פעולה (אופציונלי).
   runtimeMode?: 'dynamic' | 'legacy' | 'all';
 
 }
 
+// navigationItems — ניווט / פריטים.
 const navigationItems:
   NavigationItem[] = [
     {
@@ -341,6 +356,13 @@ requiredPermissions: [
     },
   ];
 
+/**
+ * פעולה getNavigationLabel: שליפה או חישוב של ניווט / תווית.
+ * @param item — פריט.
+ * @param canApproveShiftSwaps — החלפת משמרות.
+ * @param hasPermission — הרשאות.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getNavigationLabel(
   item:
     NavigationItem,
@@ -351,6 +373,7 @@ function getNavigationLabel(
   hasPermission:
     (permission: PermissionKey) => boolean,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר item.path === '/notifications'.
   if (
     item.path ===
       '/notifications'
@@ -360,6 +383,7 @@ function getNavigationLabel(
       : 'התראות';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר item.path === '/schedule' && hasPermission( 'schedule.view', ).
   if (
     item.path ===
       '/schedule' &&
@@ -370,6 +394,7 @@ function getNavigationLabel(
     return 'המשמרות שלי';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר item.path === '/availability' && hasPermission( 'availability.view', ).
   if (
     item.path ===
       '/availability' &&
@@ -380,6 +405,7 @@ function getNavigationLabel(
     return 'האילוצים שלי';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר item.path === '/driver-schedule' && hasPermission( 'driver_schedule.view', ).
   if (
     item.path ===
       '/driver-schedule' &&
@@ -390,6 +416,7 @@ function getNavigationLabel(
     return 'הכוננויות שלי';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר item.path === '/morning-driver-schedule' && hasPermission( 'morning_driver_schedule.view', ).
   if (
     item.path ===
       '/morning-driver-schedule' &&
@@ -403,6 +430,7 @@ function getNavigationLabel(
   return item.label;
 }
 
+// roleLabels — הנתון roleLabels בהקשר הפעולה.
 const roleLabels:
   Record<
     UserRole,
@@ -427,13 +455,20 @@ const roleLabels:
       'צפייה בלבד',
   };
 
+/**
+ * פעולה getInitial: שליפה או חישוב של הנתון getInitial בהקשר הפעולה.
+ * @param displayName — שם תצוגה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getInitial(
   displayName:
     string,
 ): string {
+  // normalizedName — שם.
   const normalizedName =
     displayName.trim();
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedName.
   if (
     !normalizedName
   ) {
@@ -446,6 +481,9 @@ function getInitial(
     );
 }
 
+/**
+ * פעולה AppLayout: פריסת מסך.
+ */
 function AppLayout() {
   const {
     profile,
@@ -454,6 +492,7 @@ function AppLayout() {
   } =
     useAuth();
 
+  // מצב מקומי: isSidebarOpen — הנתון isSidebarOpen בהקשר הפעולה; setIsSidebarOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isSidebarOpen,
     setIsSidebarOpen,
@@ -462,6 +501,7 @@ function AppLayout() {
       false,
     );
 
+  // מצב מקומי: isSigningOut — הנתון isSigningOut בהקשר הפעולה; setIsSigningOut מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isSigningOut,
     setIsSigningOut,
@@ -470,37 +510,46 @@ function AppLayout() {
       false,
     );
 
+    // מצב מקומי: dynamicFirstActive — דינמי / פעיל; setDynamicFirstActive מעדכנת אותו ומפעילה רינדור לפי React.
     const [dynamicFirstActive, setDynamicFirstActive] = useState(false);
 
+// מצב מקומי: dynamicRuntimeContext — דינמי; setDynamicRuntimeContext מעדכנת אותו ומפעילה רינדור לפי React.
 const [
     dynamicRuntimeContext,
     setDynamicRuntimeContext,
   ] = useState<DynamicRuntimeContext | null>(null);
 
+  // מצב מקומי: hasDynamicAvailability — דינמי / אילוצים וזמינות; setHasDynamicAvailability מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     hasDynamicAvailability,
     setHasDynamicAvailability,
   ] = useState(false);
 
 
+  // מצב מקומי: hasDynamicPublishedSchedule — דינמי / פורסם / שיבוץ; setHasDynamicPublishedSchedule מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     hasDynamicPublishedSchedule,
     setHasDynamicPublishedSchedule,
   ] = useState(false);
 
+  // מצב מקומי: hasDynamicShiftExchange — החלפת משמרות; setHasDynamicShiftExchange מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     hasDynamicShiftExchange,
     setHasDynamicShiftExchange,
   ] = useState(false);
 
+  // מצב מקומי: hasDynamicManagementWorkspace — דינמי; setHasDynamicManagementWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     hasDynamicManagementWorkspace,
     setHasDynamicManagementWorkspace,
   ] = useState(false);
 
+  // מצב מקומי: canViewOwnActivityStatistics — האם צפייה מותרת; setCanViewOwnActivityStatistics מעדכנת אותו ומפעילה רינדור לפי React.
   const [canViewOwnActivityStatistics, setCanViewOwnActivityStatistics] = useState(false);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [profile?.id, profile?.role].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     void Promise.all([dynamicRuntimeService.getMyRuntimeContext(), dynamicCutoverService.getState()])
       .then(([context, cutover]) => {
@@ -509,6 +558,7 @@ const [
         // Dynamic-first is also the default operational shell for system
         // administrators and Job Type managers. They do not need to be members
         // of an employee Job Type just to receive the new management navigation.
+        // canUseDynamicManagement — דינמי.
         const canUseDynamicManagement =
           profile?.role === 'admin' ||
           context.canManageDynamicScheduling ||
@@ -524,17 +574,21 @@ const [
     return () => { active = false; };
   }, [profile?.id, profile?.role]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [profile?.id, profile?.role, dynamicFirstActive, dynamicRuntimeContext].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
 
     // Employee-only roles (including "ללא שיבוצים") must not probe a
     // manager-only RPC. Besides noisy 400/not-allowed responses, that probe
     // has no value for their navigation.
+    // canProbeManagementWorkspace — הנתון canProbeManagementWorkspace בהקשר הפעולה.
     const canProbeManagementWorkspace =
       profile?.role === 'admin' ||
       dynamicRuntimeContext?.canManageDynamicScheduling === true ||
       (dynamicRuntimeContext?.managedRoles.length ?? 0) > 0;
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !dynamicFirstActive || !canProbeManagementWorkspace.
     if (!dynamicFirstActive || !canProbeManagementWorkspace) {
       setHasDynamicManagementWorkspace(false);
       return () => { active = false; };
@@ -555,7 +609,9 @@ const [
     };
   }, [profile?.id, profile?.role, dynamicFirstActive, dynamicRuntimeContext]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [profile?.id].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     void dynamicSchedulingService.getMyDynamicAvailabilityPeriods()
       .then((periods) => { if (active) setHasDynamicAvailability(periods.length > 0); })
@@ -564,7 +620,9 @@ const [
   }, [profile?.id]);
 
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [profile?.id].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     void dynamicSchedulingService.getMyDynamicSchedulePeriods()
       .then((periods) => {
@@ -589,7 +647,9 @@ const [
   }, [profile?.id]);
 
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [profile?.id].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     void activityTrackingService.canViewOwnStatistics()
       .then((value) => { if (active) setCanViewOwnActivityStatistics(value); })
@@ -597,11 +657,13 @@ const [
     return () => { active = false; };
   }, [profile?.id]);
 
+// ערך מחושב visibleNavigationItems — ניווט / פריטים; נשמר בין רינדורים עד שינוי התלויות.
 const visibleNavigationItems =
   useMemo(
     () =>
       navigationItems.filter(
         (item) => {
+          // mode — מצב פעולה.
           const mode = item.runtimeMode ?? 'all';
 
           // Phase 10.5 creates a hard UX boundary: a user sees either the
@@ -611,6 +673,7 @@ const visibleNavigationItems =
           if (mode === 'dynamic' && !dynamicFirstActive) return false;
           if (mode === 'legacy' && dynamicFirstActive) return false;
 
+          // hasRequiredPermission — הרשאות.
           const hasRequiredPermission =
             item.requiredPermissions.length === 0 ||
             item.requiredPermissions.some((permission) =>
@@ -623,27 +686,33 @@ const visibleNavigationItems =
           // different concepts. A system administrator may be allowed to
           // inspect every capability, but that must not fill the sidebar with
           // personal employee workspaces.
+          // isPersonalDynamicWorkspace — דינמי.
           const isPersonalDynamicWorkspace =
             item.path === '/my-availability' ||
             item.path === '/my-shifts' ||
             item.path === '/my-shift-exchanges';
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר profile?.role === 'admin' && isPersonalDynamicWorkspace.
           if (profile?.role === 'admin' && isPersonalDynamicWorkspace) {
             return false;
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר item.path === '/my-availability' && !hasDynamicAvailability.
           if (item.path === '/my-availability' && !hasDynamicAvailability) {
             return false;
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר item.path === '/my-shifts' && !hasDynamicPublishedSchedule.
           if (item.path === '/my-shifts' && !hasDynamicPublishedSchedule) {
             return false;
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר item.path === '/my-shift-exchanges' && !hasDynamicShiftExchange.
           if (item.path === '/my-shift-exchanges' && !hasDynamicShiftExchange) {
             return false;
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר item.path === '/shifts' && !hasDynamicManagementWorkspace.
           if (item.path === '/shifts' && !hasDynamicManagementWorkspace) {
             return false;
           }
@@ -663,6 +732,10 @@ const visibleNavigationItems =
     ],
   );
 
+  /**
+   * פעולה closeSidebar: סגירת הנתון closeSidebar בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const closeSidebar =
     (): void => {
       setIsSidebarOpen(
@@ -670,6 +743,10 @@ const visibleNavigationItems =
       );
     };
 
+  /**
+   * פעולה toggleSidebar: החלפת בחירה עבור הנתון toggleSidebar בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const toggleSidebar =
     (): void => {
       setIsSidebarOpen(
@@ -680,6 +757,10 @@ const visibleNavigationItems =
       );
     };
 
+/**
+ * פעולה אסינכרונית handleSignOut: טיפול באירוע עבור הנתון handleSignOut בהקשר הפעולה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 const handleSignOut =
   async (): Promise<void> => {
     setIsSigningOut(
@@ -699,10 +780,12 @@ const handleSignOut =
     }
   };
 
+  // displayName — שם תצוגה.
   const displayName =
     profile?.displayName ??
     'משתמש';
 
+  // roleLabel — תווית.
   const roleLabel =
     dynamicRuntimeContext?.hasDynamicMemberships
       ? dynamicRuntimeContext.primaryJobTypeName ?? 'תפקיד דינמי'

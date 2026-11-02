@@ -1,12 +1,28 @@
+/**
+ * קובץ: src/components/ui/Input.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור קלט.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: InputProps, Input.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import type { InputHTMLAttributes, ReactNode } from 'react';
 
+/**
+ * חוזה הנתונים InputProps: קלט / מאפייני הרכיב.
+ */
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  // label — תווית.
   label: string;
+  // error — שגיאה (אופציונלי).
   error?: string;
   helperText?: string;
   startIcon?: ReactNode;
 }
 
+/**
+ * פעולה Input: קלט.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function Input({
   id,
   label,
@@ -16,15 +32,18 @@ function Input({
   className = '',
   ...inputProps
 }: InputProps) {
+  // inputId — קלט / מזהה.
   const inputId =
     id ?? `input-${label.trim().toLowerCase().replace(/\s+/g, '-')}`;
 
+  // descriptionId — מזהה.
   const descriptionId = error
     ? `${inputId}-error`
     : helperText
       ? `${inputId}-helper`
       : undefined;
 
+  // inputClassName — קלט / שם.
   const inputClassName = [
     'form-input',
     startIcon ? 'form-input-with-icon' : '',

@@ -1,9 +1,16 @@
+/*
+ * קובץ: src/styles/morningDriverAvailabilityManagement.css
+ * מטרה: הגדרת עיצוב ופריסה עבור כונני בוקר.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .morning-driver-management-panel  */
 .morning-driver-management-panel {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-header  */
 .morning-driver-management-header {
   display: flex;
   align-items: flex-start;
@@ -16,15 +23,18 @@
 }
 
 .morning-driver-management-header h2,
+/* כללי עיצוב עבור .morning-driver-management-header p  */
 .morning-driver-management-header p {
   margin: 4px 0 0;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-header-actions  */
 .morning-driver-management-header-actions {
   display: flex;
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-error  */
 .morning-driver-management-error {
   padding: 12px 14px;
   border: 1px solid #fecaca;
@@ -33,6 +43,7 @@
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-statistics  */
 .morning-driver-management-statistics {
   display: grid;
   grid-template-columns:
@@ -40,6 +51,7 @@
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-statistics article  */
 .morning-driver-management-statistics article {
   display: grid;
   grid-template-columns: auto auto;
@@ -55,14 +67,17 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .morning-driver-management-statistics svg  */
 .morning-driver-management-statistics svg {
   grid-area: icon;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-statistics strong  */
 .morning-driver-management-statistics strong {
   grid-area: value;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-statistics span  */
 .morning-driver-management-statistics span {
   grid-area: label;
   color: var(--theme-text-muted);
@@ -70,6 +85,7 @@
 }
 
 .morning-driver-management-submissions,
+/* כללי עיצוב עבור .morning-driver-management-matrix  */
 .morning-driver-management-matrix {
   padding: 16px;
   border: 1px solid #dbe3ef;
@@ -78,10 +94,12 @@
 }
 
 .morning-driver-management-submissions h3,
+/* כללי עיצוב עבור .morning-driver-management-matrix h3  */
 .morning-driver-management-matrix h3 {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-matrix > header  */
 .morning-driver-management-matrix > header {
   display: flex;
   justify-content: space-between;
@@ -89,11 +107,13 @@
   margin-bottom: 12px;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-table-wrapper  */
 .morning-driver-management-table-wrapper {
   overflow: auto;
   margin-top: 12px;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-table  */
 .morning-driver-management-table {
   width: 100%;
   min-width: 820px;
@@ -101,6 +121,7 @@
 }
 
 .morning-driver-management-table th,
+/* כללי עיצוב עבור .morning-driver-management-table td  */
 .morning-driver-management-table td {
   padding: 10px;
   border-bottom: 1px solid var(--theme-border);
@@ -108,23 +129,27 @@
   vertical-align: middle;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-table td:first-child  */
 .morning-driver-management-table td:first-child {
   display: table-cell;
 }
 
 .morning-driver-management-table td strong,
 .morning-driver-management-table td span,
+/* כללי עיצוב עבור .morning-driver-management-matrix-table th span  */
 .morning-driver-management-matrix-table th span {
   display: block;
 }
 
 .morning-driver-management-table td span,
+/* כללי עיצוב עבור .morning-driver-management-matrix-table th span  */
 .morning-driver-management-matrix-table th span {
   margin-top: 3px;
   color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-matrix-cell  */
 .morning-driver-management-matrix-cell {
   display: inline-flex;
   min-width: 92px;
@@ -137,21 +162,25 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-matrix-cell-available  */
 .morning-driver-management-matrix-cell-available {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-matrix-cell-unavailable  */
 .morning-driver-management-matrix-cell-unavailable {
   background: #fee2e2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-matrix-cell-unmarked  */
 .morning-driver-management-matrix-cell-unmarked {
   background: var(--theme-surface-soft);
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .morning-driver-management-state  */
 .morning-driver-management-state {
   display: flex;
   min-height: 220px;
@@ -165,11 +194,13 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .morning-driver-management-state-error  */
 .morning-driver-management-state-error {
   border-color: #fecaca;
   color: #991b1b;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .morning-driver-management-header {
     flex-direction: column;
@@ -195,17 +226,20 @@
 }
 
 
+/* כללי עיצוב עבור .morning-driver-management-workspace  */
 .morning-driver-management-workspace {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-workspace-toolbar  */
 .morning-driver-management-workspace-toolbar {
   display: flex;
   justify-content: flex-start;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-button  */
 .morning-driver-management-button {
   display: inline-flex;
   min-height: 40px;
@@ -223,11 +257,13 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .morning-driver-management-button:disabled  */
 .morning-driver-management-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 700px) */
 @media (max-width: 700px) {
   .morning-driver-management-workspace-toolbar,
   .morning-driver-management-workspace-toolbar button {

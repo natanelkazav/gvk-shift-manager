@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/availability/AvailabilityPeriodPicker.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור תקופת אילוצים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AvailabilityPeriodPickerProps, getPeriodTitle, AvailabilityPeriodPicker.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   ChevronDown,
@@ -7,20 +14,29 @@ import type {
   AvailabilityPeriodStatus,
 } from '../../types/availability';
 
+/**
+ * חוזה הנתונים AvailabilityPeriodPickerProps: תקופת אילוצים.
+ */
 interface AvailabilityPeriodPickerProps {
+  // periods — תקופות.
   periods:
     AvailabilityPeriod[];
 
+  // selectedPeriodId — מזהה התקופה.
   selectedPeriodId:
     string | null;
 
   allowedStatuses?:
     AvailabilityPeriodStatus[];
 
+  // label — תווית.
   label: string;
+  // emptyMessage — הודעה.
   emptyMessage: string;
 
+  // isLoading — האם טעינה מתבצעת (אופציונלי).
   isLoading?: boolean;
+  // disabled — האם האפשרות מושבתת (אופציונלי).
   disabled?: boolean;
 
   onSelect: (
@@ -28,6 +44,7 @@ interface AvailabilityPeriodPickerProps {
   ) => void;
 }
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -43,6 +60,7 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+// statusLabels — סטטוס.
 const statusLabels:
   Record<
     AvailabilityPeriodStatus,
@@ -54,6 +72,11 @@ const statusLabels:
     archived: 'בארכיון',
   };
 
+/**
+ * פעולה getPeriodTitle: שליפה או חישוב של תקופה / כותרת.
+ * @param period — תקופה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getPeriodTitle(
   period:
     AvailabilityPeriod,
@@ -66,6 +89,10 @@ function getPeriodTitle(
   );
 }
 
+/**
+ * פעולה AvailabilityPeriodPicker: תקופת אילוצים.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function AvailabilityPeriodPicker({
   periods,
   selectedPeriodId,
@@ -76,6 +103,7 @@ function AvailabilityPeriodPicker({
   disabled = false,
   onSelect,
 }: AvailabilityPeriodPickerProps) {
+  // availablePeriods — תקופות.
   const availablePeriods =
     periods.filter(
       (period) =>
@@ -125,9 +153,11 @@ function AvailabilityPeriodPicker({
             onChange={(
               event,
             ) => {
+              // periodId — מזהה התקופה.
               const periodId =
                 event.target.value;
 
+              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !periodId.
               if (!periodId) {
                 return;
               }

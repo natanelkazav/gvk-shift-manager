@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/dynamic/DynamicSchedulingShadowTester.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי / טיוטות שיבוץ במנגנון הדינמי.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: Props, DynamicSchedulingShadowTester.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { FlaskConical, LoaderCircle, Play, RefreshCw } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
@@ -11,37 +18,66 @@ import type {
 import { Button, Modal } from '../../ui';
 import DynamicAvailabilityShadowWorkspace from './DynamicAvailabilityShadowWorkspace';
 
+/**
+ * חוזה הנתונים Props: מאפייני הרכיב.
+ */
 interface Props {
+  // jobType — סוג תפקיד.
   jobType: DynamicJobType;
+  // isOpen — האם המצב פתוח.
   isOpen: boolean;
+  // onClose — פונקציית סגירת התצוגה.
   onClose: () => void;
 }
 
+// now — הנתון now בהקשר הפעולה.
 const now = new Date();
 
+/**
+ * פעולה DynamicSchedulingShadowTester: דינמי / טיוטות שיבוץ במנגנון הדינמי.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicSchedulingShadowTester({ jobType, isOpen, onClose }: Props) {
+  // מצב מקומי: year — שנה; setYear מעדכנת אותו ומפעילה רינדור לפי React.
   const [year, setYear] = useState(now.getFullYear());
+  // מצב מקומי: month — חודש; setMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [month, setMonth] = useState(now.getMonth() + 1);
+  // מצב מקומי: analysis — הנתון analysis בהקשר הפעולה; setAnalysis מעדכנת אותו ומפעילה רינדור לפי React.
   const [analysis, setAnalysis] = useState<DynamicFeasibilityAnalysis | null>(null);
+  // מצב מקומי: draft — טיוטה; setDraft מעדכנת אותו ומפעילה רינדור לפי React.
   const [draft, setDraft] = useState<DynamicShadowDraftResult | null>(null);
+  // מצב מקומי: diagnostics — הנתון diagnostics בהקשר הפעולה; setDiagnostics מעדכנת אותו ומפעילה רינדור לפי React.
   const [diagnostics, setDiagnostics] = useState<DynamicShadowDiagnostics | null>(null);
+  // מצב מקומי: validation — אימות נתונים; setValidation מעדכנת אותו ומפעילה רינדור לפי React.
   const [validation, setValidation] = useState<DynamicShadowValidation | null>(null);
+  // מצב מקומי: status — סטטוס; setStatus מעדכנת אותו ומפעילה רינדור לפי React.
   const [status, setStatus] = useState<string | null>(null);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy, setBusy] = useState(false);
+  // מצב מקומי: refreshKey — מפתח; setRefreshKey מעדכנת אותו ומפעילה רינדור לפי React.
   const [refreshKey, setRefreshKey] = useState(0);
+  // usesMonthlyRotation — סבב כוננויות.
   const usesMonthlyRotation = jobType.schedulingStrategy === 'monthly_rotation_constraints';
 
+  // ערך מחושב warnings — הנתון warnings בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const warnings = useMemo(
     () => Object.values(analysis?.warnings ?? {}).filter(Boolean),
     [analysis],
   );
 
+  /**
+   * פעולה אסינכרונית materialize: הנתון materialize בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const materialize = async (): Promise<void> => {
     setBusy(true);
     setError(null);
     setStatus(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await dynamicSchedulingService.createAvailabilityShadowPeriod(
         jobType.id,
         year,
@@ -60,11 +96,17 @@ function DynamicSchedulingShadowTester({ jobType, isOpen, onClose }: Props) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית analyze: הנתון analyze בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const analyze = async (): Promise<void> => {
     setBusy(true);
     setError(null);
     setStatus(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await dynamicSchedulingService.analyzeSchedulingFeasibility(
         jobType.id,
         year,
@@ -81,11 +123,17 @@ function DynamicSchedulingShadowTester({ jobType, isOpen, onClose }: Props) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית generate: יצירת הנתון generate בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const generate = async (): Promise<void> => {
     setBusy(true);
     setError(null);
     setStatus(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await dynamicSchedulingService.createSchedulingShadowDraft(
         jobType.id,
         year,
@@ -341,7 +389,9 @@ function DynamicSchedulingShadowTester({ jobType, isOpen, onClose }: Props) {
             <div className="dynamic-shadow-validation-slots">
               <h4>השוואה לפי משמרת</h4>
               {validation.slots.map((slot) => {
+                // dynamicNames — דינמי.
                 const dynamicNames = slot.dynamicAssignments.map((item) => item.displayName);
+                // isDifferent — הנתון isDifferent בהקשר הפעולה.
                 const isDifferent = slot.comparisonStatus !== 'match';
                 return (
                   <details

@@ -1,8 +1,15 @@
+/**
+ * קובץ: src/help/helpRegistry.ts
+ * מטרה: מימוש עזרה.
+ * מטרות עיקריות:
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import type {
   HelpTopic,
   HelpTopicGroup,
 } from './helpTypes';
 
+// helpGroupLabels — עזרה / קבוצה.
 export const helpGroupLabels:
   Record<
     HelpTopicGroup,
@@ -27,6 +34,7 @@ export const helpGroupLabels:
       'כלי מערכת',
   };
 
+// helpTopics — עזרה.
 export const helpTopics:
   readonly HelpTopic[] = [
     {

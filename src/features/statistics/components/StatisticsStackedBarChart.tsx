@@ -1,29 +1,59 @@
+/**
+ * קובץ: src/features/statistics/components/StatisticsStackedBarChart.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: StackedBarSeries, StackedBarItem, StatisticsStackedBarChartProps, StatisticsStackedBarChart.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   useMemo,
   useState,
 } from 'react';
 
+/**
+ * חוזה הנתונים StackedBarSeries: הנתון StackedBarSeries בהקשר הפעולה.
+ */
 interface StackedBarSeries {
+  // key — מפתח.
   key: string;
+  // label — תווית.
   label: string;
 }
 
+/**
+ * חוזה הנתונים StackedBarItem: פריט.
+ */
 interface StackedBarItem {
+  // key — מפתח.
   key: string;
+  // label — תווית.
   label: string;
+  // values — ערכים.
   values: Record<string, number>;
 }
 
+/**
+ * חוזה הנתונים StatisticsStackedBarChartProps: סטטיסטיקה / מאפייני הרכיב.
+ */
 interface StatisticsStackedBarChartProps {
+  // title — כותרת.
   title: string;
   description?: string;
   series: StackedBarSeries[];
+  // items — פריטים.
   items: StackedBarItem[];
+  // emptyMessage — הודעה (אופציונלי).
   emptyMessage?: string;
+  // unitLabel — תווית (אופציונלי).
   unitLabel?: string;
+  // valueFormatter — ערך (אופציונלי).
   valueFormatter?: (value: number) => string;
 }
 
+/**
+ * פעולה StatisticsStackedBarChart: סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function StatisticsStackedBarChart({
   title,
   description,
@@ -33,14 +63,17 @@ function StatisticsStackedBarChart({
   unitLabel = 'משמרות',
   valueFormatter = (value) => String(value),
 }: StatisticsStackedBarChartProps) {
+  // מצב מקומי: hiddenSeriesKeys — הנתון hiddenSeriesKeys בהקשר הפעולה; setHiddenSeriesKeys מעדכנת אותו ומפעילה רינדור לפי React.
   const [hiddenSeriesKeys, setHiddenSeriesKeys] =
     useState<string[]>([]);
 
+  // ערך מחושב visibleSeries — הנתון visibleSeries בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const visibleSeries = useMemo(
     () => series.filter((entry) => !hiddenSeriesKeys.includes(entry.key)),
     [series, hiddenSeriesKeys],
   );
 
+  // ערך מחושב maximumTotal — סך הכול; נשמר בין רינדורים עד שינוי התלויות.
   const maximumTotal = useMemo(
     () => Math.max(
       0,
@@ -53,6 +86,7 @@ function StatisticsStackedBarChart({
     [items, visibleSeries],
   );
 
+  // hasVisibleData — נתונים.
   const hasVisibleData =
     visibleSeries.length > 0 &&
     items.some((item) =>
@@ -130,6 +164,7 @@ function StatisticsStackedBarChart({
       ) : (
         <div className="statistics-stacked-bars">
           {items.map((item) => {
+            // selectedTotal — נבחר / סך הכול.
             const selectedTotal = visibleSeries.reduce(
               (sum, entry) => sum + (item.values[entry.key] ?? 0),
               0,
@@ -147,14 +182,18 @@ function StatisticsStackedBarChart({
                   aria-label={`${item.label}: ${valueFormatter(selectedTotal)} ${unitLabel}`}
                 >
                   {visibleSeries.map((entry) => {
+                    // originalIndex — מיקום באוסף.
                     const originalIndex =
                       series.findIndex((candidate) => candidate.key === entry.key);
+                    // value — ערך.
                     const value = item.values[entry.key] ?? 0;
+                    // height — גובה.
                     const height =
                       maximumTotal > 0
                         ? (value / maximumTotal) * 100
                         : 0;
 
+                    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר value <= 0.
                     if (value <= 0) {
                       return null;
                     }

@@ -1,8 +1,14 @@
+-- קובץ: supabase/migrations/20261026100000_cross_month_continuity.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור חודש.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.dynamic_shadow_candidate_allowed, public.get_dynamic_schedule_weekly_rest_validation.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Cross-month continuity for availability-based shadow drafts.
 -- Only the current draft is mutable. Prior published assignments are read-only context.
 -- Published assignment user_id represents the currently assigned person.
 -- Run in a test database before production; depends on publication status = 'published'.
 begin;
+-- פונקציית מסד public.dynamic_shadow_candidate_allowed: דינמי / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.dynamic_shadow_candidate_allowed(
   requested_draft_id uuid,
   requested_user_id uuid,
@@ -13,6 +19,7 @@ create or replace function public.dynamic_shadow_candidate_allowed(
 )
 returns boolean
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -21,18 +28,27 @@ declare
   candidate_start timestamp;
   candidate_end timestamp;
   existing record;
+  -- weekly_limit — שבועי / מגבלת תוצאות.
   weekly_limit integer;
+  -- weekly_count — שבועי / כמות.
   weekly_count integer;
+  -- job_id — מזהה.
   job_id uuid;
   cross_week_start date;
+  -- historical — נתונים היסטוריים.
   historical record;
+  -- historical_count — נתונים היסטוריים / כמות.
   historical_count integer;
+  -- historical_days — נתונים היסטוריים / ימים.
   historical_days integer;
+  -- draft_days — טיוטה / ימים.
   draft_days integer;
 begin
   select * into candidate_slot from public.dynamic_availability_slots where id=requested_slot_id;
+  -- הסתעפות לפי התנאי candidate_slot.id is null then return false; end if;.
   if candidate_slot.id is null then return false; end if;
   select d.job_type_id into job_id from public.dynamic_schedule_shadow_drafts d where d.id=requested_draft_id;
+  -- הסתעפות לפי התנאי job_id is null then return false; end if;.
   if job_id is null then return false; end if;
   cross_week_start := candidate_slot.shift_date - extract(dow from candidate_slot.shift_date)::integer;
 
@@ -44,6 +60,7 @@ begin
   join public.job_types j on j.id=d.job_type_id
   where d.id=requested_draft_id
     and coalesce((j.availability_config->>'showWeeklyShiftLimit')::boolean,false);
+  -- הסתעפות לפי התנאי weekly_limit is not null.
   if weekly_limit is not null then
     select count(*) into weekly_count
     from public.dynamic_schedule_shadow_assignments a
@@ -58,6 +75,7 @@ begin
       and a.user_id=requested_user_id
       and a.shift_date >= cross_week_start and a.shift_date < cross_week_start+7
       and a.shift_date < make_date(extract(year from candidate_slot.shift_date)::integer,extract(month from candidate_slot.shift_date)::integer,1);
+    -- הסתעפות לפי התנאי weekly_count + historical_count >= weekly_limit then return false; end if;.
     if weekly_count + historical_count >= weekly_limit then return false; end if;
   end if;
 
@@ -77,6 +95,7 @@ begin
     where a.draft_id=requested_draft_id and a.user_id=requested_user_id
       and s.shift_date >= cross_week_start and s.shift_date < cross_week_start+7
   ) days;
+  -- הסתעפות לפי התנאי historical_days >= 6 and not exists (.
   if historical_days >= 6 and not exists (
     select 1 from public.dynamic_schedule_shadow_assignments a
     join public.dynamic_availability_slots s on s.id=a.slot_id
@@ -90,12 +109,16 @@ begin
 
   candidate_start := candidate_slot.shift_date + candidate_slot.start_time;
   candidate_end := candidate_slot.shift_date + candidate_slot.end_time;
+  -- הסתעפות לפי התנאי candidate_slot.end_time <= candidate_slot.start_time then candidate_end := candidate_end + interval '1 day'; end if;.
   if candidate_slot.end_time <= candidate_slot.start_time then candidate_end := candidate_end + interval '1 day'; end if;
 
+  -- הסתעפות לפי התנאי exists(select 1 from public.dynamic_schedule_shadow_assignments a where a.draft_id=requested_draft_id and a.slot_id=requ.
   if exists(select 1 from public.dynamic_schedule_shadow_assignments a where a.draft_id=requested_draft_id and a.slot_id=requested_slot_id and a.user_id=requested_user_id) then return false; end if;
 
+  -- הסתעפות לפי התנאי (select count(*) from public.dynamic_schedule_shadow_assignments a join public.dynamic_availability_slots x on x.id=a.sl.
   if (select count(*) from public.dynamic_schedule_shadow_assignments a join public.dynamic_availability_slots x on x.id=a.slot_id where a.draft_id=requested_draft_id and a.user_id=requested_user_id and x.shift_date=candidate_slot.shift_date) >= requested_max_shifts_per_day then return false; end if;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for existing in
     select x.* from public.dynamic_schedule_shadow_assignments a
     join public.dynamic_availability_slots x on x.id=a.slot_id
@@ -105,17 +128,24 @@ begin
       existing_start timestamp := existing.shift_date + existing.start_time;
       existing_end timestamp := existing.shift_date + existing.end_time;
     begin
+      -- הסתעפות לפי התנאי existing.end_time <= existing.start_time then existing_end := existing_end + interval '1 day'; end if;.
       if existing.end_time <= existing.start_time then existing_end := existing_end + interval '1 day'; end if;
+      -- הסתעפות לפי התנאי candidate_start < existing_end and existing_start < candidate_end then return false; end if;.
       if candidate_start < existing_end and existing_start < candidate_end then return false; end if;
+      -- הסתעפות לפי התנאי requested_no_consecutive and (candidate_start=existing_end or candidate_end=existing_start) then return false; end if;.
       if requested_no_consecutive and (candidate_start=existing_end or candidate_end=existing_start) then return false; end if;
+      -- הסתעפות לפי התנאי requested_min_rest_minutes > 0.
       if requested_min_rest_minutes > 0 then
+        -- הסתעפות לפי התנאי existing_end <= candidate_start and extract(epoch from (candidate_start-existing_end))/60 < requested_min_rest_minutes t.
         if existing_end <= candidate_start and extract(epoch from (candidate_start-existing_end))/60 < requested_min_rest_minutes then return false; end if;
+        -- הסתעפות לפי התנאי candidate_end <= existing_start and extract(epoch from (existing_start-candidate_end))/60 < requested_min_rest_minutes t.
         if candidate_end <= existing_start and extract(epoch from (existing_start-candidate_end))/60 < requested_min_rest_minutes then return false; end if;
       end if;
     end;
   end loop;
   -- Check already published assignments in the preceding month, using the current user_id
   -- (not engine_user_id/original_user_id) so approved replacements are respected.
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for historical in
     select a.shift_date,a.start_time,a.end_time
     from public.dynamic_schedule_published_assignments a
@@ -129,12 +159,16 @@ begin
       old_start timestamp := historical.shift_date+historical.start_time;
       old_end timestamp := historical.shift_date+historical.end_time;
     begin
+      -- הסתעפות לפי התנאי historical.end_time<=historical.start_time then old_end:=old_end+interval '1 day'; end if;.
       if historical.end_time<=historical.start_time then old_end:=old_end+interval '1 day'; end if;
+      -- הסתעפות לפי התנאי candidate_start<old_end and old_start<candidate_end then return false; end if;.
       if candidate_start<old_end and old_start<candidate_end then return false; end if;
+      -- הסתעפות לפי התנאי requested_no_consecutive and (.
       if requested_no_consecutive and (
         candidate_start=old_end or candidate_end=old_start
         or (historical.end_time<=historical.start_time and old_end::date=candidate_start::date and candidate_start>old_end)
       ) then return false; end if;
+      -- הסתעפות לפי התנאי requested_min_rest_minutes>0 and old_end<=candidate_start.
       if requested_min_rest_minutes>0 and old_end<=candidate_start
         and extract(epoch from(candidate_start-old_end))/60<requested_min_rest_minutes then return false; end if;
     end;
@@ -143,26 +177,36 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.get_dynamic_schedule_weekly_rest_validation: שליפה או חישוב של דינמי / שיבוץ / שבועי / מנוחה.
 create or replace function public.get_dynamic_schedule_weekly_rest_validation(requested_draft_id uuid)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   actor uuid := auth.uid();
   d public.dynamic_schedule_shadow_drafts%rowtype;
+  -- month_start — חודש.
   month_start date;
+  -- month_end — חודש.
   month_end date;
   violations jsonb := '[]'::jsonb;
+  -- pending — ממתין.
   pending jsonb := '[]'::jsonb;
+  -- violation_count — כמות.
   violation_count integer := 0;
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
   select * into d from public.dynamic_schedule_shadow_drafts where id=requested_draft_id;
+  -- הסתעפות לפי התנאי d.id is null then raise exception 'draft not found'; end if;.
   if d.id is null then raise exception 'draft not found'; end if;
+  -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('schedule.create_draft',d.job_type_id,actor).
   if not public.has_dynamic_job_type_permission('schedule.create_draft',d.job_type_id,actor)
     and not public.has_dynamic_job_type_permission('schedule.edit_draft',d.job_type_id,actor) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
   month_start:=make_date(d.year,d.month,1);
@@ -234,18 +278,24 @@ begin
     order by week_start,display_name),'[]'::jsonb)
   into pending from pending_rows;
 
+  -- עדכון רשומות ב־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
   update public.dynamic_schedule_shadow_drafts
   set metrics=coalesce(metrics,'{}'::jsonb)||jsonb_build_object(
     'weeklyRestRuleEnabled',true,'weeklyRestValid',violation_count=0,
     'weeklyRestViolationCount',violation_count,'weeklyRestViolations',violations,
     'weeklyRestPendingWeeks',pending),updated_at=now()
   where id=d.id;
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('valid',violation_count=0,'violationCount',violation_count,
     'violations',violations,'pendingWeeks',pending);
 end;
 $function$;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.dynamic_shadow_candidate_allowed(uuid,uuid,uuid,integer,boolean,integer) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_shadow_candidate_allowed(uuid,uuid,uuid,integer,boolean,integer) to authenticated;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_schedule_weekly_rest_validation(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_schedule_weekly_rest_validation(uuid) to authenticated;
 commit;

@@ -1,32 +1,59 @@
+/**
+ * קובץ: src/components/users/dynamic/DynamicUserAssignmentsEditor.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי / משתמש / הקצאות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DynamicUserAssignmentsEditorProps, DynamicUserAssignmentsEditor.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { BriefcaseBusiness, Crown, UsersRound } from 'lucide-react';
 import type { DynamicUserAssignmentSelection } from '../../../types/dynamicUserAssignments';
 import type { DynamicJobType, DynamicMemberEmploymentScope } from '../../../types/dynamicScheduling';
 
+/**
+ * חוזה הנתונים DynamicUserAssignmentsEditorProps: דינמי / משתמש / הקצאות / מאפייני הרכיב.
+ */
 interface DynamicUserAssignmentsEditorProps {
+  // jobTypes — סוגי תפקידים.
   jobTypes: DynamicJobType[];
+  // assignments — הקצאות.
   assignments: DynamicUserAssignmentSelection[];
+  // isDisabled — האם האפשרות מושבתת (אופציונלי).
   isDisabled?: boolean;
+  // onChange — פונקציית דיווח על שינוי.
   onChange: (assignments: DynamicUserAssignmentSelection[]) => void;
 }
 
+// scopeLabels — הנתון scopeLabels בהקשר הפעולה.
 const scopeLabels: Record<DynamicMemberEmploymentScope, string> = {
   full_time: 'משרה מלאה',
   part_time: 'משרה חלקית',
   as_much_as_possible: 'כמה שיותר',
 };
 
+/**
+ * פעולה DynamicUserAssignmentsEditor: דינמי / משתמש / הקצאות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicUserAssignmentsEditor({
   jobTypes,
   assignments,
   isDisabled = false,
   onChange,
 }: DynamicUserAssignmentsEditorProps) {
+  // assignmentMap — הקצאה / מפת התאמה; מיפוי לחיפוש לפי מפתח.
   const assignmentMap = new Map(assignments.map((item) => [item.jobTypeId, item]));
 
+  /**
+   * פעולה update: עדכון הנתון update בהקשר הפעולה.
+   * @param jobType — סוג תפקיד.
+   * @param patch — הנתון patch בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const update = (
     jobType: DynamicJobType,
     patch: Partial<DynamicUserAssignmentSelection>,
   ): void => {
+    // current — הנתון current בהקשר הפעולה.
     const current = assignmentMap.get(jobType.id) ?? {
       jobTypeId: jobType.id,
       isMember: false,
@@ -35,6 +62,7 @@ function DynamicUserAssignmentsEditor({
       partTimeDefinition: {},
     };
 
+    // next — הנתון next בהקשר הפעולה.
     const next = {
       ...current,
       ...patch,
@@ -47,6 +75,7 @@ function DynamicUserAssignmentsEditor({
     ]);
   };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר jobTypes.length === 0.
   if (jobTypes.length === 0) {
     return (
       <div className="dynamic-user-assignments-empty">
@@ -67,9 +96,13 @@ function DynamicUserAssignmentsEditor({
 
       <div className="dynamic-user-assignment-list">
         {jobTypes.filter((jobType) => jobType.isActive).map((jobType) => {
+          // assignment — הקצאה.
           const assignment = assignmentMap.get(jobType.id);
+          // isMember — הנתון isMember בהקשר הפעולה.
           const isMember = assignment?.isMember ?? false;
+          // isManager — הנתון isManager בהקשר הפעולה.
           const isManager = assignment?.isManager ?? false;
+          // selectedScope — נבחר.
           const selectedScope = assignment?.employmentScope
             ?? (jobType.employmentScope === 'flexible' ? 'full_time' : jobType.employmentScope);
 

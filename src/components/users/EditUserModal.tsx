@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/EditUserModal.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור משתמש.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: EditUserModalProps, EditUserFormState, EditUserTab, createFormState, EditUserModal.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   BriefcaseBusiness,
   KeyRound,
@@ -47,6 +54,7 @@ import {
 
 import './EditUserModalTabs.css';
 
+// SYSTEM_PERMISSION_KEYS — מפתחות ההרשאות.
 const SYSTEM_PERMISSION_KEYS: PermissionKey[] = [
   'dashboard.view',
   'notifications.view',
@@ -65,25 +73,39 @@ const SYSTEM_PERMISSION_KEYS: PermissionKey[] = [
   'contacts.changes_view',
 ];
 
+/**
+ * חוזה הנתונים EditUserModalProps: משתמש / מאפייני הרכיב.
+ */
 interface EditUserModalProps {
+  // user — משתמש.
   user: UserProfile | null;
+  // dynamicJobTypes — סוגי תפקידים.
   dynamicJobTypes: DynamicJobType[];
+  // isOpen — האם המצב פתוח.
   isOpen: boolean;
+  // isSaving — האם שמירה מתבצעת.
   isSaving: boolean;
+  // currentUserId — המשתמש הנוכחי הנוכחי.
   currentUserId: string | null;
+  // canManagePayroll — האם פעולת ניהול מותרת.
   canManagePayroll: boolean;
 
+  // permissions — הרשאות.
   permissions: PermissionKey[];
 
+  // isPermissionsLoading — הרשאות / טעינה.
   isPermissionsLoading:
     boolean;
 
+  // permissionsError — הרשאות / שגיאה.
   permissionsError:
     string | null;
 
+  // onRetryPermissions — הרשאות.
   onRetryPermissions:
     () => Promise<void>;
 
+  // onClose — פונקציית סגירת התצוגה.
   onClose: () => void;
 
   onSave: (
@@ -98,23 +120,40 @@ interface EditUserModalProps {
   ) => Promise<void>;
 }
 
+/**
+ * חוזה הנתונים EditUserFormState: משתמש / מצב.
+ */
 interface EditUserFormState {
+  // email — כתובת דוא״ל.
   email: string;
+  // displayName — שם תצוגה.
   displayName: string;
+  // scheduleName — שיבוץ / שם.
   scheduleName: string;
   role: UserRole;
+  // isActive — האם הרשומה פעילה.
   isActive: boolean;
+  // mustChangePassword — סיסמה.
   mustChangePassword: boolean;
   hourlyRate: string;
   dailyDutyRate: string;
+  // morningShiftRate — משמרת.
   morningShiftRate: string;
 }
 
+/**
+ * טיפוס EditUserTab: משתמש.
+ */
 type EditUserTab =
   | 'details'
   | 'assignments'
   | 'permissions';
 
+/**
+ * פעולה createFormState: יצירת מצב.
+ * @param user — משתמש.
+ * @returns EditUserFormState — הפלט בהתאם לחתימה.
+ */
 function createFormState(
   user: UserProfile,
 ): EditUserFormState {
@@ -148,6 +187,10 @@ function createFormState(
   };
 }
 
+/**
+ * פעולה EditUserModal: משתמש.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function EditUserModal({
   user,
   dynamicJobTypes,
@@ -162,6 +205,7 @@ function EditUserModal({
   onClose,
   onSave,
 }: EditUserModalProps) {
+  // מצב מקומי: activeTab — פעיל; setActiveTab מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     activeTab,
     setActiveTab,
@@ -169,6 +213,7 @@ function EditUserModal({
     'details',
   );
 
+  // מצב מקומי: formState — מצב; setFormState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     formState,
     setFormState,
@@ -179,6 +224,7 @@ function EditUserModal({
         : null,
     );
 
+  // מצב מקומי: selectedPermissions — נבחר / הרשאות; setSelectedPermissions מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedPermissions,
     setSelectedPermissions,
@@ -186,6 +232,7 @@ function EditUserModal({
     [],
   );
 
+  // מצב מקומי: formError — שגיאה; setFormError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     formError,
     setFormError,
@@ -193,6 +240,7 @@ function EditUserModal({
     null,
   );
 
+  // מצב מקומי: permissionsNotice — הרשאות; setPermissionsNotice מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     permissionsNotice,
     setPermissionsNotice,
@@ -200,23 +248,32 @@ function EditUserModal({
     null,
   );
 
+  // מצב מקומי: isRetryingPermissions — הרשאות; setIsRetryingPermissions מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isRetryingPermissions,
     setIsRetryingPermissions,
   ] = useState(false);
 
+  // מצב מקומי: dynamicPermissionEditor — דינמי / הרשאות; setDynamicPermissionEditor מעדכנת אותו ומפעילה רינדור לפי React.
   const [dynamicPermissionEditor, setDynamicPermissionEditor] =
     useState<DynamicUserJobTypePermissionEditor>({ jobTypes: [] });
+  // מצב מקומי: assignments — הקצאות; setAssignments מעדכנת אותו ומפעילה רינדור לפי React.
   const [assignments, setAssignments] = useState<DynamicUserAssignmentSelection[]>([]);
+  // מצב מקומי: isAssignmentsLoading — הקצאות / טעינה; setIsAssignmentsLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [isAssignmentsLoading, setIsAssignmentsLoading] = useState(false);
+  // מצב מקומי: assignmentsError — הקצאות / שגיאה; setAssignmentsError מעדכנת אותו ומפעילה רינדור לפי React.
   const [assignmentsError, setAssignmentsError] = useState<string | null>(null);
 
+  // מצב מקומי: isDynamicPermissionSummaryLoading — דינמי / הרשאות / סיכום / טעינה; setIsDynamicPermissionSummaryLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [isDynamicPermissionSummaryLoading, setIsDynamicPermissionSummaryLoading] =
     useState(false);
+  // מצב מקומי: dynamicPermissionSummaryError — דינמי / הרשאות / סיכום / שגיאה; setDynamicPermissionSummaryError מעדכנת אותו ומפעילה רינדור לפי React.
   const [dynamicPermissionSummaryError, setDynamicPermissionSummaryError] =
     useState<string | null>(null);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [user].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !user.
     if (!user) {
       return;
     }
@@ -238,6 +295,7 @@ function EditUserModal({
     setActiveTab('details');
   }, [user]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [isOpen, user].
   useEffect(() => {
     if (!isOpen || !user) return;
     let cancelled = false;
@@ -252,6 +310,7 @@ function EditUserModal({
     return () => { cancelled = true; };
   }, [isOpen, user]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [isOpen, user].
   useEffect(() => {
     if (!isOpen || !user) return;
     let cancelled = false;
@@ -276,7 +335,9 @@ function EditUserModal({
     return () => { cancelled = true; };
   }, [isOpen, user]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isOpen, isPermissionsLoading, permissionsError, permissions, ].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen || isPermissionsLoading || permissionsError.
     if (
       !isOpen ||
       isPermissionsLoading ||
@@ -297,7 +358,9 @@ function EditUserModal({
     permissions,
   ]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [isOpen].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
     if (!isOpen) {
       return;
     }
@@ -305,11 +368,18 @@ function EditUserModal({
     setActiveTab('details');
   }, [isOpen]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isOpen, isSaving, onClose, ].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
     if (!isOpen) {
       return;
     }
 
+    /**
+     * פעולה handleKeyDown: טיפול באירוע עבור מפתח.
+     * @param event — אירוע.
+     * @returns void — הפלט בהתאם לחתימה.
+     */
     const handleKeyDown = (
       event: KeyboardEvent,
     ): void => {
@@ -347,6 +417,7 @@ function EditUserModal({
   ]);
 
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen || !user || !formState.
   if (
     !isOpen ||
     !user ||
@@ -355,29 +426,39 @@ function EditUserModal({
     return null;
   }
 
+  // isCurrentUser — המשתמש הנוכחי.
   const isCurrentUser =
     user.id === currentUserId;
 
+  // isPermissionsUnavailable — הרשאות.
   const isPermissionsUnavailable =
     isPermissionsLoading ||
     Boolean(permissionsError);
 
+  // isInteractionDisabled — האם האפשרות מושבתת.
   const isInteractionDisabled =
     isSaving ||
     isPermissionsLoading ||
     isAssignmentsLoading ||
     isRetryingPermissions;
 
+  /**
+   * פעולה validateForm: בדיקת תקינות של הנתון validateForm בהקשר הפעולה.
+   * @returns string | null — הפלט בהתאם לחתימה.
+   */
   const validateForm =
     (): string | null => {
+      // normalizedEmail — כתובת דוא״ל.
       const normalizedEmail =
         formState.email
           .trim()
           .toLowerCase();
 
+      // normalizedDisplayName — שם תצוגה.
       const normalizedDisplayName =
         formState.displayName.trim();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedEmail || !normalizedEmail.includes( '@', ).
       if (
         !normalizedEmail ||
         !normalizedEmail.includes(
@@ -387,10 +468,12 @@ function EditUserModal({
         return 'יש להזין כתובת אימייל תקינה.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedDisplayName.
       if (!normalizedDisplayName) {
         return 'יש להזין שם תצוגה.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedDisplayName.length < 2.
       if (
         normalizedDisplayName.length <
         2
@@ -398,6 +481,7 @@ function EditUserModal({
         return 'שם התצוגה חייב להכיל לפחות שני תווים.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCurrentUser && !formState.isActive.
       if (
         isCurrentUser &&
         !formState.isActive
@@ -405,14 +489,17 @@ function EditUserModal({
         return 'לא ניתן להשבית את המשתמש המחובר כעת.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isPermissionsLoading.
       if (isPermissionsLoading) {
         return 'יש להמתין לסיום טעינת ההרשאות.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר permissionsError.
       if (permissionsError) {
         return 'לא ניתן לשמור לפני שהרשאות המשתמש נטענו בהצלחה.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canManagePayroll && formState.role === 'dispatcher' && formState.hourlyRate.trim() && ( !Number.isFinite(Number(formState.hourlyRate)) || Nu.
       if (
         canManagePayroll &&
         formState.role === 'dispatcher' &&
@@ -425,6 +512,7 @@ function EditUserModal({
         return 'השכר השעתי חייב להיות מספר חיובי.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canManagePayroll && formState.role === 'morning_driver' && formState.morningShiftRate.trim() && ( !Number.isFinite(Number(formState.morningS.
       if (
         canManagePayroll &&
         formState.role === 'morning_driver' &&
@@ -437,6 +525,7 @@ function EditUserModal({
         return 'התעריף למשמרת בוקר חייב להיות מספר חיובי.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canManagePayroll && formState.role === 'on_call' && formState.dailyDutyRate.trim() && ( !Number.isFinite(Number(formState.dailyDutyRate)) ||.
       if (
         canManagePayroll &&
         formState.role === 'on_call' &&
@@ -452,15 +541,22 @@ function EditUserModal({
       return null;
     };
 
+  /**
+   * פעולה אסינכרונית handleSubmit: טיפול באירוע עבור הנתון handleSubmit בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSubmit = async (
     event:
       FormEvent<HTMLFormElement>,
   ): Promise<void> => {
     event.preventDefault();
 
+    // validationError — אימות נתונים / שגיאה.
     const validationError =
       validateForm();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר validationError.
     if (validationError) {
       setFormError(
         validationError,
@@ -481,6 +577,7 @@ function EditUserModal({
 
     setFormError(null);
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await onSave(
         user.id,
@@ -558,6 +655,10 @@ function EditUserModal({
     }
   };
 
+  /**
+   * פעולה handleBackdropClick: טיפול באירוע עבור הנתון handleBackdropClick בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleBackdropClick =
     (): void => {
       if (!isInteractionDisabled) {
@@ -565,9 +666,15 @@ function EditUserModal({
       }
     };
 
+  /**
+   * פעולה handleTabChange: טיפול באירוע עבור הנתון handleTabChange בהקשר הפעולה.
+   * @param tab — הנתון tab בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleTabChange = (
     tab: EditUserTab,
   ): void => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isInteractionDisabled.
     if (isInteractionDisabled) {
       return;
     }
@@ -575,13 +682,24 @@ function EditUserModal({
     setActiveTab(tab);
   };
 
+  /**
+   * פעולה handleAccountTypeChange: טיפול באירוע עבור הנתון handleAccountTypeChange בהקשר הפעולה.
+   * @param nextAccountType — הנתון nextAccountType בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleAccountTypeChange = (nextAccountType: SystemAccountType): void => {
     handleRoleChange(legacyRoleForAccountType(nextAccountType, formState.role));
   };
 
+  /**
+   * פעולה handleRoleChange: טיפול באירוע עבור הנתון handleRoleChange בהקשר הפעולה.
+   * @param nextRole — הנתון nextRole בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleRoleChange = (
     nextRole: UserRole,
   ): void => {
+    // previousRole — הנתון previousRole בהקשר הפעולה.
     const previousRole =
       formState.role;
 
@@ -607,8 +725,13 @@ function EditUserModal({
   };
 
 
+  /**
+   * פעולה אסינכרונית handleRetryPermissions: טיפול באירוע עבור הרשאות.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleRetryPermissions =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isRetryingPermissions || isSaving.
       if (
         isRetryingPermissions ||
         isSaving
@@ -620,6 +743,7 @@ function EditUserModal({
       setFormError(null);
       setPermissionsNotice(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await onRetryPermissions();
       } catch (error) {
@@ -1225,6 +1349,7 @@ function EditUserModal({
                         editor={dynamicPermissionEditor}
                         isDisabled={isSaving}
                         onChange={(nextPermissions) => {
+                          // nextMap — מפת התאמה; מיפוי לחיפוש לפי מפתח.
                           const nextMap = new Map(
                             nextPermissions.map((permission) => [
                               `${permission.jobTypeId}:${permission.permissionKey}`,

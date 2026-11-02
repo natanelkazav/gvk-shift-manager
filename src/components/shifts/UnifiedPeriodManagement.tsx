@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/shifts/UnifiedPeriodManagement.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור תקופה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UnifiedPeriodManagementProps, PeriodCategoryId, PeriodCategoryViewModel, DispatcherScheduleState, getAvailabilityStatusLabel, getScheduleStatusLabel, getPublicationStatusLabel, getAvailabilityStatusClassName, getScheduleStatusClassName, getPublicationStatusClassName ועוד.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   ArrowLeft,
   CalendarCheck2,
@@ -68,21 +75,34 @@ import {
   CardBody,
 } from '../ui';
 
+/**
+ * חוזה הנתונים UnifiedPeriodManagementProps: תקופה / מאפייני הרכיב.
+ */
 interface UnifiedPeriodManagementProps {
+  // year — שנה.
   year: number;
 
+  // month — חודש.
   month: number;
 }
 
+/**
+ * טיפוס PeriodCategoryId: תקופה / מזהה.
+ */
 type PeriodCategoryId =
   | 'dispatchers'
   | 'morning-drivers'
   | 'drivers';
 
+/**
+ * חוזה הנתונים PeriodCategoryViewModel: תקופה.
+ */
 interface PeriodCategoryViewModel {
+  // id — מזהה.
   id:
     PeriodCategoryId;
 
+  // title — כותרת.
   title: string;
 
   description: string;
@@ -92,35 +112,48 @@ interface PeriodCategoryViewModel {
   icon:
     typeof Headphones;
 
+  // className — שם.
   className: string;
 
+  // workflow — תהליך עבודה.
   workflow:
     PeriodWorkflowState;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading:
     boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 
+  // createLabel — תווית.
   createLabel:
     string;
 
+  // publishLabel — תווית.
   publishLabel:
     string;
 }
 
+/**
+ * חוזה הנתונים DispatcherScheduleState: מוקדנים / שיבוץ / מצב.
+ */
 interface DispatcherScheduleState {
+  // data — נתונים.
   data:
     DispatcherScheduleMonthData | null;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading:
     boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 }
 
+// initialDispatcherScheduleState — מוקדנים / שיבוץ / מצב.
 const initialDispatcherScheduleState:
   DispatcherScheduleState = {
     data:
@@ -133,6 +166,7 @@ const initialDispatcherScheduleState:
       null,
   };
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -148,6 +182,11 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+/**
+ * פעולה getAvailabilityStatusLabel: שליפה או חישוב של מצב הזמינות.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getAvailabilityStatusLabel(
   status:
     WorkflowAvailabilityStatus,
@@ -173,6 +212,11 @@ function getAvailabilityStatusLabel(
   }
 }
 
+/**
+ * פעולה getScheduleStatusLabel: שליפה או חישוב של שיבוץ / סטטוס / תווית.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getScheduleStatusLabel(
   status:
     WorkflowScheduleStatus,
@@ -195,6 +239,11 @@ function getScheduleStatusLabel(
   }
 }
 
+/**
+ * פעולה getPublicationStatusLabel: שליפה או חישוב של סטטוס / תווית.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getPublicationStatusLabel(
   status:
     WorkflowPublicationStatus,
@@ -214,6 +263,11 @@ function getPublicationStatusLabel(
   }
 }
 
+/**
+ * פעולה getAvailabilityStatusClassName: שליפה או חישוב של מצב הזמינות.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getAvailabilityStatusClassName(
   status:
     WorkflowAvailabilityStatus,
@@ -239,6 +293,11 @@ function getAvailabilityStatusClassName(
   }
 }
 
+/**
+ * פעולה getScheduleStatusClassName: שליפה או חישוב של שיבוץ / סטטוס / שם.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getScheduleStatusClassName(
   status:
     WorkflowScheduleStatus,
@@ -261,6 +320,11 @@ function getScheduleStatusClassName(
   }
 }
 
+/**
+ * פעולה getPublicationStatusClassName: שליפה או חישוב של סטטוס / שם.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getPublicationStatusClassName(
   status:
     WorkflowPublicationStatus,
@@ -280,9 +344,15 @@ function getPublicationStatusClassName(
   }
 }
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -292,6 +362,10 @@ function getErrorMessage(
   return 'אירעה שגיאה בטעינת מצב השיבוץ.';
 }
 
+/**
+ * פעולה UnifiedPeriodManagement: תקופה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function UnifiedPeriodManagement({
   year,
   month,
@@ -304,6 +378,7 @@ function UnifiedPeriodManagement({
   } =
     useAuth();
 
+  // מצב מקומי: dispatcherScheduleState — מוקדנים / שיבוץ / מצב; setDispatcherScheduleState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     dispatcherScheduleState,
     setDispatcherScheduleState,
@@ -312,6 +387,7 @@ function UnifiedPeriodManagement({
       initialDispatcherScheduleState,
     );
 
+  // מצב מקומי: isDispatcherPublishing — מוקדנים; setIsDispatcherPublishing מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isDispatcherPublishing,
     setIsDispatcherPublishing,
@@ -375,6 +451,7 @@ function UnifiedPeriodManagement({
   } =
     useMorningDriverSchedule();
 
+  // canViewDispatchers — האם צפייה מותרת.
   const canViewDispatchers =
     hasPermission(
       'availability.manage',
@@ -386,6 +463,7 @@ function UnifiedPeriodManagement({
       'schedule.edit',
     );
 
+  // canViewMorningDrivers — כונני בוקר.
   const canViewMorningDrivers =
     hasPermission(
       'morning_driver_availability.manage',
@@ -397,6 +475,7 @@ function UnifiedPeriodManagement({
       'morning_driver_schedule.edit',
     );
 
+  // canViewDrivers — האם צפייה מותרת.
   const canViewDrivers =
     hasPermission(
       'driver_availability.manage',
@@ -408,21 +487,25 @@ function UnifiedPeriodManagement({
       'driver_schedule.edit',
     );
 
+  // canEditDispatcherSchedule — האם עריכה מותרת.
   const canEditDispatcherSchedule =
     hasPermission(
       'schedule.edit',
     );
 
+  // canEditMorningDriverSchedule — כונני בוקר.
   const canEditMorningDriverSchedule =
     hasPermission(
       'morning_driver_schedule.edit',
     );
 
+  // canEditDriverSchedule — האם עריכה מותרת.
   const canEditDriverSchedule =
     hasPermission(
       'driver_schedule.edit',
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ canViewDispatchers, canViewDrivers, canViewMorningDrivers, loadDispatcherAvailabilityPeriods, loadDriverAvailabilityPeriods, loadDriverScheduleByMonth, loadMo.
   useEffect(
     () => {
       if (
@@ -467,17 +550,24 @@ function UnifiedPeriodManagement({
     ],
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ canViewDispatchers, month, year, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canViewDispatchers.
       if (
         !canViewDispatchers
       ) {
         return;
       }
 
+      // isCancelled — הנתון isCancelled בהקשר הפעולה.
       let isCancelled =
         false;
 
+      /**
+       * פעולה אסינכרונית loadDispatcherSchedule: טעינת מוקדנים / שיבוץ.
+       * @returns Promise<void> — הפלט בהתאם לחתימה.
+       */
       const loadDispatcherSchedule =
         async (): Promise<void> => {
           setDispatcherScheduleState({
@@ -491,7 +581,9 @@ function UnifiedPeriodManagement({
               null,
           });
 
+          // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
           try {
+            // data — נתונים.
             const data =
               await scheduleService
                 .getScheduleByMonth(
@@ -499,6 +591,7 @@ function UnifiedPeriodManagement({
                   month,
                 );
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
             if (
               isCancelled
             ) {
@@ -517,6 +610,7 @@ function UnifiedPeriodManagement({
           } catch (
             error
           ) {
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
             if (
               isCancelled
             ) {
@@ -552,6 +646,7 @@ function UnifiedPeriodManagement({
     ],
   );
 
+  // ערך מחושב dispatcherAvailabilityPeriod — תקופת אילוצים; נשמר בין רינדורים עד שינוי התלויות.
   const dispatcherAvailabilityPeriod =
     useMemo(
       () =>
@@ -575,6 +670,7 @@ function UnifiedPeriodManagement({
       ],
     );
 
+  // ערך מחושב driverAvailabilityPeriod — תקופת אילוצים; נשמר בין רינדורים עד שינוי התלויות.
   const driverAvailabilityPeriod =
     useMemo(
       () =>
@@ -598,6 +694,7 @@ function UnifiedPeriodManagement({
       ],
     );
 
+  // ערך מחושב morningDriverAvailabilityPeriod — תקופת אילוצים; נשמר בין רינדורים עד שינוי התלויות.
   const morningDriverAvailabilityPeriod =
     useMemo(
       () =>
@@ -621,6 +718,7 @@ function UnifiedPeriodManagement({
       ],
     );
 
+  // ערך מחושב dispatcherWorkflow — מוקדנים / תהליך עבודה; נשמר בין רינדורים עד שינוי התלויות.
   const dispatcherWorkflow =
     useMemo(
       () =>
@@ -647,6 +745,7 @@ function UnifiedPeriodManagement({
       ],
     );
 
+  // ערך מחושב driverWorkflow — כוננים / תהליך עבודה; נשמר בין רינדורים עד שינוי התלויות.
   const driverWorkflow =
     useMemo(
       () =>
@@ -673,6 +772,7 @@ function UnifiedPeriodManagement({
       ],
     );
 
+  // ערך מחושב morningDriverWorkflow — כונני בוקר; נשמר בין רינדורים עד שינוי התלויות.
   const morningDriverWorkflow =
     useMemo(
       () =>
@@ -699,6 +799,7 @@ function UnifiedPeriodManagement({
       ],
     );
 
+  // ערך מחושב periodCategories — תקופה; נשמר בין רינדורים עד שינוי התלויות.
   const periodCategories =
     useMemo(
       (): PeriodCategoryViewModel[] => {
@@ -876,6 +977,11 @@ function UnifiedPeriodManagement({
       ],
     );
 
+  /**
+   * פעולה handleOpenCategory: טיפול באירוע עבור הנתון handleOpenCategory בהקשר הפעולה.
+   * @param route — הנתון route בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleOpenCategory =
     (
       route: string,
@@ -893,11 +999,17 @@ function UnifiedPeriodManagement({
       );
     };
 
+  /**
+   * פעולה אסינכרונית handleCreateSchedule: טיפול באירוע עבור שיבוץ.
+   * @param category — הנתון category בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleCreateSchedule =
     async (
       category:
         PeriodCategoryViewModel,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !category.workflow .canCreateSchedule.
       if (
         !category.workflow
           .canCreateSchedule
@@ -911,10 +1023,12 @@ function UnifiedPeriodManagement({
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר category.id === 'dispatchers'.
       if (
         category.id ===
           'dispatchers'
       ) {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canEditDispatcherSchedule.
         if (
           !canEditDispatcherSchedule
         ) {
@@ -925,6 +1039,7 @@ function UnifiedPeriodManagement({
           return;
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !dispatcherAvailabilityPeriod.
         if (
           !dispatcherAvailabilityPeriod
         ) {
@@ -944,10 +1059,12 @@ function UnifiedPeriodManagement({
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר category.id === 'morning-drivers'.
       if (
         category.id ===
           'morning-drivers'
       ) {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canEditMorningDriverSchedule.
         if (
           !canEditMorningDriverSchedule
         ) {
@@ -958,6 +1075,7 @@ function UnifiedPeriodManagement({
           return;
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !morningDriverAvailabilityPeriod.
         if (
           !morningDriverAvailabilityPeriod
         ) {
@@ -973,10 +1091,12 @@ function UnifiedPeriodManagement({
             'ליצור טיוטת שיבוץ לכונני הבוקר עבור החודש שנבחר?',
           );
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
         if (!confirmed) {
           return;
         }
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await createMorningDriverScheduleDraft(
             morningDriverAvailabilityPeriod.id,
@@ -996,6 +1116,7 @@ function UnifiedPeriodManagement({
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canEditDriverSchedule.
       if (
         !canEditDriverSchedule
       ) {
@@ -1006,6 +1127,7 @@ function UnifiedPeriodManagement({
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !driverAvailabilityPeriod.
       if (
         !driverAvailabilityPeriod
       ) {
@@ -1021,10 +1143,12 @@ function UnifiedPeriodManagement({
           'ליצור טיוטת לוח כוננים לפי מנגנון הרוטציה והאילוצים?',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await createDriverScheduleDraft(
           driverAvailabilityPeriod.id,
@@ -1042,15 +1166,22 @@ function UnifiedPeriodManagement({
       }
     };
 
+  /**
+   * פעולה אסינכרונית handlePublishSchedule: טיפול באירוע עבור שיבוץ.
+   * @param category — הנתון category בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handlePublishSchedule =
     async (
       category:
         PeriodCategoryViewModel,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר category.id === 'dispatchers'.
       if (
         category.id ===
           'dispatchers'
       ) {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canEditDispatcherSchedule.
         if (
           !canEditDispatcherSchedule
         ) {
@@ -1061,12 +1192,14 @@ function UnifiedPeriodManagement({
           return;
         }
 
+        // period — תקופה.
         const period =
           dispatcherScheduleState
             .data
             ?.period ??
           null;
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !period || period.status !== 'draft' && period.status !== 'scheduling'.
         if (
           !period ||
           period.status !==
@@ -1084,6 +1217,7 @@ function UnifiedPeriodManagement({
           return;
         }
 
+        // hasUnassignedShifts — משמרות.
         const hasUnassignedShifts =
           dispatcherScheduleState
             .data
@@ -1099,6 +1233,7 @@ function UnifiedPeriodManagement({
             ) ??
           false;
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר hasUnassignedShifts.
         if (
           hasUnassignedShifts
         ) {
@@ -1114,6 +1249,7 @@ function UnifiedPeriodManagement({
             `האם לפרסם את שיבוץ המוקדנים לחודש ${month}/${year}?\n\nלאחר הפרסום המוקדנים יוכלו לראות את המשמרות שלהם.`,
           );
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
         if (!confirmed) {
           return;
         }
@@ -1122,12 +1258,14 @@ function UnifiedPeriodManagement({
           true,
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await scheduleService
             .publishSchedulePeriod(
               period.id,
             );
 
+          // data — נתונים.
           const data =
             await scheduleService
               .getScheduleByMonth(
@@ -1163,10 +1301,12 @@ function UnifiedPeriodManagement({
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר category.id === 'morning-drivers'.
       if (
         category.id ===
           'morning-drivers'
       ) {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canEditMorningDriverSchedule.
         if (
           !canEditMorningDriverSchedule
         ) {
@@ -1177,10 +1317,12 @@ function UnifiedPeriodManagement({
           return;
         }
 
+        // scheduleData — שיבוץ / נתונים.
         const scheduleData =
           morningDriverScheduleState
             .data;
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !scheduleData || scheduleData.period .status !== 'draft'.
         if (
           !scheduleData ||
           scheduleData.period
@@ -1198,6 +1340,7 @@ function UnifiedPeriodManagement({
           return;
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleData.statistics .minimumUnfilled > 0.
         if (
           scheduleData.statistics
             .minimumUnfilled >
@@ -1222,10 +1365,12 @@ function UnifiedPeriodManagement({
               : 'האם לפרסם את לוח כונני הבוקר?',
           );
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
         if (!confirmed) {
           return;
         }
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await publishMorningDriverSchedule();
         } catch {
@@ -1238,6 +1383,7 @@ function UnifiedPeriodManagement({
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canEditDriverSchedule.
       if (
         !canEditDriverSchedule
       ) {
@@ -1248,10 +1394,12 @@ function UnifiedPeriodManagement({
         return;
       }
 
+      // scheduleData — שיבוץ / נתונים.
       const scheduleData =
         driverScheduleState
           .data;
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !scheduleData || scheduleData.period ?.status !== 'draft'.
       if (
         !scheduleData ||
         scheduleData.period
@@ -1269,6 +1417,7 @@ function UnifiedPeriodManagement({
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleData.statistics .unassignedDays > 0.
       if (
         scheduleData.statistics
           .unassignedDays >
@@ -1286,10 +1435,12 @@ function UnifiedPeriodManagement({
           'האם לפרסם את לוח הכוננים?\n\nלאחר הפרסום הכוננים יוכלו לראות את הלוח שלהם.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await publishDriverSchedule();
       } catch {
@@ -1300,11 +1451,17 @@ function UnifiedPeriodManagement({
       }
     };
 
+  /**
+   * פעולה canCreateCategorySchedule: בדיקת אפשרות פעולה עבור שיבוץ.
+   * @param category — הנתון category בהקשר הפעולה.
+   * @returns boolean — הפלט בהתאם לחתימה.
+   */
   const canCreateCategorySchedule =
     (
       category:
         PeriodCategoryViewModel,
     ): boolean => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !category.workflow .canCreateSchedule.
       if (
         !category.workflow
           .canCreateSchedule
@@ -1337,6 +1494,11 @@ function UnifiedPeriodManagement({
       }
     };
 
+  /**
+   * פעולה canPublishCategorySchedule: בדיקת אפשרות פעולה עבור שיבוץ.
+   * @param category — הנתון category בהקשר הפעולה.
+   * @returns boolean — הפלט בהתאם לחתימה.
+   */
   const canPublishCategorySchedule =
     (
       category:

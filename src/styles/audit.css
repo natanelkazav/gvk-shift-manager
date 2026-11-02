@@ -1,9 +1,16 @@
+/*
+ * קובץ: src/styles/audit.css
+ * מטרה: הגדרת עיצוב ופריסה עבור יומן שינויים.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .audit-page  */
 .audit-page {
   display: flex;
   flex-direction: column;
   gap: 22px;
 }
 
+/* כללי עיצוב עבור .audit-filters  */
 .audit-filters {
   display: grid;
   grid-template-columns:
@@ -22,12 +29,14 @@
     var(--color-surface, #ffffff);
 }
 
+/* כללי עיצוב עבור .audit-filter-field  */
 .audit-filter-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .audit-filter-field > span  */
 .audit-filter-field > span {
   color:
     var(--color-text, #0f172a);
@@ -36,6 +45,7 @@
 }
 
 .audit-filter-field select,
+/* כללי עיצוב עבור .audit-filter-field input  */
 .audit-filter-field input {
   width: 100%;
   min-height: 42px;
@@ -52,6 +62,7 @@
 }
 
 .audit-filter-field select:focus,
+/* כללי עיצוב עבור .audit-filter-field input:focus  */
 .audit-filter-field input:focus {
   border-color:
     var(--color-primary, #2563eb);
@@ -60,6 +71,7 @@
   outline-offset: 1px;
 }
 
+/* כללי עיצוב עבור .audit-error  */
 .audit-error {
   padding: 14px 16px;
   border: 1px solid #fecaca;
@@ -68,17 +80,20 @@
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .audit-summary  */
 .audit-summary {
   color:
     var(--color-text-muted, #64748b);
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .audit-summary strong  */
 .audit-summary strong {
   color:
     var(--color-text, #0f172a);
 }
 
+/* כללי עיצוב עבור .audit-table-container  */
 .audit-table-container {
   overflow-x: auto;
   border: 1px solid
@@ -88,6 +103,7 @@
     var(--color-surface, #ffffff);
 }
 
+/* כללי עיצוב עבור .audit-table  */
 .audit-table {
   width: 100%;
   min-width: 1050px;
@@ -95,6 +111,7 @@
 }
 
 .audit-table th,
+/* כללי עיצוב עבור .audit-table td  */
 .audit-table td {
   padding: 14px 16px;
   border-bottom: 1px solid
@@ -103,6 +120,7 @@
   vertical-align: middle;
 }
 
+/* כללי עיצוב עבור .audit-table th  */
 .audit-table th {
   background: var(--theme-surface-muted);
   color: var(--theme-text-secondary);
@@ -110,32 +128,38 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .audit-table tbody tr:last-child td  */
 .audit-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
 .audit-table tbody tr:not(
   .audit-details-row
+/* כללי עיצוב עבור ):hover  */
 ):hover {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .audit-person  */
 .audit-person {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .audit-person strong  */
 .audit-person strong {
   color: var(--theme-text-strong);
   font-size: 0.88rem;
 }
 
+/* כללי עיצוב עבור .audit-person span  */
 .audit-person span {
   color: var(--theme-text-muted);
   font-size: 0.75rem;
 }
 
+/* כללי עיצוב עבור .audit-action  */
 .audit-action {
   display: inline-flex;
   padding: 5px 9px;
@@ -148,27 +172,32 @@
 }
 
 .audit-action-user_created,
+/* כללי עיצוב עבור .audit-action-user_activated  */
 .audit-action-user_activated {
   background: #ecfdf5;
   color: #047857;
 }
 
 .audit-action-user_deactivated,
+/* כללי עיצוב עבור .audit-action-user_deleted  */
 .audit-action-user_deleted {
   background: #fef2f2;
   color: #b91c1c;
 }
 
+/* כללי עיצוב עבור .audit-action-user_permissions_updated  */
 .audit-action-user_permissions_updated {
   background: #eff6ff;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .audit-action-user_password_change_required  */
 .audit-action-user_password_change_required {
   background: #fff7ed;
   color: #c2410c;
 }
 
+/* כללי עיצוב עבור .audit-expand-button  */
 .audit-expand-button {
   display: grid;
   place-items: center;
@@ -182,19 +211,23 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .audit-expand-button:hover  */
 .audit-expand-button:hover {
   background: #e2e8f0;
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור .audit-details-row  */
 .audit-details-row {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .audit-details-row > td  */
 .audit-details-row > td {
   padding: 18px;
 }
 
+/* כללי עיצוב עבור .audit-details  */
 .audit-details {
   display: grid;
   grid-template-columns:
@@ -202,6 +235,7 @@
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .audit-values-card  */
 .audit-values-card {
   padding: 14px;
   border: 1px solid var(--theme-border);
@@ -209,17 +243,20 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .audit-values-card h4  */
 .audit-values-card h4 {
   margin: 0 0 12px;
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .audit-values-card p  */
 .audit-values-card p {
   margin: 0;
   color: var(--theme-text-muted);
   font-size: 0.82rem;
 }
 
+/* כללי עיצוב עבור .audit-values-card dl  */
 .audit-values-card dl {
   display: flex;
   flex-direction: column;
@@ -227,6 +264,7 @@
   margin: 0;
 }
 
+/* כללי עיצוב עבור .audit-values-card dl > div  */
 .audit-values-card dl > div {
   display: grid;
   grid-template-columns:
@@ -235,12 +273,14 @@
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .audit-values-card dt  */
 .audit-values-card dt {
   color: var(--theme-text-muted);
   font-family: monospace;
   font-size: 0.74rem;
 }
 
+/* כללי עיצוב עבור .audit-values-card dd  */
 .audit-values-card dd {
   margin: 0;
   color: var(--theme-text-strong);
@@ -249,6 +289,7 @@
   overflow-wrap: anywhere;
 }
 
+/* כללי עיצוב עבור .audit-empty-state  */
 .audit-empty-state {
   display: flex;
   min-height: 260px;
@@ -259,22 +300,26 @@
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .audit-empty-state p  */
 .audit-empty-state p {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .audit-loading-icon  */
 .audit-loading-icon {
   animation:
     audit-spin
     900ms linear infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes audit-spin */
 @keyframes audit-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 850px) */
 @media (max-width: 850px) {
   .audit-filters {
     grid-template-columns: 1fr;
@@ -284,6 +329,7 @@
     grid-template-columns: 1fr;
   }
 }
+/* כללי עיצוב עבור .audit-action-availability_period_opened  */
 .audit-action-availability_period_opened {
   background: #ecfdf5;
   color: #047857;
@@ -291,6 +337,7 @@
 
 .audit-action-schedule_shift_updated,
 .audit-action-driver_schedule_updated,
+/* כללי עיצוב עבור .audit-action-morning_driver_schedule_updated  */
 .audit-action-morning_driver_schedule_updated {
   background: #eef2ff;
   color: #4338ca;
@@ -298,6 +345,7 @@
 
 .audit-action-shift_swap_created,
 .audit-action-shift_swap_counterparty_approved,
+/* כללי עיצוב עבור .audit-action-shift_swap_manager_approved  */
 .audit-action-shift_swap_manager_approved {
   background: #ecfdf5;
   color: #047857;
@@ -305,6 +353,7 @@
 
 .audit-action-shift_swap_counterparty_rejected,
 .audit-action-shift_swap_manager_rejected,
+/* כללי עיצוב עבור .audit-action-shift_swap_cancelled  */
 .audit-action-shift_swap_cancelled {
   background: #fef2f2;
   color: #b91c1c;
@@ -313,11 +362,13 @@
 .audit-action-schedule_published,
 .audit-action-driver_schedule_published,
 .audit-action-morning_driver_schedule_published,
+/* כללי עיצוב עבור .audit-action-notification_sent  */
 .audit-action-notification_sent {
   background: #f5f3ff;
   color: #6d28d9;
 }
 
+/* כללי עיצוב עבור .audit-action-system_event  */
 .audit-action-system_event {
   background: var(--theme-surface-muted);
   color: var(--theme-text-secondary);

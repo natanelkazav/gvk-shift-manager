@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/settings/GvkLegacyMigrationPanel.tsx
+ * מטרה: הצגת כלי ניהול לתצוגה מקדימה ולביצוע מעבר נתונים ותיקים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: GvkLegacyMigrationPanel, MigrationArea.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeftRight, CheckCircle2, LoaderCircle, ShieldAlert } from 'lucide-react';
 
@@ -10,28 +17,42 @@ import type {
   GvkLegacyMigrationResult,
 } from '../../types/gvkLegacyMigration';
 
+// emptyMappings — הנתון emptyMappings בהקשר הפעולה.
 const emptyMappings: GvkLegacyMigrationMappings = {
   dispatcher: '',
   on_call: '',
   morning_driver: '',
 };
 
+// sourceLabels — מקור.
 const sourceLabels = {
   dispatcher: 'מערכת מוקדנים הישנה',
   on_call: 'מערכת כוננים הישנה',
   morning_driver: 'מערכת כונני בוקר הישנה',
 } as const;
 
+/**
+ * פעולה GvkLegacyMigrationPanel: הנתון GvkLegacyMigrationPanel בהקשר הפעולה.
+ */
 function GvkLegacyMigrationPanel() {
+  // מצב מקומי: jobTypes — סוגי תפקידים; setJobTypes מעדכנת אותו ומפעילה רינדור לפי React.
   const [jobTypes, setJobTypes] = useState<DynamicJobType[]>([]);
+  // מצב מקומי: mappings — הנתון mappings בהקשר הפעולה; setMappings מעדכנת אותו ומפעילה רינדור לפי React.
   const [mappings, setMappings] = useState<GvkLegacyMigrationMappings>(emptyMappings);
+  // מצב מקומי: preview — הנתון preview בהקשר הפעולה; setPreview מעדכנת אותו ומפעילה רינדור לפי React.
   const [preview, setPreview] = useState<GvkLegacyMigrationPreview | null>(null);
+  // מצב מקומי: result — תוצאה; setResult מעדכנת אותו ומפעילה רינדור לפי React.
   const [result, setResult] = useState<GvkLegacyMigrationResult | null>(null);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: loading — טעינה; setLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [loading, setLoading] = useState(true);
+  // מצב מקומי: running — הנתון running בהקשר הפעולה; setRunning מעדכנת אותו ומפעילה רינדור לפי React.
   const [running, setRunning] = useState(false);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     void dynamicSchedulingService.getAdminData()
       .then((data) => {
@@ -48,11 +69,17 @@ function GvkLegacyMigrationPanel() {
     return () => { active = false; };
   }, []);
 
+  // ערך מחושב mappingComplete — הנתון mappingComplete בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const mappingComplete = useMemo(
     () => Object.values(mappings).every(Boolean),
     [mappings],
   );
 
+  /**
+   * פעולה updateMapping: עדכון הנתון updateMapping בהקשר הפעולה.
+   * @param source — מקור.
+   * @param jobTypeId — מזהה סוג התפקיד.
+   */
   const updateMapping = (source: keyof GvkLegacyMigrationMappings, jobTypeId: string) => {
     setMappings((current) => ({ ...current, [source]: jobTypeId }));
     setPreview(null);
@@ -60,11 +87,15 @@ function GvkLegacyMigrationPanel() {
     setError(null);
   };
 
+  /**
+   * פעולה אסינכרונית handlePreview: טיפול באירוע עבור הנתון handlePreview בהקשר הפעולה.
+   */
   const handlePreview = async () => {
     if (!mappingComplete) return;
     setRunning(true);
     setError(null);
     setResult(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       setPreview(await gvkLegacyMigrationService.preview(mappings));
     } catch (previewError) {
@@ -74,6 +105,9 @@ function GvkLegacyMigrationPanel() {
     }
   };
 
+  /**
+   * פעולה אסינכרונית handleRun: טיפול באירוע עבור הנתון handleRun בהקשר הפעולה.
+   */
   const handleRun = async () => {
     if (!preview?.ready) return;
     const confirmed = window.confirm(
@@ -83,7 +117,9 @@ function GvkLegacyMigrationPanel() {
 
     setRunning(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // migrationResult — תוצאה.
       const migrationResult = await gvkLegacyMigrationService.run(mappings);
       setResult(migrationResult);
       setPreview(await gvkLegacyMigrationService.preview(mappings));
@@ -94,6 +130,7 @@ function GvkLegacyMigrationPanel() {
     }
   };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר loading.
   if (loading) {
     return <div className="gvk-migration-loading"><LoaderCircle size={18} className="spin" /> טוען תפקידים דינמיים…</div>;
   }
@@ -177,11 +214,17 @@ function GvkLegacyMigrationPanel() {
   );
 }
 
+/**
+ * פעולה MigrationArea: הנתון MigrationArea בהקשר הפעולה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function MigrationArea({
   title,
   data,
 }: {
+  // title — כותרת.
   title: string;
+  // data — נתונים.
   data: GvkLegacyMigrationPreview['legacy']['dispatcher'];
 }) {
   return (

@@ -1,35 +1,52 @@
+-- קובץ: supabase/migrations/20261001112000_current_schedule_edit_availability_by_shift.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור שיבוץ / אילוצים וזמינות / משמרת.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_current_schedule_edit_options.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Show the original submitted dispatcher availability while editing a published
 -- current/next-month schedule shift. Availability is resolved for the exact
 -- availability slot that produced the published schedule shift.
 
+-- פונקציית מסד public.get_current_schedule_edit_options: שליפה או חישוב של שיבוץ / אפשרויות בחירה.
 create or replace function public.get_current_schedule_edit_options(
   requested_shift_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- actor_user_id — מזהה משתמש.
   actor_user_id uuid := auth.uid();
+  -- target_shift — יעד / משמרת.
   target_shift public.schedule_shifts%rowtype;
+  -- target_period — יעד / תקופה.
   target_period public.schedule_periods%rowtype;
+  -- dispatcher_rows — מוקדנים / שורות.
   dispatcher_rows jsonb;
 begin
+  -- הסתעפות לפי התנאי actor_user_id is null.
   if actor_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile
     where profile.id = actor_user_id
       and profile.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
+  -- הסתעפות לפי התנאי not ('schedule.edit' = any(coalesce(public.get_my_permissions(), array[]::text[]))).
   if not ('schedule.edit' = any(coalesce(public.get_my_permissions(), array[]::text[]))) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'schedule edit permission required';
   end if;
 
@@ -38,7 +55,9 @@ begin
   from public.schedule_shifts shift
   where shift.id = requested_shift_id;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'schedule shift not found';
   end if;
 
@@ -47,7 +66,9 @@ begin
   from public.schedule_periods period
   where period.id = target_shift.period_id;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'schedule period not found';
   end if;
 
@@ -82,11 +103,14 @@ begin
   where profile.is_active = true
     and profile.role::text = 'dispatcher';
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'dispatchers', dispatcher_rows
   );
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_current_schedule_edit_options(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_current_schedule_edit_options(uuid) to authenticated;

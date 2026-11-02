@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/schedule/ScheduleShiftEditModal.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור שיבוץ / משמרת.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ScheduleShiftEditModalProps, formatShiftDate, formatShiftTime, ScheduleShiftEditModal.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   useMemo,
   useState,
@@ -15,12 +22,20 @@ import type {
   ScheduleShift,
 } from '../../types/schedule';
 
+/**
+ * חוזה הנתונים ScheduleShiftEditModalProps: שיבוץ / משמרת / מאפייני הרכיב.
+ */
 interface ScheduleShiftEditModalProps {
+  // shift — משמרת.
   shift: ScheduleShift | null;
   dispatchers: ScheduleEditDispatcher[];
+  // isLoadingOptions — האם טעינה מתבצעת.
   isLoadingOptions: boolean;
+  // isSaving — האם שמירה מתבצעת.
   isSaving: boolean;
+  // error — שגיאה.
   error: string | null;
+  // onClose — פונקציית סגירת התצוגה.
   onClose: () => void;
   onSave: (
     newUserId: string,
@@ -30,13 +45,20 @@ interface ScheduleShiftEditModalProps {
   candidateHint?: string | null;
 }
 
+/**
+ * פעולה formatShiftDate: עיצוב ערך לתצוגה עבור תאריך המשמרת.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatShiftDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date = new Date(
     `${value}T12:00:00`,
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN(date.getTime()).
   if (Number.isNaN(date.getTime())) {
     return value;
   }
@@ -53,11 +75,18 @@ function formatShiftDate(
   ).format(date);
 }
 
+/**
+ * פעולה formatShiftTime: עיצוב ערך לתצוגה עבור משמרת / זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatShiftTime(
   value: string,
 ): string {
+  // date — תאריך.
   const date = new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN(date.getTime()).
   if (Number.isNaN(date.getTime())) {
     return value;
   }
@@ -73,6 +102,10 @@ function formatShiftTime(
   ).format(date);
 }
 
+/**
+ * פעולה ScheduleShiftEditModal: שיבוץ / משמרת.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function ScheduleShiftEditModal({
   shift,
   dispatchers,
@@ -84,24 +117,34 @@ function ScheduleShiftEditModal({
   onMarkUnassigned,
   candidateHint,
 }: ScheduleShiftEditModalProps) {
+  // מצב מקומי: selectedUserId — מזהה משתמש; setSelectedUserId מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedUserId, setSelectedUserId] =
     useState(
       shift?.assignedUser?.id ?? '',
     );
+  // מצב מקומי: reason — הנתון reason בהקשר הפעולה; setReason מעדכנת אותו ומפעילה רינדור לפי React.
   const [reason, setReason] =
     useState('');
 
+  // currentUserId — המשתמש הנוכחי הנוכחי.
   const currentUserId =
     shift?.assignedUser?.id ?? null;
 
+  // ערך מחושב dispatcherOptions — מוקדנים / אפשרויות בחירה; נשמר בין רינדורים עד שינוי התלויות.
   const dispatcherOptions = useMemo(
     () =>
       [...dispatchers]
         .sort((first, second) => {
+          /**
+           * פעולה priority: הנתון priority בהקשר הפעולה.
+           * @param dispatcher — מוקדנים.
+           * @returns number — הפלט בהתאם לחתימה.
+           */
           const priority = (
             dispatcher:
               ScheduleEditDispatcher,
           ): number => {
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dispatcher.availabilityStatus === 'available' && !dispatcher.isAutoCompleted.
             if (
               dispatcher.availabilityStatus ===
                 'available' &&
@@ -110,6 +153,7 @@ function ScheduleShiftEditModal({
               return 0;
             }
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dispatcher.availabilityStatus === 'unavailable'.
             if (
               dispatcher.availabilityStatus ===
               'unavailable'
@@ -124,6 +168,7 @@ function ScheduleShiftEditModal({
             priority(first) -
             priority(second);
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר priorityDifference !== 0.
           if (priorityDifference !== 0) {
             return priorityDifference;
           }
@@ -139,10 +184,12 @@ function ScheduleShiftEditModal({
         })
         .map(
           (dispatcher) => {
+            // name — שם.
             const name =
               dispatcher.scheduleName ??
               dispatcher.displayName;
 
+            // statusLabel — סטטוס / תווית.
             const statusLabel =
               dispatcher.availabilityStatus ===
                   'available' &&
@@ -167,6 +214,7 @@ function ScheduleShiftEditModal({
     [dispatchers],
   );
 
+  // canSave — הנתון canSave בהקשר הפעולה.
   const canSave =
     Boolean(selectedUserId) &&
     selectedUserId !== currentUserId &&

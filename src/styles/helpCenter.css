@@ -1,3 +1,9 @@
+/*
+ * קובץ: src/styles/helpCenter.css
+ * מטרה: הגדרת עיצוב ופריסה עבור עזרה.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .help-center-trigger  */
 .help-center-trigger {
   position: relative;
   display: inline-flex;
@@ -19,6 +25,7 @@
     transform 150ms ease;
 }
 
+/* כללי עיצוב עבור .help-center-trigger:hover  */
 .help-center-trigger:hover {
   border-color: #bfdbfe;
   background: #eff6ff;
@@ -29,11 +36,13 @@
 .help-center-trigger:focus-visible,
 .help-center-close:focus-visible,
 .help-center-topic-toggle:focus-visible,
+/* כללי עיצוב עבור .help-center-go-button:focus-visible  */
 .help-center-go-button:focus-visible {
   outline: 3px solid rgb(37 99 235 / 25%);
   outline-offset: 2px;
 }
 
+/* כללי עיצוב עבור .help-center-backdrop  */
 .help-center-backdrop {
   position: fixed;
   inset: 0;
@@ -44,6 +53,7 @@
   cursor: default;
 }
 
+/* כללי עיצוב עבור .help-center-panel  */
 .help-center-panel {
   position: fixed;
   inset-block: 0;
@@ -65,6 +75,7 @@
   direction: rtl;
 }
 
+/* כללי עיצוב עבור .help-center-header  */
 .help-center-header {
   display: flex;
   flex: 0 0 auto;
@@ -75,6 +86,7 @@
   border-bottom: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .help-center-heading  */
 .help-center-heading {
   display: flex;
   min-width: 0;
@@ -82,6 +94,7 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .help-center-heading-icon  */
 .help-center-heading-icon {
   display: inline-flex;
   width: 40px;
@@ -94,6 +107,7 @@
   color: #2563eb;
 }
 
+/* כללי עיצוב עבור .help-center-heading > div  */
 .help-center-heading > div {
   display: flex;
   min-width: 0;
@@ -101,16 +115,19 @@
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .help-center-heading strong  */
 .help-center-heading strong {
   color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .help-center-heading span  */
 .help-center-heading span {
   color: var(--theme-text-muted);
   font-size: 0.75rem;
 }
 
+/* כללי עיצוב עבור .help-center-close  */
 .help-center-close {
   display: inline-flex;
   width: 38px;
@@ -126,11 +143,13 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .help-center-close:hover  */
 .help-center-close:hover {
   background: var(--theme-surface-soft);
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור .help-center-search  */
 .help-center-search {
   display: flex;
   flex: 0 0 auto;
@@ -144,12 +163,14 @@
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .help-center-search:focus-within  */
 .help-center-search:focus-within {
   border-color: #93c5fd;
   background: var(--theme-surface);
   box-shadow: 0 0 0 3px rgb(59 130 246 / 10%);
 }
 
+/* כללי עיצוב עבור .help-center-search input  */
 .help-center-search input {
   width: 100%;
   min-width: 0;
@@ -162,6 +183,7 @@
   font-size: 0.84rem;
 }
 
+/* כללי עיצוב עבור .help-center-content  */
 .help-center-content {
   flex: 1 1 auto;
   min-height: 0;
@@ -173,6 +195,7 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* כללי עיצוב עבור .help-center-context-section  */
 .help-center-context-section {
   margin-bottom: 24px;
   padding: 14px;
@@ -181,6 +204,7 @@
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .help-center-section-heading  */
 .help-center-section-heading {
   display: flex;
   flex-direction: column;
@@ -188,22 +212,26 @@
   margin-bottom: 12px;
 }
 
+/* כללי עיצוב עבור .help-center-section-heading strong  */
 .help-center-section-heading strong {
   color: var(--theme-text-strong);
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .help-center-section-heading span  */
 .help-center-section-heading span {
   color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .help-center-groups  */
 .help-center-groups {
   display: flex;
   flex-direction: column;
   gap: 22px;
 }
 
+/* כללי עיצוב עבור .help-center-group h3  */
 .help-center-group h3 {
   margin: 0 0 9px;
   color: var(--theme-text-secondary);
@@ -211,12 +239,14 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .help-center-topic-list  */
 .help-center-topic-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .help-center-topic  */
 .help-center-topic {
   overflow: hidden;
   border: 1px solid var(--theme-border);
@@ -224,10 +254,12 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .help-center-topic-contextual  */
 .help-center-topic-contextual {
   border-color: #dbeafe;
 }
 
+/* כללי עיצוב עבור .help-center-topic-toggle  */
 .help-center-topic-toggle {
   display: flex;
   width: 100%;
@@ -242,10 +274,12 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .help-center-topic-toggle:hover  */
 .help-center-topic-toggle:hover {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .help-center-topic-toggle > span  */
 .help-center-topic-toggle > span {
   display: flex;
   min-width: 0;
@@ -254,32 +288,38 @@
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .help-center-topic-toggle strong  */
 .help-center-topic-toggle strong {
   color: var(--theme-text-strong);
   font-size: 0.82rem;
 }
 
+/* כללי עיצוב עבור .help-center-topic-toggle small  */
 .help-center-topic-toggle small {
   color: var(--theme-text-muted);
   font-size: 0.72rem;
   line-height: 1.45;
 }
 
+/* כללי עיצוב עבור .help-center-topic-chevron  */
 .help-center-topic-chevron {
   flex: 0 0 auto;
   color: #94a3b8;
   transition: transform 150ms ease;
 }
 
+/* כללי עיצוב עבור .help-center-topic-chevron-open  */
 .help-center-topic-chevron-open {
   transform: rotate(180deg);
 }
 
+/* כללי עיצוב עבור .help-center-topic-content  */
 .help-center-topic-content {
   padding: 0 14px 14px;
   border-top: 1px solid #f1f5f9;
 }
 
+/* כללי עיצוב עבור .help-center-topic-content ol  */
 .help-center-topic-content ol {
   padding-inline-start: 24px;
   margin: 12px 0;
@@ -288,10 +328,12 @@
   line-height: 1.7;
 }
 
+/* כללי עיצוב עבור .help-center-topic-content li + li  */
 .help-center-topic-content li + li {
   margin-top: 4px;
 }
 
+/* כללי עיצוב עבור .help-center-topic-notes  */
 .help-center-topic-notes {
   display: flex;
   flex-direction: column;
@@ -305,10 +347,12 @@
   line-height: 1.55;
 }
 
+/* כללי עיצוב עבור .help-center-topic-notes p  */
 .help-center-topic-notes p {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .help-center-go-button  */
 .help-center-go-button {
   display: inline-flex;
   align-items: center;
@@ -324,10 +368,12 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .help-center-go-button:hover  */
 .help-center-go-button:hover {
   background: #dbeafe;
 }
 
+/* כללי עיצוב עבור .help-center-empty  */
 .help-center-empty {
   padding: 24px 14px;
   border: 1px dashed var(--theme-border-strong);
@@ -338,6 +384,7 @@
   text-align: center;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 600px) */
 @media (max-width: 600px) {
   .help-center-panel {
     right: 0;
@@ -371,6 +418,7 @@
 }
 
 
+/* כללי עיצוב עבור .help-center-whats-new  */
 .help-center-whats-new {
   margin-bottom: 16px;
   padding: 14px;
@@ -379,12 +427,14 @@
   background: #f5f3ff;
 }
 
+/* כללי עיצוב עבור .help-center-whats-new-list  */
 .help-center-whats-new-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .help-center-whats-new-list article  */
 .help-center-whats-new-list article {
   display: flex;
   flex-direction: column;
@@ -394,17 +444,20 @@
   background: rgb(255 255 255 / 72%);
 }
 
+/* כללי עיצוב עבור .help-center-whats-new-list strong  */
 .help-center-whats-new-list strong {
   color: #4c1d95;
   font-size: 0.77rem;
 }
 
+/* כללי עיצוב עבור .help-center-whats-new-list span  */
 .help-center-whats-new-list span {
   color: #6d28d9;
   font-size: 0.7rem;
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .help-center-permission-hint  */
 .help-center-permission-hint {
   display: flex;
   flex-direction: column;
@@ -416,11 +469,13 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .help-center-permission-hint strong  */
 .help-center-permission-hint strong {
   color: var(--theme-text);
   font-size: 0.76rem;
 }
 
+/* כללי עיצוב עבור .help-center-permission-hint span  */
 .help-center-permission-hint span {
   color: var(--theme-text-muted);
   font-size: 0.7rem;

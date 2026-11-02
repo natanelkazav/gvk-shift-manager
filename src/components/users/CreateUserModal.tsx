@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/CreateUserModal.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור משתמש.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: CreateUserModalProps, CreateUserFormState, CreateUserTab, CreateUserModal.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   BriefcaseBusiness,
   KeyRound,
@@ -41,6 +48,7 @@ import {
 import './EditUserModalTabs.css';
 
 
+// SYSTEM_PERMISSION_KEYS — מפתחות ההרשאות.
 const SYSTEM_PERMISSION_KEYS: PermissionKey[] = [
   'dashboard.view',
   'notifications.view',
@@ -59,14 +67,26 @@ const SYSTEM_PERMISSION_KEYS: PermissionKey[] = [
   'contacts.changes_view',
 ];
 
+/**
+ * פעולה getDefaultSystemPermissions: שליפה או חישוב של הרשאות.
+ * @param role — הנתון role בהקשר הפעולה.
+ * @returns PermissionKey[] — הפלט בהתאם לחתימה.
+ */
 const getDefaultSystemPermissions = (role: UserRole): PermissionKey[] =>
   getDefaultPermissionsForRole(role).filter((permission) => SYSTEM_PERMISSION_KEYS.includes(permission));
 
+/**
+ * חוזה הנתונים CreateUserModalProps: משתמש / מאפייני הרכיב.
+ */
 interface CreateUserModalProps {
+  // dynamicJobTypes — סוגי תפקידים.
   dynamicJobTypes: DynamicJobType[];
+  // isOpen — האם המצב פתוח.
   isOpen: boolean;
+  // isSaving — האם שמירה מתבצעת.
   isSaving: boolean;
 
+  // onClose — פונקציית סגירת התצוגה.
   onClose: () => void;
 
   onCreate: (
@@ -76,25 +96,40 @@ interface CreateUserModalProps {
   ) => Promise<void>;
 }
 
+/**
+ * חוזה הנתונים CreateUserFormState: משתמש / מצב.
+ */
 interface CreateUserFormState {
+  // email — כתובת דוא״ל.
   email: string;
+  // password — סיסמה.
   password: string;
+  // confirmPassword — סיסמה.
   confirmPassword: string;
+  // displayName — שם תצוגה.
   displayName: string;
+  // scheduleName — שיבוץ / שם.
   scheduleName: string;
   role: UserRole;
+  // isActive — האם הרשומה פעילה.
   isActive: boolean;
+  // mustChangePassword — סיסמה.
   mustChangePassword: boolean;
 }
 
+/**
+ * טיפוס CreateUserTab: משתמש.
+ */
 type CreateUserTab =
   | 'details'
   | 'assignments'
   | 'permissions';
 
+// INITIAL_ROLE — הנתון INITIAL_ROLE בהקשר הפעולה.
 const INITIAL_ROLE:
   UserRole = 'dispatcher';
 
+// initialFormState — מצב.
 const initialFormState:
   CreateUserFormState = {
     email: '',
@@ -107,6 +142,10 @@ const initialFormState:
     mustChangePassword: true,
   };
 
+/**
+ * פעולה CreateUserModal: יצירת משתמש.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function CreateUserModal({
   dynamicJobTypes,
   isOpen,
@@ -114,6 +153,7 @@ function CreateUserModal({
   onClose,
   onCreate,
 }: CreateUserModalProps) {
+  // מצב מקומי: activeTab — פעיל; setActiveTab מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     activeTab,
     setActiveTab,
@@ -121,6 +161,7 @@ function CreateUserModal({
     'details',
   );
 
+  // מצב מקומי: formState — מצב; setFormState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     formState,
     setFormState,
@@ -128,6 +169,7 @@ function CreateUserModal({
     initialFormState,
   );
 
+  // מצב מקומי: selectedPermissions — נבחר / הרשאות; setSelectedPermissions מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedPermissions,
     setSelectedPermissions,
@@ -136,8 +178,10 @@ function CreateUserModal({
       getDefaultSystemPermissions(INITIAL_ROLE),
   );
 
+  // מצב מקומי: assignments — הקצאות; setAssignments מעדכנת אותו ומפעילה רינדור לפי React.
   const [assignments, setAssignments] = useState<DynamicUserAssignmentSelection[]>([]);
 
+  // מצב מקומי: formError — שגיאה; setFormError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     formError,
     setFormError,
@@ -145,6 +189,7 @@ function CreateUserModal({
     null,
   );
 
+  // מצב מקומי: permissionsNotice — הרשאות; setPermissionsNotice מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     permissionsNotice,
     setPermissionsNotice,
@@ -152,7 +197,9 @@ function CreateUserModal({
     null,
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [isOpen].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
     if (!isOpen) {
       return;
     }
@@ -171,11 +218,18 @@ function CreateUserModal({
     setActiveTab('details');
   }, [isOpen]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isOpen, isSaving, onClose, ].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
     if (!isOpen) {
       return;
     }
 
+    /**
+     * פעולה handleKeyDown: טיפול באירוע עבור מפתח.
+     * @param event — אירוע.
+     * @returns void — הפלט בהתאם לחתימה.
+     */
     const handleKeyDown = (
       event: KeyboardEvent,
     ): void => {
@@ -212,6 +266,7 @@ function CreateUserModal({
     onClose,
   ]);
 
+  // ערך מחושב defaultPermissions — הרשאות; נשמר בין רינדורים עד שינוי התלויות.
   const defaultPermissions =
     useMemo(
       () =>
@@ -219,6 +274,7 @@ function CreateUserModal({
       [formState.role],
     );
 
+  // ערך מחושב usesDefaultPermissions — הרשאות; נשמר בין רינדורים עד שינוי התלויות.
   const usesDefaultPermissions =
     useMemo(
       () =>
@@ -232,24 +288,33 @@ function CreateUserModal({
       ],
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
   if (!isOpen) {
     return null;
   }
 
+  /**
+   * פעולה validateForm: בדיקת תקינות של הנתון validateForm בהקשר הפעולה.
+   * @returns string | null — הפלט בהתאם לחתימה.
+   */
   const validateForm =
     (): string | null => {
+      // normalizedDisplayName — שם תצוגה.
       const normalizedDisplayName =
         formState.displayName.trim();
 
+      // normalizedEmail — כתובת דוא״ל.
       const normalizedEmail =
         formState.email
           .trim()
           .toLowerCase();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedDisplayName.
       if (!normalizedDisplayName) {
         return 'יש להזין שם תצוגה.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedDisplayName.length < 2.
       if (
         normalizedDisplayName.length <
         2
@@ -257,26 +322,31 @@ function CreateUserModal({
         return 'שם התצוגה חייב להכיל לפחות שני תווים.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedEmail.
       if (!normalizedEmail) {
         return 'יש להזין כתובת אימייל.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedEmail.includes('@').
       if (
         !normalizedEmail.includes('@')
       ) {
         return 'כתובת האימייל אינה תקינה.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !formState.password.
       if (!formState.password) {
         return 'יש להזין סיסמה זמנית.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר formState.password.length < 8.
       if (
         formState.password.length < 8
       ) {
         return 'הסיסמה חייבת להכיל לפחות שמונה תווים.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר formState.password !== formState.confirmPassword.
       if (
         formState.password !==
         formState.confirmPassword
@@ -287,15 +357,22 @@ function CreateUserModal({
       return null;
     };
 
+  /**
+   * פעולה אסינכרונית handleSubmit: טיפול באירוע עבור הנתון handleSubmit בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSubmit = async (
     event:
       FormEvent<HTMLFormElement>,
   ): Promise<void> => {
     event.preventDefault();
 
+    // validationError — אימות נתונים / שגיאה.
     const validationError =
       validateForm();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר validationError.
     if (validationError) {
       setFormError(
         validationError,
@@ -307,6 +384,7 @@ function CreateUserModal({
 
     setFormError(null);
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await onCreate(
         {
@@ -349,13 +427,24 @@ function CreateUserModal({
     }
   };
 
+  /**
+   * פעולה handleAccountTypeChange: טיפול באירוע עבור הנתון handleAccountTypeChange בהקשר הפעולה.
+   * @param nextAccountType — הנתון nextAccountType בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleAccountTypeChange = (nextAccountType: SystemAccountType): void => {
     handleRoleChange(legacyRoleForAccountType(nextAccountType, formState.role));
   };
 
+  /**
+   * פעולה handleRoleChange: טיפול באירוע עבור הנתון handleRoleChange בהקשר הפעולה.
+   * @param nextRole — הנתון nextRole בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleRoleChange = (
     nextRole: UserRole,
   ): void => {
+    // nextPermissions — הרשאות.
     const nextPermissions =
       getDefaultSystemPermissions(nextRole);
 
@@ -377,6 +466,10 @@ function CreateUserModal({
     );
   };
 
+  /**
+   * פעולה handleApplyRoleDefaults: טיפול באירוע עבור הנתון handleApplyRoleDefaults בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleApplyRoleDefaults =
     (): void => {
       setSelectedPermissions(
@@ -390,9 +483,15 @@ function CreateUserModal({
       );
     };
 
+  /**
+   * פעולה handleTabChange: טיפול באירוע עבור הנתון handleTabChange בהקשר הפעולה.
+   * @param tab — הנתון tab בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleTabChange = (
     tab: CreateUserTab,
   ): void => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isSaving.
     if (isSaving) {
       return;
     }

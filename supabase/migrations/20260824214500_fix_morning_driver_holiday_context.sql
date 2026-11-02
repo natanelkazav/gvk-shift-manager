@@ -1,28 +1,44 @@
+-- קובץ: supabase/migrations/20260824214500_fix_morning_driver_holiday_context.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור כונני בוקר.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_morning_driver_availability, public.get_morning_driver_availability_management.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Fix morning-driver holiday context and keep full-holiday mornings out of availability views.
 
+-- פונקציית מסד public.get_my_morning_driver_availability: שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION public.get_my_morning_driver_availability(requested_period_id uuid DEFAULT NULL::uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- target_period — יעד / תקופה.
   target_period public.morning_driver_availability_periods%rowtype;
+  -- target_submission — יעד.
   target_submission public.morning_driver_availability_submissions%rowtype;
+  -- shifts_json — משמרות.
   shifts_json jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile
     where profile.id = current_user_id
       and profile.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
@@ -32,13 +48,16 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'morning_driver_availability.view'
       = any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_period_id is null.
   if requested_period_id is null then
     select *
     into target_period
@@ -62,6 +81,7 @@ begin
     limit 1;
   end if;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
     return null;
   end if;
@@ -73,7 +93,9 @@ begin
     and submission.user_id = current_user_id
   limit 1;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- הוספת רשומות ל־public.morning_driver_availability_submissions בהתאם לקלט ולתנאים להלן.
     insert into public.morning_driver_availability_submissions (
       period_id,
       user_id,
@@ -149,6 +171,7 @@ begin
   where shift_item.period_id = target_period.id
     and coalesce(holiday_row.schedule_type, '') <> 'holiday_full';
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'period',
       jsonb_build_object(
@@ -200,14 +223,18 @@ $function$
 ;
 
 
+-- פונקציית מסד public.get_morning_driver_availability_management: שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION public.get_morning_driver_availability_management(requested_period_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_permissions — הרשאות.
   current_permissions text[];
 
   target_period
@@ -215,18 +242,25 @@ declare
 
   drivers_json jsonb;
   submissions_json jsonb;
+  -- shifts_json — משמרות.
   shifts_json jsonb;
+  -- entries_json — רשומות.
   entries_json jsonb;
 
+  -- total_drivers — סך הכול.
   total_drivers integer := 0;
+  -- submitted_drivers — הוגש.
   submitted_drivers integer := 0;
+  -- draft_drivers — טיוטה.
   draft_drivers integer := 0;
   reopened_drivers integer := 0;
   not_started_drivers integer := 0;
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -236,14 +270,18 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'morning_driver_availability.manage'
       = any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_period_id is null.
   if requested_period_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'period id is required';
   end if;
 
@@ -252,7 +290,9 @@ begin
   from public.morning_driver_availability_periods period
   where period.id = requested_period_id;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'morning driver availability period not found';
   end if;
 
@@ -486,6 +526,7 @@ begin
       0
     );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'period',
       jsonb_build_object(

@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useSchedule.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור שיבוץ.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ScheduleState, UseScheduleResult, normalizeScheduleError, useSchedule.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useState,
@@ -14,43 +21,60 @@ import type {
   CurrentScheduleData,
 } from '../types/schedule';
 
+/**
+ * חוזה הנתונים ScheduleState: שיבוץ / מצב.
+ */
 interface ScheduleState {
+  // isSaving — האם שמירה מתבצעת.
   isSaving: boolean;
 
+  // isLoadingCurrentSchedule — האם טעינה מתבצעת.
   isLoadingCurrentSchedule:
     boolean;
 
   isPublishing: boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 
+  // currentSchedule — שיבוץ.
   currentSchedule:
     CurrentScheduleData | null;
 
+  // lastSavedDraft — טיוטה.
   lastSavedDraft:
     SaveScheduleDraftResponse | null;
 
+  // lastPublishedSchedule — פורסם / שיבוץ.
   lastPublishedSchedule:
     PublishSchedulePeriodResponse | null;
 }
 
+/**
+ * חוזה הנתונים UseScheduleResult: שיבוץ / תוצאה.
+ */
 interface UseScheduleResult {
+  // state — מצב.
   state:
     ScheduleState;
 
+  // saveDraft — טיוטה.
   saveDraft: (
     request:
       SaveScheduleDraftRequest,
   ) => Promise<SaveScheduleDraftResponse>;
 
+  // loadCurrentSchedule — שיבוץ.
   loadCurrentSchedule:
     () => Promise<CurrentScheduleData>;
 
+  // publishSchedulePeriod — תקופת שיבוץ.
   publishSchedulePeriod: (
     schedulePeriodId: string,
   ) => Promise<PublishSchedulePeriodResponse>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 
@@ -58,6 +82,7 @@ interface UseScheduleResult {
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   ScheduleState = {
     isSaving: false,
@@ -77,17 +102,25 @@ const initialState:
       null,
   };
 
+/**
+ * פעולה normalizeScheduleError: נרמול שיבוץ / שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeScheduleError(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
+    // normalizedMessage — הודעה.
     const normalizedMessage =
       error.message
         .trim()
         .toLowerCase();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'not authenticated', ).
     if (
       normalizedMessage.includes(
         'not authenticated',
@@ -96,6 +129,7 @@ function normalizeScheduleError(
       return 'לא נמצאה התחברות פעילה. יש להתחבר מחדש.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'profile not found', ).
     if (
       normalizedMessage.includes(
         'profile not found',
@@ -104,6 +138,7 @@ function normalizeScheduleError(
       return 'פרופיל המשתמש לא נמצא.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'user not active', ).
     if (
       normalizedMessage.includes(
         'user not active',
@@ -112,6 +147,7 @@ function normalizeScheduleError(
       return 'המשתמש אינו פעיל.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'manager or admin required', ).
     if (
       normalizedMessage.includes(
         'manager or admin required',
@@ -120,6 +156,7 @@ function normalizeScheduleError(
       return 'רק מנהל או אדמין יכולים לפרסם את השיבוץ.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'not allowed', ).
     if (
       normalizedMessage.includes(
         'not allowed',
@@ -128,6 +165,7 @@ function normalizeScheduleError(
       return 'אין לך הרשאה לצפות או לנהל את השיבוץ.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'schedule period id is required', ).
     if (
       normalizedMessage.includes(
         'schedule period id is required',
@@ -136,6 +174,7 @@ function normalizeScheduleError(
       return 'מזהה תקופת השיבוץ חסר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'schedule period not found', ).
     if (
       normalizedMessage.includes(
         'schedule period not found',
@@ -144,6 +183,7 @@ function normalizeScheduleError(
       return 'תקופת השיבוץ לא נמצאה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'availability period not found', ).
     if (
       normalizedMessage.includes(
         'availability period not found',
@@ -152,6 +192,7 @@ function normalizeScheduleError(
       return 'תקופת האילוצים לא נמצאה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'availability period must be closed', ).
     if (
       normalizedMessage.includes(
         'availability period must be closed',
@@ -160,6 +201,7 @@ function normalizeScheduleError(
       return 'יש לסגור את תקופת האילוצים לפני שמירת השיבוץ.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'every availability shift must have exactly one assignment', ) || normalizedMessage.includes( 'one or more avail.
     if (
       normalizedMessage.includes(
         'every availability shift must have exactly one assignment',
@@ -171,6 +213,7 @@ function normalizeScheduleError(
       return 'לא ניתן לשמור שיבוץ חלקי. יש לשבץ את כל המשמרות.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'duplicate shift assignments', ).
     if (
       normalizedMessage.includes(
         'duplicate shift assignments',
@@ -179,6 +222,7 @@ function normalizeScheduleError(
       return 'התקבלו מספר שיבוצים לאותה משמרת.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'schedule has no shifts', ).
     if (
       normalizedMessage.includes(
         'schedule has no shifts',
@@ -187,6 +231,7 @@ function normalizeScheduleError(
       return 'לא ניתן לפרסם שיבוץ ללא משמרות.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'schedule contains unassigned shifts', ).
     if (
       normalizedMessage.includes(
         'schedule contains unassigned shifts',
@@ -195,6 +240,7 @@ function normalizeScheduleError(
       return 'לא ניתן לפרסם את השיבוץ משום שקיימות משמרות ללא מוקדן.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'schedule contains invalid shifts', ).
     if (
       normalizedMessage.includes(
         'schedule contains invalid shifts',
@@ -203,6 +249,7 @@ function normalizeScheduleError(
       return 'לא ניתן לפרסם את השיבוץ משום שקיימות משמרות עם שעות לא תקינות.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'overlapping shifts', ).
     if (
       normalizedMessage.includes(
         'overlapping shifts',
@@ -211,6 +258,7 @@ function normalizeScheduleError(
       return 'השיבוץ מכיל משמרות חופפות לאותו מוקדן.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'consecutive shifts', ).
     if (
       normalizedMessage.includes(
         'consecutive shifts',
@@ -219,6 +267,7 @@ function normalizeScheduleError(
       return 'השיבוץ מכיל משמרות רצופות שאסורות לפי כללי המערכת.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'availability warnings require confirmation', ).
     if (
       normalizedMessage.includes(
         'availability warnings require confirmation',
@@ -227,6 +276,7 @@ function normalizeScheduleError(
       return 'השיבוץ כולל מוקדנים שלא סימנו זמינות. יש לאשר את האזהרות לפני השמירה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'archived schedule cannot be published', ).
     if (
       normalizedMessage.includes(
         'archived schedule cannot be published',
@@ -235,6 +285,7 @@ function normalizeScheduleError(
       return 'לא ניתן לפרסם שיבוץ שנמצא בארכיון.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'schedule is not ready for publication', ).
     if (
       normalizedMessage.includes(
         'schedule is not ready for publication',
@@ -243,6 +294,7 @@ function normalizeScheduleError(
       return 'השיבוץ עדיין אינו במצב שמאפשר פרסום.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'published or archived schedules cannot be overwritten', ).
     if (
       normalizedMessage.includes(
         'published or archived schedules cannot be overwritten',
@@ -251,6 +303,7 @@ function normalizeScheduleError(
       return 'לא ניתן להחליף שיבוץ שכבר פורסם או הועבר לארכיון.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'current schedule response is empty', ).
     if (
       normalizedMessage.includes(
         'current schedule response is empty',
@@ -259,6 +312,7 @@ function normalizeScheduleError(
       return 'לא התקבלה תשובה תקינה בעת טעינת השיבוץ.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'publish schedule response is empty', ).
     if (
       normalizedMessage.includes(
         'publish schedule response is empty',
@@ -267,6 +321,7 @@ function normalizeScheduleError(
       return 'לא התקבלה תשובה תקינה בעת פרסום השיבוץ.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'save schedule response is empty', ).
     if (
       normalizedMessage.includes(
         'save schedule response is empty',
@@ -275,6 +330,7 @@ function normalizeScheduleError(
       return 'לא התקבלה תשובה תקינה בעת שמירת השיבוץ.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'inactive', ).
     if (
       normalizedMessage.includes(
         'inactive',
@@ -289,8 +345,13 @@ function normalizeScheduleError(
   return 'לא ניתן היה לבצע את פעולת השיבוץ.';
 }
 
+/**
+ * פעולה useSchedule: חיבור מצב או הקשר עבור שיבוץ.
+ * @returns UseScheduleResult — הפלט בהתאם לחתימה.
+ */
 export function useSchedule():
   UseScheduleResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -299,6 +360,7 @@ export function useSchedule():
       initialState,
     );
 
+  // saveDraft — טיוטה.
   const saveDraft =
     useCallback(
       async (
@@ -318,7 +380,9 @@ export function useSchedule():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await scheduleService
               .saveScheduleDraft(
@@ -340,6 +404,7 @@ export function useSchedule():
 
           return result;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeScheduleError(
               error,
@@ -362,6 +427,7 @@ export function useSchedule():
       [],
     );
 
+  // loadCurrentSchedule — שיבוץ.
   const loadCurrentSchedule =
     useCallback(
       async (): Promise<CurrentScheduleData> => {
@@ -376,7 +442,9 @@ export function useSchedule():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await scheduleService
               .getCurrentSchedule();
@@ -397,6 +465,7 @@ export function useSchedule():
 
           return result;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeScheduleError(
               error,
@@ -423,17 +492,21 @@ export function useSchedule():
       [],
     );
 
+  // publishSchedulePeriod — תקופת שיבוץ.
   const publishSchedulePeriod =
     useCallback(
       async (
         schedulePeriodId: string,
       ): Promise<PublishSchedulePeriodResponse> => {
+        // normalizedSchedulePeriodId — תקופת שיבוץ.
         const normalizedSchedulePeriodId =
           schedulePeriodId.trim();
 
+        // עצירת הפעולה עם שגיאה כאשר !normalizedSchedulePeriodId.
         if (
           !normalizedSchedulePeriodId
         ) {
+          // missingIdError — מזהה / שגיאה.
           const missingIdError =
             new Error(
               'Schedule period id is required.',
@@ -466,17 +539,21 @@ export function useSchedule():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await scheduleService
               .publishSchedulePeriod(
                 normalizedSchedulePeriodId,
               );
 
+          // refreshedSchedule — שיבוץ.
           let refreshedSchedule:
             CurrentScheduleData | null =
               null;
 
+          // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
           try {
             refreshedSchedule =
               await scheduleService
@@ -510,6 +587,7 @@ export function useSchedule():
 
           return result;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeScheduleError(
               error,
@@ -532,6 +610,7 @@ export function useSchedule():
       [],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback((): void => {
       setState(

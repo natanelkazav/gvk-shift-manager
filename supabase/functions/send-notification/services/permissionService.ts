@@ -1,32 +1,62 @@
+/**
+ * קובץ: supabase/functions/send-notification/services/permissionService.ts
+ * מטרה: אימות זהות המבקש ובדיקת הרשאה לפני פעולות שירות ההתראות בצד השרת.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PermissionServiceConfiguration, AuthenticatedUserResult, ShiftSwapNotificationAuthorizationRow, isAuthorizedInternalReminderDelivery, createUserClient, createAdminClient, getAuthenticatedUserId, validateActiveProfile, hasPermission, validateShiftSwapWorkflowNotification ועוד.
+ * - קריאות RPC המופעלות בקובץ: has_dynamic_job_type_permission.
+ * - מקורות נתונים הנזכרים בקריאות from: profiles, user_permissions, notifications.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import {
   createClient,
   type SupabaseClient,
 } from 'npm:@supabase/supabase-js@2';
 
+/**
+ * חוזה הנתונים PermissionServiceConfiguration: הרשאות / שירות / תצורה.
+ */
 interface PermissionServiceConfiguration {
+  // supabaseUrl — כתובת יעד.
   supabaseUrl: string;
 
+  // supabaseAnonKey — מפתח.
   supabaseAnonKey: string;
 
+  // serviceRoleKey — שירות / מפתח.
   serviceRoleKey: string;
 }
 
+/**
+ * חוזה הנתונים AuthenticatedUserResult: משתמש / תוצאה.
+ */
 interface AuthenticatedUserResult {
+  // userId — מזהה משתמש.
   userId: string;
 
+  // adminClient — לקוח.
   adminClient:
     SupabaseClient;
 }
 
+/**
+ * חוזה הנתונים ShiftSwapNotificationAuthorizationRow: החלפת משמרות.
+ */
 interface ShiftSwapNotificationAuthorizationRow {
   type?: unknown;
 
+  // source — מקור (אופציונלי).
   source?: unknown;
 
   created_by?: unknown;
 
+  // data — נתונים (אופציונלי).
   data?: unknown;
 }
+/**
+ * פעולה isAuthorizedInternalReminderDelivery: השוואת סוד תזכורות ה־cron מהסביבה לערך הכותרת x-cron-secret.
+ * @param request — נתוני הבקשה.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function isAuthorizedInternalReminderDelivery(
   request:
     Request,
@@ -48,6 +78,12 @@ function isAuthorizedInternalReminderDelivery(
       providedSecret
   );
 }
+/**
+ * פעולה createUserClient: יצירת לקוח Supabase עם כותרת Authorization של המשתמש וללא שמירת סשן בצד השרת.
+ * @param configuration — תצורה.
+ * @param authorizationHeader — הנתון authorizationHeader בהקשר הפעולה.
+ * @returns SupabaseClient — הפלט בהתאם לחתימה.
+ */
 function createUserClient(
   configuration:
     PermissionServiceConfiguration,
@@ -77,6 +113,11 @@ function createUserClient(
   );
 }
 
+/**
+ * פעולה createAdminClient: יצירת לקוח צד שרת עם service-role key; בדיקות הסמכות של המבקש מטופלות בנפרד.
+ * @param configuration — תצורה.
+ * @returns SupabaseClient — הפלט בהתאם לחתימה.
+ */
 function createAdminClient(
   configuration:
     PermissionServiceConfiguration,
@@ -96,10 +137,16 @@ function createAdminClient(
   );
 }
 
+/**
+ * פעולה אסינכרונית getAuthenticatedUserId: אימות המשתמש באמצעות auth.getUser ושליפת מזהה המשתמש מהתשובה.
+ * @param userClient — משתמש / לקוח.
+ * @returns Promise<string> — הפלט בהתאם לחתימה.
+ */
 async function getAuthenticatedUserId(
   userClient:
     SupabaseClient,
 ): Promise<string> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -107,6 +154,7 @@ async function getAuthenticatedUserId(
     await userClient.auth
       .getUser();
 
+  // עצירת הפעולה עם שגיאה כאשר error || !data.user.
   if (
     error ||
     !data.user
@@ -119,6 +167,12 @@ async function getAuthenticatedUserId(
   return data.user.id;
 }
 
+/**
+ * פעולה אסינכרונית validateActiveProfile: בדיקת תקינות של פעיל / פרופיל.
+ * @param adminClient — לקוח.
+ * @param userId — מזהה משתמש.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function validateActiveProfile(
   adminClient:
     SupabaseClient,
@@ -126,6 +180,7 @@ async function validateActiveProfile(
   userId:
     string,
 ): Promise<void> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data:
       profile,
@@ -145,12 +200,14 @@ async function validateActiveProfile(
       )
       .maybeSingle();
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
     throw error;
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !profile || !profile.is_active.
   if (
     !profile ||
     !profile.is_active
@@ -161,6 +218,13 @@ async function validateActiveProfile(
   }
 }
 
+/**
+ * פעולה אסינכרונית hasPermission: בדיקת קיום עבור הרשאות.
+ * @param adminClient — לקוח.
+ * @param userId — מזהה משתמש.
+ * @param permissionKey — מפתח ההרשאה.
+ * @returns Promise<boolean> — הפלט בהתאם לחתימה.
+ */
 async function hasPermission(
   adminClient:
     SupabaseClient,
@@ -171,6 +235,7 @@ async function hasPermission(
   permissionKey:
     string,
 ): Promise<boolean> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data:
       permission,
@@ -194,6 +259,7 @@ async function hasPermission(
       )
       .maybeSingle();
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
@@ -205,6 +271,13 @@ async function hasPermission(
   );
 }
 
+/**
+ * פעולה אסינכרונית validateShiftSwapWorkflowNotification: בדיקת תקינות של החלפת משמרות.
+ * @param adminClient — לקוח.
+ * @param userId — מזהה משתמש.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise<boolean> — הפלט בהתאם לחתימה.
+ */
 async function validateShiftSwapWorkflowNotification(
   adminClient:
     SupabaseClient,
@@ -215,6 +288,7 @@ async function validateShiftSwapWorkflowNotification(
   notificationId:
     string,
 ): Promise<boolean> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -232,22 +306,26 @@ async function validateShiftSwapWorkflowNotification(
       )
       .maybeSingle();
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
     throw error;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
   if (
     !data
   ) {
     return false;
   }
 
+  // notification — התראות.
   const notification =
     data as
       ShiftSwapNotificationAuthorizationRow;
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר notification.type !== 'shift_swap' || notification.source !== 'shift_swap' || notification.created_by !== userId || typeof notification.data.
   if (
     notification.type !==
       'shift_swap' ||
@@ -280,6 +358,13 @@ async function validateShiftSwapWorkflowNotification(
 }
 
 
+/**
+ * פעולה אסינכרונית validateScheduleEditWorkflowNotification: בדיקת תקינות של שיבוץ / תהליך עבודה / התראות.
+ * @param adminClient — לקוח.
+ * @param userId — מזהה משתמש.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise<boolean> — הפלט בהתאם לחתימה.
+ */
 async function validateScheduleEditWorkflowNotification(
   adminClient:
     SupabaseClient,
@@ -290,6 +375,7 @@ async function validateScheduleEditWorkflowNotification(
   notificationId:
     string,
 ): Promise<boolean> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -307,14 +393,17 @@ async function validateScheduleEditWorkflowNotification(
       )
       .maybeSingle();
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
     throw error;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
   if (!data) {
     return false;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר data.type !== 'system' || data.source !== 'schedule_edit' || data.created_by !== userId || typeof data.data !== 'object' || data.data === nu.
   if (
     data.type !==
       'system' ||
@@ -334,6 +423,7 @@ async function validateScheduleEditWorkflowNotification(
     data.data as
       Record<string, unknown>;
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר metadata.workflow !== 'schedule_edit' || metadata.actorUserId !== userId || metadata.event !== 'assignment_changed' || typeof metadata.shift.
   if (
     metadata.workflow !==
       'schedule_edit' ||
@@ -350,6 +440,7 @@ async function validateScheduleEditWorkflowNotification(
   const category =
     metadata.category;
 
+  // permissionKey — מפתח ההרשאה.
   const permissionKey =
     category ===
       'on_call'
@@ -367,11 +458,19 @@ async function validateScheduleEditWorkflowNotification(
 }
 
 
+/**
+ * פעולה אסינכרונית validateDailyReportNotification: בדיקת תקינות של דוחות פעילות יומיים.
+ * @param adminClient — לקוח.
+ * @param userId — מזהה משתמש.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise<boolean> — הפלט בהתאם לחתימה.
+ */
 async function validateDailyReportNotification(
   adminClient: SupabaseClient,
   userId: string,
   notificationId: string,
 ): Promise<boolean> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data, error } = await adminClient
     .from('notifications')
     .select('type, source, created_by, data')
@@ -383,11 +482,20 @@ async function validateDailyReportNotification(
   return Boolean(metadata && metadata.workflow === 'daily_report' && metadata.event === 'submitted' && metadata.actorUserId === userId && typeof metadata.reportId === 'string');
 }
 
+/**
+ * פעולה אסינכרונית validateDynamicSchedulePublicationNotification: בדיקת תקינות של דינמי / שיבוץ / התראות.
+ * הפעולה פונה ל־RPC: has_dynamic_job_type_permission.
+ * @param adminClient — לקוח.
+ * @param userId — מזהה משתמש.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise<boolean> — הפלט בהתאם לחתימה.
+ */
 async function validateDynamicSchedulePublicationNotification(
   adminClient: SupabaseClient,
   userId: string,
   notificationId: string,
 ): Promise<boolean> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data, error } = await adminClient
     .from('notifications')
     .select('type, source, created_by, data')
@@ -397,6 +505,7 @@ async function validateDynamicSchedulePublicationNotification(
   if (error) throw error;
   if (!data) return false;
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר data.type !== 'schedule_published' || data.source !== 'dynamic_schedule_publish' || data.created_by !== userId || typeof data.data !== 'obje.
   if (
     data.type !== 'schedule_published' ||
     data.source !== 'dynamic_schedule_publish' ||
@@ -408,7 +517,9 @@ async function validateDynamicSchedulePublicationNotification(
   }
 
   const metadata = data.data as Record<string, unknown>;
+  // jobTypeId — מזהה סוג התפקיד.
   const jobTypeId = metadata.jobTypeId;
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר metadata.workflow !== 'dynamic_schedule' || metadata.event !== 'publication_published' || typeof jobTypeId !== 'string'.
   if (
     metadata.workflow !== 'dynamic_schedule' ||
     metadata.event !== 'publication_published' ||
@@ -417,6 +528,7 @@ async function validateDynamicSchedulePublicationNotification(
     return false;
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data: allowed, error: permissionError } = await adminClient.rpc(
     'has_dynamic_job_type_permission',
     {
@@ -430,6 +542,13 @@ async function validateDynamicSchedulePublicationNotification(
   return allowed === true;
 }
 
+/**
+ * פעולה אסינכרונית authenticateNotificationManager: התראות.
+ * @param request — נתוני הבקשה.
+ * @param configuration — תצורה.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise<AuthenticatedUserResult> — הפלט בהתאם לחתימה.
+ */
 export async function authenticateNotificationManager(
   request:
     Request,
@@ -441,6 +560,7 @@ export async function authenticateNotificationManager(
     string,
 ): Promise<AuthenticatedUserResult> {
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isAuthorizedInternalReminderDelivery(request).
   if (isAuthorizedInternalReminderDelivery(request)) {
      return {
       userId: 'system',adminClient: createAdminClient(configuration), };
@@ -450,6 +570,7 @@ export async function authenticateNotificationManager(
       'Authorization',
     );
 
+  // עצירת הפעולה עם שגיאה כאשר !authorizationHeader.
   if (
     !authorizationHeader
   ) {
@@ -458,17 +579,20 @@ export async function authenticateNotificationManager(
     );
   }
 
+  // userClient — משתמש / לקוח.
   const userClient =
     createUserClient(
       configuration,
       authorizationHeader,
     );
 
+  // userId — מזהה משתמש.
   const userId =
     await getAuthenticatedUserId(
       userClient,
     );
 
+  // adminClient — לקוח.
   const adminClient =
     createAdminClient(
       configuration,
@@ -479,6 +603,7 @@ export async function authenticateNotificationManager(
     userId,
   );
 
+  // canManageNotifications — האם פעולת ניהול מותרת.
   const canManageNotifications =
     await hasPermission(
       adminClient,
@@ -489,6 +614,7 @@ export async function authenticateNotificationManager(
   if (
     !canManageNotifications
   ) {
+    // isAuthorizedShiftSwapDelivery — החלפת משמרות.
     const isAuthorizedShiftSwapDelivery =
       await validateShiftSwapWorkflowNotification(
         adminClient,
@@ -496,6 +622,7 @@ export async function authenticateNotificationManager(
         notificationId,
       );
 
+    // isAuthorizedScheduleEditDelivery — שיבוץ.
     const isAuthorizedScheduleEditDelivery =
       isAuthorizedShiftSwapDelivery
         ? false
@@ -505,11 +632,13 @@ export async function authenticateNotificationManager(
             notificationId,
           );
 
+    // isAuthorizedDailyReportDelivery — דוחות פעילות יומיים.
     const isAuthorizedDailyReportDelivery =
       isAuthorizedShiftSwapDelivery || isAuthorizedScheduleEditDelivery
         ? false
         : await validateDailyReportNotification(adminClient, userId, notificationId);
 
+    // isAuthorizedDynamicPublicationDelivery — דינמי.
     const isAuthorizedDynamicPublicationDelivery =
       isAuthorizedShiftSwapDelivery || isAuthorizedScheduleEditDelivery || isAuthorizedDailyReportDelivery
         ? false
@@ -519,6 +648,7 @@ export async function authenticateNotificationManager(
             notificationId,
           );
 
+    // עצירת הפעולה עם שגיאה כאשר !isAuthorizedShiftSwapDelivery && !isAuthorizedScheduleEditDelivery && !isAuthorizedDailyReportDelivery && !isAuthorizedDynamicPublicationDe.
     if (
       !isAuthorizedShiftSwapDelivery &&
       !isAuthorizedScheduleEditDelivery &&

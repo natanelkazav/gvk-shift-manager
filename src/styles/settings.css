@@ -1,45 +1,58 @@
+/*
+ * קובץ: src/styles/settings.css
+ * מטרה: הגדרת עיצוב ופריסה עבור הגדרות.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .settings-page  */
 .settings-page {
   display: flex;
   flex-direction: column;
   gap: 22px;
 }
 
+/* כללי עיצוב עבור .settings-page-sections  */
 .settings-page-sections {
   display: flex;
   flex-direction: column;
   gap: 28px;
 }
 
+/* כללי עיצוב עבור .settings-section  */
 .settings-section {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .settings-section-header  */
 .settings-section-header {
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .settings-section-header h2  */
 .settings-section-header h2 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 1.05rem;
 }
 
+/* כללי עיצוב עבור .settings-section-header p  */
 .settings-section-header p {
   margin: 5px 0 0;
   color: var(--theme-text-muted);
   font-size: 0.76rem;
 }
 
+/* כללי עיצוב עבור .settings-card-title-with-icon  */
 .settings-card-title-with-icon {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .push-settings-layout  */
 .push-settings-layout {
   display: grid;
   grid-template-columns:
@@ -51,29 +64,34 @@
 }
 
 .push-device-section,
+/* כללי עיצוב עבור .push-preferences-form  */
 .push-preferences-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .push-device-section  */
 .push-device-section {
   padding-inline-end: 24px;
   border-inline-end: 1px solid #e2e8f0;
 }
 
+/* כללי עיצוב עבור .push-settings-section-heading  */
 .push-settings-section-heading {
   display: flex;
   align-items: flex-start;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .push-settings-section-heading h3  */
 .push-settings-section-heading h3 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .push-settings-section-heading p  */
 .push-settings-section-heading p {
   margin: 5px 0 0;
   color: var(--theme-text-muted);
@@ -81,6 +99,7 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .push-device-status-list  */
 .push-device-status-list {
   display: flex;
   flex-direction: column;
@@ -88,6 +107,7 @@
   margin: 0;
 }
 
+/* כללי עיצוב עבור .push-device-status-list > div  */
 .push-device-status-list > div {
   display: flex;
   align-items: center;
@@ -99,12 +119,14 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .push-device-status-list dt  */
 .push-device-status-list dt {
   color: var(--theme-text-muted);
   font-size: 0.68rem;
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .push-device-status-list dd  */
 .push-device-status-list dd {
   margin: 0;
   color: var(--theme-text-strong);
@@ -112,12 +134,14 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .push-device-actions  */
 .push-device-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .settings-checkbox-row  */
 .settings-checkbox-row {
   display: flex;
   align-items: center;
@@ -132,6 +156,7 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .settings-checkbox-row input  */
 .settings-checkbox-row input {
   width: 17px;
   height: 17px;
@@ -139,11 +164,13 @@
   accent-color: #2563eb;
 }
 
+/* כללי עיצוב עבור .settings-checkbox-row:has(input:disabled)  */
 .settings-checkbox-row:has(input:disabled) {
   cursor: not-allowed;
   opacity: 0.65;
 }
 
+/* כללי עיצוב עבור .settings-message  */
 .settings-message {
   display: flex;
   align-items: center;
@@ -155,24 +182,28 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .settings-message-error  */
 .settings-message-error {
   border-color: #fca5a5;
   background: #fef2f2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .settings-message-warning  */
 .settings-message-warning {
   border-color: #fcd34d;
   background: #fffbeb;
   color: #92400e;
 }
 
+/* כללי עיצוב עבור .settings-message-success  */
 .settings-message-success {
   border-color: #86efac;
   background: #f0fdf4;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .settings-admin-grid  */
 .settings-admin-grid {
   display: grid;
   grid-template-columns:
@@ -183,6 +214,7 @@
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .settings-placeholder-text  */
 .settings-placeholder-text {
   margin: 0;
   color: var(--theme-text-muted);
@@ -190,6 +222,7 @@
   line-height: 1.6;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .push-settings-layout,
   .settings-admin-grid {
@@ -203,12 +236,14 @@
     border-block-end: 1px solid #e2e8f0;
   }
 }
+/* כללי עיצוב עבור .push-test-form  */
 .push-test-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .push-test-form-grid  */
 .push-test-form-grid {
   display: grid;
   grid-template-columns:
@@ -219,6 +254,7 @@
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .push-test-actions  */
 .push-test-actions {
   display: flex;
   flex-wrap: wrap;
@@ -226,6 +262,7 @@
   gap: 9px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 700px) */
 @media (max-width: 700px) {
   .push-test-form-grid {
     grid-template-columns:
@@ -241,18 +278,21 @@
   }
 }
 
+/* כללי עיצוב עבור .push-permission-banner  */
 .push-permission-banner {
   margin-block-end: 20px;
   border-inline-start: 5px solid #2563eb;
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .push-permission-header  */
 .push-permission-header {
   display: flex;
   align-items: flex-start;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .push-permission-icon  */
 .push-permission-icon {
   display: inline-flex;
   flex: 0 0 auto;
@@ -265,16 +305,19 @@
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .push-permission-content  */
 .push-permission-content {
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .push-permission-content h3  */
 .push-permission-content h3 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
+/* כללי עיצוב עבור .push-permission-content p  */
 .push-permission-content p {
   margin: 6px 0 0;
   color: var(--theme-text-secondary);
@@ -282,6 +325,7 @@
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .push-permission-actions  */
 .push-permission-actions {
   display: flex;
   flex-wrap: wrap;
@@ -289,6 +333,7 @@
   margin-block-start: 18px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 600px) */
 @media (max-width: 600px) {
   .push-permission-actions {
     flex-direction: column;
@@ -299,30 +344,35 @@
   }
 }
 
+/* כללי עיצוב עבור .settings-admin-stack  */
 .settings-admin-stack {
   display: flex;
   flex-direction: column;
   gap: 22px;
 }
 
+/* כללי עיצוב עבור .settings-import-section  */
 .settings-import-section {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .settings-subsection-heading  */
 .settings-subsection-heading {
   display: flex;
   align-items: flex-start;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .settings-subsection-heading h3  */
 .settings-subsection-heading h3 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .settings-subsection-heading p  */
 .settings-subsection-heading p {
   margin: 4px 0 0;
   color: var(--theme-text-muted);
@@ -330,12 +380,14 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .schedule-export-panel  */
 .schedule-export-panel {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .schedule-export-summary  */
 .schedule-export-summary {
   display: flex;
   flex-wrap: wrap;
@@ -348,21 +400,25 @@
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .schedule-export-summary span  */
 .schedule-export-summary span {
   color: var(--theme-text-muted);
   font-size: 0.7rem;
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .schedule-export-summary strong  */
 .schedule-export-summary strong {
   color: #1d4ed8;
   font-size: 0.76rem;
 }
 
+/* כללי עיצוב עבור .schedule-export-spinner  */
 .schedule-export-spinner {
   animation: schedule-export-spin 0.85s linear infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes schedule-export-spin */
 @keyframes schedule-export-spin {
   to {
     transform: rotate(360deg);
@@ -370,18 +426,21 @@
 }
 
 
+/* כללי עיצוב עבור .reminder-wheel-field  */
 .reminder-wheel-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .reminder-wheel-label  */
 .reminder-wheel-label {
   color: var(--theme-text-strong);
   font-size: 0.74rem;
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .reminder-wheel-picker  */
 .reminder-wheel-picker {
   display: grid;
   grid-template-columns: minmax(88px, 0.8fr) minmax(110px, 1fr);
@@ -389,6 +448,7 @@
   max-width: 300px;
 }
 
+/* כללי עיצוב עבור .reminder-wheel-select  */
 .reminder-wheel-select {
   width: 100%;
   min-height: 48px;
@@ -405,24 +465,28 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .reminder-wheel-select:focus  */
 .reminder-wheel-select:focus {
   outline: 2px solid #93c5fd;
   outline-offset: 2px;
   border-color: #3b82f6;
 }
 
+/* כללי עיצוב עבור .reminder-wheel-select:disabled  */
 .reminder-wheel-select:disabled {
   cursor: not-allowed;
   opacity: 0.55;
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .reminder-wheel-helper  */
 .reminder-wheel-helper {
   color: var(--theme-text-muted);
   font-size: 0.68rem;
   line-height: 1.5;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 520px) */
 @media (max-width: 520px) {
   .reminder-wheel-picker {
     max-width: none;
@@ -435,6 +499,7 @@
   }
 }
 
+/* כללי עיצוב עבור .settings-section-card  */
 .settings-section-card {
   padding: 20px;
   border: 1px solid var(--theme-border);
@@ -443,6 +508,7 @@
   box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
 }
 
+/* כללי עיצוב עבור .settings-file-tabs  */
 .settings-file-tabs {
   display: inline-flex;
   align-self: flex-start;
@@ -453,6 +519,7 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .settings-file-tab  */
 .settings-file-tab {
   min-width: 92px;
   min-height: 38px;
@@ -467,26 +534,31 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .settings-file-tab:hover  */
 .settings-file-tab:hover {
   background: var(--theme-surface);
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור .settings-file-tab-active  */
 .settings-file-tab-active {
   background: #2563eb;
   color: #ffffff;
   box-shadow: 0 1px 2px rgb(37 99 235 / 18%);
 }
 
+/* כללי עיצוב עבור .settings-file-tab-active:hover  */
 .settings-file-tab-active:hover {
   background: #2563eb;
   color: #ffffff;
 }
 
+/* כללי עיצוב עבור .settings-file-tool-content  */
 .settings-file-tool-content {
   padding-top: 4px;
 }
 
+/* כללי עיצוב עבור .settings-permission-note  */
 .settings-permission-note {
   display: flex;
   align-items: center;
@@ -499,6 +571,7 @@
   line-height: 1.5;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 600px) */
 @media (max-width: 600px) {
   .settings-section-card {
     padding: 16px;
@@ -515,12 +588,14 @@
   }
 }
 
+/* כללי עיצוב עבור .schedule-export-actions  */
 .schedule-export-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 520px) */
 @media (max-width: 520px) {
   .schedule-export-actions {
     flex-direction: column;
@@ -531,15 +606,18 @@
   }
 }
 
+/* כללי עיצוב עבור .push-settings-layout-single  */
 .push-settings-layout-single {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* כללי עיצוב עבור .push-settings-layout-single .push-device-section  */
 .push-settings-layout-single .push-device-section {
   padding-inline-end: 0;
   border-inline-end: 0;
 }
 
+/* כללי עיצוב עבור .settings-reminder-card  */
 .settings-reminder-card {
   display: flex;
   flex-direction: column;
@@ -550,11 +628,13 @@
   background: #f8fbff;
 }
 
+/* כללי עיצוב עבור .settings-reminder-card-duty  */
 .settings-reminder-card-duty {
   border-color: #fde68a;
   background: #fffdf5;
 }
 
+/* כללי עיצוב עבור .settings-reminder-card-heading  */
 .settings-reminder-card-heading {
   display: flex;
   align-items: flex-start;
@@ -562,32 +642,38 @@
   color: #2563eb;
 }
 
+/* כללי עיצוב עבור .settings-reminder-card-duty .settings-reminder-card-heading  */
 .settings-reminder-card-duty .settings-reminder-card-heading {
   color: #b45309;
 }
 
+/* כללי עיצוב עבור .settings-reminder-card-heading > div  */
 .settings-reminder-card-heading > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .settings-reminder-card-heading strong  */
 .settings-reminder-card-heading strong {
   color: var(--theme-text-strong);
   font-size: 0.82rem;
 }
 
+/* כללי עיצוב עבור .settings-reminder-card-heading span  */
 .settings-reminder-card-heading span {
   color: var(--theme-text-muted);
   font-size: 0.69rem;
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .settings-checkbox-row-compact  */
 .settings-checkbox-row-compact {
   padding: 10px 11px;
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .settings-time-field  */
 .settings-time-field {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 128px;
@@ -599,12 +685,14 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .settings-time-field > span  */
 .settings-time-field > span {
   color: var(--theme-text);
   font-size: 0.74rem;
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .settings-time-field input[type='time']  */
 .settings-time-field input[type='time'] {
   width: 100%;
   min-height: 40px;
@@ -619,17 +707,20 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .settings-time-field input[type='time']:focus-visible  */
 .settings-time-field input[type='time']:focus-visible {
   border-color: #2563eb;
   outline: 3px solid rgb(37 99 235 / 13%);
 }
 
+/* כללי עיצוב עבור .settings-time-field input[type='time']:disabled  */
 .settings-time-field input[type='time']:disabled {
   cursor: not-allowed;
   background: var(--theme-surface-soft);
   color: #94a3b8;
 }
 
+/* כללי עיצוב עבור .settings-time-field small  */
 .settings-time-field small {
   grid-column: 1 / -1;
   color: var(--theme-text-muted);
@@ -637,6 +728,7 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .settings-reminder-preview  */
 .settings-reminder-preview {
   padding: 10px 12px;
   border-radius: 9px;
@@ -646,6 +738,7 @@
   line-height: 1.5;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 560px) */
 @media (max-width: 560px) {
   .settings-time-field {
     grid-template-columns: 1fr;
@@ -692,6 +785,7 @@
 .gvk-migration-issues.blockers { background: #fef2f2; color: #991b1b; }
 .gvk-migration-issues.warnings { background: #fffbeb; color: #92400e; }
 .gvk-migration-loading { display: flex; align-items: center; gap: 8px; color: var(--theme-text-muted); font-size: .78rem; }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .gvk-migration-map-row { grid-template-columns: 1fr; }
   .gvk-migration-map-row > svg { display: none; }
@@ -728,6 +822,7 @@
 .dynamic-pilot-qa-table-wrap th, .dynamic-pilot-qa-table-wrap td { padding: 9px 10px; text-align: right; border-bottom: 1px solid #eef2f7; }
 .dynamic-pilot-qa-table-wrap th { background: var(--theme-surface-muted); color: var(--theme-text-secondary); font-weight: 800; }
 .dynamic-pilot-qa-table-wrap tr:last-child td { border-bottom: 0; }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-pilot-qa-intro { flex-direction: column; }
   .dynamic-pilot-qa-intro .button { width: 100%; justify-content: center; }
@@ -740,10 +835,12 @@
 .settings-legacy-freeze-blockers li { margin:3px 0; }
 
 /* Phase 10.8.1 - Dynamic Excel export layout */
+/* כללי עיצוב עבור .schedule-export-panel-dynamic  */
 .schedule-export-panel-dynamic {
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .schedule-export-layout-card  */
 .schedule-export-layout-card {
   display: grid;
   gap: 16px;
@@ -753,6 +850,7 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .schedule-export-layout-header  */
 .schedule-export-layout-header {
   display: flex;
   align-items: flex-start;
@@ -760,17 +858,20 @@
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .schedule-export-layout-header h4  */
 .schedule-export-layout-header h4 {
   margin: 4px 0 5px;
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .schedule-export-layout-header p  */
 .schedule-export-layout-header p {
   margin: 0;
   color: var(--theme-text-muted);
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .schedule-export-layout-kicker  */
 .schedule-export-layout-kicker {
   display: inline-flex;
   align-items: center;
@@ -780,11 +881,13 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .schedule-export-mapping-grid  */
 .schedule-export-mapping-grid {
   display: grid;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .schedule-export-mapping-row  */
 .schedule-export-mapping-row {
   display: grid;
   grid-template-columns: 70px minmax(180px, 1fr) minmax(230px, 0.85fr);
@@ -796,6 +899,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .schedule-export-column-badge  */
 .schedule-export-column-badge {
   display: grid;
   place-items: center;
@@ -807,17 +911,20 @@
   direction: ltr;
 }
 
+/* כללי עיצוב עבור .schedule-export-mapping-copy  */
 .schedule-export-mapping-copy {
   display: grid;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .schedule-export-mapping-copy span  */
 .schedule-export-mapping-copy span {
   color: var(--theme-text-muted);
   font-size: 0.84rem;
   line-height: 1.45;
 }
 
+/* כללי עיצוב עבור .schedule-export-template-preview  */
 .schedule-export-template-preview {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -827,6 +934,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .schedule-export-template-preview > div  */
 .schedule-export-template-preview > div {
   display: grid;
   gap: 4px;
@@ -837,24 +945,29 @@
   align-content: center;
 }
 
+/* כללי עיצוב עבור .schedule-export-template-preview > div:first-child  */
 .schedule-export-template-preview > div:first-child {
   border-inline-start: 0;
 }
 
+/* כללי עיצוב עבור .schedule-export-template-preview b  */
 .schedule-export-template-preview b {
   color: var(--theme-text-secondary);
   direction: ltr;
 }
 
+/* כללי עיצוב עבור .schedule-export-template-preview span  */
 .schedule-export-template-preview span {
   font-size: 0.77rem;
   line-height: 1.35;
 }
 
+/* כללי עיצוב עבור .schedule-export-template-preview-highlight  */
 .schedule-export-template-preview-highlight {
   background: #eff6ff;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .schedule-export-layout-header {
     flex-direction: column;
@@ -874,10 +987,12 @@
 }
 
 /* Phase 10.8.2 - keep operational settings focused; migration/recovery tools stay available but collapsed. */
+/* כללי עיצוב עבור .settings-advanced-card  */
 .settings-advanced-card {
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .settings-tool-group  */
 .settings-tool-group {
   overflow: hidden;
   border: 1px solid #dbe4f0;
@@ -885,6 +1000,7 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .settings-tool-group > summary  */
 .settings-tool-group > summary {
   display: flex;
   align-items: center;
@@ -896,10 +1012,12 @@
 }
 
 .settings-tool-group > summary::-webkit-details-marker,
+/* כללי עיצוב עבור .settings-advanced-item > summary::-webkit-details-marker  */
 .settings-advanced-item > summary::-webkit-details-marker {
   display: none;
 }
 
+/* כללי עיצוב עבור .settings-tool-summary-icon  */
 .settings-tool-summary-icon {
   display: inline-flex;
   align-items: center;
@@ -912,11 +1030,13 @@
   color: var(--theme-text-secondary);
 }
 
+/* כללי עיצוב עבור .settings-tool-group > summary strong  */
 .settings-tool-group > summary strong {
   display: block;
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .settings-tool-group > summary small  */
 .settings-tool-group > summary small {
   display: block;
   margin-top: 3px;
@@ -925,6 +1045,7 @@
   font-weight: 500;
 }
 
+/* כללי עיצוב עבור .settings-tool-group-content  */
 .settings-tool-group-content {
   display: flex;
   flex-direction: column;
@@ -932,6 +1053,7 @@
   padding: 0 14px 14px;
 }
 
+/* כללי עיצוב עבור .settings-advanced-item  */
 .settings-advanced-item {
   overflow: hidden;
   border: 1px solid var(--theme-border);
@@ -939,6 +1061,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .settings-advanced-item > summary  */
 .settings-advanced-item > summary {
   display: flex;
   align-items: center;
@@ -951,15 +1074,18 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .settings-advanced-item[open] > summary  */
 .settings-advanced-item[open] > summary {
   border-bottom: 1px solid var(--theme-border);
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .settings-advanced-item-content  */
 .settings-advanced-item-content {
   padding: 14px;
 }
 
+/* כללי עיצוב עבור .settings-inline-summary-icon  */
 .settings-inline-summary-icon {
   display: inline-flex;
   align-items: center;
@@ -976,24 +1102,28 @@
 .settings-empty-note { color:var(--theme-text-muted); margin:0; }
 @media(max-width:760px){ .dashboard-widget-settings-row{grid-template-columns:1fr 1fr}.dashboard-widget-settings-row>span{display:none}.dashboard-widget-remove{justify-self:end} }
 
+/* כללי עיצוב עבור .settings-personal-divider  */
 .settings-personal-divider {
   height: 1px;
   margin-block: 4px;
   background: var(--theme-border);
 }
 
+/* כללי עיצוב עבור .theme-settings  */
 .theme-settings {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .theme-options  */
 .theme-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .theme-option  */
 .theme-option {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -1009,27 +1139,32 @@
   transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+/* כללי עיצוב עבור .theme-option:hover  */
 .theme-option:hover {
   border-color: var(--color-primary-500);
 }
 
+/* כללי עיצוב עבור .theme-option-selected  */
 .theme-option-selected {
   border-color: var(--color-primary-500);
   background: var(--color-primary-50);
   box-shadow: 0 0 0 2px rgb(59 130 246 / 10%);
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .theme-option-selected  */
 :root[data-theme='dark'] .theme-option-selected {
   background: #172554;
 }
 
 .theme-option-icon,
+/* כללי עיצוב עבור .theme-option-radio  */
 .theme-option-radio {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
+/* כללי עיצוב עבור .theme-option-icon  */
 .theme-option-icon {
   width: 40px;
   height: 40px;
@@ -1038,6 +1173,7 @@
   color: var(--color-primary-600);
 }
 
+/* כללי עיצוב עבור .theme-option-copy  */
 .theme-option-copy {
   display: flex;
   flex-direction: column;
@@ -1047,6 +1183,7 @@
 .theme-option-copy strong { color: var(--theme-text-strong); }
 .theme-option-copy small { color: var(--theme-text-muted); line-height: 1.45; }
 
+/* כללי עיצוב עבור .theme-option-radio  */
 .theme-option-radio {
   width: 24px;
   height: 24px;
@@ -1055,11 +1192,13 @@
   color: #fff;
 }
 
+/* כללי עיצוב עבור .theme-option-selected .theme-option-radio  */
 .theme-option-selected .theme-option-radio {
   border-color: var(--color-primary-600);
   background: var(--color-primary-600);
 }
 
+/* כללי עיצוב עבור .theme-settings-actions  */
 .theme-settings-actions {
   display: flex;
   align-items: center;
@@ -1067,41 +1206,49 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .theme-save-message  */
 .theme-save-message {
   color: var(--color-success-600);
   font-size: .75rem;
   font-weight: 700;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 650px) */
 @media (max-width: 650px) {
   .theme-options { grid-template-columns: 1fr; }
 }
 
 /* Dark theme contrast pass — personal notification/reminder settings. */
+/* כללי עיצוב עבור :root[data-theme='dark'] .settings-reminder-card  */
 :root[data-theme='dark'] .settings-reminder-card {
   border-color: #315b8a;
   background: #12243a;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .settings-reminder-card-duty  */
 :root[data-theme='dark'] .settings-reminder-card-duty {
   border-color: #8a6427;
   background: #2b2417;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .settings-reminder-card-heading  */
 :root[data-theme='dark'] .settings-reminder-card-heading {
   color: #60a5fa;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .settings-reminder-card-duty .settings-reminder-card-heading  */
 :root[data-theme='dark'] .settings-reminder-card-duty .settings-reminder-card-heading {
   color: #fbbf24;
 }
 
 :root[data-theme='dark'] .settings-checkbox-row-compact,
+/* כללי עיצוב עבור :root[data-theme='dark'] .settings-time-field  */
 :root[data-theme='dark'] .settings-time-field {
   border-color: var(--theme-border-strong);
   background: var(--theme-surface-soft);
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .settings-reminder-preview  */
 :root[data-theme='dark'] .settings-reminder-preview {
   border: 1px solid #8a6427;
   background: #332711;
@@ -1109,11 +1256,13 @@
 }
 
 :root[data-theme='dark'] .schedule-export-summary,
+/* כללי עיצוב עבור :root[data-theme='dark'] .settings-info-box  */
 :root[data-theme='dark'] .settings-info-box {
   border-color: #315b8a;
   background: #12243a;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .schedule-export-summary strong  */
 :root[data-theme='dark'] .schedule-export-summary strong {
   color: #93c5fd;
 }

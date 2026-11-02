@@ -1,7 +1,13 @@
+-- קובץ: supabase/migrations/20261025100000_fix_unlimited_feasibility_column.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור בדיקת היתכנות שיבוץ.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.analyze_dynamic_schedule_feasibility.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Hotfix: expose target_unlimited in members CTE and keep unlimited target NULL.
 -- Replaces only feasibility function; existing draft generation functions remain unchanged.
 begin;
 
+-- פונקציית מסד public.analyze_dynamic_schedule_feasibility: דינמי / שיבוץ / בדיקת היתכנות שיבוץ.
 create or replace function public.analyze_dynamic_schedule_feasibility(
   requested_job_type_id uuid,
   requested_year integer,
@@ -9,33 +15,46 @@ create or replace function public.analyze_dynamic_schedule_feasibility(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
+  -- required_total — סך הכול.
   required_total integer := 0;
+  -- target_total — יעד / סך הכול.
   target_total integer := 0;
   aggregate_min integer := 0;
+  -- aggregate_target — יעד.
   aggregate_target integer := 0;
   aggregate_max integer := 0;
   shortage_slots integer := 0;
   avoid_fallback_slots integer := 0;
   member_json jsonb;
+  -- min_mode — מצב פעולה.
   min_mode text;
+  -- max_mode — מצב פעולה.
   max_mode text;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.vi.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.view','users.manage')) then raise exception 'not allowed'; end if;
 
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
 
   select * into period from public.dynamic_availability_periods
   where job_type_id=job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי period.id is null.
   if period.id is null then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object('materialized',false,'mode','shadow','message','יש ליצור קודם תקופת אילוצים ב־Shadow Mode.');
   end if;
 
@@ -115,6 +134,7 @@ begin
          join public.job_type_memberships m on m.user_id=ss.user_id and m.job_type_id=job.id
          where e.slot_id=sl.id and e.availability_status in ('available','preferred','avoid')) >= sl.min_workers;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'materialized',true,'periodId',period.id,'jobTypeId',job.id,'year',requested_year,'month',requested_month,'mode','shadow',
     'requiredAssignments',required_total,'targetAssignments',target_total,

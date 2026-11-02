@@ -1,42 +1,79 @@
+/**
+ * קובץ: supabase/functions/import-calendar-special-days/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת import-calendar-special-days.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ScheduleType, ImportSpecialDaysRequest, RequestingProfileRow, PermissionRow, HebcalResponse, HebcalEvent, CalendarSpecialDayInsert, MappedHoliday, createJsonResponse, getRequiredEnvironmentVariable ועוד.
+ * - מקורות נתונים הנזכרים בקריאות from: profiles, user_permissions, calendar_special_days.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   createClient,
   type User,
 } from 'npm:@supabase/supabase-js@2';
 
+/**
+ * טיפוס ScheduleType: סוג יום השיבוץ.
+ */
 type ScheduleType =
   | 'holiday_eve'
   | 'holiday_full'
   | 'holiday_end'
   | 'chol_hamoed';
 
+/**
+ * חוזה הנתונים ImportSpecialDaysRequest: ייבוא / ימים / נתוני הבקשה.
+ */
 interface ImportSpecialDaysRequest {
+  // year — שנה.
   year: number;
 }
 
+/**
+ * חוזה הנתונים RequestingProfileRow: פרופיל / שורה.
+ */
 interface RequestingProfileRow {
+  // id — מזהה.
   id: string;
+  // email — כתובת דוא״ל.
   email: string;
+  // display_name — שם תצוגה.
   display_name: string;
   role: string;
+  // is_active — האם הרשומה פעילה.
   is_active: boolean;
 }
 
+/**
+ * חוזה הנתונים PermissionRow: הרשאות / שורה.
+ */
 interface PermissionRow {
+  // permission_key — מפתח ההרשאה.
   permission_key: string;
 }
 
+/**
+ * חוזה הנתונים HebcalResponse: תוצאת הפעולה.
+ */
 interface HebcalResponse {
+  // title — כותרת (אופציונלי).
   title?: string;
+  // date — תאריך (אופציונלי).
   date?: string;
   range?: {
     start?: string;
     end?: string;
   };
+  // items — פריטים (אופציונלי).
   items?: HebcalEvent[];
 }
 
+/**
+ * חוזה הנתונים HebcalEvent: אירוע.
+ */
 interface HebcalEvent {
+  // title — כותרת.
   title: string;
+  // date — תאריך.
   date: string;
   category: string;
   subcat?: string;
@@ -47,21 +84,36 @@ interface HebcalEvent {
   memo?: string;
 }
 
+/**
+ * חוזה הנתונים CalendarSpecialDayInsert: לוח שנה / יום.
+ */
 interface CalendarSpecialDayInsert {
+  // event_date — אירוע / תאריך.
   event_date: string;
+  // event_name — אירוע / שם.
   event_name: string;
+  // schedule_type — סוג יום השיבוץ.
   schedule_type: ScheduleType;
+  // holiday_group — חג / קבוצה.
   holiday_group: string | null;
+  // source_name — מקור / שם.
   source_name: string;
+  // source_event_key — מקור / אירוע / מפתח.
   source_event_key: string;
   metadata: Record<string, unknown>;
 }
 
+/**
+ * חוזה הנתונים MappedHoliday: חג.
+ */
 interface MappedHoliday {
+  // scheduleType — סוג יום השיבוץ.
   scheduleType: ScheduleType;
+  // holidayGroup — חג / קבוצה.
   holidayGroup: string;
 }
 
+// corsHeaders — הנתון corsHeaders בהקשר הפעולה.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
 
@@ -74,6 +126,12 @@ const corsHeaders = {
   'Content-Type': 'application/json',
 };
 
+/**
+ * פעולה createJsonResponse: יצירת תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 function createJsonResponse(
   body: unknown,
   status: number,
@@ -87,12 +145,19 @@ function createJsonResponse(
   );
 }
 
+/**
+ * פעולה getRequiredEnvironmentVariable: שליפה או חישוב של הנתון getRequiredEnvironmentVariable בהקשר הפעולה.
+ * @param variableName — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getRequiredEnvironmentVariable(
   variableName: string,
 ): string {
+  // value — ערך.
   const value =
     Deno.env.get(variableName);
 
+  // עצירת הפעולה עם שגיאה כאשר !value.
   if (!value) {
     throw new Error(
       `Missing environment variable: ${variableName}`,
@@ -102,6 +167,11 @@ function getRequiredEnvironmentVariable(
   return value;
 }
 
+/**
+ * פעולה validateYear: בדיקת תקינות של שנה.
+ * @param year — שנה.
+ * @returns year is number — הפלט בהתאם לחתימה.
+ */
 function validateYear(
   year: unknown,
 ): year is number {
@@ -113,6 +183,11 @@ function validateYear(
   );
 }
 
+/**
+ * פעולה normalizeTitle: נרמול כותרת.
+ * @param title — כותרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeTitle(
   title: string,
 ): string {
@@ -123,16 +198,28 @@ function normalizeTitle(
     .replace(/[״“”]/g, '"')
     .replace(/\s+/g, ' ');
 }
+/**
+ * פעולה getCanonicalTitle: שליפה או חישוב של כותרת.
+ * @param title — כותרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getCanonicalTitle(
   title: string,
 ): string {
   return normalizeTitle(title)
     .replace(/[^a-z0-9]/g, '');
 }
+/**
+ * פעולה isCholHamoedEvent: בדיקת תנאי עבור אירוע.
+ * @param event — אירוע.
+ * @param normalizedTitle — כותרת.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function isCholHamoedEvent(
   event: HebcalEvent,
   normalizedTitle: string,
 ): boolean {
+  // normalizedSubcategory — הנתון normalizedSubcategory בהקשר הפעולה.
   const normalizedSubcategory =
     event.subcat
       ?.trim()
@@ -140,6 +227,7 @@ function isCholHamoedEvent(
       .replace(/[\s_-]+/g, '') ??
     '';
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedSubcategory === 'cholhamoed' || normalizedSubcategory === 'cholhamoedday'.
   if (
     normalizedSubcategory ===
       'cholhamoed' ||
@@ -167,12 +255,24 @@ function isCholHamoedEvent(
     )
   );
 }
+/**
+ * פעולה getDateOnly: שליפה או חישוב של תאריך.
+ * @param dateValue — תאריך / ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDateOnly(
   dateValue: string,
 ): string {
   return dateValue.slice(0, 10);
 }
 
+/**
+ * פעולה buildSourceEventKey: הרכבת מקור / אירוע / מפתח.
+ * @param year — שנה.
+ * @param event — אירוע.
+ * @param scheduleType — סוג יום השיבוץ.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function buildSourceEventKey(
   year: number,
   event: HebcalEvent,
@@ -187,12 +287,19 @@ function buildSourceEventKey(
   ].join(':');
 }
 
+/**
+ * פעולה getHebrewEventName: שליפה או חישוב של אירוע / שם.
+ * @param event — אירוע.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getHebrewEventName(
   event: HebcalEvent,
 ): string {
+  // hebrewName — שם.
   const hebrewName =
     event.hebrew?.trim();
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר hebrewName.
   if (hebrewName) {
     return hebrewName;
   }
@@ -200,12 +307,19 @@ function getHebrewEventName(
   return event.title.trim();
 }
 
+/**
+ * פעולה mapHebcalEvent: מיפוי מפת התאמה / אירוע.
+ * @param event — אירוע.
+ * @returns MappedHoliday | null — הפלט בהתאם לחתימה.
+ */
 function mapHebcalEvent(
   event: HebcalEvent,
 ): MappedHoliday | null {
+  // title — כותרת.
   const title =
     normalizeTitle(event.title);
 
+  // canonicalTitle — כותרת.
   const canonicalTitle =
     getCanonicalTitle(
       event.title,
@@ -223,6 +337,7 @@ function mapHebcalEvent(
    * הקטגוריה, ובאמצעות כותרת
    * ללא רווחים וסימני פיסוק.
    */
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canonicalTitle === 'yomhaatzmaut'.
   if (
     canonicalTitle ===
     'yomhaatzmaut'
@@ -241,6 +356,7 @@ function mapHebcalEvent(
    * וימים מודרניים שמופו
    * במפורש.
    */
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר category !== 'holiday' && category !== 'modern'.
   if (
     category !== 'holiday' &&
     category !== 'modern'
@@ -251,6 +367,7 @@ function mapHebcalEvent(
   /*
    * פסח
    */
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'erev pesach'.
   if (
     title === 'erev pesach'
   ) {
@@ -263,6 +380,7 @@ function mapHebcalEvent(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title.includes('pesach') && isCholHamoedEvent( event, title, ).
   if (
     title.includes('pesach') &&
     isCholHamoedEvent(
@@ -279,6 +397,7 @@ function mapHebcalEvent(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'pesach i'.
   if (
     title === 'pesach i'
   ) {
@@ -291,6 +410,7 @@ function mapHebcalEvent(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'pesach vii'.
   if (
     title === 'pesach vii'
   ) {
@@ -306,6 +426,7 @@ function mapHebcalEvent(
   /*
    * שבועות
    */
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'erev shavuot'.
   if (
     title === 'erev shavuot'
   ) {
@@ -318,6 +439,7 @@ function mapHebcalEvent(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'shavuot' || title === 'shavuot i'.
   if (
     title === 'shavuot' ||
     title === 'shavuot i'
@@ -334,6 +456,7 @@ function mapHebcalEvent(
   /*
    * ראש השנה
    */
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'erev rosh hashana'.
   if (
     title ===
     'erev rosh hashana'
@@ -347,6 +470,7 @@ function mapHebcalEvent(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'rosh hashana ii'.
   if (
     title ===
     'rosh hashana ii'
@@ -367,6 +491,7 @@ function mapHebcalEvent(
    * התנאי המדויק מונע סיווג שגוי
    * של Rosh Hashana LaBehemot.
    */
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר /^rosh hashana \d+$/.test( title, ) || title === 'rosh hashana i'.
   if (
     /^rosh hashana \d+$/.test(
       title,
@@ -386,6 +511,7 @@ function mapHebcalEvent(
   /*
    * יום כיפור
    */
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'erev yom kippur'.
   if (
     title ===
     'erev yom kippur'
@@ -399,6 +525,7 @@ function mapHebcalEvent(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'yom kippur'.
   if (
     title === 'yom kippur'
   ) {
@@ -414,6 +541,7 @@ function mapHebcalEvent(
   /*
    * סוכות
    */
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'erev sukkot'.
   if (
     title === 'erev sukkot'
   ) {
@@ -426,6 +554,7 @@ function mapHebcalEvent(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title.includes('sukkot') && ( isCholHamoedEvent( event, title, ) || title.includes( 'hoshana raba', ) || title.includes( 'hoshana rabbah', ).
   if (
     title.includes('sukkot') &&
     (
@@ -450,6 +579,7 @@ function mapHebcalEvent(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'sukkot i'.
   if (
     title === 'sukkot i'
   ) {
@@ -462,6 +592,7 @@ function mapHebcalEvent(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר title === 'shmini atzeret' || title === 'shmini atzeret / simchat torah'.
   if (
     title ===
       'shmini atzeret' ||
@@ -480,21 +611,31 @@ function mapHebcalEvent(
   return null;
 }
 
+/**
+ * פעולה אסינכרונית getAuthenticatedUser: שליפה או חישוב של משתמש.
+ * @param authorizationHeader — הנתון authorizationHeader בהקשר הפעולה.
+ * @param supabaseUrl — כתובת יעד.
+ * @param publishableKey — מפתח.
+ * @returns Promise<User | null> — הפלט בהתאם לחתימה.
+ */
 async function getAuthenticatedUser(
   authorizationHeader: string,
   supabaseUrl: string,
   publishableKey: string,
 ): Promise<User | null> {
+  // accessToken — אסימון גישה.
   const accessToken =
     authorizationHeader.replace(
       /^Bearer\s+/i,
       '',
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !accessToken.
   if (!accessToken) {
     return null;
   }
 
+  // authenticationClient — אימות משתמשים / לקוח.
   const authenticationClient =
     createClient(
       supabaseUrl,
@@ -507,6 +648,7 @@ async function getAuthenticatedUser(
       },
     );
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data: {
       user,
@@ -517,6 +659,7 @@ async function getAuthenticatedUser(
       .auth
       .getUser(accessToken);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error || !user.
   if (
     error ||
     !user
@@ -527,6 +670,11 @@ async function getAuthenticatedUser(
   return user;
 }
 
+/**
+ * פעולה אסינכרונית fetchHebcalEvents: טעינת הנתון fetchHebcalEvents בהקשר הפעולה.
+ * @param year — שנה.
+ * @returns Promise<HebcalEvent[]> — הפלט בהתאם לחתימה.
+ */
 async function fetchHebcalEvents(
   year: number,
 ): Promise<HebcalEvent[]> {
@@ -568,9 +716,11 @@ async function fetchHebcalEvents(
       nx: 'on',
     });
 
+  // url — כתובת יעד.
   const url =
     `https://www.hebcal.com/hebcal?${query.toString()}`;
 
+  // response — תוצאת הפעולה.
   const response =
     await fetch(
       url,
@@ -582,16 +732,19 @@ async function fetchHebcalEvents(
       },
     );
 
+  // עצירת הפעולה עם שגיאה כאשר !response.ok.
   if (!response.ok) {
     throw new Error(
       `Hebcal returned HTTP ${response.status}`,
     );
   }
 
+  // responseBody — תוצאת הפעולה / תוכן.
   const responseBody =
     await response.json() as
       HebcalResponse;
 
+  // עצירת הפעולה עם שגיאה כאשר !Array.isArray( responseBody.items, ).
   if (
     !Array.isArray(
       responseBody.items,
@@ -609,6 +762,7 @@ Deno.serve(
   async (
     request: Request,
   ) => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method === 'OPTIONS'.
     if (
       request.method === 'OPTIONS'
     ) {
@@ -621,6 +775,7 @@ Deno.serve(
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !== 'POST'
     ) {
@@ -633,12 +788,15 @@ Deno.serve(
       );
     }
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         getRequiredEnvironmentVariable(
           'SUPABASE_URL',
         );
 
+      // publishableKey — מפתח.
       const publishableKey =
         Deno.env.get(
           'SUPABASE_ANON_KEY',
@@ -647,12 +805,14 @@ Deno.serve(
           'SUPABASE_PUBLISHABLE_KEY',
         );
 
+      // עצירת הפעולה עם שגיאה כאשר !publishableKey.
       if (!publishableKey) {
         throw new Error(
           'Missing Supabase public API key.',
         );
       }
 
+      // serviceRoleKey — שירות / מפתח.
       const serviceRoleKey =
         getRequiredEnvironmentVariable(
           'SUPABASE_SERVICE_ROLE_KEY',
@@ -663,6 +823,7 @@ Deno.serve(
           'Authorization',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !authorizationHeader.
       if (
         !authorizationHeader
       ) {
@@ -675,6 +836,7 @@ Deno.serve(
         );
       }
 
+      // authenticatedUser — משתמש.
       const authenticatedUser =
         await getAuthenticatedUser(
           authorizationHeader,
@@ -682,6 +844,7 @@ Deno.serve(
           publishableKey,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !authenticatedUser.
       if (
         !authenticatedUser
       ) {
@@ -694,6 +857,7 @@ Deno.serve(
         );
       }
 
+      // adminClient — לקוח.
       const adminClient =
         createClient(
           supabaseUrl,
@@ -709,6 +873,7 @@ Deno.serve(
           },
         );
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           requestingProfile,
@@ -733,6 +898,7 @@ Deno.serve(
             RequestingProfileRow
           >();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר requestingProfileError || !requestingProfile.
       if (
         requestingProfileError ||
         !requestingProfile
@@ -746,6 +912,7 @@ Deno.serve(
         );
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !requestingProfile .is_active.
       if (
         !requestingProfile
           .is_active
@@ -759,6 +926,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           managementPermission,
@@ -785,6 +953,7 @@ Deno.serve(
             PermissionRow
           >();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר permissionError || !managementPermission.
       if (
         permissionError ||
         !managementPermission
@@ -798,9 +967,11 @@ Deno.serve(
         );
       }
 
+      // requestBody — נתוני הבקשה / תוכן.
       let requestBody:
         Partial<ImportSpecialDaysRequest>;
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         requestBody =
           await request.json();
@@ -814,6 +985,7 @@ Deno.serve(
         );
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !validateYear( requestBody.year, ).
       if (
         !validateYear(
           requestBody.year,
@@ -828,6 +1000,7 @@ Deno.serve(
         );
       }
 
+      // requestedYear — שנה.
       const requestedYear =
         requestBody.year;
 
@@ -836,14 +1009,17 @@ Deno.serve(
           requestedYear,
         );
 
+      // mappedRows — שורות.
       const mappedRows:
         CalendarSpecialDayInsert[] = [];
 
       let skippedEvents = 0;
 
+      // עיבוד כל פריט מתוך events בנפרד.
       for (
         const event of events
       ) {
+        // mappedHoliday — חג.
         const mappedHoliday =
           mapHebcalEvent(event);
 
@@ -852,6 +1028,7 @@ Deno.serve(
           continue;
         }
 
+        // eventDate — אירוע / תאריך.
         const eventDate =
           getDateOnly(
             event.date,
@@ -926,9 +1103,11 @@ Deno.serve(
         });
       }
 
+      // startDate — תאריך.
       const startDate =
         `${requestedYear}-01-01`;
 
+      // endDate — תאריך.
       const endDate =
         `${requestedYear}-12-31`;
 
@@ -937,6 +1116,7 @@ Deno.serve(
        * בעבר מ-Hebcal באותה שנה.
        * רשומות ידניות אינן נמחקות.
        */
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         error:
           deleteExistingError,
@@ -959,6 +1139,7 @@ Deno.serve(
             endDate,
           );
 
+      // עצירת הפעולה עם שגיאה כאשר deleteExistingError.
       if (
         deleteExistingError
       ) {
@@ -975,6 +1156,7 @@ Deno.serve(
       if (
         mappedRows.length > 0
       ) {
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           error:
             insertSpecialDaysError,
@@ -987,6 +1169,7 @@ Deno.serve(
               mappedRows,
             );
 
+        // עצירת הפעולה עם שגיאה כאשר insertSpecialDaysError.
         if (
           insertSpecialDaysError
         ) {

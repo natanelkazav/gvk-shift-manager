@@ -1,3 +1,9 @@
+/**
+ * קובץ: src/main.tsx
+ * מטרה: אתחול React וחיבור רכיב היישום לאלמנט הכניסה בדף.
+ * מטרות עיקריות:
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
@@ -11,9 +17,11 @@ import { themeService } from './services/themeService';
 
 themeService.initialize();
 
+// rootElement — הנתון rootElement בהקשר הפעולה.
 const rootElement =
   document.getElementById('root');
 
+// עצירת הפעולה עם שגיאה כאשר !rootElement.
 if (!rootElement) {
   throw new Error(
     'Root element was not found.',

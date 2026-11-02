@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/notifications/context/NotificationProvider.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור התראות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NotificationProvider.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   useCallback,
   useEffect,
@@ -29,12 +36,18 @@ import {
   NotificationContext,
 } from './NotificationContext';
 
+// BACKGROUND_REFRESH_INTERVAL_MS — מרווח זמן.
 const BACKGROUND_REFRESH_INTERVAL_MS =
   30_000;
 
+// MIN_EVENT_REFRESH_GAP_MS — אירוע.
 const MIN_EVENT_REFRESH_GAP_MS =
   2_500;
 
+/**
+ * פעולה NotificationProvider: התראות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 export function NotificationProvider({
   children,
 }: PropsWithChildren) {
@@ -46,6 +59,7 @@ export function NotificationProvider({
   const location =
     useLocation();
 
+  // notifications — התראות.
   const notifications =
     useNotifications();
 
@@ -55,6 +69,7 @@ export function NotificationProvider({
   } =
     notifications;
 
+  // הפניה יציבה lastRefreshAtRef בין רינדורים; שינוי current אינו מפעיל רינדור בפני עצמו.
   const lastRefreshAtRef =
     useRef(
       0,
@@ -66,6 +81,7 @@ export function NotificationProvider({
         const now =
           Date.now();
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר now - lastRefreshAtRef.current < MIN_EVENT_REFRESH_GAP_MS.
         if (
           now -
             lastRefreshAtRef.current <
@@ -84,8 +100,10 @@ export function NotificationProvider({
       ],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ loadNotifications, ].
   useEffect(
     () => {
+      // timeoutId — משך המתנה / מזהה.
       const timeoutId =
         window.setTimeout(
           () => {
@@ -108,8 +126,10 @@ export function NotificationProvider({
     ],
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ location.pathname, location.search, refreshIfNeeded, ].
   useEffect(
     () => {
+      // timeoutId — משך המתנה / מזהה.
       const timeoutId =
         window.setTimeout(
           () => {
@@ -131,13 +151,22 @@ export function NotificationProvider({
     ],
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ refreshIfNeeded, ].
   useEffect(
     () => {
+      /**
+       * פעולה handleFocus: טיפול באירוע עבור הנתון handleFocus בהקשר הפעולה.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleFocus =
         (): void => {
           refreshIfNeeded();
         };
 
+      /**
+       * פעולה handleVisibilityChange: טיפול באירוע עבור הנתון handleVisibilityChange בהקשר הפעולה.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleVisibilityChange =
         (): void => {
           if (
@@ -148,6 +177,10 @@ export function NotificationProvider({
           }
         };
 
+      /**
+       * פעולה handleActivityChanged: טיפול באירוע עבור הנתון handleActivityChanged בהקשר הפעולה.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleActivityChanged =
         (): void => {
           lastRefreshAtRef.current =
@@ -171,6 +204,7 @@ export function NotificationProvider({
         handleActivityChanged,
       );
 
+      // intervalId — מרווח זמן / מזהה.
       const intervalId =
         window.setInterval(
           () => {
@@ -210,8 +244,10 @@ export function NotificationProvider({
     ],
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ refreshIfNeeded, user, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !user.
       if (
         !user
       ) {
@@ -260,18 +296,26 @@ export function NotificationProvider({
     ],
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(
     () => {
+      // isCancelled — הנתון isCancelled בהקשר הפעולה.
       let isCancelled =
         false;
 
+      /**
+       * פעולה אסינכרונית refreshPushSubscription: רענון התראות Push.
+       * @returns Promise<void> — הפלט בהתאם לחתימה.
+       */
       const refreshPushSubscription =
         async (): Promise<void> => {
+          // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
           try {
             const subscription =
               await pushNotificationService
                 .refreshSubscription();
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled || !subscription.
             if (
               isCancelled ||
               !subscription
@@ -285,6 +329,7 @@ export function NotificationProvider({
           } catch (
             error
           ) {
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
             if (
               isCancelled
             ) {

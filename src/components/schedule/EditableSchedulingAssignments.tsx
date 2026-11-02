@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/schedule/EditableSchedulingAssignments.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור הקצאות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: EditableSchedulingAssignmentsProps, formatDate, formatTime, getAssignmentSourceLabel, EditableSchedulingAssignments.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
   CheckCircle2,
@@ -23,51 +30,70 @@ import type {
 
 import { Button } from '../ui';
 
+/**
+ * חוזה הנתונים EditableSchedulingAssignmentsProps: הקצאות / מאפייני הרכיב.
+ */
 interface EditableSchedulingAssignmentsProps {
+  // data — נתונים.
   data:
     AssignmentCandidatesData;
 
+  // originalDraft — טיוטה.
   originalDraft:
     SchedulingDraft;
 
+  // assignments — הקצאות.
   assignments:
     SchedulingAssignment[];
 
   dispatchers:
     SchedulingDispatcherSummary[];
 
+  // validation — אימות נתונים.
   validation:
     EditableSchedulingValidationResult;
 
+  // intentionallyUnassignedShiftIds — מזהה המשמרת.
   intentionallyUnassignedShiftIds:
     string[];
 
+  // onAssignDispatcher — מוקדנים.
   onAssignDispatcher: (
     shiftId: string,
     userId: string,
   ) => void;
 
+  // onRemoveAssignment — הקצאה.
   onRemoveAssignment: (
     shiftId: string,
   ) => void;
 
+  // onMarkShiftIntentionallyUnassigned — משמרת.
   onMarkShiftIntentionallyUnassigned: (
     shiftId: string,
   ) => void;
 
+  // onResetShiftAssignment — משמרת / הקצאה.
   onResetShiftAssignment: (
     shiftId: string,
   ) => void;
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -86,16 +112,27 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
   return value.slice(0, 5);
 }
 
+/**
+ * פעולה getAssignmentSourceLabel: שליפה או חישוב של מקור השיבוץ.
+ * @param assignment — הקצאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getAssignmentSourceLabel(
   assignment:
     SchedulingAssignment | undefined,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !assignment.
   if (!assignment) {
     return 'ללא שיבוץ';
   }
@@ -115,6 +152,10 @@ function getAssignmentSourceLabel(
   }
 }
 
+/**
+ * פעולה EditableSchedulingAssignments: הקצאות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function EditableSchedulingAssignments({
   data,
   originalDraft,
@@ -127,6 +168,7 @@ function EditableSchedulingAssignments({
   onMarkShiftIntentionallyUnassigned,
   onResetShiftAssignment,
 }: EditableSchedulingAssignmentsProps) {
+  // assignmentsByShiftId — מזהה המשמרת; מיפוי לחיפוש לפי מפתח.
   const assignmentsByShiftId =
     new Map(
       assignments.map(
@@ -137,6 +179,7 @@ function EditableSchedulingAssignments({
       ),
     );
 
+  // originalAssignmentsByShiftId — מזהה המשמרת; מיפוי לחיפוש לפי מפתח.
   const originalAssignmentsByShiftId =
     new Map(
       originalDraft.assignments.map(
@@ -147,28 +190,34 @@ function EditableSchedulingAssignments({
       ),
     );
 
+  // intentionallyUnassignedSet — קבוצה ייחודית; אוסף ערכים ייחודיים.
   const intentionallyUnassignedSet =
     new Set(
       intentionallyUnassignedShiftIds,
     );
 
+  // sortedShifts — משמרות.
   const sortedShifts =
     [...data.shifts].sort(
       (firstShift, secondShift) => {
+        // dateCompare — תאריך.
         const dateCompare =
           firstShift.date.localeCompare(
             secondShift.date,
           );
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dateCompare !== 0.
         if (dateCompare !== 0) {
           return dateCompare;
         }
 
+        // timeCompare — זמן.
         const timeCompare =
           firstShift.startTime.localeCompare(
             secondShift.startTime,
           );
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר timeCompare !== 0.
         if (timeCompare !== 0) {
           return timeCompare;
         }
@@ -190,36 +239,43 @@ function EditableSchedulingAssignments({
       <div className="editable-scheduling-list">
         {sortedShifts.map(
           (shift) => {
+            // currentAssignment — הקצאה.
             const currentAssignment =
               assignmentsByShiftId.get(
                 shift.id,
               );
 
+            // originalAssignment — הקצאה.
             const originalAssignment =
               originalAssignmentsByShiftId.get(
                 shift.id,
               );
 
+            // shiftValidation — משמרת / אימות נתונים.
             const shiftValidation =
               validation
                 .shiftValidations[
                   shift.id
                 ];
 
+            // shiftIssues — משמרת.
             const shiftIssues =
               shiftValidation
                 ?.issues ??
               [];
 
+            // currentUserId — המשתמש הנוכחי הנוכחי.
             const currentUserId =
               currentAssignment?.userId ??
               '';
 
+            // isIntentionallyUnassigned — הנתון isIntentionallyUnassigned בהקשר הפעולה.
             const isIntentionallyUnassigned =
               intentionallyUnassignedSet.has(
                 shift.id,
               );
 
+            // isManuallyChanged — הנתון isManuallyChanged בהקשר הפעולה.
             const isManuallyChanged =
               currentAssignment?.source ===
                 'manual' ||
@@ -230,6 +286,7 @@ function EditableSchedulingAssignments({
                   ''
                 );
 
+            // isSelectedUserAvailable — נבחר / משתמש.
             const isSelectedUserAvailable =
               !currentUserId ||
               shift.availableUserIds.includes(
@@ -318,10 +375,12 @@ function EditableSchedulingAssignments({
                     onChange={(
                       event,
                     ) => {
+                      // nextUserId — מזהה משתמש הבא.
                       const nextUserId =
                         event.target
                           .value;
 
+                      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !nextUserId.
                       if (!nextUserId) {
                         onRemoveAssignment(
                           shift.id,
@@ -344,6 +403,7 @@ function EditableSchedulingAssignments({
 
                     {dispatchers.map(
                       (dispatcher) => {
+                        // isAvailable — הנתון isAvailable בהקשר הפעולה.
                         const isAvailable =
                           shift.availableUserIds.includes(
                             dispatcher
@@ -422,6 +482,7 @@ function EditableSchedulingAssignments({
                         : 'secondary'
                     }
                     onClick={() => {
+                      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isIntentionallyUnassigned.
                       if (isIntentionallyUnassigned) {
                         onResetShiftAssignment(
                           shift.id,
@@ -435,6 +496,7 @@ function EditableSchedulingAssignments({
                           'המשמרת תישאר ללא מוקדן ותוכל להתפרסם כך. האם להמשיך?',
                         );
 
+                      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
                       if (!confirmed) {
                         return;
                       }

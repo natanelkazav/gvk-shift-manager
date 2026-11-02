@@ -1,7 +1,17 @@
+/**
+ * קובץ: src/constants/permissions.ts
+ * מטרה: ריכוז קבועים ומפתחות עבור הרשאות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PermissionGroupTone, PermissionDefinition, PermissionGroup.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import type {
   PermissionKey,
 } from '../types/auth';
 
+/**
+ * טיפוס PermissionGroupTone: הרשאות / קבוצה.
+ */
 export type PermissionGroupTone =
   | 'blue'
   | 'green'
@@ -11,20 +21,32 @@ export type PermissionGroupTone =
   | 'rose'
   | 'slate';
 
+/**
+ * חוזה הנתונים PermissionDefinition: הרשאות.
+ */
 export interface PermissionDefinition {
+  // key — מפתח.
   key: PermissionKey;
+  // label — תווית.
   label: string;
   description: string;
 }
 
+/**
+ * חוזה הנתונים PermissionGroup: הרשאות / קבוצה.
+ */
 export interface PermissionGroup {
+  // id — מזהה.
   id: string;
+  // title — כותרת.
   title: string;
   description: string;
   tone: PermissionGroupTone;
+  // permissions — הרשאות.
   permissions: PermissionDefinition[];
 }
 
+// permissionGroups — הרשאות / קבוצות.
 export const permissionGroups:
   PermissionGroup[] = [
     {
@@ -371,6 +393,7 @@ export const permissionGroups:
     },
   ];
 
+// allPermissionKeys — מפתחות ההרשאות.
 export const allPermissionKeys:
   PermissionKey[] =
   permissionGroups.flatMap(

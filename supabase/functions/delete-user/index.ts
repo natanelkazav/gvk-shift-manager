@@ -1,17 +1,36 @@
+/**
+ * קובץ: supabase/functions/delete-user/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת delete-user.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DeleteUserRequest, ProfileDatabaseRow, RequestingProfileRow, PermissionRow, createJsonResponse, getRequiredEnvironmentVariable, isValidUuid, normalizeReason, validateRequest, getAuthenticatedUser.
+ * - מקורות נתונים הנזכרים בקריאות from: profiles, user_permissions, audit_logs.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   createClient,
   type User,
 } from 'npm:@supabase/supabase-js@2';
 
+/**
+ * חוזה הנתונים DeleteUserRequest: משתמש / נתוני הבקשה.
+ */
 interface DeleteUserRequest {
+  // userId — מזהה משתמש.
   userId: string;
   reason?: string | null;
 }
 
+/**
+ * חוזה הנתונים ProfileDatabaseRow: פרופיל / שורה.
+ */
 interface ProfileDatabaseRow {
+  // id — מזהה.
   id: string;
+  // email — כתובת דוא״ל.
   email: string;
+  // display_name — שם תצוגה.
   display_name: string;
+  // schedule_name — שיבוץ / שם.
   schedule_name: string | null;
   role:
     | 'admin'
@@ -19,25 +38,41 @@ interface ProfileDatabaseRow {
     | 'dispatcher'
     | 'on_call'
     | 'viewer';
+  // is_active — האם הרשומה פעילה.
   is_active: boolean;
+  // must_change_password — סיסמה.
   must_change_password: boolean;
   last_login_at: string | null;
+  // created_at — מועד יצירה.
   created_at: string;
+  // updated_at — מועד עדכון.
   updated_at: string;
 }
 
+/**
+ * חוזה הנתונים RequestingProfileRow: פרופיל / שורה.
+ */
 interface RequestingProfileRow {
+  // id — מזהה.
   id: string;
+  // email — כתובת דוא״ל.
   email: string;
+  // display_name — שם תצוגה.
   display_name: string;
   role: string;
+  // is_active — האם הרשומה פעילה.
   is_active: boolean;
 }
 
+/**
+ * חוזה הנתונים PermissionRow: הרשאות / שורה.
+ */
 interface PermissionRow {
+  // permission_key — מפתח ההרשאה.
   permission_key: string;
 }
 
+// corsHeaders — הנתון corsHeaders בהקשר הפעולה.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
 
@@ -50,6 +85,12 @@ const corsHeaders = {
   'Content-Type': 'application/json',
 };
 
+/**
+ * פעולה createJsonResponse: יצירת תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 function createJsonResponse(
   body: unknown,
   status: number,
@@ -63,12 +104,19 @@ function createJsonResponse(
   );
 }
 
+/**
+ * פעולה getRequiredEnvironmentVariable: שליפה או חישוב של הנתון getRequiredEnvironmentVariable בהקשר הפעולה.
+ * @param variableName — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getRequiredEnvironmentVariable(
   variableName: string,
 ): string {
+  // value — ערך.
   const value =
     Deno.env.get(variableName);
 
+  // עצירת הפעולה עם שגיאה כאשר !value.
   if (!value) {
     throw new Error(
       `Missing environment variable: ${variableName}`,
@@ -78,6 +126,11 @@ function getRequiredEnvironmentVariable(
   return value;
 }
 
+/**
+ * פעולה isValidUuid: בדיקת תנאי עבור הנתון isValidUuid בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function isValidUuid(
   value: string,
 ): boolean {
@@ -85,26 +138,40 @@ function isValidUuid(
     .test(value);
 }
 
+/**
+ * פעולה normalizeReason: נרמול הנתון normalizeReason בהקשר הפעולה.
+ * @param reason — הנתון reason בהקשר הפעולה.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function normalizeReason(
   reason: string | null | undefined,
 ): string | null {
+  // normalizedReason — הנתון normalizedReason בהקשר הפעולה.
   const normalizedReason =
     reason?.trim() ?? '';
 
   return normalizedReason || null;
 }
 
+/**
+ * פעולה validateRequest: בדיקת תקינות של נתוני הבקשה.
+ * @param requestBody — נתוני הבקשה / תוכן.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function validateRequest(
   requestBody:
     Partial<DeleteUserRequest>,
 ): string | null {
+  // userId — מזהה משתמש.
   const userId =
     requestBody.userId?.trim() ?? '';
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !userId.
   if (!userId) {
     return 'לא התקבל מזהה משתמש למחיקה.';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isValidUuid(userId).
   if (!isValidUuid(userId)) {
     return 'מזהה המשתמש למחיקה אינו תקין.';
   }
@@ -114,6 +181,7 @@ function validateRequest(
       requestBody.reason,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר reason && reason.length > 500.
   if (
     reason &&
     reason.length > 500
@@ -124,21 +192,31 @@ function validateRequest(
   return null;
 }
 
+/**
+ * פעולה אסינכרונית getAuthenticatedUser: שליפה או חישוב של משתמש.
+ * @param authorizationHeader — הנתון authorizationHeader בהקשר הפעולה.
+ * @param supabaseUrl — כתובת יעד.
+ * @param publishableKey — מפתח.
+ * @returns Promise<User | null> — הפלט בהתאם לחתימה.
+ */
 async function getAuthenticatedUser(
   authorizationHeader: string,
   supabaseUrl: string,
   publishableKey: string,
 ): Promise<User | null> {
+  // accessToken — אסימון גישה.
   const accessToken =
     authorizationHeader.replace(
       /^Bearer\s+/i,
       '',
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !accessToken.
   if (!accessToken) {
     return null;
   }
 
+  // authenticationClient — אימות משתמשים / לקוח.
   const authenticationClient =
     createClient(
       supabaseUrl,
@@ -151,6 +229,7 @@ async function getAuthenticatedUser(
       },
     );
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data: { user },
     error,
@@ -159,6 +238,7 @@ async function getAuthenticatedUser(
       .auth
       .getUser(accessToken);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error || !user.
   if (
     error ||
     !user
@@ -173,6 +253,7 @@ Deno.serve(
   async (
     request: Request,
   ) => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method === 'OPTIONS'.
     if (
       request.method === 'OPTIONS'
     ) {
@@ -184,6 +265,7 @@ Deno.serve(
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !== 'POST'
     ) {
@@ -196,12 +278,15 @@ Deno.serve(
       );
     }
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         getRequiredEnvironmentVariable(
           'SUPABASE_URL',
         );
 
+      // publishableKey — מפתח.
       const publishableKey =
         Deno.env.get(
           'SUPABASE_ANON_KEY',
@@ -210,12 +295,14 @@ Deno.serve(
           'SUPABASE_PUBLISHABLE_KEY',
         );
 
+      // עצירת הפעולה עם שגיאה כאשר !publishableKey.
       if (!publishableKey) {
         throw new Error(
           'Missing Supabase public API key.',
         );
       }
 
+      // serviceRoleKey — שירות / מפתח.
       const serviceRoleKey =
         getRequiredEnvironmentVariable(
           'SUPABASE_SERVICE_ROLE_KEY',
@@ -226,6 +313,7 @@ Deno.serve(
           'Authorization',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !authorizationHeader.
       if (!authorizationHeader) {
         return createJsonResponse(
           {
@@ -236,6 +324,7 @@ Deno.serve(
         );
       }
 
+      // authenticatedUser — משתמש.
       const authenticatedUser =
         await getAuthenticatedUser(
           authorizationHeader,
@@ -243,6 +332,7 @@ Deno.serve(
           publishableKey,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !authenticatedUser.
       if (!authenticatedUser) {
         return createJsonResponse(
           {
@@ -253,6 +343,7 @@ Deno.serve(
         );
       }
 
+      // adminClient — לקוח.
       const adminClient =
         createClient(
           supabaseUrl,
@@ -268,6 +359,7 @@ Deno.serve(
           },
         );
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data: requestingProfile,
         error: requestingProfileError,
@@ -288,6 +380,7 @@ Deno.serve(
           RequestingProfileRow
         >();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר requestingProfileError || !requestingProfile.
       if (
         requestingProfileError ||
         !requestingProfile
@@ -301,6 +394,7 @@ Deno.serve(
         );
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !requestingProfile.is_active.
       if (
         !requestingProfile.is_active
       ) {
@@ -313,6 +407,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data: managementPermission,
         error: permissionError,
@@ -331,6 +426,7 @@ Deno.serve(
           PermissionRow
         >();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר permissionError || !managementPermission.
       if (
         permissionError ||
         !managementPermission
@@ -344,9 +440,11 @@ Deno.serve(
         );
       }
 
+      // requestBody — נתוני הבקשה / תוכן.
       let requestBody:
         Partial<DeleteUserRequest>;
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         requestBody =
           await request.json();
@@ -360,11 +458,13 @@ Deno.serve(
         );
       }
 
+      // validationError — אימות נתונים / שגיאה.
       const validationError =
         validateRequest(
           requestBody,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר validationError.
       if (validationError) {
         return createJsonResponse(
           {
@@ -375,6 +475,7 @@ Deno.serve(
         );
       }
 
+      // targetUserId — מזהה משתמש היעד.
       const targetUserId =
         requestBody.userId!.trim();
 
@@ -383,6 +484,7 @@ Deno.serve(
           requestBody.reason,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר targetUserId === authenticatedUser.id.
       if (
         targetUserId ===
         authenticatedUser.id
@@ -396,6 +498,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data: targetProfile,
         error: targetProfileError,
@@ -421,6 +524,7 @@ Deno.serve(
           ProfileDatabaseRow
         >();
 
+      // עצירת הפעולה עם שגיאה כאשר targetProfileError.
       if (targetProfileError) {
         console.error(
           'GET DELETE TARGET ERROR:',
@@ -432,6 +536,7 @@ Deno.serve(
         );
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !targetProfile.
       if (!targetProfile) {
         return createJsonResponse(
           {
@@ -446,6 +551,7 @@ Deno.serve(
         targetProfile.role ===
         'admin'
       ) {
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           count: activeAdminCount,
           error: activeAdminCountError,
@@ -467,6 +573,7 @@ Deno.serve(
             true,
           );
 
+        // עצירת הפעולה עם שגיאה כאשר activeAdminCountError.
         if (activeAdminCountError) {
           console.error(
             'COUNT ACTIVE ADMINS ERROR:',
@@ -478,6 +585,7 @@ Deno.serve(
           );
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר targetProfile.is_active && ( activeAdminCount ?? 0 ) <= 1.
         if (
           targetProfile.is_active &&
           (
@@ -495,6 +603,7 @@ Deno.serve(
         }
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data: targetAuthUser,
         error: targetAuthUserError,
@@ -506,6 +615,7 @@ Deno.serve(
             targetUserId,
           );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר targetAuthUserError || !targetAuthUser.user.
       if (
         targetAuthUserError ||
         !targetAuthUser.user
@@ -524,6 +634,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         error: deleteAuthUserError,
       } =
@@ -535,6 +646,7 @@ Deno.serve(
             false,
           );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר deleteAuthUserError.
       if (deleteAuthUserError) {
         console.error(
           'DELETE AUTH USER ERROR:',
@@ -556,6 +668,7 @@ Deno.serve(
        * נמחקה. אם לא, הקריאה הבאה
        * מנקה אותה ידנית.
        */
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         error: profileCleanupError,
       } = await adminClient
@@ -580,6 +693,7 @@ Deno.serve(
        * מחיקת הפרופיל. המזהה המקורי
        * נשמר בתוך metadata.
        */
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         error: auditLogError,
       } = await adminClient

@@ -1,21 +1,38 @@
+/**
+ * קובץ: src/components/dashboard/DashboardCard.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור לוח בקרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DashboardCardProps, DashboardCard.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import type {
   ReactNode,
 } from 'react';
 
+/**
+ * חוזה הנתונים DashboardCardProps: לוח בקרה / מאפייני הרכיב.
+ */
 interface DashboardCardProps {
+  // title — כותרת.
   title: string;
 
   icon?: ReactNode;
 
   badge?: ReactNode;
 
+  // children — התוכן המקונן של הרכיב.
   children: ReactNode;
 
   footer?: ReactNode;
 
+  // className — שם (אופציונלי).
   className?: string;
 }
 
+/**
+ * פעולה DashboardCard: לוח בקרה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DashboardCard({
   title,
   icon,

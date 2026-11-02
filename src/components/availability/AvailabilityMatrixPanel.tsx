@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/availability/AvailabilityMatrixPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור אילוצים וזמינות / מטריצת נתונים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AvailabilityMatrixStatistics, AvailabilityMatrixPanelProps, formatDate, formatTime, getShiftStateClass, getShiftStateLabel, getDispatcherStatusClass, getDispatcherStatusLabel, DispatcherStatusIcon, AvailabilityMatrixPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
   CalendarDays,
@@ -18,24 +25,41 @@ import type {
   AvailabilityPeriodMatrix,
 } from '../../types/availabilityMatrix';
 
+/**
+ * חוזה הנתונים AvailabilityMatrixStatistics: אילוצים וזמינות / מטריצת נתונים / סטטיסטיקה.
+ */
 interface AvailabilityMatrixStatistics {
+  // totalShifts — סך הכול / משמרות.
   totalShifts: number;
+  // noAvailableShifts — משמרות.
   noAvailableShifts: number;
+  // singleAvailableShifts — משמרות.
   singleAvailableShifts: number;
+  // multipleAvailableShifts — משמרות.
   multipleAvailableShifts: number;
+  // incompleteShifts — משמרות.
   incompleteShifts: number;
 }
 
+/**
+ * חוזה הנתונים AvailabilityMatrixPanelProps: אילוצים וזמינות / מטריצת נתונים / מאפייני הרכיב.
+ */
 interface AvailabilityMatrixPanelProps {
+  // data — נתונים.
   data: AvailabilityPeriodMatrix | null;
+  // statistics — סטטיסטיקה.
   statistics: AvailabilityMatrixStatistics;
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
+  // error — שגיאה.
   error: string | null;
 
   onRefresh: () => Promise<void>;
+  // onClose — פונקציית סגירת התצוגה.
   onClose: () => void;
 }
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -51,13 +75,20 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date = new Date(
     `${value}T12:00:00`,
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -76,27 +107,40 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
   return value.slice(0, 5);
 }
 
+/**
+ * פעולה getShiftStateClass: שליפה או חישוב של משמרת / מצב.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getShiftStateClass(
   shift: AvailabilityMatrixShift,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר shift.unansweredDispatchers > 0.
   if (
     shift.unansweredDispatchers > 0
   ) {
     return 'availability-matrix-shift-incomplete';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר shift.availableDispatchers === 0.
   if (
     shift.availableDispatchers === 0
   ) {
     return 'availability-matrix-shift-none';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר shift.availableDispatchers === 1.
   if (
     shift.availableDispatchers === 1
   ) {
@@ -106,21 +150,29 @@ function getShiftStateClass(
   return 'availability-matrix-shift-multiple';
 }
 
+/**
+ * פעולה getShiftStateLabel: שליפה או חישוב של משמרת / מצב / תווית.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getShiftStateLabel(
   shift: AvailabilityMatrixShift,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר shift.unansweredDispatchers > 0.
   if (
     shift.unansweredDispatchers > 0
   ) {
     return 'ממתין לתשובות';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר shift.availableDispatchers === 0.
   if (
     shift.availableDispatchers === 0
   ) {
     return 'אין מוקדן זמין';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר shift.availableDispatchers === 1.
   if (
     shift.availableDispatchers === 1
   ) {
@@ -130,10 +182,16 @@ function getShiftStateLabel(
   return 'זמינות מספקת';
 }
 
+/**
+ * פעולה getDispatcherStatusClass: שליפה או חישוב של מוקדנים / סטטוס.
+ * @param dispatcher — מוקדנים.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDispatcherStatusClass(
   dispatcher:
     AvailabilityMatrixDispatcher,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dispatcher.availabilityStatus === 'available'.
   if (
     dispatcher.availabilityStatus ===
     'available'
@@ -141,6 +199,7 @@ function getDispatcherStatusClass(
     return 'availability-matrix-dispatcher-available';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dispatcher.availabilityStatus === 'unavailable'.
   if (
     dispatcher.availabilityStatus ===
     'unavailable'
@@ -151,10 +210,16 @@ function getDispatcherStatusClass(
   return 'availability-matrix-dispatcher-unanswered';
 }
 
+/**
+ * פעולה getDispatcherStatusLabel: שליפה או חישוב של מוקדנים / סטטוס / תווית.
+ * @param dispatcher — מוקדנים.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDispatcherStatusLabel(
   dispatcher:
     AvailabilityMatrixDispatcher,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dispatcher.availabilityStatus === 'available'.
   if (
     dispatcher.availabilityStatus ===
     'available'
@@ -162,6 +227,7 @@ function getDispatcherStatusLabel(
     return 'זמין';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dispatcher.availabilityStatus === 'unavailable'.
   if (
     dispatcher.availabilityStatus ===
     'unavailable'
@@ -172,12 +238,18 @@ function getDispatcherStatusLabel(
   return 'לא סימן';
 }
 
+/**
+ * פעולה DispatcherStatusIcon: מוקדנים / סטטוס.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DispatcherStatusIcon({
   dispatcher,
 }: {
+  // dispatcher — מוקדנים.
   dispatcher:
     AvailabilityMatrixDispatcher;
 }) {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dispatcher.availabilityStatus === 'available'.
   if (
     dispatcher.availabilityStatus ===
     'available'
@@ -190,6 +262,7 @@ function DispatcherStatusIcon({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dispatcher.availabilityStatus === 'unavailable'.
   if (
     dispatcher.availabilityStatus ===
     'unavailable'
@@ -210,6 +283,10 @@ function DispatcherStatusIcon({
   );
 }
 
+/**
+ * פעולה AvailabilityMatrixPanel: אילוצים וזמינות / מטריצת נתונים.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function AvailabilityMatrixPanel({
   data,
   statistics,
@@ -218,6 +295,7 @@ function AvailabilityMatrixPanel({
   onRefresh,
   onClose,
 }: AvailabilityMatrixPanelProps) {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading.
   if (isLoading) {
     return (
       <section className="availability-matrix-panel">
@@ -237,6 +315,7 @@ function AvailabilityMatrixPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error.
   if (error) {
     return (
       <section className="availability-matrix-panel">
@@ -282,10 +361,12 @@ function AvailabilityMatrixPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
   if (!data) {
     return null;
   }
 
+  // periodTitle — תקופה / כותרת.
   const periodTitle =
     data.period.title ??
     `${hebrewMonths[

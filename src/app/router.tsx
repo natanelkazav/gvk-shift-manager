@@ -1,3 +1,9 @@
+/**
+ * קובץ: src/app/router.tsx
+ * מטרה: הגדרת מסלולי היישום, מעטפות הגישה והמסכים המשויכים לכל מסלול.
+ * מטרות עיקריות:
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { createBrowserRouter } from 'react-router-dom';
 
 import ProtectedRoute from '../auth/ProtectedRoute';
@@ -30,6 +36,7 @@ import StatisticsPage from '../pages/StatisticsPage';
 import UsersPage from '../pages/UsersPage';
 import ContactsPage from '../pages/ContactsPage';
 
+// router — הנתון router בהקשר הפעולה.
 export const router = createBrowserRouter([
   {
     path: '/reset-password',

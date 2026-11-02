@@ -1,6 +1,12 @@
+-- קובץ: supabase/migrations/20261022110000_manager_availability_preferences.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור אילוצים וזמינות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_availability_shadow_workspace, public.save_dynamic_availability_shadow_submission.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Align manager workspace and saving with employee monthly/weekly preferences.
 -- Requires 20261018090000_employee_weekly_shift_limit.sql to have been applied.
 
+-- פונקציית מסד public.get_dynamic_availability_shadow_workspace: שליפה או חישוב של דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.get_dynamic_availability_shadow_workspace(
   requested_job_type_id uuid,
   requested_year integer,
@@ -8,18 +14,25 @@ create or replace function public.get_dynamic_availability_shadow_workspace(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
+  -- normalized_config — תצורה.
   normalized_config jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('availability.view_team', requested_job_type_id, current_user_id) then raise .
   if not public.has_dynamic_job_type_permission('availability.view_team', requested_job_type_id, current_user_id) then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
 
@@ -33,6 +46,7 @@ begin
     'limits', coalesce(job.availability_config->'limits','{"maxNightsEnabled":false,"defaultMaxNights":null,"maxWeekendsEnabled":false,"defaultMaxWeekends":null,"maxHolidaysEnabled":false,"defaultMaxHolidays":null}'::jsonb)
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'materialized', period.id is not null,'mode','shadow','periodId',period.id,'jobTypeId',job.id,'jobTypeName',job.name,
     'availabilityConfig',normalized_config,
@@ -42,6 +56,7 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.save_dynamic_availability_shadow_submission: שמירת דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.save_dynamic_availability_shadow_submission(
   requested_job_type_id uuid,
   requested_year integer,
@@ -51,33 +66,48 @@ create or replace function public.save_dynamic_availability_shadow_submission(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
+  -- v_submission_id — מזהה.
   v_submission_id uuid;
+  -- entry_item — רשומה / פריט.
   entry_item jsonb;
   allowed_statuses jsonb;
+  -- requested_status — סטטוס.
   requested_status text;
+  -- weekly_enabled — שבועי / האם האפשרות מופעלת.
   weekly_enabled boolean;
+  -- weekly_limit — שבועי / מגבלת תוצאות.
   weekly_limit integer;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('availability.manage_submissions', requested_job_type_id, current_user_id) th.
   if not public.has_dynamic_job_type_permission('availability.manage_submissions', requested_job_type_id, current_user_id) then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.job_type_memberships m where m.job_type_id=job.id and m.user_id=requested_user_id) then .
   if not exists(select 1 from public.job_type_memberships m where m.job_type_id=job.id and m.user_id=requested_user_id) then raise exception 'user is not a member of this job type'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי period.id is null then raise exception 'shadow period not materialized'; end if;.
   if period.id is null then raise exception 'shadow period not materialized'; end if;
   weekly_enabled := coalesce((job.availability_config->>'showWeeklyShiftLimit')::boolean,false);
+  -- הסתעפות לפי התנאי weekly_enabled and requested_payload ? 'maxWeeklyShifts' and requested_payload->>'maxWeeklyShifts' is not null.
   if weekly_enabled and requested_payload ? 'maxWeeklyShifts' and requested_payload->>'maxWeeklyShifts' is not null then
+    -- הסתעפות לפי התנאי (requested_payload->>'maxWeeklyShifts') !~ '^[1-9][0-9]?$' then raise exception 'weekly shift limit must be an integer b.
     if (requested_payload->>'maxWeeklyShifts') !~ '^[1-9][0-9]?$' then raise exception 'weekly shift limit must be an integer between 1 and 99'; end if;
     weekly_limit := (requested_payload->>'maxWeeklyShifts')::integer;
   end if;
 
+  -- הוספת רשומות ל־public.dynamic_availability_submissions בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_availability_submissions(period_id,user_id,status,min_shifts,target_shifts,max_shifts,max_nights,max_weekends,max_holidays,note,submitted_at)
   values(period.id,requested_user_id,coalesce(requested_payload->>'submissionStatus','draft'),
     nullif(requested_payload->>'minimum','')::integer,nullif(requested_payload->>'target','')::integer,nullif(requested_payload->>'maximum','')::integer,
@@ -89,21 +119,28 @@ begin
     submitted_at=excluded.submitted_at,updated_at=now()
   returning id into v_submission_id;
 
+  -- הסתעפות לפי התנאי weekly_enabled and requested_payload ? 'maxWeeklyShifts'.
   if weekly_enabled and requested_payload ? 'maxWeeklyShifts' then
+    -- עדכון רשומות ב־public.dynamic_availability_submissions בהתאם לקלט ולתנאים להלן.
     update public.dynamic_availability_submissions set max_weekly_shifts=weekly_limit where id=v_submission_id;
   end if;
 
   allowed_statuses:=coalesce(job.availability_config->'statuses','["available","unavailable"]'::jsonb);
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for entry_item in select value from jsonb_array_elements(coalesce(requested_payload->'entries','[]'::jsonb)) loop
     requested_status:=entry_item->>'status';
+    -- הסתעפות לפי התנאי not (allowed_statuses ? requested_status) then raise exception 'availability status % is not enabled for this job type',.
     if not (allowed_statuses ? requested_status) then raise exception 'availability status % is not enabled for this job type',requested_status; end if;
+    -- הסתעפות לפי התנאי not exists(select 1 from public.dynamic_availability_slots s where s.id=(entry_item->>'slotId')::uuid and s.period_id=pe.
     if not exists(select 1 from public.dynamic_availability_slots s where s.id=(entry_item->>'slotId')::uuid and s.period_id=period.id) then raise exception 'slot does not belong to period'; end if;
+    -- הוספת רשומות ל־public.dynamic_availability_entries בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_availability_entries(submission_id,slot_id,availability_status,note)
     values(v_submission_id,(entry_item->>'slotId')::uuid,requested_status,nullif(trim(coalesce(entry_item->>'note','')),''))
     on conflict on constraint dynamic_availability_entries_pkey do update
       set availability_status=excluded.availability_status,note=excluded.note,updated_at=now();
   end loop;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('saved',true,'mode','shadow','submissionId',v_submission_id);
 end;
 $function$;

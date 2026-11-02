@@ -1,3 +1,11 @@
+/**
+ * קובץ: src/services/scheduleImportIdentityService.ts
+ * מטרה: התאמת שמות וזהויות המגיעים מקובץ שיבוץ למשתמשי המערכת.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: SupabaseErrorShape, normalizeScheduleImportIdentityError, normalizeImportNameStrict, normalizeImportNameTypoFallback, getUserNameCandidates, findUserById, findUniqueUserMatch, findExactUserMatch, findConservativeTypoMatch, resolveImportName ועוד.
+ * - קריאות RPC המופעלות בקובץ: get_schedule_import_users, save_schedule_import_name_alias.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import {
   supabase,
 } from '../lib/supabase';
@@ -12,7 +20,11 @@ import type {
   ScheduleImportUserType,
 } from '../types/scheduleImport';
 
+/**
+ * חוזה הנתונים SupabaseErrorShape: שגיאה.
+ */
 interface SupabaseErrorShape {
+  // message — הודעה (אופציונלי).
   message?: unknown;
 
   details?: unknown;
@@ -22,6 +34,11 @@ interface SupabaseErrorShape {
   code?: unknown;
 }
 
+/**
+ * פעולה normalizeScheduleImportIdentityError: נרמול שיבוץ / ייבוא / שגיאה.
+ * @param error — שגיאה.
+ * @returns Error — הפלט בהתאם לחתימה.
+ */
 function normalizeScheduleImportIdentityError(
   error: unknown,
 ): Error {
@@ -30,6 +47,7 @@ function normalizeScheduleImportIdentityError(
     error,
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -41,10 +59,12 @@ function normalizeScheduleImportIdentityError(
       'object' &&
     error !== null
   ) {
+    // databaseError — שגיאה.
     const databaseError =
       error as
         SupabaseErrorShape;
 
+    // errorParts — שגיאה.
     const errorParts = [
       typeof databaseError
         .message ===
@@ -88,6 +108,7 @@ function normalizeScheduleImportIdentityError(
         Boolean(errorPart),
     );
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר errorParts.length > 0.
     if (
       errorParts.length >
       0
@@ -105,6 +126,11 @@ function normalizeScheduleImportIdentityError(
   );
 }
 
+/**
+ * פעולה normalizeImportNameStrict: נרמול ייבוא / שם.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeImportNameStrict(
   value: string,
 ): string {
@@ -137,6 +163,11 @@ function normalizeImportNameStrict(
  * - Final-letter normalization is allowed only when it produces exactly
  *   one possible user, e.g. historical typo "אולג ם" -> "אולג מ".
  */
+/**
+ * פעולה normalizeImportNameTypoFallback: נרמול ייבוא / שם.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeImportNameTypoFallback(
   value: string,
 ): string {
@@ -145,6 +176,7 @@ function normalizeImportNameTypoFallback(
   ).replace(
     /[ךםןףץ]/g,
     (character) => {
+      // finalLetterMap — מפת התאמה.
       const finalLetterMap:
         Record<
           string,
@@ -165,6 +197,11 @@ function normalizeImportNameTypoFallback(
   );
 }
 
+/**
+ * פעולה getUserNameCandidates: שליפה או חישוב של משתמש / שם.
+ * @param user — משתמש.
+ * @returns string[] — הפלט בהתאם לחתימה.
+ */
 function getUserNameCandidates(
   user:
     ScheduleImportUser,
@@ -186,6 +223,12 @@ function getUserNameCandidates(
     );
 }
 
+/**
+ * פעולה findUserById: איתור משתמש / מזהה.
+ * @param users — משתמשים.
+ * @param userId — מזהה משתמש.
+ * @returns ScheduleImportUser | null — הפלט בהתאם לחתימה.
+ */
 function findUserById(
   users:
     ScheduleImportUser[],
@@ -203,6 +246,14 @@ function findUserById(
   );
 }
 
+/**
+ * פעולה findUniqueUserMatch: איתור משתמש.
+ * @param sourceName — מקור / שם.
+ * @param users — משתמשים.
+ * @param field — הנתון field בהקשר הפעולה.
+ * @param normalizer — הנתון normalizer בהקשר הפעולה.
+ * @returns ScheduleImportUser | null — הפלט בהתאם לחתימה.
+ */
 function findUniqueUserMatch(
   sourceName: string,
 
@@ -218,6 +269,7 @@ function findUniqueUserMatch(
       value: string,
     ) => string,
 ): ScheduleImportUser | null {
+  // normalizedSourceName — מקור / שם.
   const normalizedSourceName =
     normalizer(
       sourceName,
@@ -245,20 +297,29 @@ function findUniqueUserMatch(
     : null;
 }
 
+/**
+ * פעולה findExactUserMatch: איתור משתמש.
+ * @param sourceName — מקור / שם.
+ * @param users — משתמשים.
+ * @returns { user: ScheduleImportUser | null; matchSource: | 'schedule_name' | 'display_name' | 'unmatched'; } — הפלט בהתאם לחתימה.
+ */
 function findExactUserMatch(
   sourceName: string,
 
   users:
     ScheduleImportUser[],
 ): {
+  // user — משתמש.
   user:
     ScheduleImportUser | null;
 
+  // matchSource — מקור.
   matchSource:
     | 'schedule_name'
     | 'display_name'
     | 'unmatched';
 } {
+  // scheduleNameMatch — שיבוץ / שם.
   const scheduleNameMatch =
     findUniqueUserMatch(
       sourceName,
@@ -267,6 +328,7 @@ function findExactUserMatch(
       normalizeImportNameStrict,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleNameMatch.
   if (
     scheduleNameMatch
   ) {
@@ -279,6 +341,7 @@ function findExactUserMatch(
     };
   }
 
+  // displayNameMatch — שם תצוגה.
   const displayNameMatch =
     findUniqueUserMatch(
       sourceName,
@@ -287,6 +350,7 @@ function findExactUserMatch(
       normalizeImportNameStrict,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר displayNameMatch.
   if (
     displayNameMatch
   ) {
@@ -308,20 +372,29 @@ function findExactUserMatch(
   };
 }
 
+/**
+ * פעולה findConservativeTypoMatch: איתור הנתון findConservativeTypoMatch בהקשר הפעולה.
+ * @param sourceName — מקור / שם.
+ * @param users — משתמשים.
+ * @returns { user: ScheduleImportUser | null; matchSource: | 'schedule_name' | 'display_name' | 'unmatched'; } — הפלט בהתאם לחתימה.
+ */
 function findConservativeTypoMatch(
   sourceName: string,
 
   users:
     ScheduleImportUser[],
 ): {
+  // user — משתמש.
   user:
     ScheduleImportUser | null;
 
+  // matchSource — מקור.
   matchSource:
     | 'schedule_name'
     | 'display_name'
     | 'unmatched';
 } {
+  // scheduleNameMatch — שיבוץ / שם.
   const scheduleNameMatch =
     findUniqueUserMatch(
       sourceName,
@@ -330,6 +403,7 @@ function findConservativeTypoMatch(
       normalizeImportNameTypoFallback,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר scheduleNameMatch.
   if (
     scheduleNameMatch
   ) {
@@ -342,6 +416,7 @@ function findConservativeTypoMatch(
     };
   }
 
+  // displayNameMatch — שם תצוגה.
   const displayNameMatch =
     findUniqueUserMatch(
       sourceName,
@@ -350,6 +425,7 @@ function findConservativeTypoMatch(
       normalizeImportNameTypoFallback,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר displayNameMatch.
   if (
     displayNameMatch
   ) {
@@ -371,6 +447,14 @@ function findConservativeTypoMatch(
   };
 }
 
+/**
+ * פעולה resolveImportName: קביעת ערך עבור ייבוא / שם.
+ * @param sourceName — מקור / שם.
+ * @param userType — משתמש.
+ * @param users — משתמשים.
+ * @param aliases — הנתון aliases בהקשר הפעולה.
+ * @returns ScheduleImportResolvedName — הפלט בהתאם לחתימה.
+ */
 function resolveImportName(
   sourceName: string,
 
@@ -383,6 +467,7 @@ function resolveImportName(
   aliases:
     ScheduleImportNameAlias[],
 ): ScheduleImportResolvedName {
+  // normalizedSourceName — מקור / שם.
   const normalizedSourceName =
     normalizeImportNameStrict(
       sourceName,
@@ -398,6 +483,7 @@ function resolveImportName(
       users,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר exactMatch.user.
   if (
     exactMatch.user
   ) {
@@ -424,6 +510,7 @@ function resolveImportName(
    * Support aliases saved by both the current strict normalizer and
    * the older final-letter normalizer so existing aliases keep working.
    */
+  // legacyNormalizedSourceName — מקור / שם.
   const legacyNormalizedSourceName =
     normalizeImportNameTypoFallback(
       sourceName,
@@ -446,12 +533,14 @@ function resolveImportName(
     null;
 
   if (alias) {
+    // aliasUser — משתמש.
     const aliasUser =
       findUserById(
         users,
         alias.userId,
       );
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר aliasUser.
     if (aliasUser) {
       return {
         sourceName,
@@ -503,9 +592,18 @@ function resolveImportName(
   };
 }
 
+/**
+ * איגוד פעולות שיבוץ / ייבוא / שירות במחלקה ScheduleImportIdentityService.
+ */
 class ScheduleImportIdentityService {
+  /**
+   * פעולה אסינכרונית getImportUsers: שליפה או חישוב של ייבוא / משתמשים.
+   * הפעולה פונה ל־RPC: get_schedule_import_users.
+   * @returns Promise<ScheduleImportUsersData> — הפלט בהתאם לחתימה.
+   */
   async getImportUsers():
     Promise<ScheduleImportUsersData> {
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -514,12 +612,14 @@ class ScheduleImportIdentityService {
         'get_schedule_import_users',
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeScheduleImportIdentityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data || typeof data !== 'object'.
     if (
       !data ||
       typeof data !==
@@ -530,6 +630,7 @@ class ScheduleImportIdentityService {
       );
     }
 
+    // response — תוצאת הפעולה.
     const response =
       data as
         ScheduleImportUsersData;
@@ -565,18 +666,27 @@ class ScheduleImportIdentityService {
     };
   }
 
+  /**
+   * פעולה אסינכרונית saveNameAlias: שמירת שם.
+   * הפעולה פונה ל־RPC: save_schedule_import_name_alias.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<SaveScheduleImportNameAliasResponse> — הפלט בהתאם לחתימה.
+   */
   async saveNameAlias(
     request:
       SaveScheduleImportNameAliasRequest,
   ): Promise<SaveScheduleImportNameAliasResponse> {
+    // normalizedSourceName — מקור / שם.
     const normalizedSourceName =
       request.sourceName
         .trim();
 
+    // normalizedUserId — מזהה משתמש.
     const normalizedUserId =
       request.userId
         .trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedSourceName.
     if (
       !normalizedSourceName
     ) {
@@ -585,6 +695,7 @@ class ScheduleImportIdentityService {
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedUserId.
     if (
       !normalizedUserId
     ) {
@@ -593,6 +704,7 @@ class ScheduleImportIdentityService {
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -611,12 +723,14 @@ class ScheduleImportIdentityService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeScheduleImportIdentityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת שמירת התאמת השם.',
@@ -627,6 +741,12 @@ class ScheduleImportIdentityService {
       SaveScheduleImportNameAliasResponse;
   }
 
+  /**
+   * פעולה resolveDispatcherNames: קביעת ערך עבור מוקדנים.
+   * @param sourceNames — מקור.
+   * @param data — נתונים.
+   * @returns ScheduleImportResolvedName[] — הפלט בהתאם לחתימה.
+   */
   resolveDispatcherNames(
     sourceNames:
       readonly string[],
@@ -662,6 +782,12 @@ class ScheduleImportIdentityService {
     );
   }
 
+  /**
+   * פעולה resolveOnCallDriverNames: קביעת ערך עבור כוננים.
+   * @param sourceNames — מקור.
+   * @param data — נתונים.
+   * @returns ScheduleImportResolvedName[] — הפלט בהתאם לחתימה.
+   */
   resolveOnCallDriverNames(
     sourceNames:
       readonly string[],
@@ -698,6 +824,12 @@ class ScheduleImportIdentityService {
   }
 
 
+  /**
+   * פעולה resolveMorningDriverNames: קביעת ערך עבור כונני בוקר.
+   * @param sourceNames — מקור.
+   * @param data — נתונים.
+   * @returns ScheduleImportResolvedName[] — הפלט בהתאם לחתימה.
+   */
   resolveMorningDriverNames(
     sourceNames:
       readonly string[],
@@ -734,6 +866,11 @@ class ScheduleImportIdentityService {
     );
   }
 
+  /**
+   * פעולה getUserDisplayName: שליפה או חישוב של שם תצוגה.
+   * @param user — משתמש.
+   * @returns string — הפלט בהתאם לחתימה.
+   */
   getUserDisplayName(
     user:
       ScheduleImportUser,
@@ -747,6 +884,11 @@ class ScheduleImportIdentityService {
     );
   }
 
+  /**
+   * פעולה getUserNameCandidates: שליפה או חישוב של משתמש / שם.
+   * @param user — משתמש.
+   * @returns string[] — הפלט בהתאם לחתימה.
+   */
   getUserNameCandidates(
     user:
       ScheduleImportUser,
@@ -757,5 +899,6 @@ class ScheduleImportIdentityService {
   }
 }
 
+// scheduleImportIdentityService — שיבוץ / ייבוא / שירות.
 export const scheduleImportIdentityService =
   new ScheduleImportIdentityService();

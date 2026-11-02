@@ -1,6 +1,16 @@
+/**
+ * קובץ: src/features/developmentMode/DevelopmentModeBanner.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור מצב פיתוח / מצב פעולה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DevelopmentModeBanner.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { FlaskConical, X } from 'lucide-react';
 import { useDevelopmentMode } from './DevelopmentModeContext';
 
+/**
+ * פעולה DevelopmentModeBanner: מצב פיתוח / מצב פעולה.
+ */
 export default function DevelopmentModeBanner() {
   const { enabled, expiresAt, isLoading, setEnabled } = useDevelopmentMode();
   if (!enabled) return null;

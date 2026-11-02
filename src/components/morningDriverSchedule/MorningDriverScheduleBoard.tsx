@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/morningDriverSchedule/MorningDriverScheduleBoard.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כונני בוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: MorningDriverScheduleBoardProps, ScheduleShiftGroup, ScheduleDisplayMode, formatDate, formatTime, getShiftTypeLabel, MorningDriverScheduleBoard.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   CheckCircle2,
@@ -34,57 +41,76 @@ import type {
   UpdateMorningDriverShiftTimeRequest,
 } from '../../types/morningDriverSchedule';
 
+/**
+ * חוזה הנתונים MorningDriverScheduleBoardProps: כונני בוקר.
+ */
 interface MorningDriverScheduleBoardProps {
+  // data — נתונים.
   data:
     MorningDriverScheduleData | null;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
 
+  // updatingAssignmentId — הקצאה / מזהה.
   updatingAssignmentId:
     string | null;
 
   isPublishing: boolean;
 
+  // viewedYear — שנה.
   viewedYear: number;
 
+  // viewedMonth — חודש.
   viewedMonth: number;
 
+  // onPreviousMonth — חודש.
   onPreviousMonth:
     () => void;
 
+  // onNextMonth — חודש.
   onNextMonth:
     () => void;
 
+  // onCurrentMonth — חודש.
   onCurrentMonth:
     () => void;
 
+  // canEdit — האם עריכה מותרת.
   canEdit: boolean;
 
+  // canEditPublishedAssignments — האם עריכה מותרת.
   canEditPublishedAssignments: boolean;
 
   onRefresh:
     () => void;
 
+  // onUpdateAssignment — הקצאה.
   onUpdateAssignment: (
     request:
       UpdateMorningDriverScheduleAssignmentRequest,
   ) => void;
 
+  // onUpdateShiftTime — משמרת / זמן.
   onUpdateShiftTime: (
     request: UpdateMorningDriverShiftTimeRequest,
   ) => void;
 
+  // onSetIntentionallyUnassigned — קבוצה ייחודית.
   onSetIntentionallyUnassigned: (
     assignmentId: string,
     isIntentionallyUnassigned: boolean,
   ) => void;
 
+  // currentUserId — המשתמש הנוכחי הנוכחי.
   currentUserId:
     string | null;
 
+  // canTransferMyAssignments — הקצאות.
   canTransferMyAssignments:
     boolean;
 
+  // onSelectTransferAssignment — הקצאה.
   onSelectTransferAssignment: (
     assignment:
       MorningDriverScheduleAssignment,
@@ -94,30 +120,51 @@ interface MorningDriverScheduleBoardProps {
     () => void;
 }
 
+/**
+ * חוזה הנתונים ScheduleShiftGroup: שיבוץ / משמרת / קבוצה.
+ */
 interface ScheduleShiftGroup {
+  // key — מפתח.
   key: string;
+  // shiftDate — תאריך המשמרת.
   shiftDate: string;
+  // weekdayName — שם.
   weekdayName: string;
+  // startTime — שעת התחלה.
   startTime: string;
+  // endTime — שעת סיום.
   endTime: string;
+  // minimumWorkers — מספר העובדים המזערי.
   minimumWorkers: number;
+  // recommendedWorkers — מספר העובדים המומלץ.
   recommendedWorkers: number;
+  // assignments — הקצאות.
   assignments:
     MorningDriverScheduleAssignment[];
 }
 
+/**
+ * טיפוס ScheduleDisplayMode: שיבוץ / מצב פעולה.
+ */
 type ScheduleDisplayMode =
   | 'calendar'
   | 'list';
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -141,6 +188,11 @@ function formatDate(
   );
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
@@ -150,20 +202,29 @@ function formatTime(
   );
 }
 
+/**
+ * פעולה getShiftTypeLabel: שליפה או חישוב של משמרת / תווית.
+ * @param startTime — שעת התחלה.
+ * @param endTime — שעת סיום.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getShiftTypeLabel(
   startTime: string,
   endTime: string,
 ): string {
+  // normalizedStartTime — שעת התחלה.
   const normalizedStartTime =
     formatTime(
       startTime,
     );
 
+  // normalizedEndTime — שעת סיום.
   const normalizedEndTime =
     formatTime(
       endTime,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedStartTime === '06:00' && normalizedEndTime === '16:00'.
   if (
     normalizedStartTime ===
       '06:00' &&
@@ -173,6 +234,7 @@ function getShiftTypeLabel(
     return 'משמרת בוקר';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedStartTime === '15:00' && normalizedEndTime === '23:00'.
   if (
     normalizedStartTime ===
       '15:00' &&
@@ -182,6 +244,7 @@ function getShiftTypeLabel(
     return 'משמרת ערב';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedStartTime === '06:00' && normalizedEndTime === '14:00'.
   if (
     normalizedStartTime ===
       '06:00' &&
@@ -194,6 +257,10 @@ function getShiftTypeLabel(
   return 'משמרת כונן בוקר';
 }
 
+/**
+ * פעולה MorningDriverScheduleBoard: כונני בוקר.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function MorningDriverScheduleBoard({
   data,
   isLoading,
@@ -215,12 +282,14 @@ function MorningDriverScheduleBoard({
   onSelectTransferAssignment,
   onPublish,
 }: MorningDriverScheduleBoardProps) {
+  // holidayLabels — חג.
   const holidayLabels =
     useCalendarHolidays(
       viewedYear,
       viewedMonth,
     );
 
+  // מצב מקומי: displayMode — מצב פעולה; setDisplayMode מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     displayMode,
     setDisplayMode,
@@ -229,6 +298,7 @@ function MorningDriverScheduleBoard({
       'calendar',
     );
 
+  // מצב מקומי: selectedCalendarDate — נבחר / לוח שנה / תאריך; setSelectedCalendarDate מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedCalendarDate,
     setSelectedCalendarDate,
@@ -237,22 +307,26 @@ function MorningDriverScheduleBoard({
       null,
     );
 
+  // ערך מחושב shiftGroups — משמרת / קבוצות; נשמר בין רינדורים עד שינוי התלויות.
   const shiftGroups =
     useMemo<
       ScheduleShiftGroup[]
     >(
       () => {
+        // groups — קבוצות; מיפוי לחיפוש לפי מפתח.
         const groups =
           new Map<
             string,
             ScheduleShiftGroup
           >();
 
+        // עיבוד כל פריט מתוך data?.assignments ?? [] בנפרד.
         for (
           const assignment
           of data?.assignments ??
           []
         ) {
+          // key — מפתח.
           const key =
             assignment
               .availabilityShiftId;
@@ -337,19 +411,23 @@ function MorningDriverScheduleBoard({
       ],
     );
 
+  // ערך מחושב shiftGroupsByDate — משמרת / קבוצות / תאריך; נשמר בין רינדורים עד שינוי התלויות.
   const shiftGroupsByDate =
     useMemo(
       () => {
+        // groupsByDate — קבוצות / תאריך; מיפוי לחיפוש לפי מפתח.
         const groupsByDate =
           new Map<
             string,
             ScheduleShiftGroup[]
           >();
 
+        // עיבוד כל פריט מתוך shiftGroups בנפרד.
         for (
           const group
           of shiftGroups
         ) {
+          // currentGroups — קבוצות.
           const currentGroups =
             groupsByDate.get(
               group.shiftDate,
@@ -372,9 +450,11 @@ function MorningDriverScheduleBoard({
       ],
     );
 
+  // ערך מחושב selectedDateGroups — נבחר / תאריך / קבוצות; נשמר בין רינדורים עד שינוי התלויות.
   const selectedDateGroups =
     useMemo(
       () => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedCalendarDate.
         if (
           !selectedCalendarDate
         ) {
@@ -394,14 +474,21 @@ function MorningDriverScheduleBoard({
       ],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ selectedCalendarDate, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedCalendarDate.
       if (
         !selectedCalendarDate
       ) {
         return;
       }
 
+      /**
+       * פעולה handleKeyDown: טיפול באירוע עבור מפתח.
+       * @param event — אירוע.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleKeyDown =
         (
           event:
@@ -434,6 +521,7 @@ function MorningDriverScheduleBoard({
     ],
   );
 
+  // displayedMonthLabel — חודש / תווית.
   const displayedMonthLabel =
     new Intl.DateTimeFormat(
       'he-IL',
@@ -451,6 +539,9 @@ function MorningDriverScheduleBoard({
       ),
     );
 
+  /**
+   * פעולה renderMonthNavigation: בניית תצוגה עבור חודש / ניווט.
+   */
   const renderMonthNavigation =
     () => (
       <div className="morning-driver-schedule-inline-month-navigation">
@@ -508,6 +599,7 @@ function MorningDriverScheduleBoard({
       </div>
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading && !data.
   if (
     isLoading &&
     !data
@@ -530,6 +622,7 @@ function MorningDriverScheduleBoard({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
   if (
     !data
   ) {
@@ -554,19 +647,26 @@ function MorningDriverScheduleBoard({
     );
   }
 
+  // isDraft — טיוטה.
   const isDraft =
     data.period.status ===
     'draft';
 
+  // isPublished — פורסם.
   const isPublished =
     data.period.status ===
     'published';
 
+  /**
+   * פעולה renderAssignmentSlot: בניית תצוגה עבור הקצאה.
+   * @param assignment — הקצאה.
+   */
   const renderAssignmentSlot =
     (
       assignment:
         MorningDriverScheduleAssignment,
     ) => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר assignment.assignmentSlot > assignment.minimumWorkers && !assignment.assignedUserId.
       if (
         assignment.assignmentSlot > assignment.minimumWorkers &&
         !assignment.assignedUserId
@@ -574,10 +674,12 @@ function MorningDriverScheduleBoard({
         return null;
       }
 
+      // isUpdating — הנתון isUpdating בהקשר הפעולה.
       const isUpdating =
         updatingAssignmentId ===
         assignment.id;
 
+      // isEditable — הנתון isEditable בהקשר הפעולה.
       const isEditable =
         (
           (
@@ -803,6 +905,10 @@ function MorningDriverScheduleBoard({
       );
     };
 
+  /**
+   * פעולה renderShiftGroup: בניית תצוגה עבור משמרת / קבוצה.
+   * @param group — קבוצה.
+   */
   const renderShiftGroup =
     (
       group:
@@ -861,6 +967,7 @@ function MorningDriverScheduleBoard({
                     type="time"
                     defaultValue={formatTime(group.startTime)}
                     onBlur={(event) => {
+                      // value — ערך.
                       const value = event.target.value;
                       if (value && value !== formatTime(group.startTime)) {
                         onUpdateShiftTime({
@@ -878,6 +985,7 @@ function MorningDriverScheduleBoard({
                     type="time"
                     defaultValue={formatTime(group.endTime)}
                     onBlur={(event) => {
+                      // value — ערך.
                       const value = event.target.value;
                       if (value && value !== formatTime(group.endTime)) {
                         onUpdateShiftTime({
@@ -1155,11 +1263,13 @@ function MorningDriverScheduleBoard({
             getDayClassName={(
               context,
             ) => {
+              // dayGroups — יום / קבוצות.
               const dayGroups =
                 shiftGroupsByDate.get(
                   context.date,
                 ) ?? [];
 
+              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dayGroups.length === 0.
               if (
                 dayGroups.length ===
                 0
@@ -1174,6 +1284,7 @@ function MorningDriverScheduleBoard({
               if (
                 dayGroups.some(
                   (group) => {
+                    // assignedCount — כמות.
                     const assignedCount =
                       group.assignments.filter(
                         (assignment) =>
@@ -1182,6 +1293,7 @@ function MorningDriverScheduleBoard({
                           ),
                       ).length;
 
+                    // minimumAssignment — הקצאה.
                     const minimumAssignment =
                       group.assignments.find(
                         (assignment) =>
@@ -1210,11 +1322,13 @@ function MorningDriverScheduleBoard({
             renderDayContent={(
               context,
             ) => {
+              // dayGroups — יום / קבוצות.
               const dayGroups =
                 shiftGroupsByDate.get(
                   context.date,
                 ) ?? [];
 
+              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dayGroups.length === 0.
               if (
                 dayGroups.length ===
                 0
@@ -1308,11 +1422,13 @@ function MorningDriverScheduleBoard({
             onDayClick={(
               context,
             ) => {
+              // dayGroups — יום / קבוצות.
               const dayGroups =
                 shiftGroupsByDate.get(
                   context.date,
                 ) ?? [];
 
+              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dayGroups.length === 0.
               if (
                 dayGroups.length ===
                 0

@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260905160000_fix_my_schedule_periods_effective_change_mode.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור תקופות שיבוץ.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_dynamic_schedule_periods.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 8.3E.2.6
@@ -7,17 +12,23 @@ begin;
 -- job_type_schedule_materializations while get_my_dynamic_schedule_periods()
 -- still returned scheduleChangeMode='none', leaving the user on the Legacy route.
 
+-- פונקציית מסד public.get_my_dynamic_schedule_periods: שליפה או חישוב של תקופות שיבוץ.
 create or replace function public.get_my_dynamic_schedule_periods()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -75,7 +86,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_schedule_periods() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_schedule_periods() to authenticated;
 
 commit;

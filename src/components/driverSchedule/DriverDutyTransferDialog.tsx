@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/driverSchedule/DriverDutyTransferDialog.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כוננים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DriverDutyTransferDialogProps, formatDutyDate, DriverDutyTransferDialog.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   ArrowLeftRight,
   CalendarDays,
@@ -19,19 +26,26 @@ import type {
   DriverScheduleDriver,
 } from '../../types/driverSchedule';
 
+/**
+ * חוזה הנתונים DriverDutyTransferDialogProps: כוננים / מאפייני הרכיב.
+ */
 interface DriverDutyTransferDialogProps {
+  // day — יום.
   day:
     DriverScheduleDay;
 
   drivers:
     DriverScheduleDriver[];
 
+  // currentUserId — המשתמש הנוכחי הנוכחי.
   currentUserId:
     string;
 
+  // isSaving — האם שמירה מתבצעת.
   isSaving:
     boolean;
 
+  // onClose — פונקציית סגירת התצוגה.
   onClose:
     () => void;
 
@@ -40,14 +54,21 @@ interface DriverDutyTransferDialogProps {
   ) => Promise<void>;
 }
 
+/**
+ * פעולה formatDutyDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param dateValue — תאריך / ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDutyDate(
   dateValue: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${dateValue}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -67,6 +88,10 @@ function formatDutyDate(
   ).format(date);
 }
 
+/**
+ * פעולה DriverDutyTransferDialog: כוננים.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DriverDutyTransferDialog({
   day,
   drivers,
@@ -75,12 +100,14 @@ function DriverDutyTransferDialog({
   onClose,
   onTransfer,
 }: DriverDutyTransferDialogProps) {
+  // מצב מקומי: selectedDriverId — נבחר / כוננים / מזהה; setSelectedDriverId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedDriverId,
     setSelectedDriverId,
   ] =
     useState('');
 
+  // ערך מחושב availableDrivers — הנתון availableDrivers בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const availableDrivers =
     useMemo(
       () =>
@@ -96,6 +123,7 @@ function DriverDutyTransferDialog({
       ],
     );
 
+  // selectedDriver — נבחר / כוננים.
   const selectedDriver =
     availableDrivers.find(
       (driver) =>
@@ -104,8 +132,13 @@ function DriverDutyTransferDialog({
     ) ??
     null;
 
+  /**
+   * פעולה אסינכרונית handleSubmit: טיפול באירוע עבור הנתון handleSubmit בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSubmit =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedDriverId || isSaving.
       if (
         !selectedDriverId ||
         isSaving

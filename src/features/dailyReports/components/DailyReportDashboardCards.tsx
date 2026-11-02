@@ -1,9 +1,20 @@
+/**
+ * קובץ: src/features/dailyReports/components/DailyReportDashboardCards.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דוחות פעילות יומיים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DailyReportDashboardCards.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { useEffect, useMemo, useState } from 'react';
 import { CircleCheck, ClipboardCheck, Paperclip, Plus, Send, Trash2, X } from 'lucide-react';
 import { dailyReportService } from '../../../services/dailyReportService';
 import type { DailyReportItemInput, DailyReportWorkspace } from '../../../types/dailyReports';
 import { Button, Input, Modal, Textarea } from '../../../components/ui';
 
+/**
+ * פעולה emptyItem: פריט.
+ * @returns DailyReportItemInput — הפלט בהתאם לחתימה.
+ */
 const emptyItem = (): DailyReportItemInput => ({
   subjectId: null,
   subjectName: '',
@@ -12,19 +23,36 @@ const emptyItem = (): DailyReportItemInput => ({
   details: '',
 });
 
+/**
+ * פעולה DailyReportDashboardCards: דוחות פעילות יומיים.
+ */
 function DailyReportDashboardCards() {
+  // מצב מקומי: workspace — הנתון workspace בהקשר הפעולה; setWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspace, setWorkspace] = useState<DailyReportWorkspace | null>(null);
+  // מצב מקומי: selectedJobTypeId — מזהה סוג התפקיד; setSelectedJobTypeId מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedJobTypeId, setSelectedJobTypeId] = useState<string | null>(null);
+  // מצב מקומי: items — פריטים; setItems מעדכנת אותו ומפעילה רינדור לפי React.
   const [items, setItems] = useState<DailyReportItemInput[]>([emptyItem()]);
+  // מצב מקומי: newSubject — הנתון newSubject בהקשר הפעולה; setNewSubject מעדכנת אותו ומפעילה רינדור לפי React.
   const [newSubject, setNewSubject] = useState('');
+  // מצב מקומי: newCustomer — הנתון newCustomer בהקשר הפעולה; setNewCustomer מעדכנת אותו ומפעילה רינדור לפי React.
   const [newCustomer, setNewCustomer] = useState('');
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy, setBusy] = useState(false);
+  // מצב מקומי: attachments — הנתון attachments בהקשר הפעולה; setAttachments מעדכנת אותו ומפעילה רינדור לפי React.
   const [attachments, setAttachments] = useState<File[]>([]);
+  // מצב מקומי: message — הודעה; setMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [message, setMessage] = useState<string | null>(null);
+  // מצב מקומי: loadError — שגיאה; setLoadError מעדכנת אותו ומפעילה רינדור לפי React.
   const [loadError, setLoadError] = useState<string | null>(null);
+  // מצב מקומי: successMessage — הודעה; setSuccessMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  /**
+   * פעולה אסינכרונית load: טעינת הנתון load בהקשר הפעולה.
+   */
   const load = async () => {
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       setLoadError(null);
       setWorkspace(await dailyReportService.getMyWorkspace());
@@ -34,13 +62,16 @@ function DailyReportDashboardCards() {
     }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => { void load(); }, []);
 
+  // ערך מחושב role — הנתון role בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const role = useMemo(
     () => workspace?.roles.find((item) => item.jobTypeId === selectedJobTypeId) ?? null,
     [workspace, selectedJobTypeId],
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר loadError.
   if (loadError) {
     return (
       <section className="dashboard-card daily-report-card">
@@ -59,10 +90,18 @@ function DailyReportDashboardCards() {
   }
   if (!workspace || workspace.roles.length === 0) return null;
 
+  /**
+   * פעולה updateItem: עדכון פריט.
+   * @param index — מיקום באוסף.
+   * @param patch — הנתון patch בהקשר הפעולה.
+   */
   const updateItem = (index: number, patch: Partial<DailyReportItemInput>) => {
     setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
   };
 
+  /**
+   * פעולה אסינכרונית addSubject: הוספת הנתון addSubject בהקשר הפעולה.
+   */
   const addSubject = async () => {
     if (!role || !newSubject.trim()) return;
     setBusy(true);
@@ -74,6 +113,9 @@ function DailyReportDashboardCards() {
     } finally { setBusy(false); }
   };
 
+  /**
+   * פעולה אסינכרונית addCustomer: הוספת הנתון addCustomer בהקשר הפעולה.
+   */
   const addCustomer = async () => {
     if (!newCustomer.trim()) return;
     setBusy(true);
@@ -85,21 +127,28 @@ function DailyReportDashboardCards() {
     } finally { setBusy(false); }
   };
 
+  /**
+   * פעולה אסינכרונית submit: הגשת הנתון submit בהקשר הפעולה.
+   */
   const submit = async () => {
     if (!role) return;
     const clean = items
       .map((item) => ({ ...item, subjectName: item.subjectName.trim(), details: item.details.trim() }))
       .filter((item) => item.subjectName && item.details);
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר clean.length === 0.
     if (clean.length === 0) {
       setMessage('יש להוסיף לפחות פעילות אחת עם נושא ופירוט.');
       return;
     }
     setBusy(true);
     setMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // preparedReportId — דוח / מזהה.
       let preparedReportId: string | undefined;
       if (role.allowAttachments && attachments.length > 0) {
         preparedReportId = await dailyReportService.prepareUpload(role.jobTypeId);
+        // עיבוד כל פריט מתוך attachments בנפרד.
         for (const file of attachments) {
           await dailyReportService.uploadAttachment(preparedReportId, file);
         }
@@ -229,6 +278,7 @@ function DailyReportDashboardCards() {
                     multiple
                     accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx"
                     onChange={(event) => {
+                      // selected — נבחר.
                       const selected = Array.from(event.target.files ?? []).filter((file) => file.size <= 10 * 1024 * 1024);
                       setAttachments((current) => [...current, ...selected].slice(0, 10));
                       event.currentTarget.value = '';

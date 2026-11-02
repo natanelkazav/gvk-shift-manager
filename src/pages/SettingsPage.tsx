@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/SettingsPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור הגדרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: FileToolTab, SettingsPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   BellRing,
   LayoutDashboard,
@@ -44,24 +51,34 @@ import { dashboardWidgetService } from '../services/dashboardWidgetService';
 import ThemeSettings from '../components/settings/ThemeSettings';
 import ActivityTrackingPersonalSettings from '../components/settings/ActivityTrackingPersonalSettings';
 
+/**
+ * טיפוס FileToolTab: קובץ.
+ */
 type FileToolTab =
   | 'import'
   | 'export';
 
+/**
+ * פעולה SettingsPage: הגדרות.
+ */
 function SettingsPage() {
   const {
     hasPermission,
     profile,
   } = useAuth();
 
+  // isSystemAdmin — הנתון isSystemAdmin בהקשר הפעולה.
   const isSystemAdmin = profile?.role === 'admin';
+  // canManageUsers — האם פעולת ניהול מותרת.
   const canManageUsers = hasPermission('users.manage');
 
+  // canManageNotifications — האם פעולת ניהול מותרת.
   const canManageNotifications =
     hasPermission(
       'notifications.manage',
     );
 
+  // canUseShiftReminders — משמרת / תזכורות.
   const canUseShiftReminders =
     hasPermission(
       'schedule.view',
@@ -70,27 +87,32 @@ function SettingsPage() {
       'morning_driver_schedule.view',
     );
 
+  // canUseDriverDutyReminders — כוננים / תזכורות.
   const canUseDriverDutyReminders =
     hasPermission(
       'driver_schedule.view',
     );
 
+  // canImportSchedules — ייבוא.
   const canImportSchedules =
     hasPermission(
       'schedule_import.manage',
     );
 
+  // canExportSchedules — ייצוא.
   const canExportSchedules =
     hasPermission(
       'schedule_export.manage',
     );
 
+  // defaultFileTab — קובץ.
   const defaultFileTab:
     FileToolTab =
       canImportSchedules
         ? 'import'
         : 'export';
 
+  // מצב מקומי: fileToolTab — קובץ; setFileToolTab מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     fileToolTab,
     setFileToolTab,
@@ -98,18 +120,23 @@ function SettingsPage() {
     defaultFileTab,
   );
 
+  // canUseFileTools — קובץ.
   const canUseFileTools =
     canImportSchedules ||
     canExportSchedules;
 
+  // canUseAdvancedSystemTools — הנתון canUseAdvancedSystemTools בהקשר הפעולה.
   const canUseAdvancedSystemTools =
     canManageUsers ||
     canManageNotifications ||
     isSystemAdmin;
 
+  // מצב מקומי: canConfigureDashboard — לוח בקרה; setCanConfigureDashboard מעדכנת אותו ומפעילה רינדור לפי React.
   const [canConfigureDashboard, setCanConfigureDashboard] = useState(false);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     void dashboardWidgetService.canConfigure()
       .then((allowed) => { if (active) setCanConfigureDashboard(allowed); });

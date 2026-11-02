@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/NotificationsPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור התראות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NotificationFilter, WorkspaceTab, formatNotificationDate, formatSwapShift, getNotificationIcon, getErrorMessage, NotificationsPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   ArrowLeftRight,
   Bell,
@@ -36,10 +43,22 @@ import '../styles/notifications.css';
 import { dynamicShiftDisplayName } from '../utils/dynamicShiftDisplayName';
 import AnnouncementComposer from '../features/notifications/components/AnnouncementComposer';
 
+/**
+ * טיפוס NotificationFilter: התראות / סינון.
+ */
 type NotificationFilter = 'all' | 'unread' | 'read';
+/**
+ * טיפוס WorkspaceTab: הנתון WorkspaceTab בהקשר הפעולה.
+ */
 type WorkspaceTab = 'notifications' | 'requests';
 
+/**
+ * פעולה formatNotificationDate: עיצוב ערך לתצוגה עבור התראות / תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatNotificationDate(value: string): string {
+  // date — תאריך.
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return new Intl.DateTimeFormat('he-IL', {
@@ -48,23 +67,33 @@ function formatNotificationDate(value: string): string {
   }).format(date);
 }
 
+/**
+ * פעולה formatSwapShift: עיצוב ערך לתצוגה עבור משמרת.
+ * @param date — תאריך.
+ * @param startsAt — מועד התחלה.
+ * @param endsAt — מועד סיום.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatSwapShift(
   date: string | null,
   startsAt: string | null,
   endsAt: string | null,
 ): string {
   if (!date || !startsAt || !endsAt) return '—';
+  // baseDate — תאריך.
   const baseDate = new Date(`${date}T12:00:00`);
   const weekday = new Intl.DateTimeFormat('he-IL', {
     weekday: 'long',
     timeZone: 'Asia/Jerusalem',
   }).format(baseDate);
+  // formattedDate — תאריך.
   const formattedDate = new Intl.DateTimeFormat('he-IL', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
     timeZone: 'Asia/Jerusalem',
   }).format(baseDate);
+  // timeFormatter — זמן.
   const timeFormatter = new Intl.DateTimeFormat('he-IL', {
     hour: '2-digit',
     minute: '2-digit',
@@ -74,43 +103,72 @@ function formatSwapShift(
   return `${weekday} · ${formattedDate} · \u2066${timeFormatter.format(new Date(startsAt))}–${timeFormatter.format(new Date(endsAt))}\u2069`;
 }
 
+/**
+ * פעולה getNotificationIcon: שליפה או חישוב של התראות.
+ * @param notification — התראות.
+ */
 function getNotificationIcon(notification: MyNotification) {
   return notification.isRead ? CircleCheck : Bell;
 }
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'אירעה שגיאה לא צפויה.';
 }
 
+/**
+ * פעולה NotificationsPage: התראות.
+ */
 function NotificationsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { hasPermission } = useAuth();
+  // canViewNotifications — האם צפייה מותרת.
   const canViewNotifications =
     hasPermission('notifications.view') || hasPermission('notifications.manage');
+  // canApproveSwaps — הנתון canApproveSwaps בהקשר הפעולה.
   const canApproveSwaps = hasPermission('shift_swaps.approve');
+  // canSendAnnouncements — הודעות מנהל.
   const canSendAnnouncements = hasPermission('announcements.send');
   const requestedTab = searchParams.get('tab');
+  // activeTab — פעיל.
   const activeTab: WorkspaceTab =
     requestedTab === 'requests' && canApproveSwaps
       ? 'requests'
       : canViewNotifications
         ? 'notifications'
         : 'requests';
+  // מצב מקומי: activeFilter — פעיל / סינון; setActiveFilter מעדכנת אותו ומפעילה רינדור לפי React.
   const [activeFilter, setActiveFilter] = useState<NotificationFilter>('all');
+  // מצב מקומי: swapRequests — הנתון swapRequests בהקשר הפעולה; setSwapRequests מעדכנת אותו ומפעילה רינדור לפי React.
   const [swapRequests, setSwapRequests] = useState<ShiftSwapRequest[]>([]);
+  // מצב מקומי: dynamicSwapRequests — דינמי; setDynamicSwapRequests מעדכנת אותו ומפעילה רינדור לפי React.
   const [dynamicSwapRequests, setDynamicSwapRequests] = useState<DynamicShiftExchangeRequest[]>([]);
+  // מצב מקומי: requestsLoading — טעינה; setRequestsLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [requestsLoading, setRequestsLoading] = useState(canApproveSwaps);
+  // מצב מקומי: requestsError — שגיאה; setRequestsError מעדכנת אותו ומפעילה רינדור לפי React.
   const [requestsError, setRequestsError] = useState<string | null>(null);
+  // מצב מקומי: requestsSuccess — הנתון requestsSuccess בהקשר הפעולה; setRequestsSuccess מעדכנת אותו ומפעילה רינדור לפי React.
   const [requestsSuccess, setRequestsSuccess] = useState<string | null>(null);
+  // מצב מקומי: busyRequestId — מזהה הבקשה; setBusyRequestId מעדכנת אותו ומפעילה רינדור לפי React.
   const [busyRequestId, setBusyRequestId] = useState<string | null>(null);
+  // מצב מקומי: isRequestHistoryOpen — נתוני הבקשה / היסטוריה; setIsRequestHistoryOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [isRequestHistoryOpen, setIsRequestHistoryOpen] = useState(false);
+  // מצב מקומי: dailyReportDetail — דוחות פעילות יומיים; setDailyReportDetail מעדכנת אותו ומפעילה רינדור לפי React.
   const [dailyReportDetail, setDailyReportDetail] = useState<DailyReportDetail | null>(null);
+  // מצב מקומי: dailyReportDetailLoading — דוחות פעילות יומיים; setDailyReportDetailLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [dailyReportDetailLoading, setDailyReportDetailLoading] = useState(false);
+  // מצב מקומי: dailyReportDetailError — דוחות פעילות יומיים; setDailyReportDetailError מעדכנת אותו ומפעילה רינדור לפי React.
   const [dailyReportDetailError, setDailyReportDetailError] = useState<string | null>(null);
+  // מצב מקומי: isAnnouncementComposerOpen — הודעות מנהל; setIsAnnouncementComposerOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [isAnnouncementComposerOpen, setIsAnnouncementComposerOpen] = useState(
     requestedTab === 'send' && canSendAnnouncements,
   );
+  // מצב מקומי: announcementSuccess — הודעות מנהל; setAnnouncementSuccess מעדכנת אותו ומפעילה רינדור לפי React.
   const [announcementSuccess, setAnnouncementSuccess] = useState<string | null>(null);
 
   const {
@@ -122,10 +180,16 @@ function NotificationsPage() {
     markAllAsRead,
   } = useNotificationContext();
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [canApproveSwaps].
   useEffect(() => {
     if (!canApproveSwaps) return;
     let cancelled = false;
+    /**
+     * פעולה אסינכרונית load: טעינת הנתון load בהקשר הפעולה.
+     * @returns Promise<void> — הפלט בהתאם לחתימה.
+     */
     const load = async (): Promise<void> => {
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         const [legacyData, dynamicData] = await Promise.all([
           shiftSwapService.getRequests(),
@@ -147,16 +211,19 @@ function NotificationsPage() {
     };
   }, [canApproveSwaps]);
 
+  // ערך מחושב pendingManagerRequests — ממתין; נשמר בין רינדורים עד שינוי התלויות.
   const pendingManagerRequests = useMemo(
     () => swapRequests.filter((request) => request.status === 'pending_manager'),
     [swapRequests],
   );
 
+  // ערך מחושב pendingDynamicManagerRequests — ממתין / דינמי; נשמר בין רינדורים עד שינוי התלויות.
   const pendingDynamicManagerRequests = useMemo(
     () => dynamicSwapRequests.filter((request) => request.status === 'pending_manager'),
     [dynamicSwapRequests],
   );
 
+  // ערך מחושב reviewedDynamicManagerRequests — דינמי; נשמר בין רינדורים עד שינוי התלויות.
   const reviewedDynamicManagerRequests = useMemo(
     () =>
       dynamicSwapRequests
@@ -171,6 +238,7 @@ function NotificationsPage() {
     [dynamicSwapRequests],
   );
 
+  // ערך מחושב reviewedManagerRequests — הנתון reviewedManagerRequests בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const reviewedManagerRequests = useMemo(
     () =>
       swapRequests
@@ -188,40 +256,61 @@ function NotificationsPage() {
     [swapRequests],
   );
 
+  /**
+   * פעולה selectWorkspaceTab: בחירת הנתון selectWorkspaceTab בהקשר הפעולה.
+   * @param tab — הנתון tab בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const selectWorkspaceTab = (tab: WorkspaceTab): void => {
+    // nextParams — הנתון nextParams בהקשר הפעולה.
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('tab', tab);
     setSearchParams(nextParams, { replace: true });
   };
 
+  /**
+   * פעולה openAnnouncementComposer: פתיחת הודעות מנהל.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const openAnnouncementComposer = (): void => {
     setAnnouncementSuccess(null);
     setIsAnnouncementComposerOpen(true);
   };
 
+  /**
+   * פעולה closeAnnouncementComposer: סגירת הודעות מנהל.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const closeAnnouncementComposer = (): void => {
     setIsAnnouncementComposerOpen(false);
     if (searchParams.get('tab') === 'send') {
+      // nextParams — הנתון nextParams בהקשר הפעולה.
       const nextParams = new URLSearchParams(searchParams);
       nextParams.set('tab', canViewNotifications ? 'notifications' : 'requests');
       setSearchParams(nextParams, { replace: true });
     }
   };
 
+  // ערך מחושב filteredNotifications — התראות; נשמר בין רינדורים עד שינוי התלויות.
   const filteredNotifications = useMemo(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר activeFilter === 'unread'.
     if (activeFilter === 'unread') {
       return state.notifications.filter((notification) => !notification.isRead);
     }
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר activeFilter === 'read'.
     if (activeFilter === 'read') {
       return state.notifications.filter((notification) => notification.isRead);
     }
     return state.notifications;
   }, [activeFilter, state.notifications]);
 
+  // readCount — כמות.
   const readCount = state.notifications.length - unreadCount;
 
+  // focusedNotificationId — התראות / מזהה.
   const focusedNotificationId = searchParams.get('notification');
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [focusedNotificationId, state.isLoading, state.notifications].
   useEffect(() => {
     if (!focusedNotificationId || state.isLoading) return;
 
@@ -241,12 +330,19 @@ function NotificationsPage() {
     return () => window.cancelAnimationFrame(frame);
   }, [focusedNotificationId, state.isLoading, state.notifications]);
 
+  /**
+   * פעולה אסינכרונית handleNotificationClick: טיפול באירוע עבור התראות.
+   * @param notification — התראות.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleNotificationClick = async (notification: MyNotification): Promise<void> => {
     if (!notification.isRead) {
       await markAsRead(notification.recipientId);
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר notification.source === 'daily_report'.
     if (notification.source === 'daily_report') {
+      // reportId — דוח / מזהה.
       const reportId = typeof notification.data?.reportId === 'string'
         ? notification.data.reportId
         : null;
@@ -254,6 +350,7 @@ function NotificationsPage() {
       setDailyReportDetail(null);
       setDailyReportDetailError(null);
       setDailyReportDetailLoading(true);
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         setDailyReportDetail(await dailyReportService.getDetail(reportId));
       } catch (error) {
@@ -264,6 +361,7 @@ function NotificationsPage() {
       return;
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canApproveSwaps && notification.type === 'shift_swap'.
     if (
       canApproveSwaps &&
       notification.type === 'shift_swap'
@@ -277,9 +375,14 @@ function NotificationsPage() {
     }
   };
 
+  /**
+   * פעולה אסינכרונית refreshRequests: רענון הנתון refreshRequests בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const refreshRequests = async (): Promise<void> => {
     setRequestsLoading(true);
     setRequestsError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       const [legacyData, dynamicData] = await Promise.all([
         shiftSwapService.getRequests(),
@@ -294,10 +397,17 @@ function NotificationsPage() {
     }
   };
 
+  /**
+   * פעולה אסינכרונית reviewDynamicSwap: דינמי.
+   * @param requestId — מזהה הבקשה.
+   * @param approve — הנתון approve בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const reviewDynamicSwap = async (requestId: string, approve: boolean): Promise<void> => {
     setBusyRequestId(`dynamic:${requestId}`);
     setRequestsError(null);
     setRequestsSuccess(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.reviewDynamicShiftExchangeRequest(requestId, approve);
       setRequestsSuccess(
@@ -313,6 +423,14 @@ function NotificationsPage() {
     }
   };
 
+  /**
+   * פעולה formatDynamicSwapShift: עיצוב ערך לתצוגה עבור דינמי / משמרת.
+   * @param date — תאריך.
+   * @param shiftName — משמרת / שם.
+   * @param startTime — שעת התחלה.
+   * @param endTime — שעת סיום.
+   * @returns string — הפלט בהתאם לחתימה.
+   */
   const formatDynamicSwapShift = (
     date: string | null,
     shiftName: string | null,
@@ -321,15 +439,24 @@ function NotificationsPage() {
   ): string => {
     if (!date || !startTime || !endTime) return '—';
     const [year, month, day] = date.slice(0, 10).split('-');
+    // displayName — שם תצוגה.
     const displayName = shiftName ? dynamicShiftDisplayName(shiftName, '') : '';
+    // name — שם.
     const name = displayName ? `${displayName} · ` : '';
     return `${name}${day}/${month}/${year} · \u2066${startTime.slice(0, 5)}–${endTime.slice(0, 5)}\u2069`;
   };
 
+  /**
+   * פעולה אסינכרונית reviewSwap: הנתון reviewSwap בהקשר הפעולה.
+   * @param requestId — מזהה הבקשה.
+   * @param approve — הנתון approve בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const reviewSwap = async (requestId: string, approve: boolean): Promise<void> => {
     setBusyRequestId(requestId);
     setRequestsError(null);
     setRequestsSuccess(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await shiftSwapService.reviewRequest(requestId, approve);
       setRequestsSuccess(

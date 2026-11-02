@@ -1,8 +1,15 @@
+-- קובץ: supabase/migrations/20260905170000_phase8_4_dynamic_monthly_rotation.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / סבב כוננויות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.dynamic_copy_rotation_original_to_publication, public.create_dynamic_monthly_rotation_draft.
+-- - מבני טבלאות: public.dynamic_job_type_rotation_state, public.dynamic_schedule_shadow_assignments, public.dynamic_schedule_published_assignments.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 8.4: persistent generic daily rotation. The rotation is learned/created once
 -- per job type and is never re-learned after substitutions. original_user_id is the
 -- immutable rotation truth; user_id remains the actual assignee.
+-- הגדרת מבנה הטבלה public.dynamic_job_type_rotation_state והאילוצים המופיעים בהמשך.
 create table if not exists public.dynamic_job_type_rotation_state (
   job_type_id uuid primary key references public.job_types(id) on delete cascade,
   rotation_user_ids uuid[] not null,
@@ -15,24 +22,32 @@ create table if not exists public.dynamic_job_type_rotation_state (
   check (cardinality(rotation_user_ids) >= 2)
 );
 
+-- עדכון מבנה או הגדרות הטבלה public.dynamic_job_type_rotation_state.
 alter table public.dynamic_job_type_rotation_state enable row level security;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.dynamic_job_type_rotation_state from anon, authenticated;
 
+-- עדכון מבנה או הגדרות הטבלה public.dynamic_schedule_shadow_assignments.
 alter table public.dynamic_schedule_shadow_assignments
   add column if not exists original_user_id uuid references public.profiles(id) on delete set null;
+-- עדכון מבנה או הגדרות הטבלה public.dynamic_schedule_published_assignments.
 alter table public.dynamic_schedule_published_assignments
   add column if not exists original_user_id uuid references public.profiles(id) on delete set null;
 
+-- הגדרת האינדקס dynamic_shadow_assignments_original_user_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists dynamic_shadow_assignments_original_user_idx
   on public.dynamic_schedule_shadow_assignments(original_user_id);
+-- הגדרת האינדקס dynamic_published_assignments_original_user_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists dynamic_published_assignments_original_user_idx
   on public.dynamic_schedule_published_assignments(original_user_id);
 
 -- Preserve the rotation truth when a draft is published without rewriting the large
 -- publication RPC. source_assignment_id is already the stable bridge between both tables.
+-- פונקציית מסד public.dynamic_copy_rotation_original_to_publication: דינמי / סבב כוננויות.
 create or replace function public.dynamic_copy_rotation_original_to_publication()
 returns trigger language plpgsql security definer set search_path='' as $function$
 begin
+  -- הסתעפות לפי התנאי new.source_assignment_id is not null.
   if new.source_assignment_id is not null then
     select a.original_user_id into new.original_user_id
     from public.dynamic_schedule_shadow_assignments a
@@ -46,6 +61,7 @@ create trigger dynamic_copy_rotation_original_to_publication_trg
 before insert or update of source_assignment_id on public.dynamic_schedule_published_assignments
 for each row execute function public.dynamic_copy_rotation_original_to_publication();
 
+-- פונקציית מסד public.create_dynamic_monthly_rotation_draft: יצירת דינמי / סבב כוננויות / טיוטה.
 create or replace function public.create_dynamic_monthly_rotation_draft(
   requested_job_type_id uuid,
   requested_year integer,
@@ -53,24 +69,31 @@ create or replace function public.create_dynamic_monthly_rotation_draft(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   v_actor uuid:=auth.uid();
   v_job public.job_types%rowtype;
+  -- v_period — תקופה.
   v_period public.dynamic_availability_periods%rowtype;
   v_material public.job_type_schedule_materializations%rowtype;
+  -- v_draft_id — טיוטה / מזהה.
   v_draft_id uuid;
+  -- v_rotation — סבב כוננויות.
   v_rotation uuid[];
   v_anchor date;
+  -- v_source — מקור.
   v_source text;
   v_member_count integer:=0;
   v_rotation_count integer:=0;
   v_slot record;
   v_original uuid;
   v_assigned uuid;
+  -- v_status — סטטוס.
   v_status text;
+  -- v_index — מיקום באוסף.
   v_index integer;
   v_unfilled integer:=0;
   v_substitutions integer:=0;
@@ -78,39 +101,52 @@ declare
   v_candidate record;
   v_history_rows integer:=0;
 begin
+  -- הסתעפות לפי התנאי v_actor is null then raise exception 'not authenticated'; end if;.
   if v_actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=v_actor and up.permission_key='users.manage').
   if not exists(select 1 from public.user_permissions up where up.user_id=v_actor and up.permission_key='users.manage') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
+  -- הסתעפות לפי התנאי requested_month not between 1 and 12 then raise exception 'invalid month'; end if;.
   if requested_month not between 1 and 12 then raise exception 'invalid month'; end if;
 
   select * into v_job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי v_job.id is null then raise exception 'job type not found'; end if;.
   if v_job.id is null then raise exception 'job type not found'; end if;
 
   select * into v_material
   from public.job_type_schedule_materializations m
   where m.job_type_id=v_job.id and m.effective_month=make_date(requested_year,requested_month,1);
 
+  -- הסתעפות לפי התנאי coalesce(v_material.scheduling_strategy,v_job.scheduling_strategy,'availability_optimizer') <> 'monthly_rotation_constra.
   if coalesce(v_material.scheduling_strategy,v_job.scheduling_strategy,'availability_optimizer') <> 'monthly_rotation_constraints' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type is not configured for monthly rotation';
   end if;
+  -- הסתעפות לפי התנאי coalesce(v_material.work_mode, v_job.scheduling_config#>>'{shiftPattern,workMode}') <> 'on_call_daily'.
   if coalesce(v_material.work_mode, v_job.scheduling_config#>>'{shiftPattern,workMode}') <> 'on_call_daily' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'monthly rotation currently requires daily on-call work mode';
   end if;
 
   select * into v_period from public.dynamic_availability_periods
   where job_type_id=v_job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי v_period.id is null then raise exception 'dynamic availability period not found'; end if;.
   if v_period.id is null then raise exception 'dynamic availability period not found'; end if;
+  -- הסתעפות לפי התנאי v_period.status <> 'closed' then raise exception 'availability period must be closed before scheduling'; end if;.
   if v_period.status <> 'closed' then raise exception 'availability period must be closed before scheduling'; end if;
 
   select count(*)::integer into v_member_count
   from public.job_type_memberships m join public.profiles p on p.id=m.user_id and p.is_active=true
   where m.job_type_id=v_job.id;
+  -- הסתעפות לפי התנאי v_member_count < 2 then raise exception 'monthly rotation requires at least two active role members'; end if;.
   if v_member_count < 2 then raise exception 'monthly rotation requires at least two active role members'; end if;
 
   select rotation_user_ids,anchor_date,source into v_rotation,v_anchor,v_source
   from public.dynamic_job_type_rotation_state where job_type_id=v_job.id for update;
 
+  -- הסתעפות לפי התנאי v_rotation is null.
   if v_rotation is null then
     -- Build candidate cycles from every historical contiguous N-row window whose
     -- original users are all distinct, then score each candidate against all imported
@@ -140,6 +176,7 @@ begin
     select rotation,anchor_date,'historical_best_window',compared
       into v_rotation,v_anchor,v_source,v_history_rows from scored;
 
+    -- הסתעפות לפי התנאי v_rotation is null or cardinality(v_rotation)<>v_member_count.
     if v_rotation is null or cardinality(v_rotation)<>v_member_count then
       select array_agg(x.user_id order by x.display_name,x.user_id),make_date(requested_year,requested_month,1),'membership_fallback'
       into v_rotation,v_anchor,v_source
@@ -150,20 +187,25 @@ begin
       ) x;
     end if;
 
+    -- הוספת רשומות ל־public.dynamic_job_type_rotation_state בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_job_type_rotation_state(job_type_id,rotation_user_ids,anchor_date,source,source_metadata,created_by)
     values(v_job.id,v_rotation,v_anchor,v_source,jsonb_build_object('historicalRowsCompared',v_history_rows,'memberCount',v_member_count),v_actor);
   end if;
 
   v_rotation_count:=cardinality(v_rotation);
+  -- הסתעפות לפי התנאי v_rotation_count<>v_member_count.
   if v_rotation_count<>v_member_count then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'saved rotation has % members but role currently has % active members; rotation membership changes require an explicit rotation update',v_rotation_count,v_member_count;
   end if;
 
+  -- הוספת רשומות ל־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_schedule_shadow_drafts(job_type_id,availability_period_id,year,month,status,feasibility_snapshot,rules_snapshot,metrics,created_by)
   values(v_job.id,v_period.id,requested_year,requested_month,'shadow','{}'::jsonb,
     jsonb_build_object('strategy','monthly_rotation_constraints','rotationUserIds',to_jsonb(v_rotation),'anchorDate',v_anchor,'rotationSource',v_source),
     '{}'::jsonb,v_actor) returning id into v_draft_id;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for v_slot in
     select s.* from public.dynamic_availability_slots s where s.period_id=v_period.id order by s.shift_date,s.start_time,s.id
   loop
@@ -177,6 +219,7 @@ begin
     where sub.period_id=v_period.id and sub.user_id=v_original
     order by case when sub.status='submitted' then 0 else 1 end,sub.updated_at desc limit 1;
 
+    -- הסתעפות לפי התנאי coalesce(v_status,'available') <> 'unavailable'.
     if coalesce(v_status,'available') <> 'unavailable' then
       v_assigned:=v_original;
     else
@@ -199,12 +242,15 @@ begin
         c.month_count asc,c.user_id
       limit 1;
       v_assigned:=v_candidate.user_id;
+      -- הסתעפות לפי התנאי v_assigned is not null then v_substitutions:=v_substitutions+1; end if;.
       if v_assigned is not null then v_substitutions:=v_substitutions+1; end if;
     end if;
 
+    -- הסתעפות לפי התנאי v_assigned is null.
     if v_assigned is null then
       v_unfilled:=v_unfilled+greatest(v_slot.min_workers,1);
     else
+      -- הוספת רשומות ל־public.dynamic_schedule_shadow_assignments בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_shadow_assignments(
         draft_id,slot_id,user_id,original_user_id,engine_user_id,assignment_tier,score,reasons
       ) values(
@@ -218,6 +264,7 @@ begin
     end if;
   end loop;
 
+  -- עדכון רשומות ב־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
   update public.dynamic_schedule_shadow_drafts
   set status=case when v_unfilled=0 then 'generated' else 'incomplete' end,
       metrics=jsonb_build_object(
@@ -229,10 +276,12 @@ begin
       ),updated_at=now()
   where id=v_draft_id;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(action,actor_user_id,entity_type,entity_id,summary,metadata)
   values('system_event',v_actor,'dynamic_schedule_draft',v_draft_id,'טיוטת סבב חודשי דינמי נוצרה',
     jsonb_build_object('job_type_id',v_job.id,'year',requested_year,'month',requested_month,'rotation_source',v_source,'substitutions',v_substitutions,'unfilled',v_unfilled));
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'draftId',v_draft_id,'mode','monthly_rotation','requiredAssignmentsCreated',v_created,
     'optionalAssignmentsCreated',0,'unfilledRequiredPositions',v_unfilled,
@@ -242,7 +291,9 @@ begin
   );
 end;$function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.create_dynamic_monthly_rotation_draft(uuid,integer,integer) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.create_dynamic_monthly_rotation_draft(uuid,integer,integer) to authenticated;
 
 commit;

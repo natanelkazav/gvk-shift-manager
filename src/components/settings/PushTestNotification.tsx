@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/settings/PushTestNotification.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור התראות Push / התראות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: SendResult, getErrorMessage, PushTestNotification.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   BellRing,
   CheckCircle2,
@@ -30,7 +37,11 @@ import {
   Textarea,
 } from '../ui';
 
+/**
+ * חוזה הנתונים SendResult: תוצאה.
+ */
 interface SendResult {
+  // totalDevices — סך הכול.
   totalDevices: number;
 
   sent: number;
@@ -38,9 +49,15 @@ interface SendResult {
   failed: number;
 }
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -50,6 +67,9 @@ function getErrorMessage(
   return 'אירעה שגיאה בשליחת התראת הבדיקה.';
 }
 
+/**
+ * פעולה PushTestNotification: התראות Push / התראות.
+ */
 function PushTestNotification() {
 const {
   users:
@@ -65,12 +85,14 @@ const {
     reloadUsers,
 } =
   useActiveUsers();
+  // מצב מקומי: selectedUserId — מזהה משתמש; setSelectedUserId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedUserId,
     setSelectedUserId,
   ] =
     useState('');
 
+  // מצב מקומי: title — כותרת; setTitle מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     title,
     setTitle,
@@ -79,6 +101,7 @@ const {
       'בדיקת התראות GVK',
     );
 
+  // מצב מקומי: body — תוכן; setBody מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     body,
     setBody,
@@ -87,6 +110,7 @@ const {
       'זוהי התראת Push לבדיקה.',
     );
 
+  // מצב מקומי: url — כתובת יעד; setUrl מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     url,
     setUrl,
@@ -95,12 +119,14 @@ const {
 
 
 
+  // מצב מקומי: isSending — הנתון isSending בהקשר הפעולה; setIsSending מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isSending,
     setIsSending,
   ] =
     useState(false);
 
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     error,
     setError,
@@ -109,6 +135,7 @@ const {
       null,
     );
 
+  // מצב מקומי: result — תוצאה; setResult מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     result,
     setResult,
@@ -118,6 +145,7 @@ const {
     );
 
 
+  // ערך מחושב userOptions — משתמש / אפשרויות בחירה; נשמר בין רינדורים עד שינוי התלויות.
   const userOptions =
     useMemo(
       () =>
@@ -138,6 +166,7 @@ const {
         activeUsers,
       ],
     );
+    // effectiveSelectedUserId — מזהה משתמש.
     const effectiveSelectedUserId =
   selectedUserId ||
   userOptions[0]
@@ -145,6 +174,11 @@ const {
   '';
 
 
+  /**
+   * פעולה אסינכרונית handleSubmit: טיפול באירוע עבור הנתון handleSubmit בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSubmit =
     async (
       event:
@@ -160,6 +194,7 @@ const {
         null,
       );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !effectiveSelectedUserId.
       if (
         !effectiveSelectedUserId
       ) {
@@ -174,7 +209,9 @@ const {
         true,
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // response — תוצאת הפעולה.
         const response =
           await pushTestService
             .sendTestPush({

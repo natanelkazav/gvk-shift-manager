@@ -1,3 +1,7 @@
+-- קובץ: supabase/migrations/20260918170000_sync_attendance_permission_defaults.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור נוכחות / הרשאות.
+-- מטרות עיקריות:
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Attendance permissions were added to the manifest after the original
@@ -8,6 +12,7 @@ do $$
 declare
   r record;
 begin
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for r in
     select jt.id
     from public.job_types jt

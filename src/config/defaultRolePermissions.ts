@@ -1,8 +1,16 @@
+/**
+ * קובץ: src/config/defaultRolePermissions.ts
+ * מטרה: ריכוז תצורת ברירת המחדל עבור הרשאות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: getDefaultPermissionsForRole, arePermissionListsEqual.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import type {
   PermissionKey,
   UserRole,
 } from '../types/auth';
 
+// ALL_PERMISSION_KEYS — מפתחות ההרשאות.
 export const ALL_PERMISSION_KEYS:
   readonly PermissionKey[] = [
     'dashboard.view',
@@ -61,6 +69,7 @@ export const ALL_PERMISSION_KEYS:
     'audit.view',
   ];
 
+// DEFAULT_ROLE_PERMISSIONS — הרשאות.
 export const DEFAULT_ROLE_PERMISSIONS:
   Readonly<
     Record<
@@ -149,6 +158,7 @@ export const DEFAULT_ROLE_PERMISSIONS:
     ],
   };
 
+// ROLE_LABELS — הנתון ROLE_LABELS בהקשר הפעולה.
 export const ROLE_LABELS:
   Readonly<
     Record<
@@ -175,6 +185,11 @@ export const ROLE_LABELS:
       'צפייה בלבד',
   };
 
+/**
+ * פעולה getDefaultPermissionsForRole: שליפה או חישוב של הרשאות.
+ * @param role — הנתון role בהקשר הפעולה.
+ * @returns PermissionKey[] — הפלט בהתאם לחתימה.
+ */
 export function getDefaultPermissionsForRole(
   role: UserRole,
 ): PermissionKey[] {
@@ -185,6 +200,12 @@ export function getDefaultPermissionsForRole(
   ];
 }
 
+/**
+ * פעולה arePermissionListsEqual: הרשאות.
+ * @param firstPermissions — הרשאות.
+ * @param secondPermissions — הרשאות.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 export function arePermissionListsEqual(
   firstPermissions:
     readonly PermissionKey[],
@@ -192,6 +213,7 @@ export function arePermissionListsEqual(
   secondPermissions:
     readonly PermissionKey[],
 ): boolean {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר firstPermissions.length !== secondPermissions.length.
   if (
     firstPermissions.length !==
     secondPermissions.length
@@ -199,6 +221,7 @@ export function arePermissionListsEqual(
     return false;
   }
 
+  // secondPermissionSet — הרשאות / קבוצה ייחודית; אוסף ערכים ייחודיים.
   const secondPermissionSet =
     new Set(
       secondPermissions,

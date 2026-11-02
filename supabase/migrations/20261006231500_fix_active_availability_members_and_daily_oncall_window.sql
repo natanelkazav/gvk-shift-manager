@@ -1,29 +1,49 @@
+-- קובץ: supabase/migrations/20261006231500_fix_active_availability_members_and_daily_oncall_window.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור פעיל / אילוצים וזמינות / חברי התפקיד.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.materialize_dynamic_availability_period_slots, public.get_dynamic_availability_shadow_workspace.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Keep manager availability focused on active employees and make daily on-call
 -- availability slots use the operational window configured in the Role Builder.
 
 begin;
 
+-- פונקציית מסד public.materialize_dynamic_availability_period_slots: תקופת אילוצים.
 create or replace function public.materialize_dynamic_availability_period_slots(
   requested_period_id uuid
 )
 returns integer
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- period_row — תקופה / שורה.
   period_row public.dynamic_availability_periods%rowtype;
+  -- target_month — יעד / חודש.
   target_month date;
+  -- materialization_row — מימוש תצורת השיבוץ לחודש / שורה.
   materialization_row public.job_type_schedule_materializations%rowtype;
+  -- day_date — יום / תאריך.
   day_date date;
+  -- dow_value — ערך.
   dow_value integer;
+  -- source_day_kind_value — מקור / יום / ערך.
   source_day_kind_value text;
+  -- base_day_kind_value — יום / ערך.
   base_day_kind_value text;
+  -- effective_day_kind_value — יום / ערך.
   effective_day_kind_value text;
+  -- holiday_name_value — חג / שם / ערך.
   holiday_name_value text;
+  -- day_behavior — יום.
   day_behavior text;
+  -- inherit_day_kind_value — יום / ערך.
   inherit_day_kind_value text;
+  -- day_works — יום.
   day_works boolean;
+  -- shift_row — משמרת / שורה.
   shift_row public.job_type_materialized_shift_templates%rowtype;
   created_slots integer := 0;
   existing_slots integer := 0;
@@ -35,7 +55,9 @@ begin
   from public.dynamic_availability_periods
   where id=requested_period_id;
 
+  -- הסתעפות לפי התנאי period_row.id is null.
   if period_row.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'dynamic availability period not found';
   end if;
 
@@ -48,7 +70,9 @@ begin
   order by m.effective_month desc
   limit 1;
 
+  -- הסתעפות לפי התנאי materialization_row.id is null.
   if materialization_row.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'no effective role materialization exists for job type % in %/%',
       period_row.job_type_id,period_row.month,period_row.year;
   end if;
@@ -56,6 +80,7 @@ begin
   -- Daily on-call is a single operational window per day. The role builder
   -- stores that window in shiftPattern.dailyOnCallWindow; do not use the
   -- synthetic 00:00-23:59 materialized template as the employee-facing time.
+  -- הסתעפות לפי התנאי materialization_row.work_mode = 'on_call_daily'.
   if materialization_row.work_mode = 'on_call_daily' then
     daily_start_time := coalesce(
       nullif(materialization_row.source_snapshot #>> '{schedulingConfig,shiftPattern,dailyOnCallWindow,startTime}', '')::time,
@@ -73,8 +98,11 @@ begin
 
   -- Keep slot IDs stable because availability entries reference them. For an
   -- already-created daily on-call period, correct the displayed window in place.
+  -- הסתעפות לפי התנאי existing_slots > 0.
   if existing_slots > 0 then
+    -- הסתעפות לפי התנאי materialization_row.work_mode = 'on_call_daily'.
     if materialization_row.work_mode = 'on_call_daily' then
+      -- עדכון רשומות ב־public.dynamic_availability_slots בהתאם לקלט ולתנאים להלן.
       update public.dynamic_availability_slots
       set start_time = daily_start_time,
           end_time = daily_end_time
@@ -83,6 +111,7 @@ begin
     return existing_slots;
   end if;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for day_date in
     select d::date
     from generate_series(
@@ -115,6 +144,7 @@ begin
       end
     limit 1;
 
+    -- הסתעפות לפי התנאי source_day_kind_value is null.
     if source_day_kind_value is null then
       source_day_kind_value := base_day_kind_value;
     end if;
@@ -134,6 +164,7 @@ begin
     day_behavior := coalesce(day_behavior,'own_templates');
     day_works := coalesce(day_works,true);
 
+    -- הסתעפות לפי התנאי day_works is false or day_behavior='no_work'.
     if day_works is false or day_behavior='no_work' then
       continue;
     end if;
@@ -148,6 +179,7 @@ begin
       else source_day_kind_value
     end;
 
+    -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
     for shift_row in
       select s.*
       from public.job_type_materialized_shift_templates s
@@ -167,6 +199,7 @@ begin
       from public.job_type_materialized_pay_components pc
       where pc.shift_template_id=shift_row.id;
 
+      -- הוספת רשומות ל־public.dynamic_availability_slots בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_availability_slots(
         period_id,
         shift_date,
@@ -210,12 +243,14 @@ begin
       )
       on conflict(period_id,shift_date,shift_code) do nothing;
 
+      -- הסתעפות לפי התנאי found.
       if found then
         created_slots := created_slots + 1;
       end if;
     end loop;
   end loop;
 
+  -- עדכון רשומות ב־public.dynamic_availability_periods בהתאם לקלט ולתנאים להלן.
   update public.dynamic_availability_periods
   set config_snapshot = coalesce(materialization_row.source_snapshot->'availabilityConfig',config_snapshot),
       updated_at=now()
@@ -226,9 +261,12 @@ end;
 $function$;
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.materialize_dynamic_availability_period_slots(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.materialize_dynamic_availability_period_slots(uuid) to authenticated;
 
+-- פונקציית מסד public.get_dynamic_availability_shadow_workspace: שליפה או חישוב של דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.get_dynamic_availability_shadow_workspace(
   requested_job_type_id uuid,
   requested_year integer,
@@ -236,18 +274,25 @@ create or replace function public.get_dynamic_availability_shadow_workspace(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
+  -- normalized_config — תצורה.
   normalized_config jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('availability.view_team', requested_job_type_id, current_user_id) then raise .
   if not public.has_dynamic_job_type_permission('availability.view_team', requested_job_type_id, current_user_id) then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
 
@@ -259,6 +304,7 @@ begin
     'limits', coalesce(job.availability_config->'limits','{"maxNightsEnabled":false,"defaultMaxNights":null,"maxWeekendsEnabled":false,"defaultMaxWeekends":null,"maxHolidaysEnabled":false,"defaultMaxHolidays":null}'::jsonb)
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'materialized', period.id is not null,'mode','shadow','periodId',period.id,'jobTypeId',job.id,'jobTypeName',job.name,
     'availabilityConfig',normalized_config,
@@ -269,7 +315,9 @@ end;
 $function$;
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_availability_shadow_workspace(uuid,integer,integer) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_availability_shadow_workspace(uuid,integer,integer) to authenticated;
 
 -- Correct existing editable daily-on-call periods in place without calling
@@ -287,6 +335,7 @@ with latest_materializations as (
     and m.work_mode = 'on_call_daily'
   order by ap.id, m.effective_month desc
 )
+-- עדכון רשומות ב־public.dynamic_availability_slots בהתאם לקלט ולתנאים להלן.
 update public.dynamic_availability_slots s
 set start_time = coalesce(
       nullif(lm.source_snapshot #>> '{schedulingConfig,shiftPattern,dailyOnCallWindow,startTime}', '')::time,

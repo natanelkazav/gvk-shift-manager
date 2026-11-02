@@ -1,9 +1,16 @@
+/*
+ * קובץ: src/styles/dynamicShiftsWorkspace.css
+ * מטרה: הגדרת עיצוב ופריסה עבור דינמי / משמרות.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .dynamic-shifts-page  */
 .dynamic-shifts-page {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-monthbar  */
 .dynamic-shifts-monthbar {
   display: grid;
   grid-template-columns: auto minmax(220px, 1fr) auto;
@@ -11,6 +18,7 @@
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-month-title  */
 .dynamic-shifts-month-title {
   display: flex;
   align-items: center;
@@ -24,12 +32,14 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-month-title div  */
 .dynamic-shifts-month-title div {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-month-title strong  */
 .dynamic-shifts-month-title strong {
   font-size: 1.05rem;
 }
@@ -38,12 +48,14 @@
 .dynamic-shifts-section-head p,
 .dynamic-shifts-selected-role-head p,
 .dynamic-shifts-empty span,
+/* כללי עיצוב עבור .dynamic-shifts-error span  */
 .dynamic-shifts-error span {
   color: var(--text-muted, #64748b);
 }
 
 .dynamic-shifts-loading,
 .dynamic-shifts-empty,
+/* כללי עיצוב עבור .dynamic-shifts-error  */
 .dynamic-shifts-error {
   display: flex;
   align-items: center;
@@ -53,22 +65,26 @@
 }
 
 .dynamic-shifts-error,
+/* כללי עיצוב עבור .dynamic-shifts-empty  */
 .dynamic-shifts-empty {
   border: 1px dashed var(--border-color, #dbe3ee);
   border-radius: 14px;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-error  */
 .dynamic-shifts-error {
   flex-wrap: wrap;
 }
 
 .dynamic-shifts-error strong,
+/* כללי עיצוב עבור .dynamic-shifts-empty strong  */
 .dynamic-shifts-empty strong {
   display: block;
   width: 100%;
 }
 
 .dynamic-shifts-role-section,
+/* כללי עיצוב עבור .dynamic-shifts-management-section  */
 .dynamic-shifts-management-section {
   display: flex;
   flex-direction: column;
@@ -76,6 +92,7 @@
 }
 
 .dynamic-shifts-section-head,
+/* כללי עיצוב עבור .dynamic-shifts-selected-role-head  */
 .dynamic-shifts-selected-role-head {
   display: flex;
   align-items: flex-start;
@@ -84,17 +101,20 @@
 }
 
 .dynamic-shifts-section-head h2,
+/* כללי עיצוב עבור .dynamic-shifts-selected-role-head h2  */
 .dynamic-shifts-selected-role-head h2 {
   margin: 0;
   font-size: 1.1rem;
 }
 
 .dynamic-shifts-section-head p,
+/* כללי עיצוב עבור .dynamic-shifts-selected-role-head p  */
 .dynamic-shifts-selected-role-head p {
   margin: 5px 0 0;
   font-size: .86rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-selected-role-head > div:first-child > span  */
 .dynamic-shifts-selected-role-head > div:first-child > span {
   display: inline-block;
   margin-bottom: 5px;
@@ -103,12 +123,14 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-role-grid  */
 .dynamic-shifts-role-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-role-card  */
 .dynamic-shifts-role-card {
   display: flex;
   flex-direction: column;
@@ -123,17 +145,20 @@
   transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-role-card:hover  */
 .dynamic-shifts-role-card:hover {
   transform: translateY(-1px);
   border-color: #93c5fd;
   box-shadow: 0 8px 22px rgba(15, 23, 42, .08);
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-role-card.is-selected  */
 .dynamic-shifts-role-card.is-selected {
   border-color: #2563eb;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, .1);
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-role-card-head  */
 .dynamic-shifts-role-card-head {
   display: flex;
   align-items: flex-start;
@@ -141,10 +166,12 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-role-card-head > div  */
 .dynamic-shifts-role-card-head > div {
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-role-card-head strong  */
 .dynamic-shifts-role-card-head strong {
   display: block;
   overflow: hidden;
@@ -153,6 +180,7 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-role-card-head span  */
 .dynamic-shifts-role-card-head span {
   display: inline-flex;
   align-items: center;
@@ -162,6 +190,7 @@
   font-size: .78rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-stage  */
 .dynamic-shifts-stage {
   display: flex;
   flex-direction: column;
@@ -171,10 +200,12 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-stage strong  */
 .dynamic-shifts-stage strong {
   font-size: .83rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-stage span  */
 .dynamic-shifts-stage span {
   color: var(--theme-text-muted);
   font-size: .74rem;
@@ -185,11 +216,13 @@
 .dynamic-shifts-stage.is-draft { background: #fff7ed; }
 .dynamic-shifts-stage.is-published { background: #f0fdf4; }
 
+/* כללי עיצוב עבור .dynamic-shifts-role-card small  */
 .dynamic-shifts-role-card small {
   color: var(--theme-text-muted);
   font-size: .72rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-access-badge  */
 .dynamic-shifts-access-badge {
   flex: 0 0 auto;
   padding: 7px 10px;
@@ -201,12 +234,14 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow  */
 .dynamic-period-workflow {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-head  */
 .dynamic-period-workflow-head {
   display: flex;
   align-items: flex-start;
@@ -215,21 +250,25 @@
 }
 
 .dynamic-period-workflow-head h4,
+/* כללי עיצוב עבור .dynamic-period-workflow-availability h4  */
 .dynamic-period-workflow-availability h4 {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-head p  */
 .dynamic-period-workflow-head p {
   margin: 4px 0 0;
   color: var(--theme-text-muted);
   font-size: .8rem;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-picker  */
 .dynamic-period-workflow-picker {
   display: flex;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-picker label  */
 .dynamic-period-workflow-picker label {
   display: flex;
   flex-direction: column;
@@ -240,6 +279,7 @@
 
 .dynamic-period-workflow-picker select,
 .dynamic-period-workflow-picker input,
+/* כללי עיצוב עבור .dynamic-period-deadline-controls input  */
 .dynamic-period-deadline-controls input {
   min-height: 38px;
   padding: 7px 9px;
@@ -249,12 +289,14 @@
   color: inherit;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps  */
 .dynamic-period-workflow-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps > div  */
 .dynamic-period-workflow-steps > div {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -265,6 +307,7 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps > div > span  */
 .dynamic-period-workflow-steps > div > span {
   grid-row: 1 / span 2;
   display: inline-grid;
@@ -276,26 +319,31 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps > div.is-current  */
 .dynamic-period-workflow-steps > div.is-current {
   border-color: #93c5fd;
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps > div.is-done  */
 .dynamic-period-workflow-steps > div.is-done {
   border-color: #86efac;
   background: #f0fdf4;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps small  */
 .dynamic-period-workflow-steps small {
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-metrics  */
 .dynamic-period-workflow-metrics {
   display: flex;
   flex-wrap: wrap;
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-metrics span  */
 .dynamic-period-workflow-metrics span {
   padding: 7px 10px;
   border-radius: 999px;
@@ -303,6 +351,7 @@
   font-size: .78rem;
 }
 
+/* כללי עיצוב עבור .dynamic-period-deadline-card  */
 .dynamic-period-deadline-card {
   display: flex;
   align-items: center;
@@ -314,23 +363,27 @@
   background: #f8fbff;
 }
 
+/* כללי עיצוב עבור .dynamic-period-deadline-card > div:first-child  */
 .dynamic-period-deadline-card > div:first-child {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-deadline-card span  */
 .dynamic-period-deadline-card span {
   color: var(--theme-text-muted);
   font-size: .75rem;
 }
 
+/* כללי עיצוב עבור .dynamic-period-deadline-controls  */
 .dynamic-period-deadline-controls {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-actions  */
 .dynamic-period-workflow-actions {
   display: flex;
   flex-wrap: wrap;
@@ -339,6 +392,7 @@
 }
 
 .dynamic-period-workflow-note,
+/* כללי עיצוב עבור .dynamic-period-workflow-published  */
 .dynamic-period-workflow-published {
   padding: 12px 14px;
   border: 1px solid var(--theme-border);
@@ -346,11 +400,13 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-note.is-warning  */
 .dynamic-period-workflow-note.is-warning {
   border-color: #fed7aa;
   background: #fff7ed;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-published  */
 .dynamic-period-workflow-published {
   display: flex;
   align-items: center;
@@ -360,21 +416,25 @@
 }
 
 .dynamic-period-workflow-published div,
+/* כללי עיצוב עבור .dynamic-period-workflow-availability  */
 .dynamic-period-workflow-availability {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-published span  */
 .dynamic-period-workflow-published span {
   color: var(--theme-text-muted);
   font-size: .78rem;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-availability  */
 .dynamic-period-workflow-availability {
   gap: 12px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-shifts-monthbar {
     grid-template-columns: 1fr 1fr;
@@ -403,6 +463,7 @@
 }
 
 /* Phase 10.5.1 — consolidated scheduling hub */
+/* כללי עיצוב עבור .dynamic-shifts-hub-tabs  */
 .dynamic-shifts-hub-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -413,6 +474,7 @@
   background: var(--surface-color, #fff);
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-hub-tabs > button  */
 .dynamic-shifts-hub-tabs > button {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -428,36 +490,43 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-hub-tabs > button svg  */
 .dynamic-shifts-hub-tabs > button svg {
   grid-row: 1 / span 2;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-hub-tabs > button span  */
 .dynamic-shifts-hub-tabs > button span {
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-hub-tabs > button small  */
 .dynamic-shifts-hub-tabs > button small {
   color: var(--text-muted, #64748b);
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-hub-tabs > button.is-active  */
 .dynamic-shifts-hub-tabs > button.is-active {
   border-color: #bfdbfe;
   background: #eff6ff;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-boards-section  */
 .dynamic-shifts-boards-section {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-filters  */
 .dynamic-shifts-board-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-filters button  */
 .dynamic-shifts-board-filters button {
   padding: 7px 11px;
   border: 1px solid var(--theme-border-strong);
@@ -469,6 +538,7 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-filters button.is-active  */
 .dynamic-shifts-board-filters button.is-active {
   border-color: #2563eb;
   background: #eff6ff;
@@ -476,6 +546,7 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-warning  */
 .dynamic-shifts-board-warning {
   padding: 10px 12px;
   border: 1px solid #fde68a;
@@ -485,12 +556,14 @@
   font-size: .82rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-summary  */
 .dynamic-shifts-board-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-summary > div  */
 .dynamic-shifts-board-summary > div {
   display: flex;
   flex-direction: column;
@@ -501,21 +574,25 @@
   background: var(--surface-color, #fff);
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-summary strong  */
 .dynamic-shifts-board-summary strong {
   font-size: 1.1rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-summary span  */
 .dynamic-shifts-board-summary span {
   color: var(--text-muted, #64748b);
   font-size: .75rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-combined-board  */
 .dynamic-shifts-combined-board {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-day  */
 .dynamic-shifts-board-day {
   overflow: hidden;
   border: 1px solid var(--border-color, #dbe3ee);
@@ -523,6 +600,7 @@
   background: var(--surface-color, #fff);
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-day-title  */
 .dynamic-shifts-board-day-title {
   display: flex;
   align-items: center;
@@ -532,11 +610,13 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-day-rows  */
 .dynamic-shifts-board-day-rows {
   display: flex;
   flex-direction: column;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-row  */
 .dynamic-shifts-board-row {
   display: grid;
   grid-template-columns: minmax(130px, .8fr) minmax(150px, 1fr) minmax(220px, 1.5fr);
@@ -546,10 +626,12 @@
   border-bottom: 1px solid #eef2f7;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-row:last-child  */
 .dynamic-shifts-board-row:last-child {
   border-bottom: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-role button  */
 .dynamic-shifts-board-role button {
   padding: 5px 8px;
   border: 0;
@@ -563,6 +645,7 @@
 }
 
 .dynamic-shifts-board-shift,
+/* כללי עיצוב עבור .dynamic-shifts-board-assignees  */
 .dynamic-shifts-board-assignees {
   display: flex;
   flex-direction: column;
@@ -570,20 +653,24 @@
 }
 
 .dynamic-shifts-board-shift span,
+/* כללי עיצוב עבור .dynamic-shifts-board-assignees small  */
 .dynamic-shifts-board-assignees small {
   color: var(--text-muted, #64748b);
   font-size: .74rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-assignees > span  */
 .dynamic-shifts-board-assignees > span {
   font-size: .82rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-board-assignees > span.is-empty  */
 .dynamic-shifts-board-assignees > span.is-empty {
   color: #b91c1c;
   font-weight: 700;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-shifts-hub-tabs,
   .dynamic-shifts-board-summary {
@@ -597,6 +684,7 @@
 }
 
 /* Phase 10.5.8 — unified management schedule calendar */
+/* כללי עיצוב עבור .dynamic-all-calendar-layout  */
 .dynamic-all-calendar-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 245px;
@@ -604,10 +692,12 @@
   align-items: start;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-board  */
 .dynamic-all-calendar-board {
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filters  */
 .dynamic-all-calendar-filters {
   position: sticky;
   top: 12px;
@@ -620,23 +710,27 @@
   background: var(--surface-color, #fff);
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filter-title  */
 .dynamic-all-calendar-filter-title {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filter-title > div  */
 .dynamic-all-calendar-filter-title > div {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filter-title span  */
 .dynamic-all-calendar-filter-title span {
   color: var(--text-muted, #64748b);
   font-size: .72rem;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filter-group  */
 .dynamic-all-calendar-filter-group {
   display: flex;
   flex-direction: column;
@@ -647,12 +741,14 @@
   border-radius: 11px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filter-group legend  */
 .dynamic-all-calendar-filter-group legend {
   padding: 0 5px;
   font-size: .76rem;
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filter-group label  */
 .dynamic-all-calendar-filter-group label {
   display: flex;
   align-items: center;
@@ -661,15 +757,18 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filter-group input  */
 .dynamic-all-calendar-filter-group input {
   accent-color: #2563eb;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-summary  */
 .dynamic-all-calendar-summary {
   display: grid;
   gap: 7px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-summary > div  */
 .dynamic-all-calendar-summary > div {
   display: grid;
   grid-template-columns: auto auto 1fr;
@@ -680,21 +779,25 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-summary strong  */
 .dynamic-all-calendar-summary strong {
   font-size: .82rem;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-summary span  */
 .dynamic-all-calendar-summary span {
   color: var(--text-muted, #64748b);
   font-size: .68rem;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-day-items  */
 .dynamic-all-calendar-day-items {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-shift  */
 .dynamic-all-calendar-shift {
   display: flex;
   min-width: 0;
@@ -706,11 +809,13 @@
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-shift.is-unassigned  */
 .dynamic-all-calendar-shift.is-unassigned {
   border-color: #fecaca;
   background: #fef2f2;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-shift-head  */
 .dynamic-all-calendar-shift-head {
   display: flex;
   align-items: center;
@@ -718,6 +823,7 @@
   gap: 5px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-role  */
 .dynamic-all-calendar-role {
   overflow: hidden;
   color: #1d4ed8;
@@ -727,10 +833,12 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-shift.is-unassigned .dynamic-all-calendar-role  */
 .dynamic-all-calendar-shift.is-unassigned .dynamic-all-calendar-role {
   color: #b91c1c;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-premium  */
 .dynamic-all-calendar-premium {
   flex: 0 0 auto;
   padding: 1px 5px;
@@ -742,6 +850,7 @@
   font-weight: 900;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-shift > strong  */
 .dynamic-all-calendar-shift > strong {
   overflow: hidden;
   font-size: .71rem;
@@ -749,11 +858,13 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-time  */
 .dynamic-all-calendar-time {
   color: var(--text-muted, #64748b);
   font-size: .62rem;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-assignees  */
 .dynamic-all-calendar-assignees {
   display: flex;
   flex-wrap: wrap;
@@ -761,6 +872,7 @@
   margin-top: 2px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-assignees > span  */
 .dynamic-all-calendar-assignees > span {
   padding: 2px 5px;
   border-radius: 999px;
@@ -770,11 +882,13 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-assignees > .is-unassigned-label  */
 .dynamic-all-calendar-assignees > .is-unassigned-label {
   background: #fee2e2;
   color: #b91c1c;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1050px) */
 @media (max-width: 1050px) {
   .dynamic-all-calendar-layout {
     grid-template-columns: 1fr;
@@ -793,19 +907,23 @@
 /* Phase 10.5.8.1 — management calendar RTL layout correction
    In an RTL grid, column 1 starts on the right. The filter panel is the first
    grid item, so the narrow column must be declared first. */
+/* כללי עיצוב עבור .dynamic-all-calendar-layout  */
 .dynamic-all-calendar-layout {
   grid-template-columns: 280px minmax(0, 1fr);
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-board  */
 .dynamic-all-calendar-board {
   width: 100%;
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-board .month-calendar-day  */
 .dynamic-all-calendar-board .month-calendar-day {
   min-height: 148px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1050px) */
 @media (max-width: 1050px) {
   .dynamic-all-calendar-layout {
     grid-template-columns: 1fr;
@@ -817,10 +935,12 @@
 }
 
 /* Phase 10.5.9 — management calendar UX + inline assignment editing */
+/* כללי עיצוב עבור .dynamic-calendar-section-head  */
 .dynamic-calendar-section-head {
   align-items: flex-end;
 }
 
+/* כללי עיצוב עבור .dynamic-calendar-compact-nav  */
 .dynamic-calendar-compact-nav {
   display: flex;
   align-items: center;
@@ -828,6 +948,7 @@
   flex-wrap: wrap;
 }
 
+/* כללי עיצוב עבור .dynamic-calendar-compact-nav > strong  */
 .dynamic-calendar-compact-nav > strong {
   min-width: 105px;
   text-align: center;
@@ -835,11 +956,13 @@
 }
 
 .dynamic-calendar-compact-nav .button,
+/* כללי עיצוב עבור .dynamic-calendar-compact-nav button  */
 .dynamic-calendar-compact-nav button {
   min-height: 34px;
   padding-block: 6px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-toolbar  */
 .dynamic-all-calendar-toolbar {
   display: flex;
   align-items: center;
@@ -848,6 +971,7 @@
   margin-bottom: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filter-toggle  */
 .dynamic-all-calendar-filter-toggle {
   display: grid;
   grid-template-columns: auto auto 1fr auto;
@@ -862,11 +986,13 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filter-toggle small  */
 .dynamic-all-calendar-filter-toggle small {
   color: var(--theme-text-muted);
   font-size: .68rem;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-legend  */
 .dynamic-all-calendar-legend {
   display: flex;
   align-items: center;
@@ -876,6 +1002,7 @@
 }
 
 .dynamic-all-calendar-legend > span,
+/* כללי עיצוב עבור .dynamic-all-calendar-role-choice  */
 .dynamic-all-calendar-role-choice {
   display: inline-flex;
   align-items: center;
@@ -885,6 +1012,7 @@
 }
 
 .dynamic-all-calendar-legend i,
+/* כללי עיצוב עבור .dynamic-all-calendar-role-choice i  */
 .dynamic-all-calendar-role-choice i {
   width: 9px;
   height: 9px;
@@ -892,6 +1020,7 @@
   background: var(--role-accent);
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filters-panel  */
 .dynamic-all-calendar-filters-panel {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(190px, .65fr) minmax(220px, .8fr);
@@ -903,16 +1032,19 @@
   background: var(--surface-color, #fff);
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filters-panel .dynamic-all-calendar-filter-group  */
 .dynamic-all-calendar-filters-panel .dynamic-all-calendar-filter-group {
   flex-direction: row;
   flex-wrap: wrap;
   align-content: flex-start;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-filters-panel .dynamic-all-calendar-summary  */
 .dynamic-all-calendar-filters-panel .dynamic-all-calendar-summary {
   grid-template-columns: 1fr;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-shift  */
 .dynamic-all-calendar-shift {
   width: 100%;
   text-align: right;
@@ -924,16 +1056,19 @@
   transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-shift:hover  */
 .dynamic-all-calendar-shift:hover {
   transform: translateY(-1px);
   border-color: var(--role-accent);
   box-shadow: 0 3px 10px rgba(15, 23, 42, .08);
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-shift .dynamic-all-calendar-role  */
 .dynamic-all-calendar-shift .dynamic-all-calendar-role {
   color: var(--role-accent);
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-shift.is-unassigned  */
 .dynamic-all-calendar-shift.is-unassigned {
   border-style: dashed;
   border-color: #ef4444;
@@ -949,22 +1084,26 @@
 .role-tone-6 { --role-accent: #ca8a04; }
 .role-tone-7 { --role-accent: #475569; }
 
+/* כללי עיצוב עבור .dynamic-calendar-slot-modal  */
 .dynamic-calendar-slot-modal {
   width: min(720px, calc(100vw - 28px));
 }
 
+/* כללי עיצוב עבור .dynamic-calendar-slot-details  */
 .dynamic-calendar-slot-details {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .dynamic-calendar-slot-facts  */
 .dynamic-calendar-slot-facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .dynamic-calendar-slot-facts > div  */
 .dynamic-calendar-slot-facts > div {
   display: flex;
   flex-direction: column;
@@ -976,15 +1115,18 @@
 
 .dynamic-calendar-slot-facts span,
 .dynamic-calendar-slot-assignment-row > span,
+/* כללי עיצוב עבור .dynamic-calendar-slot-reason > span  */
 .dynamic-calendar-slot-reason > span {
   color: var(--theme-text-muted);
   font-size: .72rem;
 }
 
+/* כללי עיצוב עבור .dynamic-calendar-slot-facts strong  */
 .dynamic-calendar-slot-facts strong {
   font-size: .86rem;
 }
 
+/* כללי עיצוב עבור .dynamic-calendar-slot-note  */
 .dynamic-calendar-slot-note {
   padding: 9px 11px;
   border-radius: 9px;
@@ -993,11 +1135,13 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .dynamic-calendar-slot-note.is-premium  */
 .dynamic-calendar-slot-note.is-premium {
   background: #fff7ed;
   color: #c2410c;
 }
 
+/* כללי עיצוב עבור .dynamic-calendar-slot-editor  */
 .dynamic-calendar-slot-editor {
   display: flex;
   flex-direction: column;
@@ -1005,6 +1149,7 @@
 }
 
 .dynamic-calendar-slot-assignment-row,
+/* כללי עיצוב עבור .dynamic-calendar-slot-reason  */
 .dynamic-calendar-slot-reason {
   display: grid;
   grid-template-columns: 130px minmax(0, 1fr);
@@ -1013,6 +1158,7 @@
 }
 
 .dynamic-calendar-slot-assignment-row select,
+/* כללי עיצוב עבור .dynamic-calendar-slot-reason input  */
 .dynamic-calendar-slot-reason input {
   width: 100%;
   min-height: 40px;
@@ -1023,6 +1169,7 @@
   color: inherit;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-calendar-section-head,
   .dynamic-all-calendar-toolbar {
@@ -1043,11 +1190,13 @@
 }
 
 /* Phase 10.5.10 — scheduling hub cleanup */
+/* כללי עיצוב עבור .dynamic-shifts-hub-tabs  */
 .dynamic-shifts-hub-tabs {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .dynamic-schedules-toolbar,
+/* כללי עיצוב עבור .dynamic-monthly-management-toolbar  */
 .dynamic-monthly-management-toolbar {
   display: flex;
   align-items: flex-end;
@@ -1056,18 +1205,21 @@
 }
 
 .dynamic-schedules-toolbar h2,
+/* כללי עיצוב עבור .dynamic-monthly-management-toolbar h2  */
 .dynamic-monthly-management-toolbar h2 {
   margin: 0;
   font-size: 1.08rem;
 }
 
 .dynamic-schedules-toolbar p,
+/* כללי עיצוב עבור .dynamic-monthly-management-toolbar p  */
 .dynamic-monthly-management-toolbar p {
   margin: 4px 0 0;
   color: var(--text-muted, #64748b);
   font-size: .82rem;
 }
 
+/* כללי עיצוב עבור .dynamic-schedules-toolbar-actions  */
 .dynamic-schedules-toolbar-actions {
   display: flex;
   align-items: center;
@@ -1076,6 +1228,7 @@
   flex-wrap: wrap;
 }
 
+/* כללי עיצוב עבור .dynamic-schedule-display-toggle  */
 .dynamic-schedule-display-toggle {
   display: inline-flex;
   align-items: center;
@@ -1086,6 +1239,7 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-schedule-display-toggle button  */
 .dynamic-schedule-display-toggle button {
   display: inline-flex;
   align-items: center;
@@ -1102,12 +1256,14 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-schedule-display-toggle button.is-active  */
 .dynamic-schedule-display-toggle button.is-active {
   background: var(--theme-surface);
   color: #1d4ed8;
   box-shadow: 0 1px 3px rgba(15, 23, 42, .12);
 }
 
+/* כללי עיצוב עבור .dynamic-monthly-management-shell  */
 .dynamic-monthly-management-shell {
   display: flex;
   flex-direction: column;
@@ -1118,12 +1274,14 @@
   background: var(--surface-color, #fff);
 }
 
+/* כללי עיצוב עבור .dynamic-management-role-selector  */
 .dynamic-management-role-selector {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-management-role-selector > button  */
 .dynamic-management-role-selector > button {
   display: flex;
   flex-direction: column;
@@ -1138,16 +1296,19 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-management-role-selector > button:hover  */
 .dynamic-management-role-selector > button:hover {
   border-color: #93c5fd;
 }
 
+/* כללי עיצוב עבור .dynamic-management-role-selector > button.is-selected  */
 .dynamic-management-role-selector > button.is-selected {
   border-color: #2563eb;
   background: #eff6ff;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, .08);
 }
 
+/* כללי עיצוב עבור .dynamic-management-role-selector-head  */
 .dynamic-management-role-selector-head {
   display: flex;
   align-items: center;
@@ -1155,6 +1316,7 @@
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-management-role-stage  */
 .dynamic-management-role-stage {
   width: fit-content;
   padding: 3px 7px;
@@ -1169,6 +1331,7 @@
 .dynamic-management-role-stage.is-draft { background: #ffedd5; color: #c2410c; }
 .dynamic-management-role-stage.is-published { background: #dcfce7; color: #166534; }
 
+/* כללי עיצוב עבור .dynamic-management-role-selector small  */
 .dynamic-management-role-selector small {
   display: flex;
   align-items: center;
@@ -1177,16 +1340,19 @@
   font-size: .68rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shifts-selected-role-head.compact  */
 .dynamic-shifts-selected-role-head.compact {
   align-items: center;
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list  */
 .dynamic-all-schedules-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-day  */
 .dynamic-all-schedules-list-day {
   overflow: hidden;
   border: 1px solid #dbe3ee;
@@ -1194,6 +1360,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-date  */
 .dynamic-all-schedules-list-date {
   display: flex;
   align-items: center;
@@ -1203,10 +1370,12 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-date strong  */
 .dynamic-all-schedules-list-date strong {
   font-size: .82rem;
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-date span  */
 .dynamic-all-schedules-list-date span {
   padding: 2px 7px;
   border-radius: 999px;
@@ -1216,11 +1385,13 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-rows  */
 .dynamic-all-schedules-list-rows {
   display: flex;
   flex-direction: column;
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-row  */
 .dynamic-all-schedules-list-row {
   display: grid;
   grid-template-columns: minmax(130px, .7fr) minmax(170px, .8fr) minmax(220px, 1.4fr) auto;
@@ -1237,18 +1408,22 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-row:last-child  */
 .dynamic-all-schedules-list-row:last-child {
   border-bottom: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-row:hover  */
 .dynamic-all-schedules-list-row:hover {
   background: color-mix(in srgb, var(--role-accent) 8%, white);
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-row.is-unassigned  */
 .dynamic-all-schedules-list-row.is-unassigned {
   background: color-mix(in srgb, var(--role-accent) 3%, #fef2f2);
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-role  */
 .dynamic-all-schedules-list-role {
   display: inline-flex;
   align-items: center;
@@ -1258,6 +1433,7 @@
   font-weight: 900;
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-role i  */
 .dynamic-all-schedules-list-role i {
   width: 9px;
   height: 9px;
@@ -1266,27 +1442,32 @@
 }
 
 .dynamic-all-schedules-list-shift,
+/* כללי עיצוב עבור .dynamic-all-schedules-list-workers  */
 .dynamic-all-schedules-list-workers {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-shift strong  */
 .dynamic-all-schedules-list-shift strong {
   font-size: .82rem;
 }
 
 .dynamic-all-schedules-list-shift small,
+/* כללי עיצוב עבור .dynamic-all-schedules-list-workers small  */
 .dynamic-all-schedules-list-workers small {
   color: var(--theme-text-muted);
   font-size: .68rem;
 }
 
+/* כללי עיצוב עבור .dynamic-all-schedules-list-workers  */
 .dynamic-all-schedules-list-workers {
   font-size: .78rem;
   font-weight: 700;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .dynamic-schedules-toolbar,
   .dynamic-monthly-management-toolbar {
@@ -1309,43 +1490,51 @@
  * while keeping labels and assignees readable. */
 :root[data-theme='dark'] .dynamic-all-calendar-toolbar,
 :root[data-theme='dark'] .dynamic-all-calendar-filters-panel,
+/* כללי עיצוב עבור :root[data-theme='dark'] .dynamic-all-calendar-filter-toggle  */
 :root[data-theme='dark'] .dynamic-all-calendar-filter-toggle {
   --surface-color: var(--theme-surface);
   --border-color: var(--theme-border);
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .dynamic-all-calendar-shift  */
 :root[data-theme='dark'] .dynamic-all-calendar-shift {
   border-color: color-mix(in srgb, var(--role-accent) 55%, var(--theme-border));
   background: color-mix(in srgb, var(--role-accent) 24%, var(--theme-surface));
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .dynamic-all-calendar-shift .dynamic-all-calendar-role  */
 :root[data-theme='dark'] .dynamic-all-calendar-shift .dynamic-all-calendar-role {
   color: color-mix(in srgb, var(--role-accent) 72%, #ffffff);
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .dynamic-all-calendar-shift.is-unassigned  */
 :root[data-theme='dark'] .dynamic-all-calendar-shift.is-unassigned {
   border-color: #f87171;
   background: color-mix(in srgb, #ef4444 16%, var(--theme-surface));
 }
 
 /* Dark theme contrast pass — keep calendar metadata readable on role-colored cards. */
+/* כללי עיצוב עבור :root[data-theme='dark'] .dynamic-all-calendar-time  */
 :root[data-theme='dark'] .dynamic-all-calendar-time {
   color: #cbd5e1;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .dynamic-all-calendar-assignees > span  */
 :root[data-theme='dark'] .dynamic-all-calendar-assignees > span {
   border: 1px solid rgb(255 255 255 / 14%);
   background: rgb(15 23 42 / 72%);
   color: #f8fafc;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .dynamic-all-calendar-premium  */
 :root[data-theme='dark'] .dynamic-all-calendar-premium {
   border-color: #fb923c;
   background: #3a2418;
   color: #fdba74;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .dynamic-all-calendar-shift.is-unassigned .dynamic-all-calendar-assignees > .is-unassigned-label  */
 :root[data-theme='dark'] .dynamic-all-calendar-shift.is-unassigned .dynamic-all-calendar-assignees > .is-unassigned-label {
   border-color: #7f1d1d;
   background: #3f1d24;
@@ -1353,14 +1542,17 @@
 }
 
 /* Personal schedule filtering and emphasis inside the shared schedule board. */
+/* כללי עיצוב עבור .dynamic-all-calendar-filters-panel  */
 .dynamic-all-calendar-filters-panel {
   grid-template-columns: minmax(0, 1.2fr) minmax(210px, .8fr) minmax(190px, .65fr) minmax(220px, .8fr);
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-assignee-filter  */
 .dynamic-all-calendar-assignee-filter {
   align-self: stretch;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-assignee-filter select  */
 .dynamic-all-calendar-assignee-filter select {
   width: 100%;
   min-height: 36px;
@@ -1372,11 +1564,13 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-assignee-filter > small  */
 .dynamic-all-calendar-assignee-filter > small {
   color: var(--theme-text-muted);
   font-size: .68rem;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-shift-badges  */
 .dynamic-all-calendar-shift-badges {
   display: inline-flex;
   align-items: center;
@@ -1384,6 +1578,7 @@
   margin-inline-start: auto;
 }
 
+/* כללי עיצוב עבור .dynamic-all-calendar-mine-badge  */
 .dynamic-all-calendar-mine-badge {
   display: inline-flex;
   align-items: center;
@@ -1399,12 +1594,14 @@
 }
 
 .dynamic-all-calendar-shift.is-my-assignment,
+/* כללי עיצוב עבור .dynamic-all-schedules-list-row.is-my-assignment  */
 .dynamic-all-schedules-list-row.is-my-assignment {
   border-color: #14b8a6;
   box-shadow: inset 0 0 0 2px color-mix(in srgb, #14b8a6 42%, transparent), 0 3px 12px rgba(15, 118, 110, .12);
 }
 
 .dynamic-all-calendar-assignees > span.is-current-user,
+/* כללי עיצוב עבור .dynamic-all-schedules-list-workers > span.is-current-user  */
 .dynamic-all-schedules-list-workers > span.is-current-user {
   display: inline-flex;
   align-items: center;
@@ -1413,6 +1610,7 @@
 }
 
 .dynamic-all-calendar-assignees > span.is-current-user > small,
+/* כללי עיצוב עבור .dynamic-all-schedules-list-workers > span.is-current-user > small  */
 .dynamic-all-schedules-list-workers > span.is-current-user > small {
   padding: 1px 5px;
   border-radius: 999px;
@@ -1424,16 +1622,19 @@
 
 [data-theme='dark'] .dynamic-all-calendar-mine-badge,
 [data-theme='dark'] .dynamic-all-calendar-assignees > span.is-current-user > small,
+/* כללי עיצוב עבור [data-theme='dark'] .dynamic-all-schedules-list-workers > span.is-current-user > small  */
 [data-theme='dark'] .dynamic-all-schedules-list-workers > span.is-current-user > small {
   color: #5eead4;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 980px) */
 @media (max-width: 980px) {
   .dynamic-all-calendar-filters-panel {
     grid-template-columns: 1fr 1fr;
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .dynamic-all-calendar-filters-panel {
     grid-template-columns: 1fr;

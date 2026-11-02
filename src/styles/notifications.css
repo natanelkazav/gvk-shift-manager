@@ -1,9 +1,16 @@
+/*
+ * קובץ: src/styles/notifications.css
+ * מטרה: הגדרת עיצוב ופריסה עבור התראות.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .notifications-page  */
 .notifications-page {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
+/* כללי עיצוב עבור .notifications-page-header  */
 .notifications-page-header {
   display: flex;
   align-items: flex-start;
@@ -11,18 +18,21 @@
   gap: 20px;
 }
 
+/* כללי עיצוב עבור .notifications-page-header h1  */
 .notifications-page-header h1 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 2rem;
 }
 
+/* כללי עיצוב עבור .notifications-page-header p  */
 .notifications-page-header p {
   margin: 8px 0 0;
   color: var(--theme-text-muted);
   font-size: 0.95rem;
 }
 
+/* כללי עיצוב עבור .notifications-page-summary  */
 .notifications-page-summary {
   display: flex;
   align-items: center;
@@ -32,6 +42,7 @@
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .notifications-page-summary span  */
 .notifications-page-summary span {
   padding: 7px 11px;
   border: 1px solid #dbe3ef;
@@ -39,6 +50,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .notifications-page-summary .notifications-page-unread-summary  */
 .notifications-page-summary .notifications-page-unread-summary {
   border-color: #bfdbfe;
   background: #eff6ff;
@@ -46,6 +58,7 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .notifications-toolbar  */
 .notifications-toolbar {
   display: flex;
   align-items: center;
@@ -58,6 +71,7 @@
 }
 
 .notifications-filters,
+/* כללי עיצוב עבור .notifications-toolbar-actions  */
 .notifications-toolbar-actions {
   display: flex;
   align-items: center;
@@ -65,6 +79,7 @@
 }
 
 .notifications-filter-button,
+/* כללי עיצוב עבור .notifications-toolbar-button  */
 .notifications-toolbar-button {
   display: inline-flex;
   align-items: center;
@@ -82,6 +97,7 @@
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .notifications-filter-button span  */
 .notifications-filter-button span {
   display: inline-flex;
   align-items: center;
@@ -95,45 +111,53 @@
 }
 
 .notifications-filter-button:hover,
+/* כללי עיצוב עבור .notifications-toolbar-button:hover:not(:disabled)  */
 .notifications-toolbar-button:hover:not(:disabled) {
   border-color: #bfdbfe;
   background: var(--theme-surface-muted);
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .notifications-filter-button-active  */
 .notifications-filter-button-active {
   border-color: #2563eb;
   background: #eff6ff;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .notifications-filter-button-active span  */
 .notifications-filter-button-active span {
   background: #2563eb;
   color: #ffffff;
 }
 
+/* כללי עיצוב עבור .notifications-toolbar-primary  */
 .notifications-toolbar-primary {
   border-color: #2563eb;
   background: #2563eb;
   color: #ffffff;
 }
 
+/* כללי עיצוב עבור .notifications-toolbar-primary:hover:not(:disabled)  */
 .notifications-toolbar-primary:hover:not(:disabled) {
   border-color: #1d4ed8;
   background: #1d4ed8;
   color: #ffffff;
 }
 
+/* כללי עיצוב עבור .notifications-toolbar-button:disabled  */
 .notifications-toolbar-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
+/* כללי עיצוב עבור .notifications-page-message  */
 .notifications-page-message {
   padding: 14px 16px;
   border-radius: 12px;
 }
 
+/* כללי עיצוב עבור .notifications-page-error  */
 .notifications-page-error {
   border: 1px solid #fecaca;
   background: #fef2f2;
@@ -141,6 +165,7 @@
 }
 
 .notifications-page-state,
+/* כללי עיצוב עבור .notifications-empty-state  */
 .notifications-empty-state {
   display: flex;
   min-height: 260px;
@@ -156,22 +181,26 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .notifications-empty-state h2  */
 .notifications-empty-state h2 {
   margin: 4px 0 0;
   color: #1e293b;
   font-size: 1.1rem;
 }
 
+/* כללי עיצוב עבור .notifications-empty-state p  */
 .notifications-empty-state p {
   max-width: 460px;
   margin: 0;
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .notifications-page-spinner  */
 .notifications-page-spinner {
   animation: notifications-spin 800ms linear infinite;
 }
 
+/* כללי עיצוב עבור .notifications-list  */
 .notifications-list {
   display: flex;
   flex-direction: column;
@@ -181,6 +210,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .notification-list-item  */
 .notification-list-item {
   display: flex;
   width: 100%;
@@ -194,31 +224,38 @@
   text-align: start;
 }
 
+/* כללי עיצוב עבור .notification-list-item:last-child  */
 .notification-list-item:last-child {
   border-bottom: 0;
 }
 
+/* כללי עיצוב עבור .notification-list-item-clickable  */
 .notification-list-item-clickable {
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .notification-list-item-clickable:hover  */
 .notification-list-item-clickable:hover {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .notification-list-item-unread  */
 .notification-list-item-unread {
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .notification-list-item-unread:hover  */
 .notification-list-item-unread:hover {
   background: #dbeafe;
 }
 
+/* כללי עיצוב עבור .notification-list-item:disabled  */
 .notification-list-item:disabled {
   cursor: wait;
   opacity: 0.7;
 }
 
+/* כללי עיצוב עבור .notification-list-icon  */
 .notification-list-icon {
   display: inline-flex;
   flex: 0 0 auto;
@@ -231,11 +268,13 @@
   color: var(--theme-text-secondary);
 }
 
+/* כללי עיצוב עבור .notification-list-item-unread .notification-list-icon  */
 .notification-list-item-unread .notification-list-icon {
   background: #bfdbfe;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .notification-list-content  */
 .notification-list-content {
   display: flex;
   min-width: 0;
@@ -244,17 +283,20 @@
   gap: 7px;
 }
 
+/* כללי עיצוב עבור .notification-list-heading  */
 .notification-list-heading {
   display: flex;
   align-items: center;
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .notification-list-heading strong  */
 .notification-list-heading strong {
   color: var(--theme-text-strong);
   font-size: 0.92rem;
 }
 
+/* כללי עיצוב עבור .notification-list-unread-indicator  */
 .notification-list-unread-indicator {
   padding: 3px 8px;
   border-radius: 999px;
@@ -264,12 +306,14 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .notification-list-body  */
 .notification-list-body {
   color: var(--theme-text-secondary);
   font-size: 0.82rem;
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .notification-list-meta  */
 .notification-list-meta {
   display: inline-flex;
   align-items: center;
@@ -278,12 +322,14 @@
   font-size: 0.68rem;
 }
 
+/* הגדרת שלבי האנימציה @keyframes notifications-spin */
 @keyframes notifications-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .notifications-page-header,
   .notifications-toolbar {
@@ -319,6 +365,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 520px) */
 @media (max-width: 520px) {
   .notifications-page-header h1 {
     font-size: 1.65rem;
@@ -336,6 +383,7 @@
     padding: 14px;
   }
 }
+/* כללי עיצוב עבור .notifications-workspace-navigation  */
 .notifications-workspace-navigation {
   display: flex;
   gap: 0.5rem;
@@ -346,6 +394,7 @@
   width: fit-content;
 }
 
+/* כללי עיצוב עבור .notifications-workspace-navigation button  */
 .notifications-workspace-navigation button {
   display: inline-flex;
   align-items: center;
@@ -360,11 +409,13 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .notifications-workspace-navigation button.active  */
 .notifications-workspace-navigation button.active {
   background: #eff6ff;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .notifications-workspace-navigation button span  */
 .notifications-workspace-navigation button span {
   min-width: 22px;
   padding: 0.15rem 0.4rem;
@@ -374,11 +425,13 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .notifications-workspace-navigation button.active span  */
 .notifications-workspace-navigation button.active span {
   background: #2563eb;
   color: #fff;
 }
 
+/* כללי עיצוב עבור .notifications-requests-toolbar  */
 .notifications-requests-toolbar {
   display: flex;
   align-items: center;
@@ -390,27 +443,32 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .notifications-requests-toolbar > div  */
 .notifications-requests-toolbar > div {
   display: grid;
   gap: 0.2rem;
 }
 
+/* כללי עיצוב עבור .notifications-requests-toolbar span  */
 .notifications-requests-toolbar span {
   color: var(--theme-text-muted);
   font-size: 0.8rem;
 }
 
+/* כללי עיצוב עבור .notifications-page-success  */
 .notifications-page-success {
   border: 1px solid #bbf7d0;
   background: #f0fdf4;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .notifications-requests-list  */
 .notifications-requests-list {
   display: grid;
   gap: 1rem;
 }
 
+/* כללי עיצוב עבור .notifications-request-card  */
 .notifications-request-card {
   display: grid;
   gap: 1rem;
@@ -421,6 +479,7 @@
 }
 
 .notifications-request-card header,
+/* כללי עיצוב עבור .notifications-request-actions  */
 .notifications-request-actions {
   display: flex;
   align-items: center;
@@ -428,17 +487,20 @@
   gap: 0.75rem;
 }
 
+/* כללי עיצוב עבור .notifications-request-card header > div  */
 .notifications-request-card header > div {
   display: grid;
   gap: 0.2rem;
 }
 
 .notifications-request-card header span,
+/* כללי עיצוב עבור .notifications-request-flow span  */
 .notifications-request-flow span {
   color: var(--theme-text-muted);
   font-size: 0.8rem;
 }
 
+/* כללי עיצוב עבור .notifications-request-flow  */
 .notifications-request-flow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -449,15 +511,18 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .notifications-request-flow > div  */
 .notifications-request-flow > div {
   display: grid;
   gap: 0.25rem;
 }
 
+/* כללי עיצוב עבור .notifications-request-actions  */
 .notifications-request-actions {
   justify-content: flex-end;
 }
 
+/* כללי עיצוב עבור .notifications-request-actions button  */
 .notifications-request-actions button {
   display: inline-flex;
   align-items: center;
@@ -469,18 +534,21 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .notifications-request-approve  */
 .notifications-request-approve {
   border: 1px solid #16a34a;
   background: #16a34a;
   color: #fff;
 }
 
+/* כללי עיצוב עבור .notifications-request-reject  */
 .notifications-request-reject {
   border: 1px solid #fecaca;
   background: var(--theme-surface);
   color: #b91c1c;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .notifications-workspace-navigation {
     width: 100%;
@@ -502,6 +570,7 @@
 }
 
 
+/* כללי עיצוב עבור .notifications-request-history-heading  */
 .notifications-request-history-heading {
   display: flex;
   width: 100%;
@@ -520,27 +589,32 @@
   transition: border-color 160ms ease, background-color 160ms ease;
 }
 
+/* כללי עיצוב עבור .notifications-request-history-heading:hover  */
 .notifications-request-history-heading:hover {
   border-color: var(--theme-border-strong);
   background: #fdfefe;
 }
 
+/* כללי עיצוב עבור .notifications-request-history-heading > div:first-child  */
 .notifications-request-history-heading > div:first-child {
   display: grid;
   gap: 0.2rem;
 }
 
+/* כללי עיצוב עבור .notifications-request-history-heading > div:first-child > span  */
 .notifications-request-history-heading > div:first-child > span {
   color: var(--theme-text-muted);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .notifications-request-history-heading-actions  */
 .notifications-request-history-heading-actions {
   display: flex;
   align-items: center;
   gap: 0.55rem;
 }
 
+/* כללי עיצוב עבור .notifications-request-history-heading-actions > span  */
 .notifications-request-history-heading-actions > span {
   display: inline-flex;
   align-items: center;
@@ -554,15 +628,18 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .notifications-request-history-chevron  */
 .notifications-request-history-chevron {
   color: var(--theme-text-muted);
   transition: transform 180ms ease;
 }
 
+/* כללי עיצוב עבור .notifications-request-history-heading-open .notifications-request-history-chevron  */
 .notifications-request-history-heading-open .notifications-request-history-chevron {
   transform: rotate(180deg);
 }
 
+/* כללי עיצוב עבור .notifications-request-history-empty  */
 .notifications-request-history-empty {
   padding: 1rem;
   border: 1px dashed var(--theme-border-strong);
@@ -572,10 +649,12 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .notifications-request-history-card  */
 .notifications-request-history-card {
   opacity: 0.95;
 }
 
+/* כללי עיצוב עבור .notifications-request-decision  */
 .notifications-request-decision {
   display: inline-flex;
   align-items: center;
@@ -586,16 +665,19 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .notifications-request-decision-approved  */
 .notifications-request-decision-approved {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .notifications-request-decision-rejected  */
 .notifications-request-decision-rejected {
   background: #fee2e2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .notifications-request-history-meta  */
 .notifications-request-history-meta {
   display: flex;
   align-items: center;
@@ -648,10 +730,12 @@
 @keyframes notification-focus-pulse { 0% { transform: scale(.985); } 45% { transform: scale(1.008); } 100% { transform: scale(1); } }
 
 /* Announcement composer is an action, not a workspace tab. */
+/* כללי עיצוב עבור .notifications-workspace-navigation  */
 .notifications-workspace-navigation {
   align-items: center;
   flex-wrap: wrap;
 }
+/* כללי עיצוב עבור .notifications-send-announcement-button  */
 .notifications-send-announcement-button {
   margin-inline-start: 0.35rem;
   background: #2563eb !important;
@@ -661,6 +745,7 @@
 .notifications-send-announcement-button:hover { background: #1d4ed8 !important; }
 .announcement-composer-modal { width: min(1040px, calc(100vw - 32px)); }
 .announcement-composer-modal .announcement-composer { border: 0; padding: 0; box-shadow: none; }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .notifications-workspace-navigation { width: 100%; }
   .notifications-send-announcement-button { margin-inline-start: auto; }

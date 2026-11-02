@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/LegacyStatisticsPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: StatisticsUserType, StatisticsWorkspaceView, getPersonLabel, filterStatisticsData, StatisticsPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   BarChart3,
   CalendarCheck2,
@@ -35,22 +42,35 @@ import type {
 import { statisticsService } from '../services/statisticsService';
 import '../styles/statistics.css';
 
+/**
+ * טיפוס StatisticsUserType: סטטיסטיקה / משתמש.
+ */
 type StatisticsUserType =
   | 'dispatchers'
   | 'drivers'
   | 'morning_drivers';
 
+/**
+ * טיפוס StatisticsWorkspaceView: סטטיסטיקה.
+ */
 type StatisticsWorkspaceView =
   | 'availability'
   | 'charts'
   | 'tables'
   | 'payroll';
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר',
 ];
 
+/**
+ * פעולה getPersonLabel: שליפה או חישוב של תווית.
+ * @param displayName — שם תצוגה.
+ * @param scheduleName — שיבוץ / שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getPersonLabel(
   displayName: string,
   scheduleName: string | null,
@@ -58,40 +78,66 @@ function getPersonLabel(
   return scheduleName?.trim() || displayName.trim() || 'ללא שם';
 }
 
+/**
+ * פעולה filterStatisticsData: סינון סינון / סטטיסטיקה / נתונים.
+ * @param data — נתונים.
+ * @param userType — משתמש.
+ * @param selectedUserIds — מזהי המשתמשים שנבחרו.
+ * @returns StatisticsDashboardResponse — הפלט בהתאם לחתימה.
+ */
 function filterStatisticsData(
   data: StatisticsDashboardResponse,
   userType: StatisticsUserType,
   selectedUserIds: string[],
 ): StatisticsDashboardResponse {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר selectedUserIds.length === 0.
   if (selectedUserIds.length === 0) {
     return data;
   }
 
+  // selected — נבחר; אוסף ערכים ייחודיים.
   const selected = new Set(selectedUserIds);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר userType === 'dispatchers'.
   if (userType === 'dispatchers') {
+    // dispatcherStatistics — מוקדנים / סטטיסטיקה.
     const dispatcherStatistics = data.dispatcherStatistics.filter(
       (row) => selected.has(row.userId),
     );
+    // availability — אילוצים וזמינות.
     const availability = data.dispatcherAvailabilityStatistics.filter(
       (row) => selected.has(row.userId),
     );
+    // dispatcherMonthlyBreakdown — מוקדנים.
     const dispatcherMonthlyBreakdown = data.dispatcherMonthlyBreakdown.filter(
       (row) => selected.has(row.userId),
     );
+    // availabilityMonthly — אילוצים וזמינות.
     const availabilityMonthly = data.dispatcherAvailabilityMonthlyBreakdown.filter(
       (row) => selected.has(row.userId),
     );
 
+    /**
+     * פעולה sum: הנתון sum בהקשר הפעולה.
+     * @param key — מפתח.
+     * @returns number — הפלט בהתאם לחתימה.
+     */
     const sum = (key: keyof typeof dispatcherStatistics[number]): number =>
       dispatcherStatistics.reduce((total, row) => {
+        // value — ערך.
         const value = row[key];
         return total + (typeof value === 'number' ? value : 0);
       }, 0);
 
+    /**
+     * פעולה availabilitySum: אילוצים וזמינות.
+     * @param key — מפתח.
+     * @returns number — הפלט בהתאם לחתימה.
+     */
     const availabilitySum = (
       key: keyof typeof availability[number],
     ): number => availability.reduce((total, row) => {
+      // value — ערך.
       const value = row[key];
       return total + (typeof value === 'number' ? value : 0);
     }, 0);
@@ -132,6 +178,7 @@ function filterStatisticsData(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר userType === 'drivers'.
   if (userType === 'drivers') {
     return {
       ...data,
@@ -158,6 +205,9 @@ function filterStatisticsData(
   };
 }
 
+/**
+ * פעולה StatisticsPage: סטטיסטיקה.
+ */
 function StatisticsPage() {
   const { hasPermission } = useAuth();
   const {
@@ -170,21 +220,34 @@ function StatisticsPage() {
     load,
   } = useStatistics();
 
+  // מצב מקומי: userType — משתמש; setUserType מעדכנת אותו ומפעילה רינדור לפי React.
   const [userType, setUserType] = useState<StatisticsUserType>('dispatchers');
+  // מצב מקומי: workspaceView — הנתון workspaceView בהקשר הפעולה; setWorkspaceView מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspaceView, setWorkspaceView] = useState<StatisticsWorkspaceView>('availability');
+  // מצב מקומי: selectedUserIds — מזהי המשתמשים שנבחרו; setSelectedUserIds מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  // מצב מקומי: people — הנתון people בהקשר הפעולה; setPeople מעדכנת אותו ומפעילה רינדור לפי React.
   const [people, setPeople] = useState<StatisticsPersonOption[]>([]);
+  // מצב מקומי: isLoadingPeople — האם טעינה מתבצעת; setIsLoadingPeople מעדכנת אותו ומפעילה רינדור לפי React.
   const [isLoadingPeople, setIsLoadingPeople] = useState(true);
+  // מצב מקומי: peopleError — שגיאה; setPeopleError מעדכנת אותו ומפעילה רינדור לפי React.
   const [peopleError, setPeopleError] = useState<string | null>(null);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
     let cancelled = false;
 
+    /**
+     * פעולה אסינכרונית loadPeople: טעינת הנתון loadPeople בהקשר הפעולה.
+     * @returns Promise<void> — הפלט בהתאם לחתימה.
+     */
     const loadPeople = async (): Promise<void> => {
       setIsLoadingPeople(true);
       setPeopleError(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // result — תוצאה.
         const result = await statisticsService.getStatisticsPeople();
         if (!cancelled) {
           setPeople(result);
@@ -211,9 +274,12 @@ function StatisticsPage() {
     };
   }, []);
 
+  // canViewPayroll — האם צפייה מותרת.
   const canViewPayroll = hasPermission('payroll.view');
 
+  // ערך מחושב availableYears — שנים; נשמר בין רינדורים עד שינוי התלויות.
   const availableYears = useMemo(() => {
+    // currentYear — שנה.
     const currentYear = new Date().getFullYear();
     return Array.from(
       { length: currentYear - 2020 + 2 },
@@ -221,6 +287,7 @@ function StatisticsPage() {
     );
   }, []);
 
+  // ערך מחושב personOptions — אפשרויות בחירה; נשמר בין רינדורים עד שינוי התלויות.
   const personOptions = useMemo(() =>
     people
       .filter((person) => person.userType === userType)
@@ -231,6 +298,7 @@ function StatisticsPage() {
         isActive: person.isActive,
       }))
       .sort((first, second) => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר first.isActive !== second.isActive.
         if (first.isActive !== second.isActive) {
           return first.isActive ? -1 : 1;
         }
@@ -239,6 +307,7 @@ function StatisticsPage() {
       }),
   [people, userType]);
 
+  // ערך מחושב filteredData — נתונים; נשמר בין רינדורים עד שינוי התלויות.
   const filteredData = useMemo(
     () => data
       ? filterStatisticsData(data, userType, selectedUserIds)
@@ -246,6 +315,7 @@ function StatisticsPage() {
     [data, selectedUserIds, userType],
   );
 
+  // personLabel — תווית.
   const personLabel =
     userType === 'dispatchers'
       ? 'מוקדנים'
@@ -253,8 +323,11 @@ function StatisticsPage() {
         ? 'כוננים'
         : 'כונני בוקר';
 
+  // viewOptions — אפשרויות בחירה.
   const viewOptions: Array<{
+    // value — ערך.
     value: StatisticsWorkspaceView;
+    // label — תווית.
     label: string;
     icon: typeof BarChart3;
   }> = [

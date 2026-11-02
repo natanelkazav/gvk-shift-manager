@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/auth/LegacyRuntimeRoute.tsx
+ * מטרה: בחירת התנהגות הניווט למסכים ותיקים בהתאם למצב המנגנון הדינמי.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: LegacyRuntimeRouteProps, LegacyRuntimeRoute.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   Navigate,
   Outlet,
@@ -6,6 +13,9 @@ import {
 import { useEffect, useState } from 'react';
 import { dynamicCutoverService } from '../services/dynamicCutoverService';
 
+/**
+ * חוזה הנתונים LegacyRuntimeRouteProps: מאפייני הרכיב.
+ */
 interface LegacyRuntimeRouteProps {
   redirectTo: string;
 }
@@ -18,13 +28,22 @@ interface LegacyRuntimeRouteProps {
  * Recovery routes live under /legacy/* and intentionally do not use this
  * guard. They are protected separately for administrators/managers.
  */
+/**
+ * פעולה LegacyRuntimeRoute: הנתון LegacyRuntimeRoute בהקשר הפעולה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function LegacyRuntimeRoute({ redirectTo }: LegacyRuntimeRouteProps) {
   const location = useLocation();
+  // מצב מקומי: loading — טעינה; setLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [loading, setLoading] = useState(true);
+  // מצב מקומי: useDynamicRuntime — דינמי; setUseDynamicRuntime מעדכנת אותו ומפעילה רינדור לפי React.
   const [useDynamicRuntime, setUseDynamicRuntime] = useState(false);
+  // מצב מקומי: legacyFrozen — הנתון legacyFrozen בהקשר הפעולה; setLegacyFrozen מעדכנת אותו ומפעילה רינדור לפי React.
   const [legacyFrozen, setLegacyFrozen] = useState(false);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
 
     void dynamicCutoverService
@@ -51,6 +70,7 @@ function LegacyRuntimeRoute({ redirectTo }: LegacyRuntimeRouteProps) {
 
   if (loading) return null;
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר useDynamicRuntime || legacyFrozen.
   if (useDynamicRuntime || legacyFrozen) {
     return (
       <Navigate

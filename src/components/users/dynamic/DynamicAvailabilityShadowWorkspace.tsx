@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/dynamic/DynamicAvailabilityShadowWorkspace.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: Props, Status, CapacitySlot, DynamicAvailabilityShadowWorkspace.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import { Check, LoaderCircle, Save } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -10,37 +17,70 @@ import type {
 import { Button } from '../../ui';
 import './dynamicAvailabilityShadowPreferences.css';
 
+/**
+ * חוזה הנתונים Props: מאפייני הרכיב.
+ */
 interface Props { jobType: DynamicJobType; year: number; month: number; refreshKey: number; canEdit?: boolean; }
 
+/**
+ * טיפוס Status: סטטוס.
+ */
 type Status = 'available' | 'unavailable' | 'preferred' | 'avoid';
 
+// statusLabels — סטטוס.
 const statusLabels: Record<Status, string> = { available: 'זמין', unavailable: 'לא זמין', preferred: 'מעדיף', avoid: 'מעדיף שלא' };
 
+/**
+ * טיפוס CapacitySlot: הנתון CapacitySlot בהקשר הפעולה.
+ */
 type CapacitySlot = { date:string; startTime:string; endTime:string };
+/**
+ * פעולה slotBounds: הנתון slotBounds בהקשר הפעולה.
+ * @param slot — הנתון slot בהקשר הפעולה.
+ */
 const slotBounds = (slot: CapacitySlot) => {
   const start = new Date(`${slot.date}T${slot.startTime.slice(0,8)}`).getTime();
   let end = new Date(`${slot.date}T${slot.endTime.slice(0,8)}`).getTime();
   if (end <= start) end += 24 * 60 * 60 * 1000;
   return { ...slot, start, end };
 };
+/**
+ * פעולה calculateTheoreticalMaximum: חישוב הנתון calculateTheoreticalMaximum בהקשר הפעולה.
+ * @param workspace — הנתון workspace בהקשר הפעולה.
+ */
 const calculateTheoreticalMaximum = (workspace: DynamicAvailabilityWorkspace | null) => {
   if (!workspace?.slots.length) return 0;
+  // rules — כללים.
   const rules = workspace.schedulingConfig?.rules;
   const noOverlap = rules?.noOverlap?.enabled ?? true;
   const noConsecutive = rules?.noConsecutive?.enabled ?? true;
+  // minRestMs — מנוחה.
   const minRestMs = (rules?.minimumRestMinutes?.enabled ? Math.max(0, rules.minimumRestMinutes.value) : 0) * 60_000;
+  // maxPerDay — יום.
   const maxPerDay = rules?.maxShiftsPerDay?.enabled ? Math.max(1, rules.maxShiftsPerDay.value) : Number.POSITIVE_INFINITY;
   const slots = workspace.slots.map(slotBounds).sort((a,b)=>a.start-b.start || a.end-b.end);
   const memo = new Map<string,number>();
+  /**
+   * פעולה solve: הנתון solve בהקשר הפעולה.
+   * @param index — מיקום באוסף.
+   * @param lastIndex — מיקום באוסף.
+   * @param countOnDate — כמות / תאריך.
+   * @returns number — הפלט בהתאם לחתימה.
+   */
   const solve = (index:number,lastIndex:number,countOnDate:number):number => {
     if (index >= slots.length) return 0;
+    // currentDate — תאריך.
     const currentDate = slots[index].date;
+    // previousDate — תאריך.
     const previousDate = index > 0 ? slots[index-1].date : currentDate;
+    // normalizedCount — כמות.
     const normalizedCount = index > 0 && currentDate !== previousDate ? 0 : countOnDate;
+    // key — מפתח.
     const key = `${index}|${lastIndex}|${normalizedCount}`;
     const cached = memo.get(key); if (cached !== undefined) return cached;
     let best = solve(index+1,lastIndex,normalizedCount);
     const slot = slots[index];
+    // previous — הנתון previous בהקשר הפעולה.
     const previous = lastIndex >= 0 ? slots[lastIndex] : null;
     const gap = previous ? slot.start-previous.end : Number.POSITIVE_INFINITY;
     const timingAllowed = !previous || ((!noOverlap || slot.start >= previous.end) && (!noConsecutive || slot.start !== previous.end) && gap >= minRestMs);
@@ -50,6 +90,7 @@ const calculateTheoreticalMaximum = (workspace: DynamicAvailabilityWorkspace | n
   return solve(0,-1,0);
 };
 
+// fallbackAvailabilityConfig — אילוצים וזמינות / תצורה.
 const fallbackAvailabilityConfig = {
   showEmployeePreferences: true,
   showWeeklyShiftLimit: false,
@@ -60,19 +101,35 @@ const fallbackAvailabilityConfig = {
   limits: { maxNightsEnabled: false, defaultMaxNights: null, maxWeekendsEnabled: false, defaultMaxWeekends: null, maxHolidaysEnabled: false, defaultMaxHolidays: null },
 };
 
+/**
+ * פעולה DynamicAvailabilityShadowWorkspace: דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, canEdit = true }: Props) {
+  // מצב מקומי: workspace — הנתון workspace בהקשר הפעולה; setWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspace, setWorkspace] = useState<DynamicAvailabilityWorkspace | null>(null);
+  // מצב מקומי: selectedUserId — מזהה משתמש; setSelectedUserId מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedUserId, setSelectedUserId] = useState('');
+  // מצב מקומי: form — הנתון form בהקשר הפעולה; setForm מעדכנת אותו ומפעילה רינדור לפי React.
   const [form, setForm] = useState<SaveDynamicAvailabilityShadowSubmissionInput | null>(null);
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy, setBusy] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: message — הודעה; setMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [message, setMessage] = useState<string | null>(null);
+  // הפניה יציבה loadGenerationRef בין רינדורים; שינוי current אינו מפעיל רינדור בפני עצמו.
   const loadGenerationRef = useRef(0);
 
+  /**
+   * פעולה אסינכרונית load: טעינת הנתון load בהקשר הפעולה.
+   */
   const load = async () => {
     const generation = ++loadGenerationRef.current;
     setBusy(true); setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // data — נתונים.
       const data = await dynamicSchedulingService.getAvailabilityShadowWorkspace(jobType.id, year, month);
       if (generation !== loadGenerationRef.current) return;
       setWorkspace(data);
@@ -85,6 +142,7 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
     }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [jobType.id, year, month, refreshKey].
   useEffect(() => {
     loadGenerationRef.current += 1;
     setWorkspace(null);
@@ -94,10 +152,14 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
     void load();
   }, [jobType.id, year, month, refreshKey]);
 
+  // ערך מחושב member — הנתון member בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const member = useMemo(() => workspace?.members.find((item) => item.userId === selectedUserId) ?? null, [workspace, selectedUserId]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [member, workspace].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !member || !workspace.
     if (!member || !workspace) { setForm(null); return; }
+    // config — תצורה.
     const config = jobType.availabilityConfig ?? workspace.availabilityConfig ?? fallbackAvailabilityConfig;
     const defaults = config.monthlyCapacity ?? fallbackAvailabilityConfig.monthlyCapacity;
     const limits = config.limits ?? fallbackAvailabilityConfig.limits;
@@ -116,13 +178,27 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
     });
   }, [member, workspace]);
 
+  /**
+   * פעולה setEntry: קביעת קבוצה ייחודית / רשומה.
+   * @param slotId — מזהה.
+   * @param status — סטטוס.
+   */
   const setEntry = (slotId: string, status: Status) => setForm((current) => current ? ({ ...current, entries: current.entries.map((entry) => entry.slotId === slotId ? { ...entry, status } : entry) }) : current);
 
+  /**
+   * פעולה setNumber: קביעת קבוצה ייחודית.
+   * @param key — מפתח.
+   * @param value — ערך.
+   */
   const setNumber = (key: 'minimum'|'target'|'maxWeeklyShifts', value: string) => setForm((current) => current ? ({ ...current, [key]: value === '' ? null : Number(value), ...(key === 'target' ? {targetUnlimited:false} : {}) }) : current);
 
+  /**
+   * פעולה אסינכרונית save: שמירת הנתון save בהקשר הפעולה.
+   */
   const save = async () => {
     if (!canEdit || !form || !selectedUserId) return;
     setBusy(true); setError(null); setMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.saveAvailabilityShadowSubmission(jobType.id, year, month, selectedUserId, { ...form, maximum: null, maxWeeklyShifts: availabilityConfig.showWeeklyShiftLimit ? form.maxWeeklyShifts : member?.maxWeeklyShifts ?? null });
       setMessage('אילוצי העובד נשמרו בהצלחה.'); await load();
@@ -135,9 +211,11 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
   if (busy && !workspace) return <div className="dynamic-shadow-loading"><LoaderCircle className="spin" size={18}/> טוען אילוצי עובדים...</div>;
   if (!workspace?.materialized) return <div className="dynamic-shadow-empty">יש ליצור קודם תקופת אילוצים לחודש הנבחר.</div>;
 
+  // availabilityConfig — אילוצים וזמינות / תצורה.
   const availabilityConfig = jobType.availabilityConfig ?? workspace.availabilityConfig ?? fallbackAvailabilityConfig;
   const monthlyCapacity = availabilityConfig.monthlyCapacity ?? fallbackAvailabilityConfig.monthlyCapacity;
   const statuses = availabilityConfig.statuses?.length ? availabilityConfig.statuses : fallbackAvailabilityConfig.statuses;
+  // theoreticalMaximum — הנתון theoreticalMaximum בהקשר הפעולה.
   const theoreticalMaximum = calculateTheoreticalMaximum(workspace);
 
   return <div className="dynamic-availability-workspace">
@@ -175,6 +253,7 @@ function DynamicAvailabilityShadowWorkspace({ jobType, year, month, refreshKey, 
       <div className="shadow-submission-row"><label>מצב הגשה<select className={`dynamic-submission-status is-${form.submissionStatus}`} disabled={!canEdit} value={form.submissionStatus} onChange={(e) => setForm({ ...form, submissionStatus: e.target.value as SaveDynamicAvailabilityShadowSubmissionInput['submissionStatus'] })}><option value="draft">טיוטה</option><option value="submitted">הוגש</option><option value="reopened">נפתח מחדש</option></select></label></div>
       <div className="dynamic-availability-grid">
         {workspace.slots.map((slot) => {
+          // entry — רשומה.
           const entry = form.entries.find((item) => item.slotId === slot.id);
           if (!entry) return null;
           return <div className="dynamic-availability-slot" key={slot.id}>

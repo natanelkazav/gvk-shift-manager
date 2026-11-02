@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/shifts/UnifiedScheduleEntryEditModal.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור שיבוץ / רשומה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UnifiedScheduleEditUser, UnifiedScheduleEntryEditModalProps, getUserLabel, UnifiedScheduleEntryEditModal.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   useMemo,
   useState,
@@ -12,23 +19,38 @@ import type {
   UnifiedScheduleEntry,
 } from '../../types/unifiedSchedule';
 
+/**
+ * חוזה הנתונים UnifiedScheduleEditUser: שיבוץ / משתמש.
+ */
 interface UnifiedScheduleEditUser {
+  // id — מזהה.
   id: string;
+  // displayName — שם תצוגה.
   displayName: string;
+  // scheduleName — שיבוץ / שם.
   scheduleName: string | null;
 }
 
+/**
+ * חוזה הנתונים UnifiedScheduleEntryEditModalProps: שיבוץ / רשומה / מאפייני הרכיב.
+ */
 interface UnifiedScheduleEntryEditModalProps {
+  // entry — רשומה.
   entry:
     UnifiedScheduleEntry | null;
+  // users — משתמשים.
   users:
     UnifiedScheduleEditUser[];
+  // isLoadingUsers — האם טעינה מתבצעת.
   isLoadingUsers:
     boolean;
+  // isSaving — האם שמירה מתבצעת.
   isSaving:
     boolean;
+  // error — שגיאה.
   error:
     string | null;
+  // onClose — פונקציית סגירת התצוגה.
   onClose:
     () => void;
   onSave: (
@@ -37,6 +59,7 @@ interface UnifiedScheduleEntryEditModalProps {
   ) => Promise<void>;
 }
 
+// categoryLabels — הנתון categoryLabels בהקשר הפעולה.
 const categoryLabels = {
   dispatcher:
     'מוקדן',
@@ -46,6 +69,11 @@ const categoryLabels = {
     'כונן',
 } as const;
 
+/**
+ * פעולה getUserLabel: שליפה או חישוב של משתמש / תווית.
+ * @param user — משתמש.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getUserLabel(
   user:
     UnifiedScheduleEditUser,
@@ -56,6 +84,10 @@ function getUserLabel(
   );
 }
 
+/**
+ * פעולה UnifiedScheduleEntryEditModal: שיבוץ / רשומה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function UnifiedScheduleEntryEditModal({
   entry,
   users,
@@ -65,6 +97,7 @@ function UnifiedScheduleEntryEditModal({
   onClose,
   onSave,
 }: UnifiedScheduleEntryEditModalProps) {
+  // מצב מקומי: selectedUserId — מזהה משתמש; setSelectedUserId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedUserId,
     setSelectedUserId,
@@ -73,6 +106,7 @@ function UnifiedScheduleEntryEditModal({
     '',
   );
 
+  // מצב מקומי: reason — הנתון reason בהקשר הפעולה; setReason מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     reason,
     setReason,
@@ -80,6 +114,7 @@ function UnifiedScheduleEntryEditModal({
 
 
 
+  // ערך מחושב sortedUsers — משתמשים; נשמר בין רינדורים עד שינוי התלויות.
   const sortedUsers =
     useMemo(
       () =>
@@ -97,10 +132,12 @@ function UnifiedScheduleEntryEditModal({
       [users],
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !entry.
   if (!entry) {
     return null;
   }
 
+  // hasChanged — הנתון hasChanged בהקשר הפעולה.
   const hasChanged =
     Boolean(selectedUserId) &&
     selectedUserId !==

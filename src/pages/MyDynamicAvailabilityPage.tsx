@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/MyDynamicAvailabilityPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור דינמי / אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: Status, CapacitySlot, MyDynamicAvailabilityPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { CheckCircle2, ClipboardList, LoaderCircle, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { dynamicSchedulingService } from '../services/dynamicSchedulingService';
@@ -10,27 +17,64 @@ import { Button } from '../components/ui';
 import '../styles/myDynamicAvailability.css';
 import { dynamicShiftDisplayName } from '../utils/dynamicShiftDisplayName';
 
+/**
+ * טיפוס Status: סטטוס.
+ */
 type Status = 'available' | 'unavailable' | 'preferred' | 'avoid';
+// labels — הנתון labels בהקשר הפעולה.
 const labels: Record<Status, string> = { available: 'זמין', unavailable: 'לא זמין', preferred: 'מעדיף', avoid: 'מעדיף שלא' };
+// weekdays — הנתון weekdays בהקשר הפעולה.
 const weekdays = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+/**
+ * פעולה dayOf: יום.
+ * @param date — תאריך.
+ */
 const dayOf = (date: string) => { const [y,m,d]=date.split('-').map(Number); return new Date(Date.UTC(y,m-1,d)).getUTCDay(); };
+/**
+ * פעולה shiftKey: משמרת / מפתח.
+ * @param name — שם.
+ * @param start — הנתון start בהקשר הפעולה.
+ * @param end — הנתון end בהקשר הפעולה.
+ */
 const shiftKey = (name:string,start:string,end:string) => `${name}__${start.slice(0,5)}__${end.slice(0,5)}`;
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param date — תאריך.
+ */
 const formatDate = (date:string) => { const [y,m,d]=date.split('-'); return `${d}/${m}/${y}`; };
+/**
+ * פעולה statusClass: סטטוס.
+ * @param status — סטטוס.
+ */
 const statusClass = (status: Status | '') => status ? `status-${status}` : 'status-empty';
 
+/**
+ * טיפוס CapacitySlot: הנתון CapacitySlot בהקשר הפעולה.
+ */
 type CapacitySlot = { date:string; startTime:string; endTime:string };
+/**
+ * פעולה slotBounds: הנתון slotBounds בהקשר הפעולה.
+ * @param slot — הנתון slot בהקשר הפעולה.
+ */
 const slotBounds = (slot: CapacitySlot) => {
   const start = new Date(`${slot.date}T${slot.startTime.slice(0,8)}`).getTime();
   let end = new Date(`${slot.date}T${slot.endTime.slice(0,8)}`).getTime();
   if (end <= start) end += 24 * 60 * 60 * 1000;
   return { ...slot, start, end };
 };
+/**
+ * פעולה calculateTheoreticalMaximum: חישוב הנתון calculateTheoreticalMaximum בהקשר הפעולה.
+ * @param workspace — הנתון workspace בהקשר הפעולה.
+ */
 const calculateTheoreticalMaximum = (workspace: DynamicAvailabilityWorkspace | null) => {
   if (!workspace?.slots.length) return 0;
+  // rules — כללים.
   const rules = workspace.schedulingConfig?.rules;
   const noOverlap = rules?.noOverlap?.enabled ?? true;
   const noConsecutive = rules?.noConsecutive?.enabled ?? true;
+  // minRestMs — מנוחה.
   const minRestMs = (rules?.minimumRestMinutes?.enabled ? Math.max(0, rules.minimumRestMinutes.value) : 0) * 60_000;
+  // maxPerDay — יום.
   const maxPerDay = rules?.maxShiftsPerDay?.enabled ? Math.max(1, rules.maxShiftsPerDay.value) : Number.POSITIVE_INFINITY;
   const slots = workspace.slots.map(slotBounds).sort((a,b)=>a.start-b.start || a.end-b.end);
   const memo = new Map<string,number>();
@@ -38,15 +82,27 @@ const calculateTheoreticalMaximum = (workspace: DynamicAvailabilityWorkspace | n
   // Slots are ordered chronologically. Once we move to a new shift_date, the
   // previous day's counter can be discarded; the last selected shift is enough
   // to enforce the same overlap/consecutive/minimum-rest rules used by the engine.
+  /**
+   * פעולה solve: הנתון solve בהקשר הפעולה.
+   * @param index — מיקום באוסף.
+   * @param lastIndex — מיקום באוסף.
+   * @param countOnDate — כמות / תאריך.
+   * @returns number — הפלט בהתאם לחתימה.
+   */
   const solve = (index:number,lastIndex:number,countOnDate:number):number => {
     if (index >= slots.length) return 0;
+    // currentDate — תאריך.
     const currentDate = slots[index].date;
+    // previousDate — תאריך.
     const previousDate = index > 0 ? slots[index-1].date : currentDate;
+    // normalizedCount — כמות.
     const normalizedCount = index > 0 && currentDate !== previousDate ? 0 : countOnDate;
+    // key — מפתח.
     const key = `${index}|${lastIndex}|${normalizedCount}`;
     const cached = memo.get(key); if (cached !== undefined) return cached;
     let best = solve(index+1,lastIndex,normalizedCount);
     const slot = slots[index];
+    // previous — הנתון previous בהקשר הפעולה.
     const previous = lastIndex >= 0 ? slots[lastIndex] : null;
     const gap = previous ? slot.start-previous.end : Number.POSITIVE_INFINITY;
     const timingAllowed = !previous ||
@@ -57,50 +113,93 @@ const calculateTheoreticalMaximum = (workspace: DynamicAvailabilityWorkspace | n
   return solve(0,-1,0);
 };
 
+/**
+ * פעולה MyDynamicAvailabilityPage: דינמי / אילוצים וזמינות.
+ */
 function MyDynamicAvailabilityPage() {
+  // מצב מקומי: periods — תקופות; setPeriods מעדכנת אותו ומפעילה רינדור לפי React.
   const [periods,setPeriods]=useState<MyDynamicAvailabilityPeriod[]>([]);
+  // מצב מקומי: selectedKey — נבחר / מפתח; setSelectedKey מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedKey,setSelectedKey]=useState('');
+  // מצב מקומי: workspace — הנתון workspace בהקשר הפעולה; setWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspace,setWorkspace]=useState<DynamicAvailabilityWorkspace|null>(null);
+  // מצב מקומי: rotationDates — סבב כוננויות / תאריכים; setRotationDates מעדכנת אותו ומפעילה רינדור לפי React.
   const [rotationDates,setRotationDates]=useState<Array<{date:string;planned:boolean;published:boolean;hasPublishedAssignment:boolean;hasPublishedSchedule?:boolean}>>([]);
+  // מצב מקומי: statusBySlot — סטטוס; setStatusBySlot מעדכנת אותו ומפעילה רינדור לפי React.
   const [statusBySlot,setStatusBySlot]=useState<Record<string,Status|''>>({});
+  // מצב מקומי: bulkStatus — סטטוס; setBulkStatus מעדכנת אותו ומפעילה רינדור לפי React.
   const [bulkStatus,setBulkStatus]=useState<Status>('available');
+  // מצב מקומי: bulkDay — יום; setBulkDay מעדכנת אותו ומפעילה רינדור לפי React.
   const [bulkDay,setBulkDay]=useState(0);
+  // מצב מקומי: bulkKeys — הנתון bulkKeys בהקשר הפעולה; setBulkKeys מעדכנת אותו ומפעילה רינדור לפי React.
   const [bulkKeys,setBulkKeys]=useState<string[]|null>(null);
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy,setBusy]=useState(true);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error,setError]=useState<string|null>(null);
+  // מצב מקומי: message — הודעה; setMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [message,setMessage]=useState<string|null>(null);
+  // מצב מקומי: preferredTarget — יעד; setPreferredTarget מעדכנת אותו ומפעילה רינדור לפי React.
   const [preferredTarget,setPreferredTarget]=useState<number|null>(null);
+  // מצב מקומי: maximizeShifts — משמרות; setMaximizeShifts מעדכנת אותו ומפעילה רינדור לפי React.
   const [maximizeShifts,setMaximizeShifts]=useState(false);
+  // מצב מקומי: maxWeeklyShifts — שבועי / משמרות; setMaxWeeklyShifts מעדכנת אותו ומפעילה רינדור לפי React.
   const [maxWeeklyShifts,setMaxWeeklyShifts]=useState<number|null>(null);
+  // מצב מקומי: confirmUnmarked — הנתון confirmUnmarked בהקשר הפעולה; setConfirmUnmarked מעדכנת אותו ומפעילה רינדור לפי React.
   const [confirmUnmarked,setConfirmUnmarked]=useState(false);
 
+  // ערך מחושב selected — נבחר; נשמר בין רינדורים עד שינוי התלויות.
   const selected=useMemo(()=>periods.find(p=>`${p.jobTypeId}:${p.year}:${p.month}`===selectedKey)??null,[periods,selectedKey]);
   const statuses=(workspace?.availabilityConfig?.statuses?.length ? workspace.availabilityConfig.statuses : ['available','unavailable']) as Status[];
   const member=workspace?.members?.[0]??null;
+  // ערך מחושב rotationByDate — סבב כוננויות / תאריך; נשמר בין רינדורים עד שינוי התלויות.
   const rotationByDate=useMemo(()=>new Map(rotationDates.map(d=>[d.date,d])),[rotationDates]);
+  // ערך מחושב conflictDates — תאריכים; נשמר בין רינדורים עד שינוי התלויות.
   const conflictDates=useMemo(()=>[...new Set((workspace?.slots??[]).filter(slot=>statusBySlot[slot.id]==='unavailable' && (()=>{const r=rotationByDate.get(slot.date);return r?.hasPublishedSchedule ? r.published : r?.planned;})()).map(slot=>slot.date))],[workspace,statusBySlot,rotationByDate]);
+  // ערך מחושב theoreticalMaximum — הנתון theoreticalMaximum בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const theoreticalMaximum=useMemo(()=>calculateTheoreticalMaximum(workspace),[workspace]);
 
+  /**
+   * פעולה אסינכרונית loadPeriods: טעינת תקופות.
+   */
   const loadPeriods=async()=>{ setBusy(true); setError(null); try { const data=await dynamicSchedulingService.getMyDynamicAvailabilityPeriods(); setPeriods(data); setSelectedKey(k=>k&&data.some(p=>`${p.jobTypeId}:${p.year}:${p.month}`===k)?k:(data[0]?`${data[0].jobTypeId}:${data[0].year}:${data[0].month}`:'')); } catch(e){setError(e instanceof Error?e.message:'טעינת תקופות האילוצים נכשלה.');} finally{setBusy(false);} };
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(()=>{void loadPeriods();},[]);
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [selected?.jobTypeId,selected?.year,selected?.month].
   useEffect(()=>{ if(!selected){setWorkspace(null);setRotationDates([]);return;} void (async()=>{setBusy(true);setError(null);try{const w=await dynamicSchedulingService.getMyDynamicAvailabilityWorkspace(selected.jobTypeId,selected.year,selected.month);setWorkspace(w);setRotationDates([]);
         // Optional enhancement: failures must never block availability submission.
         void dynamicSchedulingService.getMyRotationDates(selected.jobTypeId,selected.year,selected.month)
           .then(setRotationDates).catch(()=>setRotationDates([]));
+        // currentMember — הנתון currentMember בהקשר הפעולה.
         const currentMember=w.members?.[0]??null;const entries=currentMember?.entries??{};setStatusBySlot(Object.fromEntries(w.slots.map(s=>[s.id,entries[s.id]?.status??''])));const capacity=w.availabilityConfig?.monthlyCapacity;const currentTarget=currentMember?.target??capacity?.defaultTarget??null;setPreferredTarget(currentTarget);setMaximizeShifts(Boolean(currentMember?.targetUnlimited));setMaxWeeklyShifts(currentMember?.maxWeeklyShifts??null);setBulkKeys(null);}catch(e){setError(e instanceof Error?e.message:'טעינת האילוצים נכשלה.');}finally{setBusy(false);}})();},[selected?.jobTypeId,selected?.year,selected?.month]);
 
 
+  // ערך מחושב options — אפשרויות בחירה; נשמר בין רינדורים עד שינוי התלויות.
   const options=useMemo(()=>{if(!workspace)return[];const map=new Map<string,{name:string;start:string;end:string}>();workspace.slots.filter(s=>dayOf(s.date)===bulkDay).forEach(s=>{const k=shiftKey(s.shiftName,s.startTime,s.endTime);map.set(k,{name:s.shiftName,start:s.startTime.slice(0,5),end:s.endTime.slice(0,5)})});return [...map].map(([key,value])=>({key,...value}));},[workspace,bulkDay]);
+  // selectedKeys — נבחר.
   const selectedKeys=bulkKeys===null?options.map(o=>o.key):bulkKeys.filter(k=>options.some(o=>o.key===k));
+  // ערך מחושב matching — הנתון matching בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const matching=useMemo(()=>new Set((workspace?.slots??[]).filter(s=>dayOf(s.date)===bulkDay&&selectedKeys.includes(shiftKey(s.shiftName,s.startTime,s.endTime))).map(s=>s.id)),[workspace,bulkDay,selectedKeys.join('|')]);
   const filled=Object.values(statusBySlot).filter(Boolean).length;
+  // total — סך הכול.
   const total=workspace?.slots.length??0;
   const deadlinePassed=Boolean(selected?.submissionDeadline && new Date(selected.submissionDeadline).getTime() < Date.now());
   const editable=selected?.periodStatus==='open' && !deadlinePassed;
 
+  /**
+   * פעולה applyMonth: החלת חודש.
+   */
   const applyMonth=()=>{if(!workspace)return;setStatusBySlot(Object.fromEntries(workspace.slots.map(s=>[s.id,bulkStatus])));setMessage(`כל ${workspace.slots.length} משמרות החודש סומנו כ${labels[bulkStatus]}.`)};
+  /**
+   * פעולה applyRule: החלת כלל.
+   */
   const applyRule=()=>{setStatusBySlot(cur=>{const next={...cur};matching.forEach(id=>next[id]=bulkStatus);return next;});setMessage(`הכלל הוחל על ${matching.size} משמרות.`)};
+  // alreadySubmitted — הוגש.
   const alreadySubmitted=selected?.submissionStatus==='submitted';
+  /**
+   * פעולה אסינכרונית save: שמירת הנתון save בהקשר הפעולה.
+   * @param submit — הנתון submit בהקשר הפעולה.
+   */
   const save=async(submit:boolean)=>{if(!selected||!workspace||!member)return;const shouldSubmit=submit||alreadySubmitted;if(shouldSubmit&&filled<total&&!confirmUnmarked){setConfirmUnmarked(true);return;}setBusy(true);setError(null);setMessage(null);try{const capacity=workspace.availabilityConfig?.monthlyCapacity;const minimum=member.minimum??capacity?.defaultMin??null;const target=maximizeShifts?null:preferredTarget;const payload:SaveDynamicAvailabilityShadowSubmissionInput={submissionStatus:shouldSubmit?'submitted':'draft',minimum,target,targetUnlimited:maximizeShifts,maximum:null,maxWeeklyShifts:workspace.availabilityConfig?.showWeeklyShiftLimit ? maxWeeklyShifts : null,maxNights:member.maxNights,maxWeekends:member.maxWeekends,maxHolidays:member.maxHolidays,note:member.note,entries:workspace.slots.filter(s=>shouldSubmit||statusBySlot[s.id]).map(s=>({slotId:s.id,status:(statusBySlot[s.id]||'available') as Status,note:member.entries[s.id]?.note??null,autoFilled:!statusBySlot[s.id]}))};await dynamicSchedulingService.saveMyDynamicAvailabilitySubmission(selected.jobTypeId,selected.year,selected.month,payload);if(shouldSubmit){setStatusBySlot(Object.fromEntries(workspace.slots.map(slot=>[slot.id,statusBySlot[slot.id]||'available'])));}setConfirmUnmarked(false);await loadPeriods();setMessage(shouldSubmit?'האילוצים הוגשו בהצלחה. ההגשה נשארת פתוחה לעדכון עד סגירת התקופה.':'הטיוטה נשמרה.');}catch(e){setError(e instanceof Error?e.message:'שמירת האילוצים נכשלה.');}finally{setBusy(false);}};
 
   if(busy&&!periods.length)return <main className="my-dynamic-availability page-shell"><div className="my-availability-loading"><LoaderCircle className="spin"/> טוען אילוצים…</div></main>;

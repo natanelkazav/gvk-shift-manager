@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useAvailabilityPeriodSubmissions.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור תקופת אילוצים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UseAvailabilityPeriodSubmissionsResult, getErrorMessage, useAvailabilityPeriodSubmissions.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useState,
@@ -7,13 +14,19 @@ import type {
   AvailabilityPeriodSubmissionsState,
 } from '../types/availabilitySubmissions';
 
+/**
+ * חוזה הנתונים UseAvailabilityPeriodSubmissionsResult: תקופת אילוצים.
+ */
 interface UseAvailabilityPeriodSubmissionsResult {
+  // state — מצב.
   state:
     AvailabilityPeriodSubmissionsState;
 
+  // selectedPeriodId — מזהה התקופה.
   selectedPeriodId:
     string | null;
 
+  // loadPeriodSubmissions — תקופה.
   loadPeriodSubmissions: (
     periodId: string,
   ) => Promise<void>;
@@ -21,10 +34,12 @@ interface UseAvailabilityPeriodSubmissionsResult {
   reset:
     () => void;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   AvailabilityPeriodSubmissionsState = {
     data: null,
@@ -32,9 +47,15 @@ const initialState:
     error: null,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error.message;
   }
@@ -42,8 +63,13 @@ function getErrorMessage(
   return 'אירעה שגיאה בלתי צפויה בטעינת מעקב ההגשות.';
 }
 
+/**
+ * פעולה useAvailabilityPeriodSubmissions: חיבור מצב או הקשר עבור תקופת אילוצים.
+ * @returns UseAvailabilityPeriodSubmissionsResult — הפלט בהתאם לחתימה.
+ */
 export function useAvailabilityPeriodSubmissions():
   UseAvailabilityPeriodSubmissionsResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -52,6 +78,7 @@ export function useAvailabilityPeriodSubmissions():
       initialState,
     );
 
+  // מצב מקומי: selectedPeriodId — מזהה התקופה; setSelectedPeriodId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedPeriodId,
     setSelectedPeriodId,
@@ -60,14 +87,17 @@ export function useAvailabilityPeriodSubmissions():
       null,
     );
 
+  // loadPeriodSubmissions — תקופה.
   const loadPeriodSubmissions =
     useCallback(
       async (
         periodId: string,
       ): Promise<void> => {
+        // normalizedPeriodId — מזהה התקופה.
         const normalizedPeriodId =
           periodId.trim();
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedPeriodId.
         if (!normalizedPeriodId) {
           setState({
             data: null,
@@ -91,7 +121,9 @@ export function useAvailabilityPeriodSubmissions():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await availabilitySubmissionsService
               .getPeriodSubmissions(
@@ -122,6 +154,7 @@ export function useAvailabilityPeriodSubmissions():
       setState(initialState);
     }, []);
 
+  // clearError — שגיאה.
   const clearError =
     useCallback((): void => {
       setState(

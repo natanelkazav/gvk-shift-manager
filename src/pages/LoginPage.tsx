@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/LoginPage.tsx
+ * מטרה: הצגת טופס התחברות וטיפול בפרטי משתמש, זכירת התחברות ושגיאות אימות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: LoginPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   LockKeyhole,
   LogIn,
@@ -23,6 +30,9 @@ import '../styles/auth.css';
 
 
 
+/**
+ * פעולה LoginPage: הנתון LoginPage בהקשר הפעולה.
+ */
 function LoginPage() {
   const navigate = useNavigate();
 
@@ -32,33 +42,41 @@ function LoginPage() {
     clearError,
   } = useAuth();
 
+  // מצב מקומי: email — כתובת דוא״ל; setEmail מעדכנת אותו ומפעילה רינדור לפי React.
   const [email, setEmail] =
     useState('');
 
+  // מצב מקומי: password — סיסמה; setPassword מעדכנת אותו ומפעילה רינדור לפי React.
   const [password, setPassword] =
     useState('');
 
+  // מצב מקומי: rememberMe — הנתון rememberMe בהקשר הפעולה; setRememberMe מעדכנת אותו ומפעילה רינדור לפי React.
   const [rememberMe, setRememberMe] =
     useState(false);
 
+  // מצב מקומי: isSubmitting — האם הגשה מתבצעת; setIsSubmitting מעדכנת אותו ומפעילה רינדור לפי React.
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
+  // מצב מקומי: formError — שגיאה; setFormError מעדכנת אותו ומפעילה רינדור לפי React.
   const [formError, setFormError] =
     useState<string | null>(null);
 
+  // מצב מקומי: isSendingPasswordReset — סיסמה; setIsSendingPasswordReset מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isSendingPasswordReset,
     setIsSendingPasswordReset,
   ] =
     useState(false);
 
+  // מצב מקומי: passwordResetMessage — סיסמה / הודעה; setPasswordResetMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     passwordResetMessage,
     setPasswordResetMessage,
   ] =
     useState<string | null>(null);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [clearError].
   useEffect(() => {
     clearError();
 
@@ -67,19 +85,27 @@ function LoginPage() {
     };
   }, [clearError]);
 
+  /**
+   * פעולה validateForm: בדיקת תקינות של הנתון validateForm בהקשר הפעולה.
+   * @returns string | null — הפלט בהתאם לחתימה.
+   */
   const validateForm =
     (): string | null => {
+      // normalizedEmail — כתובת דוא״ל.
       const normalizedEmail =
         email.trim();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedEmail.
       if (!normalizedEmail) {
         return 'יש להזין כתובת אימייל.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedEmail.includes('@').
       if (!normalizedEmail.includes('@')) {
         return 'יש להזין כתובת אימייל תקינה.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !password.
       if (!password) {
         return 'יש להזין סיסמה.';
       }
@@ -87,14 +113,21 @@ function LoginPage() {
       return null;
     };
 
+  /**
+   * פעולה אסינכרונית handleSubmit: טיפול באירוע עבור הנתון handleSubmit בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> => {
     event.preventDefault();
 
+    // validationError — אימות נתונים / שגיאה.
     const validationError =
       validateForm();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר validationError.
     if (validationError) {
       setFormError(validationError);
       return;
@@ -104,6 +137,7 @@ function LoginPage() {
     setFormError(null);
     clearError();
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await signIn({
         email: email.trim(),
@@ -133,8 +167,13 @@ function LoginPage() {
     }
   };
 
+  /**
+   * פעולה אסינכרונית handleForgotPassword: טיפול באירוע עבור סיסמה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleForgotPassword =
     async (): Promise<void> => {
+      // normalizedEmail — כתובת דוא״ל.
       const normalizedEmail =
         email
           .trim()
@@ -148,6 +187,7 @@ function LoginPage() {
       );
       clearError();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedEmail || !normalizedEmail.includes( '@', ).
       if (
         !normalizedEmail ||
         !normalizedEmail.includes(
@@ -165,6 +205,7 @@ function LoginPage() {
         true,
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await authService
           .requestPasswordReset(
@@ -194,6 +235,7 @@ function LoginPage() {
       }
     };
 
+  // displayedError — שגיאה.
   const displayedError =
     formError ?? error;
 

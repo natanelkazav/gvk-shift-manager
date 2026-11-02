@@ -1,3 +1,11 @@
+/**
+ * קובץ: src/services/scheduleImportExecutionService.ts
+ * מטרה: שליחת נתוני הייבוא המאומתים לביצוע במסד ועיבוד סיכום ריצת הייבוא.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: SupabaseErrorShape, normalizeScheduleImportExecutionError, validatePeriodDetails, validateResolvedData, validatePreviewRequest, validateExecutionRequest, ScheduleImportExecutionService.
+ * - קריאות RPC המופעלות בקובץ: preview_schedule_excel_import, execute_schedule_excel_import.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import {
   supabase,
 } from '../lib/supabase';
@@ -9,7 +17,11 @@ import type {
   PreviewScheduleExcelImportResponse,
 } from '../types/scheduleImport';
 
+/**
+ * חוזה הנתונים SupabaseErrorShape: שגיאה.
+ */
 interface SupabaseErrorShape {
+  // message — הודעה (אופציונלי).
   message?: unknown;
 
   details?: unknown;
@@ -19,6 +31,11 @@ interface SupabaseErrorShape {
   code?: unknown;
 }
 
+/**
+ * פעולה normalizeScheduleImportExecutionError: נרמול שיבוץ / ייבוא / שגיאה.
+ * @param error — שגיאה.
+ * @returns Error — הפלט בהתאם לחתימה.
+ */
 function normalizeScheduleImportExecutionError(
   error: unknown,
 ): Error {
@@ -27,6 +44,7 @@ function normalizeScheduleImportExecutionError(
     error,
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -38,10 +56,12 @@ function normalizeScheduleImportExecutionError(
       'object' &&
     error !== null
   ) {
+    // databaseError — שגיאה.
     const databaseError =
       error as
         SupabaseErrorShape;
 
+    // errorParts — שגיאה.
     const errorParts = [
       typeof databaseError.message ===
         'string' &&
@@ -73,6 +93,7 @@ function normalizeScheduleImportExecutionError(
         Boolean(errorPart),
     );
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר errorParts.length > 0.
     if (
       errorParts.length > 0
     ) {
@@ -87,10 +108,16 @@ function normalizeScheduleImportExecutionError(
   );
 }
 
+/**
+ * פעולה validatePeriodDetails: בדיקת תקינות של תקופה.
+ * @param request — נתוני הבקשה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function validatePeriodDetails(
   request:
     PreviewScheduleExcelImportRequest,
 ): void {
+  // עצירת הפעולה עם שגיאה כאשר !Number.isInteger( request.year, ) || request.year < 2020 || request.year > 2100.
   if (
     !Number.isInteger(
       request.year,
@@ -103,6 +130,7 @@ function validatePeriodDetails(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !Number.isInteger( request.month, ) || request.month < 1 || request.month > 12.
   if (
     !Number.isInteger(
       request.month,
@@ -115,6 +143,7 @@ function validatePeriodDetails(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר request.periodType !== 'historical' && request.periodType !== 'current' && request.periodType !== 'future'.
   if (
     request.periodType !==
       'historical' &&
@@ -128,6 +157,7 @@ function validatePeriodDetails(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר request.importStrategy !== 'missing_only' && request.importStrategy !== 'replace' && request.importStrategy !== 'rebuild' && request.importS.
   if (
     request.importStrategy !==
       'missing_only' &&
@@ -144,10 +174,16 @@ function validatePeriodDetails(
   }
 }
 
+/**
+ * פעולה validateResolvedData: בדיקת תקינות של נתונים.
+ * @param request — נתוני הבקשה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function validateResolvedData(
   request:
     PreviewScheduleExcelImportRequest,
 ): void {
+  // עצירת הפעולה עם שגיאה כאשר request.dispatcherShifts.some( (shift) => !shift.date.trim() || !shift.startTime.trim() || !shift.endTime.trim() || !shift.userId.trim(), ).
   if (
     request.dispatcherShifts.some(
       (shift) =>
@@ -162,6 +198,7 @@ function validateResolvedData(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר request.driverDuties.some( (duty) => !duty.date.trim() || !duty.userId.trim(), ).
   if (
     request.driverDuties.some(
       (duty) =>
@@ -174,6 +211,7 @@ function validateResolvedData(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר request.morningDriverShifts.some( (shift) => !shift.date.trim() || !shift.startTime.trim() || !shift.endTime.trim() || !shift.userId.trim() .
   if (
     request.morningDriverShifts.some(
       (shift) =>
@@ -194,6 +232,11 @@ function validateResolvedData(
   }
 }
 
+/**
+ * פעולה validatePreviewRequest: בדיקת תקינות של נתוני הבקשה.
+ * @param request — נתוני הבקשה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function validatePreviewRequest(
   request:
     PreviewScheduleExcelImportRequest,
@@ -207,6 +250,11 @@ function validatePreviewRequest(
   );
 }
 
+/**
+ * פעולה validateExecutionRequest: בדיקת תקינות של נתוני הבקשה.
+ * @param request — נתוני הבקשה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function validateExecutionRequest(
   request:
     ExecuteScheduleExcelImportRequest,
@@ -215,6 +263,7 @@ function validateExecutionRequest(
     request,
   );
 
+  // עצירת הפעולה עם שגיאה כאשר !request.fileName.trim().
   if (
     !request.fileName.trim()
   ) {
@@ -223,6 +272,7 @@ function validateExecutionRequest(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !Number.isFinite( request.fileSizeBytes, ) || request.fileSizeBytes < 0.
   if (
     !Number.isFinite(
       request.fileSizeBytes,
@@ -234,6 +284,7 @@ function validateExecutionRequest(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !Array.isArray( request.warnings, ) || request.warnings.some( (warning) => typeof warning !== 'string', ).
   if (
     !Array.isArray(
       request.warnings,
@@ -249,6 +300,7 @@ function validateExecutionRequest(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר request.periodType === 'future'.
   if (
     request.periodType ===
       'future'
@@ -260,7 +312,16 @@ function validateExecutionRequest(
 
 }
 
+/**
+ * איגוד פעולות שיבוץ / ייבוא / שירות במחלקה ScheduleImportExecutionService.
+ */
 class ScheduleImportExecutionService {
+  /**
+   * פעולה אסינכרונית previewImport: ייבוא.
+   * הפעולה פונה ל־RPC: preview_schedule_excel_import.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<PreviewScheduleExcelImportResponse> — הפלט בהתאם לחתימה.
+   */
   async previewImport(
     request:
       PreviewScheduleExcelImportRequest,
@@ -269,6 +330,7 @@ class ScheduleImportExecutionService {
       request,
     );
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -299,12 +361,14 @@ class ScheduleImportExecutionService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeScheduleImportExecutionError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data || typeof data !== 'object'.
     if (
       !data ||
       typeof data !==
@@ -319,6 +383,12 @@ class ScheduleImportExecutionService {
       PreviewScheduleExcelImportResponse;
   }
 
+  /**
+   * פעולה אסינכרונית executeImport: ייבוא.
+   * הפעולה פונה ל־RPC: execute_schedule_excel_import.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<ExecuteScheduleExcelImportResponse> — הפלט בהתאם לחתימה.
+   */
   async executeImport(
     request:
       ExecuteScheduleExcelImportRequest,
@@ -327,6 +397,7 @@ class ScheduleImportExecutionService {
       request,
     );
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -368,12 +439,14 @@ class ScheduleImportExecutionService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeScheduleImportExecutionError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data || typeof data !== 'object'.
     if (
       !data ||
       typeof data !==
@@ -384,10 +457,12 @@ class ScheduleImportExecutionService {
       );
     }
 
+    // response — תוצאת הפעולה.
     const response =
       data as
         ExecuteScheduleExcelImportResponse;
 
+    // עצירת הפעולה עם שגיאה כאשר !response.importRunId || !response.schedulePeriodId || !response.driverSchedulePeriodId || !response.morningDriverAvailabilityPeriodId || !r.
     if (
       !response.importRunId ||
       !response.schedulePeriodId ||
@@ -404,5 +479,6 @@ class ScheduleImportExecutionService {
   }
 }
 
+// scheduleImportExecutionService — שיבוץ / ייבוא / שירות.
 export const scheduleImportExecutionService =
   new ScheduleImportExecutionService();

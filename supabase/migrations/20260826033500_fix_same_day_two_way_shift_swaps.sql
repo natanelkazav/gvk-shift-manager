@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260826033500_fix_same_day_two_way_shift_swaps.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור החלפת משמרות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.validate_shift_swap_final_state.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- =========================================================
 -- Fix two-way dispatcher swaps for adjacent shifts
 -- =========================================================
@@ -15,6 +20,7 @@
 --   Adam  23:00-06:00
 -- =========================================================
 
+-- פונקציית מסד public.validate_shift_swap_final_state: בדיקת תקינות של החלפת משמרות.
 create or replace function public.validate_shift_swap_final_state(
   requested_swap_type text,
   requested_requester_user_id uuid,
@@ -25,12 +31,16 @@ create or replace function public.validate_shift_swap_final_state(
 returns jsonb
 language plpgsql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- requester_shift — משמרת.
   requester_shift public.schedule_shifts%rowtype;
+  -- counterparty_shift — משמרת.
   counterparty_shift public.schedule_shifts%rowtype;
+  -- target_period_id — מזהה התקופה היעד.
   target_period_id uuid;
   conflict_record record;
 begin
@@ -38,7 +48,9 @@ begin
   -- 1. Basic input validation
   -- =======================================================
 
+  -- הסתעפות לפי התנאי requested_swap_type not in ('one_way', 'two_way').
   if requested_swap_type not in ('one_way', 'two_way') then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'valid', false,
       'code', 'invalid_swap_type',
@@ -46,10 +58,12 @@ begin
     );
   end if;
 
+  -- הסתעפות לפי התנאי requested_requester_user_id is null.
   if requested_requester_user_id is null
     or requested_counterparty_user_id is null
     or requested_requester_user_id = requested_counterparty_user_id
   then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'valid', false,
       'code', 'invalid_users',
@@ -57,7 +71,9 @@ begin
     );
   end if;
 
+  -- הסתעפות לפי התנאי requested_requester_shift_id is null.
   if requested_requester_shift_id is null then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'valid', false,
       'code', 'missing_requester_shift',
@@ -65,9 +81,11 @@ begin
     );
   end if;
 
+  -- הסתעפות לפי התנאי requested_swap_type = 'two_way'.
   if requested_swap_type = 'two_way'
     and requested_counterparty_shift_id is null
   then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'valid', false,
       'code', 'missing_counterparty_shift',
@@ -75,9 +93,11 @@ begin
     );
   end if;
 
+  -- הסתעפות לפי התנאי requested_swap_type = 'two_way'.
   if requested_swap_type = 'two_way'
     and requested_counterparty_shift_id = requested_requester_shift_id
   then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'valid', false,
       'code', 'same_shift',
@@ -94,7 +114,9 @@ begin
   from public.schedule_shifts shift_row
   where shift_row.id = requested_requester_shift_id;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'valid', false,
       'code', 'requester_shift_not_found',
@@ -102,9 +124,11 @@ begin
     );
   end if;
 
+  -- הסתעפות לפי התנאי requester_shift.assigned_user_id.
   if requester_shift.assigned_user_id
     is distinct from requested_requester_user_id
   then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'valid', false,
       'code', 'requester_shift_owner_changed',
@@ -114,13 +138,16 @@ begin
 
   target_period_id := requester_shift.period_id;
 
+  -- הסתעפות לפי התנאי requested_swap_type = 'two_way'.
   if requested_swap_type = 'two_way' then
     select *
     into counterparty_shift
     from public.schedule_shifts shift_row
     where shift_row.id = requested_counterparty_shift_id;
 
+    -- הסתעפות לפי התנאי not found.
     if not found then
+      -- הרכבת תוצאת הפעולה והחזרתה לקורא.
       return jsonb_build_object(
         'valid', false,
         'code', 'counterparty_shift_not_found',
@@ -128,7 +155,9 @@ begin
       );
     end if;
 
+    -- הסתעפות לפי התנאי counterparty_shift.period_id is distinct from target_period_id.
     if counterparty_shift.period_id is distinct from target_period_id then
+      -- הרכבת תוצאת הפעולה והחזרתה לקורא.
       return jsonb_build_object(
         'valid', false,
         'code', 'different_schedule_periods',
@@ -136,9 +165,11 @@ begin
       );
     end if;
 
+    -- הסתעפות לפי התנאי counterparty_shift.assigned_user_id.
     if counterparty_shift.assigned_user_id
       is distinct from requested_counterparty_user_id
     then
+      -- הרכבת תוצאת הפעולה והחזרתה לקורא.
       return jsonb_build_object(
         'valid', false,
         'code', 'counterparty_shift_owner_changed',
@@ -237,7 +268,9 @@ begin
   into conflict_record
   from conflicts;
 
+  -- הסתעפות לפי התנאי found.
   if found then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'valid', false,
       'code', conflict_record.conflict_type,
@@ -253,6 +286,7 @@ begin
     );
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'valid', true,
     'code', null,
@@ -262,6 +296,7 @@ end;
 $function$;
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute
 on function public.validate_shift_swap_final_state(
   text,

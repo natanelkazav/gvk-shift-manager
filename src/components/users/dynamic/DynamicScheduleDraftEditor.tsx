@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/dynamic/DynamicScheduleDraftEditor.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי / שיבוץ / טיוטה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: Props, candidateLabel, DynamicScheduleDraftEditor.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { AlertTriangle, CalendarDays, CheckCircle2, List, LoaderCircle, Trash2, UserPlus, WandSparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
@@ -6,23 +13,45 @@ import { Button } from '../../ui';
 import MonthCalendar from '../../calendar/MonthCalendar';
 import { dynamicShiftDisplayName } from '../../../utils/dynamicShiftDisplayName';
 
+/**
+ * חוזה הנתונים Props: מאפייני הרכיב.
+ */
 interface Props {
+  // draftId — טיוטה / מזהה.
   draftId: string;
+  // refreshKey — מפתח (אופציונלי).
   refreshKey?: number;
+  // onChanged — פונקציית דיווח על שינוי (אופציונלי).
   onChanged?: () => void | Promise<void>;
 }
 
+// availabilityLabel — אילוצים וזמינות / תווית.
 const availabilityLabel: Record<string, string> = {
   preferred: 'מעדיף', available: 'זמין', avoid: 'מעדיף שלא', unavailable: 'לא זמין',
 };
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const formatDate = (value: string): string => {
   const [year, month, day] = value.slice(0, 10).split('-');
   return `${day}/${month}/${year}`;
 };
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const formatTime = (value: string): string => value.slice(0, 5);
 
+/**
+ * פעולה formatWeekday: עיצוב ערך לתצוגה עבור הנתון formatWeekday בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const formatWeekday = (value: string): string => {
   const [year, month, day] = value.slice(0, 10).split('-').map(Number);
   return ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'יום שבת'][
@@ -30,25 +59,49 @@ const formatWeekday = (value: string): string => {
   ];
 };
 
+/**
+ * פעולה candidateLabel: תווית.
+ * @param candidate — הנתון candidate בהקשר הפעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function candidateLabel(candidate: DynamicDraftEditorCandidate): string {
+  // status — סטטוס.
   const status = candidate.availabilityStatus ? availabilityLabel[candidate.availabilityStatus] ?? candidate.availabilityStatus : 'לא הוגש';
   const max = candidate.maximum == null ? '' : ` · ${candidate.assignedCount}/${candidate.maximum}`;
   return `${candidate.displayName} · ${status}${max}`;
 }
 
+/**
+ * פעולה DynamicScheduleDraftEditor: דינמי / שיבוץ / טיוטה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Props) {
+  // מצב מקומי: workspace — הנתון workspace בהקשר הפעולה; setWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspace, setWorkspace] = useState<DynamicDraftEditorWorkspace | null>(null);
+  // מצב מקומי: preferences — הנתון preferences בהקשר הפעולה; setPreferences מעדכנת אותו ומפעילה רינדור לפי React.
   const [preferences, setPreferences] = useState<DynamicDraftMemberPreference[]>([]);
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy, setBusy] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: message — הודעה; setMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [message, setMessage] = useState<string | null>(null);
+  // מצב מקומי: pendingCandidate — ממתין; setPendingCandidate מעדכנת אותו ומפעילה רינדור לפי React.
   const [pendingCandidate, setPendingCandidate] = useState<Record<string, string>>({});
+  // מצב מקומי: viewMode — מצב פעולה; setViewMode מעדכנת אותו ומפעילה רינדור לפי React.
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  // מצב מקומי: show200PercentHours — שעות; setShow200PercentHours מעדכנת אותו ומפעילה רינדור לפי React.
   const [show200PercentHours, setShow200PercentHours] = useState(true);
 
+  /**
+   * פעולה אסינכרונית load: טעינת הנתון load בהקשר הפעולה.
+   * @param strict — הנתון strict בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const load = async (strict = false): Promise<void> => {
     setBusy(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       const [draft, memberPreferences] = await Promise.all([
         dynamicSchedulingService.getDraftEditor(draftId),
@@ -64,10 +117,18 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
     }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [draftId, refreshKey].
   useEffect(() => { void load(); }, [draftId, refreshKey]);
 
+  /**
+   * פעולה אסינכרונית run: הנתון run בהקשר הפעולה.
+   * @param action — הנתון action בהקשר הפעולה.
+   * @param success — הנתון success בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const run = async (action: () => Promise<void>, success: string): Promise<void> => {
     setBusy(true); setError(null); setMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await action();
       // Do not acknowledge persistence until the server has returned the
@@ -84,14 +145,19 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
   const effectiveMissing = Number(metrics.effectiveUnfilledRequiredPositions ?? metrics.unfilledRequiredPositions ?? 0);
   const intentionalMissing = Number(metrics.intentionalUnfilledRequiredPositions ?? 0);
   const managerEdits = Number(metrics.managerEditedAssignments ?? 0);
+  // ערך מחושב totalAssignments — סך הכול / הקצאות; נשמר בין רינדורים עד שינוי התלויות.
   const totalAssignments = useMemo(() => workspace?.slots.reduce((sum, slot) => sum + slot.assignments.length, 0) ?? 0, [workspace]);
 
+  // ערך מחושב draftStatistics — טיוטה / סטטיסטיקה; נשמר בין רינדורים עד שינוי התלויות.
   const draftStatistics = useMemo(() => {
     if (!workspace) return { shiftTypes: [], rows: [] };
 
+    // shiftTypes — משמרת.
     const shiftTypes = Array.from(new Map(
       workspace.slots.map((slot) => {
+        // displayName — שם תצוגה.
         const displayName = dynamicShiftDisplayName(slot.shiftName, 'משמרת');
+        // key — מפתח.
         const key = `${displayName}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
         return [key, {
           key,
@@ -102,13 +168,20 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
       }),
     ).values());
 
+    // preferenceMap — מפת התאמה; מיפוי לחיפוש לפי מפתח.
     const preferenceMap = new Map(preferences.map((preference) => [preference.userId, preference]));
+    // members — חברי התפקיד; מיפוי לחיפוש לפי מפתח.
     const members = new Map<string, string>();
     workspace.slots.forEach((slot) => {
       slot.candidates.forEach((candidate) => members.set(candidate.userId, candidate.displayName));
       slot.assignments.forEach((assignment) => members.set(assignment.userId, assignment.displayName));
     });
 
+    /**
+     * פעולה availabilityWeight: אילוצים וזמינות / משקל בחישוב.
+     * @param status — סטטוס.
+     * @returns number — הפלט בהתאם לחתימה.
+     */
     const availabilityWeight = (status: DynamicDraftEditorCandidate['availabilityStatus']): number => {
       if (status === 'preferred') return 1.25;
       if (status === 'available') return 1;
@@ -121,6 +194,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
       opportunities.set(userId, Object.fromEntries(shiftTypes.map((shiftType) => [shiftType.key, 0])));
     });
     workspace.slots.forEach((slot) => {
+      // key — מפתח.
       const key = `${dynamicShiftDisplayName(slot.shiftName, 'משמרת')}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
       slot.candidates.forEach((candidate) => {
         const memberOpportunities = opportunities.get(candidate.userId);
@@ -130,14 +204,24 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
 
     const assignedByType = Object.fromEntries(shiftTypes.map((shiftType) => [shiftType.key, 0])) as Record<string, number>;
     workspace.slots.forEach((slot) => {
+      // key — מפתח.
       const key = `${dynamicShiftDisplayName(slot.shiftName, 'משמרת')}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
       assignedByType[key] = (assignedByType[key] ?? 0) + slot.assignments.length;
     });
+    // totalAssigned — סך הכול.
     const totalAssigned = Object.values(assignedByType).reduce((sum, count) => sum + count, 0);
+    // totalOpportunityWeight — סך הכול / משקל בחישוב.
     const totalOpportunityWeight = Array.from(opportunities.values()).reduce(
       (sum, values) => sum + Object.values(values).reduce((inner, value) => inner + value, 0), 0,
     );
 
+    /**
+     * פעולה balanceTone: הנתון balanceTone בהקשר הפעולה.
+     * @param actual — הנתון actual בהקשר הפעולה.
+     * @param expected — הנתון expected בהקשר הפעולה.
+     * @param opportunityWeight — משקל בחישוב.
+     * @returns 'good' | 'watch' | 'bad' | 'muted' — הפלט בהתאם לחתימה.
+     */
     const balanceTone = (actual: number, expected: number, opportunityWeight: number): 'good' | 'watch' | 'bad' | 'muted' => {
       if (opportunityWeight <= 0) return actual === 0 ? 'muted' : 'bad';
       const difference = Math.abs(actual - expected);
@@ -146,13 +230,16 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
       return 'bad';
     };
 
+    // rows — שורות.
     const rows = Array.from(members, ([userId, displayName]) => {
       const counts = Object.fromEntries(shiftTypes.map((shiftType) => [shiftType.key, 0])) as Record<string, number>;
+      // total — סך הכול.
       let total = 0;
       let hours200Percent = 0;
       workspace.slots.forEach((slot) => {
         const assignedHere = slot.assignments.filter((assignment) => assignment.userId === userId).length;
         if (assignedHere === 0) return;
+        // key — מפתח.
         const key = `${dynamicShiftDisplayName(slot.shiftName, 'משמרת')}__${formatTime(slot.startTime)}__${formatTime(slot.endTime)}`;
         counts[key] = (counts[key] ?? 0) + assignedHere;
         total += assignedHere;
@@ -161,12 +248,16 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
 
       const memberOpportunities = opportunities.get(userId) ?? {};
       const typeBalance = Object.fromEntries(shiftTypes.map((shiftType) => {
+        // opportunityWeight — משקל בחישוב.
         const opportunityWeight = memberOpportunities[shiftType.key] ?? 0;
+        // allOpportunityWeight — משקל בחישוב.
         const allOpportunityWeight = Array.from(opportunities.values()).reduce((sum, values) => sum + (values[shiftType.key] ?? 0), 0);
         const expected = allOpportunityWeight > 0 ? (assignedByType[shiftType.key] ?? 0) * opportunityWeight / allOpportunityWeight : 0;
         return [shiftType.key, { expected, tone: balanceTone(counts[shiftType.key] ?? 0, expected, opportunityWeight) }] as const;
       }));
+      // memberTotalOpportunityWeight — סך הכול / משקל בחישוב.
       const memberTotalOpportunityWeight = Object.values(memberOpportunities).reduce((sum, value) => sum + value, 0);
+      // expectedTotal — סך הכול.
       const expectedTotal = totalOpportunityWeight > 0 ? totalAssigned * memberTotalOpportunityWeight / totalOpportunityWeight : 0;
 
       return {
@@ -277,6 +368,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
             year={workspace.year}
             month={workspace.month}
             renderDayContent={({ date }) => {
+              // daySlots — יום.
               const daySlots = workspace.slots.filter((slot) => slot.date.slice(0, 10) === date);
               if (daySlots.length === 0) return <span className="dynamic-draft-calendar-empty">אין משמרות</span>;
               return (
@@ -298,8 +390,10 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
                             disabled={busy}
                             aria-label={`${dynamicShiftDisplayName(slot.shiftName, 'משמרת')} - עובד משובץ`}
                             onChange={(event) => {
+                              // nextUserId — מזהה משתמש הבא.
                               const nextUserId = event.target.value;
                               if (nextUserId === assignment.userId) return;
+                              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !nextUserId.
                               if (!nextUserId) {
                                 void run(() => dynamicSchedulingService.removeDraftAssignment(workspace.draftId, assignment.id), 'השיבוץ הוסר. ניתן לאשר את החוסר כלא מאויש בכוונה.');
                                 return;
@@ -319,6 +413,7 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
                               disabled={busy}
                               aria-label={`${dynamicShiftDisplayName(slot.shiftName, 'משמרת')} - שיבוץ עובד במקום לא מאויש`}
                               onChange={(event) => {
+                                // userId — מזהה משתמש.
                                 const userId = event.target.value;
                                 setPendingCandidate((current) => ({ ...current, [slot.slotId]: userId }));
                                 if (!userId) return;
@@ -369,8 +464,10 @@ function DynamicScheduleDraftEditor({ draftId, refreshKey = 0, onChanged }: Prop
                       value={assignment.userId}
                       disabled={busy}
                       onChange={(event) => {
+                        // nextUserId — מזהה משתמש הבא.
                         const nextUserId = event.target.value;
                         if (nextUserId === assignment.userId) return;
+                        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !nextUserId.
                         if (!nextUserId) {
                           void run(() => dynamicSchedulingService.removeDraftAssignment(workspace.draftId, assignment.id), 'השיבוץ הוסר. ניתן לאשר את החוסר כלא מאויש בכוונה.');
                           return;

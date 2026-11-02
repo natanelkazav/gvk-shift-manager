@@ -1,9 +1,17 @@
+-- קובץ: supabase/migrations/20261006103000_activity_tracking_timer_policies.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור מעקב פעילות וזמני עבודה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.activity_tracking_effective_settings, public.get_my_activity_tracking_settings, public.save_my_activity_tracking_settings, public.reset_my_activity_tracking_settings, public.get_my_activity_tracking_context, public.process_activity_tracking_reminders.
+-- - מבני טבלאות: public.activity_tracking_user_settings.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
+-- הוספת רשומות ל־public.dynamic_permission_manifest בהתאם לקלט ולתנאים להלן.
 insert into public.dynamic_permission_manifest(feature_key,permission_key,audience,label,description,default_enabled,sort_order)
 values('activity_tracking','activity_tracking.manage_own_settings','member','התאמה אישית של הגדרות מעקב פעילות','מאפשר לעובד לשנות לעצמו את שעת הסיום האוטומטי ואת ספי ההתראות.',false,30)
 on conflict(feature_key,permission_key,audience) do update set label=excluded.label,description=excluded.description,default_enabled=excluded.default_enabled,sort_order=excluded.sort_order;
 
+-- הגדרת מבנה הטבלה public.activity_tracking_user_settings והאילוצים המופיעים בהמשך.
 create table if not exists public.activity_tracking_user_settings(
  job_type_id uuid not null references public.job_types(id) on delete cascade,
  user_id uuid not null references public.profiles(id) on delete cascade,
@@ -16,15 +24,19 @@ create table if not exists public.activity_tracking_user_settings(
  updated_at timestamptz not null default now(),
  primary key(job_type_id,user_id)
 );
+-- עדכון מבנה או הגדרות הטבלה public.activity_tracking_user_settings.
 alter table public.activity_tracking_user_settings enable row level security;
 
+-- פונקציית מסד public.activity_tracking_effective_settings: מעקב פעילות וזמני עבודה.
 create or replace function public.activity_tracking_effective_settings(requested_job_type_id uuid, requested_user_id uuid)
 returns jsonb language plpgsql stable security definer set search_path=public as $$
 declare cfg jsonb; own public.activity_tracking_user_settings%rowtype; allow_own boolean;
 begin
  select public.activity_tracking_config(jt) into cfg from public.job_types jt where jt.id=requested_job_type_id;
  allow_own:=public.has_dynamic_job_type_permission('activity_tracking.manage_own_settings',requested_job_type_id,requested_user_id);
+ -- הסתעפות לפי התנאי allow_own then select * into own from public.activity_tracking_user_settings where job_type_id=requested_job_type_id and.
  if allow_own then select * into own from public.activity_tracking_user_settings where job_type_id=requested_job_type_id and user_id=requested_user_id; end if;
+ -- הרכבת תוצאת הפעולה והחזרתה לקורא.
  return jsonb_build_object(
   'autoEndEnabled',coalesce(own.auto_end_enabled,coalesce((cfg->>'autoEndEnabled')::boolean,false)),
   'autoEndTime',coalesce(to_char(own.auto_end_time,'HH24:MI'),nullif(cfg->>'autoEndTime',''),'20:00'),
@@ -34,11 +46,14 @@ begin
   'continuousReminderMinutes',coalesce(own.continuous_reminder_minutes,coalesce((cfg->>'continuousReminderMinutes')::int,240))
  );
 end $$;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.activity_tracking_effective_settings(uuid,uuid) from public,anon,authenticated;
 
+-- פונקציית מסד public.get_my_activity_tracking_settings: שליפה או חישוב של מעקב פעילות וזמני עבודה.
 create or replace function public.get_my_activity_tracking_settings() returns jsonb language plpgsql security definer set search_path=public as $$
 declare actor uuid:=auth.uid(); result jsonb;
 begin
+ -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
  if actor is null then raise exception 'not authenticated'; end if;
  select coalesce(jsonb_agg(jsonb_build_object(
   'jobTypeId',jt.id,'jobTypeName',jt.name,
@@ -58,26 +73,36 @@ begin
  return result;
 end $$;
 
+-- פונקציית מסד public.save_my_activity_tracking_settings: שמירת מעקב פעילות וזמני עבודה.
 create or replace function public.save_my_activity_tracking_settings(requested_job_type_id uuid,requested_settings jsonb) returns void language plpgsql security definer set search_path=public as $$
 declare actor uuid:=auth.uid();
 begin
+ -- הסתעפות לפי התנאי actor is null or not public.has_dynamic_job_type_permission('activity_tracking.manage_own_settings',requested_job_type_i.
  if actor is null or not public.has_dynamic_job_type_permission('activity_tracking.manage_own_settings',requested_job_type_id,actor) then raise exception 'not allowed'; end if;
+ -- הסתעפות לפי התנאי not exists(select 1 from public.job_type_memberships where job_type_id=requested_job_type_id and user_id=actor) then rai.
  if not exists(select 1 from public.job_type_memberships where job_type_id=requested_job_type_id and user_id=actor) then raise exception 'not a member'; end if;
+ -- הוספת רשומות ל־public.activity_tracking_user_settings בהתאם לקלט ולתנאים להלן.
  insert into public.activity_tracking_user_settings(job_type_id,user_id,auto_end_enabled,auto_end_time,end_reminder_enabled,end_reminder_minutes_before,continuous_reminder_enabled,continuous_reminder_minutes,updated_at)
  values(requested_job_type_id,actor,(requested_settings->>'autoEndEnabled')::boolean,(requested_settings->>'autoEndTime')::time,(requested_settings->>'endReminderEnabled')::boolean,(requested_settings->>'endReminderMinutesBefore')::int,(requested_settings->>'continuousReminderEnabled')::boolean,(requested_settings->>'continuousReminderMinutes')::int,now())
  on conflict(job_type_id,user_id) do update set auto_end_enabled=excluded.auto_end_enabled,auto_end_time=excluded.auto_end_time,end_reminder_enabled=excluded.end_reminder_enabled,end_reminder_minutes_before=excluded.end_reminder_minutes_before,continuous_reminder_enabled=excluded.continuous_reminder_enabled,continuous_reminder_minutes=excluded.continuous_reminder_minutes,updated_at=now();
 end $$;
 
+-- פונקציית מסד public.reset_my_activity_tracking_settings: איפוס מעקב פעילות וזמני עבודה.
 create or replace function public.reset_my_activity_tracking_settings(requested_job_type_id uuid) returns void language plpgsql security definer set search_path=public as $$
 declare actor uuid:=auth.uid(); begin if actor is null or not public.has_dynamic_job_type_permission('activity_tracking.manage_own_settings',requested_job_type_id,actor) then raise exception 'not allowed'; end if; delete from public.activity_tracking_user_settings where job_type_id=requested_job_type_id and user_id=actor; end $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_activity_tracking_settings() to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.save_my_activity_tracking_settings(uuid,jsonb) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.reset_my_activity_tracking_settings(uuid) to authenticated;
 
+-- פונקציית מסד public.get_my_activity_tracking_context: שליפה או חישוב של מעקב פעילות וזמני עבודה.
 create or replace function public.get_my_activity_tracking_context() returns jsonb language plpgsql security definer set search_path=public as $$
 declare actor uuid:=auth.uid(); result jsonb;
 begin
+ -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
  if actor is null then raise exception 'not authenticated'; end if;
  select coalesce(jsonb_agg(jsonb_build_object(
   'jobTypeId',jt.id,'jobTypeName',jt.name,'activities',coalesce(public.activity_tracking_config(jt)->'activities','[]'::jsonb),
@@ -94,23 +119,33 @@ begin
  return result;
 end $$;
 
+-- פונקציית מסד public.process_activity_tracking_reminders: מעקב פעילות וזמני עבודה.
 create or replace function public.process_activity_tracking_reminders() returns integer language plpgsql security definer set search_path=public as $$
 declare r record; seg record; eff jsonb; nid uuid; processed integer:=0; stop_at timestamptz; remind_at timestamptz; threshold integer;
 begin
  -- Auto-end and pre-end reminder use the effective role/user policy.
+ -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
  for r in select d.*,jt.name from public.activity_tracking_days d join public.job_types jt on jt.id=d.job_type_id where d.status='active' loop
   eff:=public.activity_tracking_effective_settings(r.job_type_id,r.user_id);
   stop_at:=((r.work_date + (coalesce(eff->>'autoEndTime','20:00'))::time) at time zone 'Asia/Jerusalem');
+  -- הסתעפות לפי התנאי coalesce((eff->>'autoEndEnabled')::boolean,false).
   if coalesce((eff->>'autoEndEnabled')::boolean,false) then
+   -- הסתעפות לפי התנאי now()>=stop_at.
    if now()>=stop_at then
+    -- עדכון רשומות ב־public.activity_tracking_segments בהתאם לקלט ולתנאים להלן.
     update public.activity_tracking_segments set ended_at=stop_at,updated_at=now() where day_id=r.id and ended_at is null and started_at<stop_at;
+    -- עדכון רשומות ב־public.activity_tracking_days בהתאם לקלט ולתנאים להלן.
     update public.activity_tracking_days set status='ended',ended_at=stop_at,updated_at=now() where id=r.id;
     processed:=processed+1; continue;
    end if;
+   -- הסתעפות לפי התנאי coalesce((eff->>'endReminderEnabled')::boolean,true).
    if coalesce((eff->>'endReminderEnabled')::boolean,true) then
     remind_at:=stop_at-make_interval(mins=>coalesce((eff->>'endReminderMinutesBefore')::int,30));
+    -- הסתעפות לפי התנאי now()>=remind_at and now()<stop_at and not exists(select 1 from public.notifications n join public.notification_recipien.
     if now()>=remind_at and now()<stop_at and not exists(select 1 from public.notifications n join public.notification_recipients nr on nr.notification_id=n.id where nr.user_id=r.user_id and n.source='activity_auto_end_warning' and n.data->>'dayId'=r.id::text) then
+     -- הוספת רשומות ל־public.notifications בהתאם לקלט ולתנאים להלן.
      insert into public.notifications(type,priority,source,title,body,url,data,created_by,expires_at) values('manager_message','normal','activity_auto_end_warning','תזכורת לפני סיום יום – '||r.name,'יום העבודה יסתיים אוטומטית בשעה '||(eff->>'autoEndTime')||'. אם ממשיכים לעבוד, ניתן לעדכן את ההגדרה האישית בהתאם להרשאה.','/',jsonb_build_object('kind','activity_auto_end_warning','dayId',r.id,'jobTypeId',r.job_type_id,'pushPending',true),null,stop_at+interval '1 hour') returning id into nid;
+     -- הוספת רשומות ל־public.notification_recipients בהתאם לקלט ולתנאים להלן.
      insert into public.notification_recipients(notification_id,user_id) values(nid,r.user_id) on conflict do nothing; processed:=processed+1;
     end if;
    end if;
@@ -118,21 +153,28 @@ begin
  end loop;
 
  -- Long-running activity reminder: one reminder per uninterrupted segment.
+ -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
  for seg in select s.*,d.user_id,d.job_type_id,jt.name from public.activity_tracking_segments s join public.activity_tracking_days d on d.id=s.day_id join public.job_types jt on jt.id=d.job_type_id where s.ended_at is null and d.status='active' loop
   eff:=public.activity_tracking_effective_settings(seg.job_type_id,seg.user_id); threshold:=coalesce((eff->>'continuousReminderMinutes')::int,240);
+  -- הסתעפות לפי התנאי coalesce((eff->>'continuousReminderEnabled')::boolean,true) and now()>=seg.started_at+make_interval(mins=>threshold).
   if coalesce((eff->>'continuousReminderEnabled')::boolean,true) and now()>=seg.started_at+make_interval(mins=>threshold)
    and not exists(select 1 from public.notifications n join public.notification_recipients nr on nr.notification_id=n.id where nr.user_id=seg.user_id and n.source='activity_continuous_warning' and n.data->>'segmentId'=seg.id::text) then
+   -- הוספת רשומות ל־public.notifications בהתאם לקלט ולתנאים להלן.
    insert into public.notifications(type,priority,source,title,body,url,data,created_by,expires_at) values('manager_message','normal','activity_continuous_warning','הפעילות „'||seg.activity_label||'” עדיין רצה','הטיימר רץ ברצף כבר '||threshold||' דקות. האם שכחת להחליף או להשהות את הפעילות?','/',jsonb_build_object('kind','activity_continuous_warning','segmentId',seg.id,'jobTypeId',seg.job_type_id,'pushPending',true),null,now()+interval '1 day') returning id into nid;
+   -- הוספת רשומות ל־public.notification_recipients בהתאם לקלט ולתנאים להלן.
    insert into public.notification_recipients(notification_id,user_id) values(nid,seg.user_id) on conflict do nothing; processed:=processed+1;
   end if;
  end loop;
 
  -- Existing 12-hour safety net remains as a final guardrail.
+ -- עדכון רשומות ב־public.activity_tracking_segments בהתאם לקלט ולתנאים להלן.
  update public.activity_tracking_segments s set ended_at=s.started_at+interval '12 hours',updated_at=now() where s.ended_at is null and s.started_at<now()-interval '12 hours';
+ -- עדכון רשומות ב־public.activity_tracking_days בהתאם לקלט ולתנאים להלן.
  update public.activity_tracking_days d set status='needs_review',ended_at=coalesce(ended_at,now()),updated_at=now() where d.status='active' and exists(select 1 from public.activity_tracking_segments s where s.day_id=d.id and s.ended_at is not null and s.updated_at>now()-interval '6 minutes');
  return processed;
 end $$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.process_activity_tracking_reminders() from public,anon,authenticated;
 do $$ begin if exists(select 1 from pg_extension where extname='pg_cron') then perform cron.unschedule(jobid) from cron.job where jobname='process-activity-tracking-reminders'; perform cron.schedule('process-activity-tracking-reminders','*/5 * * * *','select public.process_activity_tracking_reminders();'); end if; exception when others then raise notice 'activity reminder cron skipped: %',sqlerrm; end $$;
 

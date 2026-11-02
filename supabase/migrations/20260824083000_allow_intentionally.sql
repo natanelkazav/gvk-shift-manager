@@ -1,3 +1,9 @@
+-- קובץ: supabase/migrations/20260824083000_allow_intentionally.sql
+-- מטרה: תמיכה בסימון משמרות שנותרו ללא עובד במכוון.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.save_schedule_draft, public.publish_schedule_period, public.get_dispatcher_schedule_by_month.
+-- - מבני טבלאות: public.schedule_shifts.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- =========================================================
 -- Intentionally unassigned dispatcher shifts
 --
@@ -12,6 +18,7 @@
 -- 1. הוספת השדה למשמרות
 -- =========================================================
 
+-- עדכון מבנה או הגדרות הטבלה public.schedule_shifts.
 alter table public.schedule_shifts
 add column if not exists
   is_intentionally_unassigned boolean
@@ -26,10 +33,12 @@ add column if not exists
 -- במפורש כ"לא מאוישת".
 -- =========================================================
 
+-- עדכון מבנה או הגדרות הטבלה public.schedule_shifts.
 alter table public.schedule_shifts
 drop constraint if exists
   schedule_shifts_intentionally_unassigned_check;
 
+-- עדכון מבנה או הגדרות הטבלה public.schedule_shifts.
 alter table public.schedule_shifts
 add constraint
   schedule_shifts_intentionally_unassigned_check
@@ -43,6 +52,7 @@ check (
 -- 3. שמירת טיוטת שיבוץ
 -- =========================================================
 
+-- פונקציית מסד public.save_schedule_draft: שמירת שיבוץ / טיוטה.
 create or replace function public.save_schedule_draft(
   requested_availability_period_id uuid,
   requested_assignments jsonb,
@@ -50,10 +60,12 @@ create or replace function public.save_schedule_draft(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
 
   source_period
@@ -62,27 +74,41 @@ declare
   existing_schedule_period
     public.schedule_periods%rowtype;
 
+  -- resolved_schedule_period_id — תקופת שיבוץ.
   resolved_schedule_period_id uuid;
 
+  -- source_shift_count — מקור / משמרת / כמות.
   source_shift_count integer;
+  -- payload_count — כמות.
   payload_count integer;
+  -- distinct_payload_count — כמות.
   distinct_payload_count integer;
 
+  -- inactive_user_count — משתמש / כמות.
   inactive_user_count integer;
+  -- unavailable_assignment_count — הקצאה / כמות.
   unavailable_assignment_count integer := 0;
 
+  -- overlap_count — כמות.
   overlap_count integer;
+  -- consecutive_count — כמות.
   consecutive_count integer;
 
+  -- saved_shift_count — משמרת / כמות.
   saved_shift_count integer;
+  -- automatic_assignment_count — הקצאה / כמות.
   automatic_assignment_count integer;
+  -- manual_assignment_count — הקצאה / כמות.
   manual_assignment_count integer;
+  -- intentionally_unassigned_count — כמות.
   intentionally_unassigned_count integer;
 begin
   current_user_id :=
     auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not authenticated';
   end if;
@@ -92,6 +118,7 @@ begin
   -- 1. הרשאות
   -- =======================================================
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile
@@ -99,10 +126,12 @@ begin
       current_user_id
       and profile.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'user not active';
   end if;
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'schedule.edit' = any(
       coalesce(
@@ -111,6 +140,7 @@ begin
       )
     )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not allowed';
   end if;
@@ -120,18 +150,22 @@ begin
   -- 2. בדיקת קלט
   -- =======================================================
 
+  -- הסתעפות לפי התנאי requested_availability_period_id.
   if requested_availability_period_id
     is null
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'availability period id is required';
   end if;
 
+  -- הסתעפות לפי התנאי requested_assignments is null.
   if requested_assignments is null
     or jsonb_typeof(
       requested_assignments
     ) <> 'array'
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'assignments must be a json array';
   end if;
@@ -147,12 +181,16 @@ begin
   where id =
     requested_availability_period_id;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'availability period not found';
   end if;
 
+  -- הסתעפות לפי התנאי source_period.status <> 'closed'.
   if source_period.status <> 'closed' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'availability period must be closed';
   end if;
@@ -163,7 +201,9 @@ begin
   where period_id =
     requested_availability_period_id;
 
+  -- הסתעפות לפי התנאי source_shift_count = 0.
   if source_shift_count = 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'availability period has no shift slots';
   end if;
@@ -173,7 +213,9 @@ begin
       requested_assignments
     );
 
+  -- הסתעפות לפי התנאי payload_count = 0.
   if payload_count = 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'assignments array is empty';
   end if;
@@ -189,6 +231,7 @@ begin
   --   shiftId + isIntentionallyUnassigned=true
   -- =======================================================
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
     from jsonb_array_elements(
@@ -238,11 +281,13 @@ begin
         ) is null
       )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'one or more assignment objects are invalid';
   end if;
 
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
     from jsonb_array_elements(
@@ -261,6 +306,7 @@ begin
           'import'
         )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'unsupported assignment source';
   end if;
@@ -270,6 +316,7 @@ begin
   -- 5. מניעת UUID לא תקין
   -- =======================================================
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
     from jsonb_array_elements(
@@ -296,6 +343,7 @@ begin
         )
       )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'one or more assignment identifiers are invalid';
   end if;
@@ -317,9 +365,11 @@ begin
     requested_assignments
   ) item;
 
+  -- הסתעפות לפי התנאי distinct_payload_count.
   if distinct_payload_count
     <> payload_count
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'duplicate shift assignments were received';
   end if;
@@ -329,9 +379,11 @@ begin
    * גם משמרת שסומנה במכוון כלא מאוישת צריכה
    * להופיע ב-payload כאובייקט.
    */
+  -- הסתעפות לפי התנאי payload_count.
   if payload_count
     <> source_shift_count
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'every availability shift must have exactly one assignment';
   end if;
@@ -340,6 +392,7 @@ begin
   /*
    * מוודאים שכל shiftId באמת שייך לתקופת האילוצים.
    */
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     with payload as (
       select
@@ -364,6 +417,7 @@ begin
 
     where slot.id is null
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'one or more shifts do not belong to the requested availability period';
   end if;
@@ -372,6 +426,7 @@ begin
   /*
    * מוודאים שאף משמרת מהתקופה לא חסרה מה-payload.
    */
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
 
@@ -393,6 +448,7 @@ begin
           slot.id
       )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'one or more availability shifts are missing from the draft';
   end if;
@@ -439,7 +495,9 @@ begin
     or profile.is_active = false;
 
 
+  -- הסתעפות לפי התנאי inactive_user_count > 0.
   if inactive_user_count > 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'one or more assigned dispatchers are missing or inactive';
   end if;
@@ -505,9 +563,11 @@ begin
       <> 'available';
 
 
+  -- הסתעפות לפי התנאי unavailable_assignment_count > 0.
   if unavailable_assignment_count > 0
     and not requested_confirm_warnings
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'availability warnings require confirmation';
   end if;
@@ -626,13 +686,17 @@ begin
   from ordered;
 
 
+  -- הסתעפות לפי התנאי overlap_count > 0.
   if overlap_count > 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'the schedule contains overlapping shifts';
   end if;
 
 
+  -- הסתעפות לפי התנאי consecutive_count > 0.
   if consecutive_count > 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'the schedule contains consecutive shifts';
   end if;
@@ -656,14 +720,17 @@ begin
   for update;
 
 
+  -- הסתעפות לפי התנאי found.
   if found then
 
+    -- הסתעפות לפי התנאי existing_schedule_period.status.
     if existing_schedule_period.status
       in (
         'published',
         'archived'
       )
     then
+      -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
       raise exception
         'published or archived schedules cannot be overwritten';
     end if;
@@ -673,6 +740,7 @@ begin
       existing_schedule_period.id;
 
 
+    -- עדכון רשומות ב־public.schedule_periods בהתאם לקלט ולתנאים להלן.
     update public.schedule_periods
 
     set
@@ -713,6 +781,7 @@ begin
 
   else
 
+    -- הוספת רשומות ל־public.schedule_periods בהתאם לקלט ולתנאים להלן.
     insert into public.schedule_periods (
       year,
       month,
@@ -762,6 +831,7 @@ begin
   -- 11. שמירת המשמרות
   -- =======================================================
 
+  -- הוספת רשומות ל־public.schedule_shifts בהתאם לקלט ולתנאים להלן.
   insert into public.schedule_shifts (
     period_id,
     availability_shift_slot_id,
@@ -1068,9 +1138,11 @@ begin
       );
 
 
+  -- הסתעפות לפי התנאי saved_shift_count.
   if saved_shift_count
     <> source_shift_count
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'saved shift count does not match source shift count';
   end if;
@@ -1107,6 +1179,7 @@ begin
   -- 13. תשובה ללקוח
   -- =======================================================
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
 
     'schedulePeriodId',
@@ -1161,15 +1234,18 @@ $function$;
 --   => מותר לפרסם.
 -- =========================================================
 
+-- פונקציית מסד public.publish_schedule_period: פרסום תקופת שיבוץ.
 create or replace function public.publish_schedule_period(
   requested_schedule_period_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
 
   current_profile
@@ -1178,18 +1254,25 @@ declare
   target_period
     public.schedule_periods%rowtype;
 
+  -- user_permissions — משתמש / הרשאות.
   user_permissions text[];
 
+  -- total_shift_count — סך הכול / משמרת / כמות.
   total_shift_count integer;
+  -- unassigned_shift_count — משמרת / כמות.
   unassigned_shift_count integer;
+  -- intentionally_unassigned_shift_count — משמרת / כמות.
   intentionally_unassigned_shift_count integer;
+  -- invalid_shift_count — משמרת / כמות.
   invalid_shift_count integer;
 begin
   current_user_id :=
     auth.uid();
 
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not authenticated';
   end if;
@@ -1204,13 +1287,17 @@ begin
     current_user_id;
 
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'profile not found';
   end if;
 
 
+  -- הסתעפות לפי התנאי not current_profile.is_active.
   if not current_profile.is_active then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'user not active';
   end if;
@@ -1223,18 +1310,22 @@ begin
     );
 
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'schedule.edit' =
       any(user_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not allowed';
   end if;
 
 
+  -- הסתעפות לפי התנאי requested_schedule_period_id.
   if requested_schedule_period_id
     is null
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'schedule period id is required';
   end if;
@@ -1251,25 +1342,31 @@ begin
   for update;
 
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'schedule period not found';
   end if;
 
 
+  -- הסתעפות לפי התנאי target_period.status =.
   if target_period.status =
     'archived'
       ::public.schedule_period_status
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'archived schedule cannot be published';
   end if;
 
 
+  -- הסתעפות לפי התנאי target_period.status =.
   if target_period.status =
     'published'
       ::public.schedule_period_status
   then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
 
       'schedulePeriodId',
@@ -1311,6 +1408,7 @@ begin
   end if;
 
 
+  -- הסתעפות לפי התנאי target_period.status.
   if target_period.status
     not in (
       'draft'
@@ -1320,6 +1418,7 @@ begin
         ::public.schedule_period_status
     )
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'schedule is not ready for publication';
   end if;
@@ -1385,19 +1484,25 @@ begin
     target_period.id;
 
 
+  -- הסתעפות לפי התנאי total_shift_count = 0.
   if total_shift_count = 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'schedule has no shifts';
   end if;
 
 
+  -- הסתעפות לפי התנאי unassigned_shift_count > 0.
   if unassigned_shift_count > 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'schedule contains unassigned shifts';
   end if;
 
 
+  -- הסתעפות לפי התנאי invalid_shift_count > 0.
   if invalid_shift_count > 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'schedule contains invalid shifts';
   end if;
@@ -1407,6 +1512,7 @@ begin
   -- בדיקת חפיפות
   -- =======================================================
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
 
@@ -1438,6 +1544,7 @@ begin
       and first_shift.assigned_user_id
         is not null
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'schedule contains overlapping shifts';
   end if;
@@ -1447,6 +1554,7 @@ begin
   -- בדיקת משמרות רצופות
   -- =======================================================
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
 
@@ -1472,6 +1580,7 @@ begin
       and first_shift.assigned_user_id
         is not null
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'schedule contains consecutive shifts';
   end if;
@@ -1481,6 +1590,7 @@ begin
   -- פרסום
   -- =======================================================
 
+  -- עדכון רשומות ב־public.schedule_periods בהתאם לקלט ולתנאים להלן.
   update public.schedule_periods
 
   set
@@ -1512,6 +1622,7 @@ begin
   into target_period;
 
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
 
     'schedulePeriodId',
@@ -1553,26 +1664,32 @@ $function$;
 -- - isIntentionallyUnassigned
 -- =========================================================
 
+-- פונקציית מסד public.get_dispatcher_schedule_by_month: שליפה או חישוב של מוקדנים / שיבוץ / חודש.
 create or replace function public.get_dispatcher_schedule_by_month(
   requested_year integer,
   requested_month integer
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- requesting_user_id — מזהה משתמש.
   requesting_user_id uuid;
 
+  -- current_permissions — הרשאות.
   current_permissions text[];
 
   selected_period
     public.schedule_periods%rowtype;
 
+  -- can_view_team — האם צפייה מותרת.
   can_view_team boolean :=
     false;
 
+  -- can_view_personal — האם צפייה מותרת.
   can_view_personal boolean :=
     false;
 begin
@@ -1580,14 +1697,17 @@ begin
     auth.uid();
 
 
+  -- הסתעפות לפי התנאי requesting_user_id.
   if requesting_user_id
     is null
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Authentication is required.';
   end if;
 
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
 
@@ -1598,6 +1718,7 @@ begin
 
       and is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Active user profile was not found.';
   end if;
@@ -1629,26 +1750,32 @@ begin
     );
 
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     can_view_team
     or can_view_personal
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not allowed';
   end if;
 
 
+  -- הסתעפות לפי התנאי requested_year < 2020.
   if requested_year < 2020
     or requested_year > 2100
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Invalid schedule year.';
   end if;
 
 
+  -- הסתעפות לפי התנאי requested_month < 1.
   if requested_month < 1
     or requested_month > 12
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Invalid schedule month.';
   end if;
@@ -1668,7 +1795,9 @@ begin
   limit 1;
 
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'period',
         null,
@@ -1683,6 +1812,7 @@ begin
    * משתמש שרואה רק את הלוח האישי לא מקבל
    * טיוטה או חודש שעדיין לא פורסם.
    */
+  -- הסתעפות לפי התנאי (.
   if (
     not can_view_team
 
@@ -1692,6 +1822,7 @@ begin
         'archived'
       )
   ) then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'period',
         null,
@@ -1702,6 +1833,7 @@ begin
   end if;
 
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
 
     'period',

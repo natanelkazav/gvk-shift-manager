@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/LegacyShiftsPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור משמרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ShiftsWorkspaceTab, UnifiedScheduleDisplayMode, ShiftsWorkspaceTabDefinition, getCurrentMonth, getPreviousMonth, getNextMonth, formatEntryTime, formatDate, getEntryDisplayName, LegacyShiftsPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   CheckCircle2,
@@ -71,18 +78,29 @@ import type {
 
 import '../styles/shifts.css';
 
+/**
+ * טיפוס ShiftsWorkspaceTab: משמרות.
+ */
 type ShiftsWorkspaceTab =
   | 'calendar'
   | 'availability'
   | 'period-management';
 
+/**
+ * טיפוס UnifiedScheduleDisplayMode: שיבוץ / מצב פעולה.
+ */
 type UnifiedScheduleDisplayMode =
   | 'calendar'
   | 'list';
 
+/**
+ * חוזה הנתונים ShiftsWorkspaceTabDefinition: משמרות.
+ */
 interface ShiftsWorkspaceTabDefinition {
+  // id — מזהה.
   id: ShiftsWorkspaceTab;
 
+  // label — תווית.
   label: string;
 
   description: string;
@@ -90,6 +108,7 @@ interface ShiftsWorkspaceTabDefinition {
   icon: typeof CalendarDays;
 }
 
+// workspaceTabs — הנתון workspaceTabs בהקשר הפעולה.
 const workspaceTabs:
   ShiftsWorkspaceTabDefinition[] = [
     {
@@ -126,6 +145,7 @@ const workspaceTabs:
     },
   ];
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -141,6 +161,7 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+// categoryLabels — הנתון categoryLabels בהקשר הפעולה.
 const categoryLabels:
   Record<
     UnifiedScheduleCategory,
@@ -156,13 +177,16 @@ const categoryLabels:
       'כונן',
   };
 
+// filterDefinitions — סינון.
 const filterDefinitions: Array<{
+  // key — מפתח.
   key:
     keyof UnifiedScheduleFilters;
 
   category:
     UnifiedScheduleCategory;
 
+  // label — תווית.
   label:
     string;
 }> = [
@@ -199,14 +223,22 @@ const filterDefinitions: Array<{
   },
 ];
 
+// maximumVisibleEntriesPerDay — רשומות / יום.
 const maximumVisibleEntriesPerDay =
   3;
 
+/**
+ * פעולה getCurrentMonth: שליפה או חישוב של חודש.
+ * @returns { year: number; month: number; } — הפלט בהתאם לחתימה.
+ */
 function getCurrentMonth(): {
+  // year — שנה.
   year: number;
 
+  // month — חודש.
   month: number;
 } {
+  // currentDate — תאריך.
   const currentDate =
     new Date();
 
@@ -220,14 +252,23 @@ function getCurrentMonth(): {
   };
 }
 
+/**
+ * פעולה getPreviousMonth: שליפה או חישוב של חודש.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns { year: number; month: number; } — הפלט בהתאם לחתימה.
+ */
 function getPreviousMonth(
   year: number,
   month: number,
 ): {
+  // year — שנה.
   year: number;
 
+  // month — חודש.
   month: number;
 } {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר month === 1.
   if (
     month === 1
   ) {
@@ -248,14 +289,23 @@ function getPreviousMonth(
   };
 }
 
+/**
+ * פעולה getNextMonth: שליפה או חישוב של חודש.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns { year: number; month: number; } — הפלט בהתאם לחתימה.
+ */
 function getNextMonth(
   year: number,
   month: number,
 ): {
+  // year — שנה.
   year: number;
 
+  // month — חודש.
   month: number;
 } {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר month === 12.
   if (
     month === 12
   ) {
@@ -276,10 +326,16 @@ function getNextMonth(
   };
 }
 
+/**
+ * פעולה formatEntryTime: עיצוב ערך לתצוגה עבור רשומה / זמן.
+ * @param entry — רשומה.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function formatEntryTime(
   entry:
     UnifiedScheduleEntry,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !entry.startTime && !entry.endTime.
   if (
     !entry.startTime &&
     !entry.endTime
@@ -287,6 +343,7 @@ function formatEntryTime(
     return null;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר entry.startTime && entry.endTime.
   if (
     entry.startTime &&
     entry.endTime
@@ -303,14 +360,21 @@ function formatEntryTime(
   );
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param dateValue — תאריך / ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   dateValue: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${dateValue}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -340,6 +404,11 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה getEntryDisplayName: שליפה או חישוב של שם תצוגה.
+ * @param entry — רשומה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getEntryDisplayName(
   entry:
     UnifiedScheduleEntry,
@@ -350,18 +419,23 @@ function getEntryDisplayName(
   );
 }
 
+/**
+ * פעולה LegacyShiftsPage: משמרות.
+ */
 function LegacyShiftsPage() {
   const {
     hasPermission,
   } =
     useAuth();
 
+  // ערך מחושב initialMonth — חודש; נשמר בין רינדורים עד שינוי התלויות.
   const initialMonth =
     useMemo(
       () =>
         getCurrentMonth(),
       [],
     );
+// ערך מחושב initialPlanningMonth — חודש; נשמר בין רינדורים עד שינוי התלויות.
 const initialPlanningMonth =
   useMemo(
     () =>
@@ -396,6 +470,7 @@ const initialWorkspaceTab:
       'calendar'
       ? requestedWorkspaceTab
       : 'calendar';
+  // מצב מקומי: displayedYear — שנה; setDisplayedYear מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     displayedYear,
     setDisplayedYear,
@@ -403,6 +478,7 @@ const initialWorkspaceTab:
     useState(
       initialMonth.year,
     );
+// מצב מקומי: activeTab — פעיל; setActiveTab מעדכנת אותו ומפעילה רינדור לפי React.
 const [
   activeTab,
   setActiveTab,
@@ -410,6 +486,7 @@ const [
   useState<ShiftsWorkspaceTab>(
     initialWorkspaceTab,
   );
+  // מצב מקומי: displayedMonth — חודש; setDisplayedMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     displayedMonth,
     setDisplayedMonth,
@@ -418,6 +495,7 @@ const [
       initialMonth.month,
     );
 
+    // מצב מקומי: planningYear — שנה; setPlanningYear מעדכנת אותו ומפעילה רינדור לפי React.
     const [
   planningYear,
   setPlanningYear,
@@ -426,6 +504,7 @@ const [
     initialPlanningMonth.year,
   );
 
+// מצב מקומי: planningMonth — חודש; setPlanningMonth מעדכנת אותו ומפעילה רינדור לפי React.
 const [
   planningMonth,
   setPlanningMonth,
@@ -434,6 +513,7 @@ const [
     initialPlanningMonth.month,
   );
 
+  // מצב מקומי: selectedDate — נבחר / תאריך; setSelectedDate מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedDate,
     setSelectedDate,
@@ -444,6 +524,7 @@ const [
       null,
     );
 
+  // מצב מקומי: scheduleDisplayMode — שיבוץ / מצב פעולה; setScheduleDisplayMode מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     scheduleDisplayMode,
     setScheduleDisplayMode,
@@ -452,6 +533,7 @@ const [
       'calendar',
     );
 
+  // מצב מקומי: editingEntry — רשומה; setEditingEntry מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     editingEntry,
     setEditingEntry,
@@ -460,6 +542,7 @@ const [
       null,
     );
 
+  // מצב מקומי: editUsers — משתמשים; setEditUsers מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     editUsers,
     setEditUsers,
@@ -468,18 +551,21 @@ const [
       [],
     );
 
+  // מצב מקומי: isLoadingEditUsers — האם טעינה מתבצעת; setIsLoadingEditUsers מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isLoadingEditUsers,
     setIsLoadingEditUsers,
   ] =
     useState(false);
 
+  // מצב מקומי: isSavingEdit — האם שמירה מתבצעת; setIsSavingEdit מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isSavingEdit,
     setIsSavingEdit,
   ] =
     useState(false);
 
+  // מצב מקומי: editError — שגיאה; setEditError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     editError,
     setEditError,
@@ -488,6 +574,7 @@ const [
       null,
     );
 
+  // מצב מקומי: editSuccess — הנתון editSuccess בהקשר הפעולה; setEditSuccess מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     editSuccess,
     setEditSuccess,
@@ -505,6 +592,7 @@ const [
   } =
     useUnifiedSchedule();
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ displayedMonth, displayedYear, loadMonth, ].
   useEffect(
     () => {
       void loadMonth({
@@ -522,6 +610,7 @@ const [
     ],
   );
 
+  // activeTabDefinition — פעיל.
   const activeTabDefinition =
     workspaceTabs.find(
       (
@@ -532,9 +621,11 @@ const [
     ) ??
     workspaceTabs[0];
 
+  // ערך מחושב entriesByDate — רשומות / תאריך; נשמר בין רינדורים עד שינוי התלויות.
   const entriesByDate =
     useMemo(
       () => {
+        // groupedEntries — רשומות; מיפוי לחיפוש לפי מפתח.
         const groupedEntries =
           new Map<
             string,
@@ -545,6 +636,7 @@ const [
           (
             entry,
           ) => {
+            // existingEntries — רשומות.
             const existingEntries =
               groupedEntries.get(
                 entry.date,
@@ -569,9 +661,11 @@ const [
       ],
     );
 
+  // ערך מחושב selectedDateEntries — נבחר / תאריך / רשומות; נשמר בין רינדורים עד שינוי התלויות.
   const selectedDateEntries =
     useMemo(
       () => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedDate.
         if (
           !selectedDate
         ) {
@@ -591,6 +685,7 @@ const [
       ],
     );
 
+  // ערך מחושב warningMessages — הודעות; נשמר בין רינדורים עד שינוי התלויות.
   const warningMessages =
     useMemo(
       () =>
@@ -608,8 +703,13 @@ const [
         state.data.warnings,
       ],
     );
+/**
+ * פעולה handlePreviousPlanningMonth: טיפול באירוע עבור חודש.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 const handlePreviousPlanningMonth =
   (): void => {
+    // previousMonth — חודש.
     const previousMonth =
       getPreviousMonth(
         planningYear,
@@ -625,8 +725,13 @@ const handlePreviousPlanningMonth =
     );
   };
 
+/**
+ * פעולה handleNextPlanningMonth: טיפול באירוע עבור חודש.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 const handleNextPlanningMonth =
   (): void => {
+    // nextMonth — חודש.
     const nextMonth =
       getNextMonth(
         planningYear,
@@ -642,11 +747,17 @@ const handleNextPlanningMonth =
     );
   };
 
+/**
+ * פעולה handleNextMonthPlanning: טיפול באירוע עבור חודש.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 const handleNextMonthPlanning =
   (): void => {
+    // currentMonth — חודש.
     const currentMonth =
       getCurrentMonth();
 
+    // nextMonth — חודש.
     const nextMonth =
       getNextMonth(
         currentMonth.year,
@@ -661,8 +772,13 @@ const handleNextMonthPlanning =
       nextMonth.month,
     );
   };
+  /**
+   * פעולה handlePreviousMonth: טיפול באירוע עבור חודש.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handlePreviousMonth =
     (): void => {
+      // previousMonth — חודש.
       const previousMonth =
         getPreviousMonth(
           displayedYear,
@@ -681,6 +797,11 @@ const handleNextMonthPlanning =
         null,
       );
     };
+/**
+ * פעולה handleWorkspaceTabChange: טיפול באירוע עבור הנתון handleWorkspaceTabChange בהקשר הפעולה.
+ * @param tab — הנתון tab בהקשר הפעולה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 const handleWorkspaceTabChange =
   (
     tab:
@@ -700,8 +821,13 @@ const handleWorkspaceTabChange =
       },
     );
   };
+  /**
+   * פעולה handleNextMonth: טיפול באירוע עבור חודש.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleNextMonth =
     (): void => {
+      // nextMonth — חודש.
       const nextMonth =
         getNextMonth(
           displayedYear,
@@ -721,8 +847,13 @@ const handleWorkspaceTabChange =
       );
     };
 
+  /**
+   * פעולה handleCurrentMonth: טיפול באירוע עבור חודש.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleCurrentMonth =
     (): void => {
+      // currentMonth — חודש.
       const currentMonth =
         getCurrentMonth();
 
@@ -739,24 +870,33 @@ const handleWorkspaceTabChange =
       );
     };
 
+  // currentPeriodValue — תקופה / ערך.
   const currentPeriodValue =
     initialMonth.year * 12 +
     initialMonth.month - 1;
 
+  // displayedPeriodValue — תקופה / ערך.
   const displayedPeriodValue =
     displayedYear * 12 +
     displayedMonth - 1;
 
+  // isDisplayedCurrentMonth — חודש.
   const isDisplayedCurrentMonth =
     displayedPeriodValue ===
       currentPeriodValue;
 
+  // isDisplayedCurrentOrNextMonth — חודש.
   const isDisplayedCurrentOrNextMonth =
     displayedPeriodValue ===
       currentPeriodValue ||
     displayedPeriodValue ===
       currentPeriodValue + 1;
 
+  /**
+   * פעולה canEditEntry: בדיקת אפשרות פעולה עבור האם עריכה מותרת.
+   * @param entry — רשומה.
+   * @returns boolean — הפלט בהתאם לחתימה.
+   */
   const canEditEntry =
     (
       entry:
@@ -803,11 +943,17 @@ const handleWorkspaceTabChange =
       }
     };
 
+  /**
+   * פעולה אסינכרונית openEntryEditor: פתיחת רשומה.
+   * @param entry — רשומה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const openEntryEditor =
     async (
       entry:
         UnifiedScheduleEntry,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canEditEntry( entry, ).
       if (
         !canEditEntry(
           entry,
@@ -824,11 +970,14 @@ const handleWorkspaceTabChange =
       setEditSuccess(null);
       setIsLoadingEditUsers(true);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר entry.category === 'dispatcher'.
         if (
           entry.category ===
             'dispatcher'
         ) {
+          // options — אפשרויות בחירה.
           const options =
             await scheduleService
               .getCurrentScheduleEditOptions(entry.sourceId);
@@ -849,10 +998,12 @@ const handleWorkspaceTabChange =
           return;
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר entry.category === 'on_call'.
         if (
           entry.category ===
             'on_call'
         ) {
+          // schedule — שיבוץ.
           const schedule =
             await driverScheduleService
               .getScheduleByMonth(
@@ -879,6 +1030,7 @@ const handleWorkspaceTabChange =
           return;
         }
 
+        // schedule — שיבוץ.
         const schedule =
           await morningDriverScheduleService
             .getSchedule(
@@ -915,6 +1067,12 @@ const handleWorkspaceTabChange =
       }
     };
 
+  /**
+   * פעולה אסינכרונית saveEntryEdit: שמירת רשומה.
+   * @param newUserId — מזהה העובד לאחר השינוי.
+   * @param reason — הנתון reason בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const saveEntryEdit =
     async (
       newUserId:
@@ -922,6 +1080,7 @@ const handleWorkspaceTabChange =
       reason:
         string | null,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !editingEntry.
       if (
         !editingEntry
       ) {
@@ -931,6 +1090,7 @@ const handleWorkspaceTabChange =
       setIsSavingEdit(true);
       setEditError(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         if (
           editingEntry.category ===
@@ -982,17 +1142,23 @@ const handleWorkspaceTabChange =
       }
     };
 
+  /**
+   * פעולה renderCalendarDayContent: בניית תצוגה עבור לוח שנה / יום.
+   * @param context — הנתון context בהקשר הפעולה.
+   */
   const renderCalendarDayContent =
     (
       context:
         MonthCalendarDayContext,
     ) => {
+      // dayEntries — יום / רשומות.
       const dayEntries =
         entriesByDate.get(
           context.date,
         ) ??
         [];
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dayEntries.length === 0.
       if (
         dayEntries.length ===
         0
@@ -1004,12 +1170,14 @@ const handleWorkspaceTabChange =
         );
       }
 
+      // visibleDayEntries — יום / רשומות.
       const visibleDayEntries =
         dayEntries.slice(
           0,
           maximumVisibleEntriesPerDay,
         );
 
+      // hiddenEntriesCount — רשומות / כמות.
       const hiddenEntriesCount =
         dayEntries.length -
         visibleDayEntries.length;
@@ -1020,6 +1188,7 @@ const handleWorkspaceTabChange =
             (
               entry,
             ) => {
+              // timeLabel — זמן / תווית.
               const timeLabel =
                 formatEntryTime(
                   entry,
@@ -1091,17 +1260,24 @@ const handleWorkspaceTabChange =
       );
     };
 
+  /**
+   * פעולה handleDayClick: טיפול באירוע עבור יום.
+   * @param context — הנתון context בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleDayClick =
     (
       context:
         MonthCalendarDayContext,
     ): void => {
+      // dayEntries — יום / רשומות.
       const dayEntries =
         entriesByDate.get(
           context.date,
         ) ??
         [];
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dayEntries.length === 0.
       if (
         dayEntries.length ===
         0
@@ -1132,6 +1308,7 @@ const handleWorkspaceTabChange =
             const Icon =
               tab.icon;
 
+            // isActive — האם הרשומה פעילה.
             const isActive =
               activeTab ===
               tab.id;
@@ -1512,6 +1689,7 @@ const handleWorkspaceTabChange =
               ) : (
                 visibleEntries.map(
                   (entry) => {
+                    // timeLabel — זמן / תווית.
                     const timeLabel =
                       formatEntryTime(
                         entry,
@@ -1657,6 +1835,7 @@ const handleWorkspaceTabChange =
             (
               entry,
             ) => {
+              // timeLabel — זמן / תווית.
               const timeLabel =
                 formatEntryTime(
                   entry,

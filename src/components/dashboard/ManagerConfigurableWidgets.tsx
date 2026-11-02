@@ -1,23 +1,43 @@
+/**
+ * קובץ: src/components/dashboard/ManagerConfigurableWidgets.tsx
+ * מטרה: הרכבת הווידג׳טים הזמינים למנהל לפי התצורה שהוגדרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: formatTime, ManagerConfigurableWidgets.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { Clock3, LoaderCircle, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { dynamicShiftDisplayName } from '../../utils/dynamicShiftDisplayName';
 import { dashboardWidgetService } from '../../services/dashboardWidgetService';
 import type { ManagerDashboardStaffingWidget } from '../../types/dashboardWidgets';
 
+// timeLabel — זמן / תווית.
 const timeLabel = { current: 'כרגע', today: 'היום' } as const;
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ */
 function formatTime(value: string) { return value.slice(0, 5); }
 
+/**
+ * פעולה ManagerConfigurableWidgets: הנתון ManagerConfigurableWidgets בהקשר הפעולה.
+ */
 function ManagerConfigurableWidgets() {
+  // מצב מקומי: widgets — הנתון widgets בהקשר הפעולה; setWidgets מעדכנת אותו ומפעילה רינדור לפי React.
   const [widgets, setWidgets] = useState<ManagerDashboardStaffingWidget[]>([]);
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy, setBusy] = useState(true);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
 
     void dashboardWidgetService.canConfigure()
       .then(async (allowed) => {
         if (!active || !allowed) return;
+        // result — תוצאה.
         const result = await dashboardWidgetService.getDashboardWidgets();
         if (active) setWidgets(result);
       })

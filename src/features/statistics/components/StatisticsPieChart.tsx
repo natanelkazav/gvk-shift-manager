@@ -1,19 +1,37 @@
+/**
+ * קובץ: src/features/statistics/components/StatisticsPieChart.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PieSlice, StatisticsPieChartProps, createConicGradient, StatisticsPieChart.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
+/**
+ * חוזה הנתונים PieSlice: הנתון PieSlice בהקשר הפעולה.
+ */
 interface PieSlice {
+  // label — תווית.
   label: string;
 
+  // value — ערך.
   value: number;
 }
 
+/**
+ * חוזה הנתונים StatisticsPieChartProps: סטטיסטיקה / מאפייני הרכיב.
+ */
 interface StatisticsPieChartProps {
+  // title — כותרת.
   title: string;
 
   description?: string;
 
   slices:
     PieSlice[];
+  // valueFormatter — ערך (אופציונלי).
   valueFormatter?: (value: number) => string;
 }
 
+// chartColors — הנתון chartColors בהקשר הפעולה.
 const chartColors = [
   '#2563eb',
   '#0f766e',
@@ -23,10 +41,16 @@ const chartColors = [
   '#0891b2',
 ];
 
+/**
+ * פעולה createConicGradient: יצירת הנתון createConicGradient בהקשר הפעולה.
+ * @param slices — הנתון slices בהקשר הפעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function createConicGradient(
   slices:
     PieSlice[],
 ): string {
+  // total — סך הכול.
   const total =
     slices.reduce(
       (
@@ -41,6 +65,7 @@ function createConicGradient(
       0,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר total <= 0.
   if (
     total <=
     0
@@ -48,6 +73,7 @@ function createConicGradient(
     return '#e5e7eb';
   }
 
+  // currentPercentage — הנתון currentPercentage בהקשר הפעולה.
   let currentPercentage =
     0;
 
@@ -90,12 +116,17 @@ function createConicGradient(
   )})`;
 }
 
+/**
+ * פעולה StatisticsPieChart: סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function StatisticsPieChart({
   title,
   description,
   slices,
   valueFormatter = (value) => String(value),
 }: StatisticsPieChartProps) {
+  // total — סך הכול.
   const total =
     slices.reduce(
       (

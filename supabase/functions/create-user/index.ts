@@ -1,12 +1,27 @@
+/**
+ * קובץ: supabase/functions/create-user/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת create-user.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: CreateUserRequest, ProfileDatabaseRow, createJsonResponse, getRequiredEnvironmentVariable, normalizeEmail, validateRequest, getAuthenticatedUser.
+ * - מקורות נתונים הנזכרים בקריאות from: profiles, audit_logs.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   createClient,
   type User,
 } from 'npm:@supabase/supabase-js@2';
 
+/**
+ * חוזה הנתונים CreateUserRequest: משתמש / נתוני הבקשה.
+ */
 interface CreateUserRequest {
+  // email — כתובת דוא״ל.
   email: string;
+  // password — סיסמה.
   password: string;
+  // displayName — שם תצוגה.
   displayName: string;
+  // scheduleName — שיבוץ / שם (אופציונלי).
   scheduleName?: string | null;
   role:
     | 'admin'
@@ -15,14 +30,23 @@ interface CreateUserRequest {
     | 'on_call'
     | 'morning_driver'
     | 'viewer';
+  // isActive — האם הרשומה פעילה (אופציונלי).
   isActive?: boolean;
+  // mustChangePassword — סיסמה (אופציונלי).
   mustChangePassword?: boolean;
 }
 
+/**
+ * חוזה הנתונים ProfileDatabaseRow: פרופיל / שורה.
+ */
 interface ProfileDatabaseRow {
+  // id — מזהה.
   id: string;
+  // email — כתובת דוא״ל.
   email: string;
+  // display_name — שם תצוגה.
   display_name: string;
+  // schedule_name — שיבוץ / שם.
   schedule_name: string | null;
   role:
     | 'admin'
@@ -31,13 +55,18 @@ interface ProfileDatabaseRow {
     | 'on_call'
     | 'morning_driver'
     | 'viewer';
+  // is_active — האם הרשומה פעילה.
   is_active: boolean;
+  // must_change_password — סיסמה.
   must_change_password: boolean;
   last_login_at: string | null;
+  // created_at — מועד יצירה.
   created_at: string;
+  // updated_at — מועד עדכון.
   updated_at: string;
 }
 
+// allowedRoles — הנתון allowedRoles בהקשר הפעולה; אוסף ערכים ייחודיים.
 const allowedRoles = new Set<
   CreateUserRequest['role']
 >([
@@ -49,6 +78,7 @@ const allowedRoles = new Set<
   'viewer',
 ]);
 
+// corsHeaders — הנתון corsHeaders בהקשר הפעולה.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
@@ -58,6 +88,12 @@ const corsHeaders = {
   'Content-Type': 'application/json',
 };
 
+/**
+ * פעולה createJsonResponse: יצירת תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 function createJsonResponse(
   body: unknown,
   status: number,
@@ -71,12 +107,19 @@ function createJsonResponse(
   );
 }
 
+/**
+ * פעולה getRequiredEnvironmentVariable: שליפה או חישוב של הנתון getRequiredEnvironmentVariable בהקשר הפעולה.
+ * @param variableName — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getRequiredEnvironmentVariable(
   variableName: string,
 ): string {
+  // value — ערך.
   const value =
     Deno.env.get(variableName);
 
+  // עצירת הפעולה עם שגיאה כאשר !value.
   if (!value) {
     throw new Error(
       `Missing environment variable: ${variableName}`,
@@ -86,6 +129,11 @@ function getRequiredEnvironmentVariable(
   return value;
 }
 
+/**
+ * פעולה normalizeEmail: נרמול כתובת דוא״ל.
+ * @param email — כתובת דוא״ל.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeEmail(
   email: string,
 ): string {
@@ -94,41 +142,53 @@ function normalizeEmail(
     .toLowerCase();
 }
 
+/**
+ * פעולה validateRequest: בדיקת תקינות של נתוני הבקשה.
+ * @param requestBody — נתוני הבקשה / תוכן.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function validateRequest(
   requestBody:
     Partial<CreateUserRequest>,
 ): string | null {
+  // normalizedEmail — כתובת דוא״ל.
   const normalizedEmail =
     normalizeEmail(
       requestBody.email ?? '',
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedEmail.
   if (!normalizedEmail) {
     return 'יש להזין כתובת אימייל.';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedEmail.includes('@').
   if (
     !normalizedEmail.includes('@')
   ) {
     return 'כתובת האימייל אינה תקינה.';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !requestBody.password.
   if (!requestBody.password) {
     return 'יש להזין סיסמה זמנית.';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר requestBody.password.length < 8.
   if (
     requestBody.password.length < 8
   ) {
     return 'הסיסמה חייבת להכיל לפחות שמונה תווים.';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !requestBody.displayName?.trim().
   if (
     !requestBody.displayName?.trim()
   ) {
     return 'יש להזין שם תצוגה.';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !requestBody.role || !allowedRoles.has( requestBody.role, ).
   if (
     !requestBody.role ||
     !allowedRoles.has(
@@ -141,21 +201,31 @@ function validateRequest(
   return null;
 }
 
+/**
+ * פעולה אסינכרונית getAuthenticatedUser: שליפה או חישוב של משתמש.
+ * @param authorizationHeader — הנתון authorizationHeader בהקשר הפעולה.
+ * @param supabaseUrl — כתובת יעד.
+ * @param publishableKey — מפתח.
+ * @returns Promise<User | null> — הפלט בהתאם לחתימה.
+ */
 async function getAuthenticatedUser(
   authorizationHeader: string,
   supabaseUrl: string,
   publishableKey: string,
 ): Promise<User | null> {
+  // accessToken — אסימון גישה.
   const accessToken =
     authorizationHeader.replace(
       /^Bearer\s+/i,
       '',
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !accessToken.
   if (!accessToken) {
     return null;
   }
 
+  // authenticationClient — אימות משתמשים / לקוח.
   const authenticationClient =
     createClient(
       supabaseUrl,
@@ -168,6 +238,7 @@ async function getAuthenticatedUser(
       },
     );
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data: { user },
     error,
@@ -176,6 +247,7 @@ async function getAuthenticatedUser(
       .auth
       .getUser(accessToken);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error || !user.
   if (
     error ||
     !user
@@ -190,6 +262,7 @@ Deno.serve(
   async (
     request: Request,
   ) => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method === 'OPTIONS'.
     if (
       request.method === 'OPTIONS'
     ) {
@@ -202,6 +275,7 @@ Deno.serve(
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !== 'POST'
     ) {
@@ -215,12 +289,15 @@ Deno.serve(
     }
 
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         getRequiredEnvironmentVariable(
           'SUPABASE_URL',
         );
 
+      // publishableKey — מפתח.
       const publishableKey =
         Deno.env.get(
           'SUPABASE_ANON_KEY',
@@ -229,12 +306,14 @@ Deno.serve(
           'SUPABASE_PUBLISHABLE_KEY',
         );
 
+      // עצירת הפעולה עם שגיאה כאשר !publishableKey.
       if (!publishableKey) {
         throw new Error(
           'Missing Supabase public API key.',
         );
       }
 
+      // serviceRoleKey — שירות / מפתח.
       const serviceRoleKey =
         getRequiredEnvironmentVariable(
           'SUPABASE_SERVICE_ROLE_KEY',
@@ -245,6 +324,7 @@ Deno.serve(
           'Authorization',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !authorizationHeader.
       if (
         !authorizationHeader
       ) {
@@ -257,6 +337,7 @@ Deno.serve(
         );
       }
 
+      // authenticatedUser — משתמש.
       const authenticatedUser =
         await getAuthenticatedUser(
           authorizationHeader,
@@ -264,6 +345,7 @@ Deno.serve(
           publishableKey,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !authenticatedUser.
       if (
         !authenticatedUser
       ) {
@@ -276,6 +358,7 @@ Deno.serve(
         );
       }
 
+      // adminClient — לקוח.
       const adminClient =
         createClient(
           supabaseUrl,
@@ -291,6 +374,7 @@ Deno.serve(
           },
         );
 
+// פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
 const {
   data: requestingProfile,
   error: requestingProfileError,
@@ -305,13 +389,18 @@ const {
   `)
   .eq('id', authenticatedUser.id)
   .maybeSingle<{
+    // id — מזהה.
     id: string;
+    // email — כתובת דוא״ל.
     email: string;
+    // display_name — שם תצוגה.
     display_name: string;
     role: string;
+    // is_active — האם הרשומה פעילה.
     is_active: boolean;
   }>();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר requestingProfileError || !requestingProfile.
       if (
         requestingProfileError ||
         !requestingProfile
@@ -325,6 +414,7 @@ const {
         );
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר requestingProfile.role !== 'admin' || !requestingProfile .is_active.
       if (
         requestingProfile.role !==
           'admin' ||
@@ -340,9 +430,11 @@ const {
         );
       }
 
+      // requestBody — נתוני הבקשה / תוכן.
       let requestBody:
         Partial<CreateUserRequest>;
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         requestBody =
           await request.json();
@@ -356,11 +448,13 @@ const {
         );
       }
 
+      // validationError — אימות נתונים / שגיאה.
       const validationError =
         validateRequest(
           requestBody,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר validationError.
       if (
         validationError
       ) {
@@ -373,22 +467,26 @@ const {
         );
       }
 
+      // normalizedEmail — כתובת דוא״ל.
       const normalizedEmail =
         normalizeEmail(
           requestBody.email!,
         );
 
+      // normalizedDisplayName — שם תצוגה.
       const normalizedDisplayName =
         requestBody
           .displayName!
           .trim();
 
+      // normalizedScheduleName — שיבוץ / שם.
       const normalizedScheduleName =
         requestBody
           .scheduleName
           ?.trim() ||
         null;
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           existingProfile,
@@ -404,9 +502,11 @@ const {
             normalizedEmail,
           )
           .maybeSingle<{
+            // id — מזהה.
             id: string;
           }>();
 
+      // עצירת הפעולה עם שגיאה כאשר existingProfileError.
       if (
         existingProfileError
       ) {
@@ -415,6 +515,7 @@ const {
         );
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר existingProfile.
       if (
         existingProfile
       ) {
@@ -427,6 +528,7 @@ const {
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           createUserData,
@@ -454,10 +556,12 @@ const {
             },
           });
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר createUserError || !createUserData.user.
       if (
         createUserError ||
         !createUserData.user
       ) {
+        // isExistingEmail — כתובת דוא״ל.
         const isExistingEmail =
           createUserError
             ?.message
@@ -479,6 +583,7 @@ const {
         );
       }
 
+// createdAuthUserId — מזהה משתמש.
 const createdAuthUserId =
   createUserData.user.id;
 
@@ -486,6 +591,7 @@ const createdAuthUserId =
         new Date()
           .toISOString();
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           createdProfile,
@@ -549,6 +655,7 @@ const createdAuthUserId =
             ProfileDatabaseRow
           >();
 
+      // עצירת הפעולה עם שגיאה כאשר createProfileError || !createdProfile.
       if (
         createProfileError ||
         !createdProfile
@@ -571,6 +678,7 @@ const createdAuthUserId =
         );
       }
 
+// פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
 const {
   error: auditLogError,
 } = await adminClient

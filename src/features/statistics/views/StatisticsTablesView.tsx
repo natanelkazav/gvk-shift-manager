@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/statistics/views/StatisticsTablesView.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: StatisticsTablesViewProps, getDisplayName, StatisticsTablesView.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import type {
   StatisticsDashboardResponse,
 } from '../../../types/statistics';
@@ -5,10 +12,15 @@ import type {
 import DispatcherAvailabilityInsights
   from './DispatcherAvailabilityInsights';
 
+/**
+ * חוזה הנתונים StatisticsTablesViewProps: סטטיסטיקה / מאפייני הרכיב.
+ */
 interface StatisticsTablesViewProps {
+  // data — נתונים.
   data:
     StatisticsDashboardResponse;
 
+  // sectionFilter — סינון.
   sectionFilter:
     'all'
     | 'dispatchers'
@@ -16,6 +28,12 @@ interface StatisticsTablesViewProps {
     | 'drivers';
 }
 
+/**
+ * פעולה getDisplayName: שליפה או חישוב של שם תצוגה.
+ * @param displayName — שם תצוגה.
+ * @param scheduleName — שיבוץ / שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDisplayName(
   displayName: string,
   scheduleName:
@@ -28,6 +46,10 @@ function getDisplayName(
   );
 }
 
+/**
+ * פעולה StatisticsTablesView: סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function StatisticsTablesView({
   data,
   sectionFilter,

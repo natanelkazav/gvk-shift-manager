@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260825153500_use_calendar_special_days_as_holiday_source.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור לוח שנה / ימים / חג / מקור.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.sync_calendar_special_day_to_holidays, public.get_calendar_holidays.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- =========================================================
 -- Calendar special days as the single active holiday source
 -- =========================================================
@@ -23,11 +28,14 @@ create or replace function
 public.sync_calendar_special_day_to_holidays()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 begin
+  -- הסתעפות לפי התנאי tg_op = 'DELETE'.
   if tg_op = 'DELETE' then
+    -- מחיקת הרשומות שנבחרו מתוך public.holidays בהתאם לקלט ולתנאים להלן.
     delete from public.holidays holiday
     where holiday.holiday_date =
         old.event_date
@@ -46,6 +54,7 @@ begin
    * If an UPDATE changed the identifying fields,
    * remove the old synchronized row first.
    */
+  -- הסתעפות לפי התנאי tg_op = 'UPDATE'.
   if tg_op = 'UPDATE'
     and (
       old.event_date is distinct from
@@ -55,6 +64,7 @@ begin
         new.event_name
     )
   then
+    -- מחיקת הרשומות שנבחרו מתוך public.holidays בהתאם לקלט ולתנאים להלן.
     delete from public.holidays holiday
     where holiday.holiday_date =
         old.event_date
@@ -67,6 +77,7 @@ begin
   end if;
 
 
+  -- הוספת רשומות ל־public.holidays בהתאם לקלט ולתנאים להלן.
   insert into public.holidays (
     holiday_date,
     name,
@@ -133,6 +144,7 @@ execute function
 -- 2. Backfill existing imported special days
 -- =========================================================
 
+-- הוספת רשומות ל־public.holidays בהתאם לקלט ולתנאים להלן.
 insert into public.holidays (
   holiday_date,
   name,
@@ -195,21 +207,28 @@ public.get_calendar_holidays(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid :=
     auth.uid();
 
+  -- first_date — תאריך.
   first_date date;
+  -- next_month — חודש.
   next_month date;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile
@@ -218,15 +237,18 @@ begin
       and profile.is_active =
         true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'user not active';
   end if;
 
+  -- הסתעפות לפי התנאי requested_year < 2020.
   if requested_year < 2020
     or requested_year > 2100
     or requested_month < 1
     or requested_month > 12
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'invalid year or month';
   end if;
@@ -290,6 +312,7 @@ end;
 $function$;
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute
 on function
   public.get_calendar_holidays(
@@ -307,6 +330,7 @@ to authenticated;
 -- source row. Manual rows / manual overrides are preserved.
 -- =========================================================
 
+-- מחיקת הרשומות שנבחרו מתוך public.holidays בהתאם לקלט ולתנאים להלן.
 delete from public.holidays holiday
 
 where holiday.source =

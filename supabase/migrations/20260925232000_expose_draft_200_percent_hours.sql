@@ -1,29 +1,41 @@
+-- קובץ: supabase/migrations/20260925232000_expose_draft_200_percent_hours.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור טיוטה / שעות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_schedule_draft_editor.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Expose the effective 200% hours of each availability slot to the draft editor.
 -- The value comes from the materialized pay snapshot for the role/month, so the UI
 -- reflects the same configuration used by the scheduling engine.
 
+-- פונקציית מסד public.get_dynamic_schedule_draft_editor: שליפה או חישוב של דינמי / שיבוץ / טיוטה.
 create or replace function public.get_dynamic_schedule_draft_editor(requested_draft_id uuid)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- v_user — משתמש.
   v_user uuid := auth.uid();
   d public.dynamic_schedule_shadow_drafts%rowtype;
   j public.job_types%rowtype;
   p public.dynamic_availability_periods%rowtype;
   v_metrics jsonb;
 begin
+  -- הסתעפות לפי התנאי v_user is null then raise exception 'not authenticated'; end if;.
   if v_user is null then raise exception 'not authenticated'; end if;
 
   select * into d from public.dynamic_schedule_shadow_drafts where id=requested_draft_id;
+  -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('schedule.view_team', d.job_type_id, v_user) then raise exception 'not allowe.
   if not public.has_dynamic_job_type_permission('schedule.view_team', d.job_type_id, v_user) then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי d.id is null then raise exception 'draft not found'; end if;.
   if d.id is null then raise exception 'draft not found'; end if;
   select * into j from public.job_types where id=d.job_type_id;
   select * into p from public.dynamic_availability_periods where id=d.availability_period_id;
   v_metrics := public.dynamic_refresh_draft_metrics(d.id);
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'draftId',d.id,'jobTypeId',d.job_type_id,'jobTypeName',j.name,
     'year',d.year,'month',d.month,'status',(select status from public.dynamic_schedule_shadow_drafts where id=d.id),
@@ -88,4 +100,5 @@ begin
 end;
 $function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_schedule_draft_editor(uuid) to authenticated;

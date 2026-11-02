@@ -1,5 +1,11 @@
+-- קובץ: supabase/migrations/20260916000000_phase10_11_2_friendly_dynamic_shift_names.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / משמרת.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.resolve_dynamic_shift_display_name, public.get_my_manager_dashboard_widgets, public.create_dynamic_assignment_change_notification.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
+-- פונקציית מסד public.resolve_dynamic_shift_display_name: קביעת ערך עבור שם תצוגה.
 create or replace function public.resolve_dynamic_shift_display_name(
   requested_job_type_id uuid,
   requested_shift_date date,
@@ -12,6 +18,7 @@ create or replace function public.resolve_dynamic_shift_display_name(
 returns text
 language sql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -44,13 +51,17 @@ as $function$
   );
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.resolve_dynamic_shift_display_name(uuid,date,text,text,time,time,text) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.resolve_dynamic_shift_display_name(uuid,date,text,text,time,time,text) to authenticated;
 
 -- Rebuild the manager widget RPC so technical slot identifiers never leave the DB API.
+-- פונקציית מסד public.get_my_manager_dashboard_widgets: שליפה או חישוב של לוח בקרה.
 create or replace function public.get_my_manager_dashboard_widgets()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -59,6 +70,7 @@ declare
   v_today date:=timezone('Asia/Jerusalem',now())::date;
   v_now_time time:=timezone('Asia/Jerusalem',now())::time;
 begin
+  -- הסתעפות לפי התנאי not public.can_configure_manager_dashboard(v_actor) then return '[]'::jsonb; end if;.
   if not public.can_configure_manager_dashboard(v_actor) then return '[]'::jsonb; end if;
 
   return coalesce((
@@ -108,9 +120,11 @@ end;
 $function$;
 
 -- Assignment-change notifications also store only the friendly name in notification data.
+-- פונקציית מסד public.create_dynamic_assignment_change_notification: יצירת דינמי / הקצאה / התראות.
 create or replace function public.create_dynamic_assignment_change_notification()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -118,21 +132,28 @@ declare
   actor uuid:=auth.uid();
   publication public.dynamic_schedule_publications%rowtype;
   job public.job_types%rowtype;
+  -- old_user — משתמש.
   old_user uuid; new_user uuid; shift_date_value date; shift_name_value text;
   start_time_value time; end_time_value time; shift_code_value text;
+  -- notification_id — התראות / מזהה.
   notification_id uuid; recipient_count integer:=0; is_swap_change boolean:=false;
 begin
+  -- הסתעפות לפי התנאי tg_op='INSERT' and not coalesce(new.manager_edited,false) and new.user_edited_by is null then return new; end if;.
   if tg_op='INSERT' and not coalesce(new.manager_edited,false) and new.user_edited_by is null then return new; end if;
+  -- הסתעפות לפי התנאי tg_op='UPDATE' and new.user_id is not distinct from old.user_id then return new; end if;.
   if tg_op='UPDATE' and new.user_id is not distinct from old.user_id then return new; end if;
 
   select p.* into publication from public.dynamic_schedule_publications p
   where p.id=coalesce(new.publication_id,old.publication_id);
+  -- הסתעפות לפי התנאי publication.id is null or publication.status<>'published' then return coalesce(new,old); end if;.
   if publication.id is null or publication.status<>'published' then return coalesce(new,old); end if;
+  -- הסתעפות לפי התנאי publication.year<>extract(year from (now() at time zone 'Asia/Jerusalem'))::integer.
   if publication.year<>extract(year from (now() at time zone 'Asia/Jerusalem'))::integer
      or publication.month<>extract(month from (now() at time zone 'Asia/Jerusalem'))::integer
   then return coalesce(new,old); end if;
 
   select jt.* into job from public.job_types jt where jt.id=publication.job_type_id and jt.legacy_role is null;
+  -- הסתעפות לפי התנאי job.id is null then return coalesce(new,old); end if;.
   if job.id is null then return coalesce(new,old); end if;
 
   old_user:=case when tg_op in ('UPDATE','DELETE') then old.user_id else null end;
@@ -146,17 +167,21 @@ begin
     start_time_value,end_time_value,'משמרת'
   );
 
+  -- הסתעפות לפי התנאי tg_op='UPDATE'.
   if tg_op='UPDATE' then
     select exists(select 1 from public.dynamic_shift_exchange_requests r
       where r.status='pending_manager' and r.publication_id=publication.id
         and (r.requester_assignment_id=old.id or r.counterparty_assignment_id=old.id))
     into is_swap_change;
+    -- הסתעפות לפי התנאי is_swap_change then return new; end if;.
     if is_swap_change then return new; end if;
   end if;
 
   actor:=coalesce(actor,new.user_edited_by,old.user_edited_by);
+  -- הסתעפות לפי התנאי actor is null then return coalesce(new,old); end if;.
   if actor is null then return coalesce(new,old); end if;
 
+  -- הוספת רשומות ל־public.notifications בהתאם לקלט ולתנאים להלן.
   insert into public.notifications(type,priority,source,title,body,url,data,created_by,expires_at)
   values(
     'system','important','dynamic_schedule_edit','השיבוץ שלך השתנה',
@@ -171,12 +196,14 @@ begin
     actor,now()+interval '90 days'
   ) returning id into notification_id;
 
+  -- הוספת רשומות ל־public.notification_recipients בהתאם לקלט ולתנאים להלן.
   insert into public.notification_recipients(notification_id,user_id)
   select notification_id,candidate.user_id
   from (select old_user user_id union select new_user user_id) candidate
   join public.profiles p on p.id=candidate.user_id and p.is_active=true
   where candidate.user_id is not null and candidate.user_id<>actor;
   get diagnostics recipient_count=row_count;
+  -- הסתעפות לפי התנאי recipient_count=0 then delete from public.notifications where id=notification_id; end if;.
   if recipient_count=0 then delete from public.notifications where id=notification_id; end if;
   return coalesce(new,old);
 end;

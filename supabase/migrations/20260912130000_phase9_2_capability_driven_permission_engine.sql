@@ -1,7 +1,14 @@
+-- קובץ: supabase/migrations/20260912130000_phase9_2_capability_driven_permission_engine.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור הרשאות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_job_type_active_features, public.sync_dynamic_job_type_permission_settings, public.trg_sync_dynamic_job_type_permissions, public.get_dynamic_job_type_permission_editor, public.save_dynamic_job_type_permission_policy, public.set_dynamic_job_type_manager, public.has_dynamic_job_type_permission, public.get_user_dynamic_permission_summary, public.get_dynamic_job_type_membership_admin.
+-- - מבני טבלאות: public.dynamic_permission_manifest, public.job_type_permission_settings, public.job_type_managers.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 9.2 redesigned: capability-driven permission engine
 -- Job types activate features; features expose member/manager permissions.
 -- Legacy user_permissions remain only as system-level/transition permissions.
 
+-- הגדרת מבנה הטבלה public.dynamic_permission_manifest והאילוצים המופיעים בהמשך.
 create table if not exists public.dynamic_permission_manifest (
   feature_key text not null,
   permission_key text not null,
@@ -13,6 +20,7 @@ create table if not exists public.dynamic_permission_manifest (
   primary key (feature_key, permission_key, audience)
 );
 
+-- הגדרת מבנה הטבלה public.job_type_permission_settings והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_permission_settings (
   job_type_id uuid not null references public.job_types(id) on delete cascade,
   permission_key text not null,
@@ -23,6 +31,7 @@ create table if not exists public.job_type_permission_settings (
   primary key (job_type_id, permission_key, audience)
 );
 
+-- הגדרת מבנה הטבלה public.job_type_managers והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_managers (
   job_type_id uuid not null references public.job_types(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -31,12 +40,15 @@ create table if not exists public.job_type_managers (
   primary key (job_type_id, user_id)
 );
 
+-- הגדרת האינדקס job_type_managers_user_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists job_type_managers_user_idx
   on public.job_type_managers(user_id);
 
+-- הגדרת האינדקס job_type_permission_settings_key_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists job_type_permission_settings_key_idx
   on public.job_type_permission_settings(permission_key);
 
+-- הוספת רשומות ל־public.dynamic_permission_manifest בהתאם לקלט ולתנאים להלן.
 insert into public.dynamic_permission_manifest
   (feature_key, permission_key, audience, label, description, default_enabled, sort_order)
 values
@@ -73,40 +85,49 @@ set label = excluded.label,
     default_enabled = excluded.default_enabled,
     sort_order = excluded.sort_order;
 
+-- פונקציית מסד public.get_dynamic_job_type_active_features: שליפה או חישוב של סוג תפקיד.
 create or replace function public.get_dynamic_job_type_active_features(requested_job_type_id uuid)
 returns text[]
 language plpgsql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
   jt public.job_types%rowtype;
   features text[] := array['schedule']::text[];
+  -- change_mode — מצב פעולה.
   change_mode text;
 begin
   select * into jt from public.job_types where id = requested_job_type_id;
+  -- הסתעפות לפי התנאי not found then return array[]::text[]; end if;.
   if not found then return array[]::text[]; end if;
 
+  -- הסתעפות לפי התנאי coalesce((jt.availability_config->>'enabled')::boolean, false).
   if coalesce((jt.availability_config->>'enabled')::boolean, false) then
     features := array_append(features, 'availability');
   end if;
 
   change_mode := coalesce(jt.scheduling_config->>'scheduleChangeMode', 'none');
+  -- הסתעפות לפי התנאי change_mode = 'shift_exchange'.
   if change_mode = 'shift_exchange' then
     features := array_append(features, 'shift_exchange');
   elsif change_mode = 'self_edit' then
     features := array_append(features, 'self_edit');
   end if;
 
+  -- הסתעפות לפי התנאי jt.scheduling_strategy = 'monthly_rotation_constraints'.
   if jt.scheduling_strategy = 'monthly_rotation_constraints' then
     features := array_append(features, 'monthly_rotation');
   end if;
 
+  -- הסתעפות לפי התנאי coalesce((jt.statistics_config->>'enabled')::boolean, false).
   if coalesce((jt.statistics_config->>'enabled')::boolean, false) then
     features := array_append(features, 'statistics');
   end if;
 
+  -- הסתעפות לפי התנאי coalesce(jt.pay_model, 'none') <> 'none'.
   if coalesce(jt.pay_model, 'none') <> 'none' then
     features := array_append(features, 'payroll');
   end if;
@@ -115,9 +136,11 @@ begin
 end;
 $$;
 
+-- פונקציית מסד public.sync_dynamic_job_type_permission_settings: סנכרון סוג תפקיד.
 create or replace function public.sync_dynamic_job_type_permission_settings(requested_job_type_id uuid)
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
@@ -126,6 +149,7 @@ declare
 begin
   features := public.get_dynamic_job_type_active_features(requested_job_type_id);
 
+  -- מחיקת הרשומות שנבחרו מתוך public.job_type_permission_settings בהתאם לקלט ולתנאים להלן.
   delete from public.job_type_permission_settings s
   where s.job_type_id = requested_job_type_id
     and not exists (
@@ -136,6 +160,7 @@ begin
         and m.feature_key = any(features)
     );
 
+  -- הוספת רשומות ל־public.job_type_permission_settings בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_permission_settings
     (job_type_id, permission_key, audience, enabled, source, updated_at)
   select requested_job_type_id, m.permission_key, m.audience, m.default_enabled, 'manifest', now()
@@ -145,9 +170,11 @@ begin
 end;
 $$;
 
+-- פונקציית מסד public.trg_sync_dynamic_job_type_permissions: סוג תפקיד.
 create or replace function public.trg_sync_dynamic_job_type_permissions()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
@@ -167,14 +194,17 @@ for each row execute function public.trg_sync_dynamic_job_type_permissions();
 do $$
 declare r record;
 begin
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for r in select id from public.job_types loop
     perform public.sync_dynamic_job_type_permission_settings(r.id);
   end loop;
 end $$;
 
+-- פונקציית מסד public.get_dynamic_job_type_permission_editor: שליפה או חישוב של סוג תפקיד.
 create or replace function public.get_dynamic_job_type_permission_editor(requested_job_type_id uuid)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
@@ -182,18 +212,23 @@ declare
   actor uuid := auth.uid();
   features text[];
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.user_permissions up
     where up.user_id = actor and up.permission_key in ('users.view','users.manage')
   ) then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי not exists (select 1 from public.job_types where id=requested_job_type_id).
   if not exists (select 1 from public.job_types where id=requested_job_type_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type not found';
   end if;
 
   perform public.sync_dynamic_job_type_permission_settings(requested_job_type_id);
   features := public.get_dynamic_job_type_active_features(requested_job_type_id);
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'jobTypeId', requested_job_type_id,
     'jobTypeName', (select name from public.job_types where id=requested_job_type_id),
@@ -245,6 +280,7 @@ begin
 end;
 $$;
 
+-- פונקציית מסד public.save_dynamic_job_type_permission_policy: שמירת סוג תפקיד.
 create or replace function public.save_dynamic_job_type_permission_policy(
   requested_job_type_id uuid,
   requested_member_permission_keys text[] default array[]::text[],
@@ -252,6 +288,7 @@ create or replace function public.save_dynamic_job_type_permission_policy(
 )
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
@@ -259,16 +296,20 @@ declare
   actor uuid := auth.uid();
   features text[];
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.user_permissions up
     where up.user_id=actor and up.permission_key='users.manage'
   ) then raise exception 'not allowed'; end if;
 
   features := public.get_dynamic_job_type_active_features(requested_job_type_id);
+  -- הסתעפות לפי התנאי coalesce(array_length(features,1),0)=0 then raise exception 'job type not found'; end if;.
   if coalesce(array_length(features,1),0)=0 then raise exception 'job type not found'; end if;
   perform public.sync_dynamic_job_type_permission_settings(requested_job_type_id);
 
+  -- עדכון רשומות ב־public.job_type_permission_settings בהתאם לקלט ולתנאים להלן.
   update public.job_type_permission_settings s
   set enabled = case
       when s.audience='member' then s.permission_key=any(coalesce(requested_member_permission_keys,array[]::text[]))
@@ -286,6 +327,7 @@ begin
 end;
 $$;
 
+-- פונקציית מסד public.set_dynamic_job_type_manager: קביעת סוג תפקיד.
 create or replace function public.set_dynamic_job_type_manager(
   requested_job_type_id uuid,
   requested_user_id uuid,
@@ -293,30 +335,39 @@ create or replace function public.set_dynamic_job_type_manager(
 )
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare actor uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.user_permissions up
     where up.user_id=actor and up.permission_key='users.manage'
   ) then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי not exists (select 1 from public.job_types where id=requested_job_type_id) then raise exception 'job type not found'; en.
   if not exists (select 1 from public.job_types where id=requested_job_type_id) then raise exception 'job type not found'; end if;
+  -- הסתעפות לפי התנאי not exists (select 1 from public.profiles where id=requested_user_id) then raise exception 'user not found'; end if;.
   if not exists (select 1 from public.profiles where id=requested_user_id) then raise exception 'user not found'; end if;
 
+  -- הסתעפות לפי התנאי requested_is_manager.
   if requested_is_manager then
+    -- הוספת רשומות ל־public.job_type_managers בהתאם לקלט ולתנאים להלן.
     insert into public.job_type_managers(job_type_id,user_id,created_by)
     values(requested_job_type_id,requested_user_id,actor)
     on conflict do nothing;
   else
+    -- מחיקת הרשומות שנבחרו מתוך public.job_type_managers בהתאם לקלט ולתנאים להלן.
     delete from public.job_type_managers
     where job_type_id=requested_job_type_id and user_id=requested_user_id;
   end if;
 end;
 $$;
 
+-- פונקציית מסד public.has_dynamic_job_type_permission: בדיקת קיום עבור סוג תפקיד.
 create or replace function public.has_dynamic_job_type_permission(
   requested_permission_key text,
   requested_job_type_id uuid,
@@ -325,6 +376,7 @@ create or replace function public.has_dynamic_job_type_permission(
 returns boolean
 language sql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
@@ -354,20 +406,25 @@ as $$
   );
 $$;
 
+-- פונקציית מסד public.get_user_dynamic_permission_summary: שליפה או חישוב של משתמש / דינמי / הרשאות / סיכום.
 create or replace function public.get_user_dynamic_permission_summary(target_user_id uuid)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare actor uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי actor <> target_user_id and not exists (.
   if actor <> target_user_id and not exists (
     select 1 from public.user_permissions up
     where up.user_id=actor and up.permission_key='users.manage'
   ) then raise exception 'not allowed'; end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('roles',coalesce((
     select jsonb_agg(role_item order by role_item->>'jobTypeName',role_item->>'relationship')
     from (
@@ -404,16 +461,21 @@ end;
 $$;
 
 -- Extend membership admin payload with manager assignment without changing membership semantics.
+-- פונקציית מסד public.get_dynamic_job_type_membership_admin: שליפה או חישוב של סוג תפקיד.
 create or replace function public.get_dynamic_job_type_membership_admin(requested_job_type_id uuid)
 returns jsonb
 language plpgsql security definer set search_path=''
 as $function$
 declare current_user_id uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.vi.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.view','users.manage')) then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.job_types jt where jt.id=requested_job_type_id) then raise exception 'job type not found.
   if not exists(select 1 from public.job_types jt where jt.id=requested_job_type_id) then raise exception 'job type not found'; end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'users', coalesce((
       select jsonb_agg(jsonb_build_object(
@@ -430,9 +492,15 @@ begin
   );
 end;$function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_job_type_active_features(uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_job_type_permission_editor(uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.save_dynamic_job_type_permission_policy(uuid,text[],text[]) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.set_dynamic_job_type_manager(uuid,uuid,boolean) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.has_dynamic_job_type_permission(text,uuid,uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_user_dynamic_permission_summary(uuid) to authenticated;

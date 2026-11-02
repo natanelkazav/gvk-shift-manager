@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/notifications/hooks/useNotifications.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור התראות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NotificationsState, UseNotificationsResult, getErrorMessage, useNotifications.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useMemo,
@@ -17,36 +24,51 @@ import {
   type MyNotification,
 } from '../services/notificationService';
 
+/**
+ * חוזה הנתונים NotificationsState: התראות / מצב.
+ */
 interface NotificationsState {
+  // notifications — התראות.
   notifications:
     MyNotification[];
 
+  // pendingRequestCount — ממתין / נתוני הבקשה / כמות.
   pendingRequestCount:
     number;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading:
     boolean;
 
   isUpdating:
     boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 }
 
+/**
+ * חוזה הנתונים UseNotificationsResult: התראות / תוצאה.
+ */
 interface UseNotificationsResult {
+  // state — מצב.
   state:
     NotificationsState;
 
+  // unreadCount — כמות.
   unreadCount:
     number;
 
+  // pendingRequestCount — ממתין / נתוני הבקשה / כמות.
   pendingRequestCount:
     number;
 
+  // activityCount — כמות.
   activityCount:
     number;
 
+  // loadNotifications — התראות.
   loadNotifications:
     () => Promise<void>;
 
@@ -62,10 +84,12 @@ interface UseNotificationsResult {
   markAllAsRead:
     () => Promise<void>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   NotificationsState = {
     notifications:
@@ -84,9 +108,15 @@ const initialState:
       null,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -96,6 +126,10 @@ function getErrorMessage(
   return 'אירעה שגיאה בניהול ההתראות.';
 }
 
+/**
+ * פעולה useNotifications: חיבור מצב או הקשר עבור התראות.
+ * @returns UseNotificationsResult — הפלט בהתאם לחתימה.
+ */
 export function useNotifications():
   UseNotificationsResult {
   const {
@@ -103,11 +137,13 @@ export function useNotifications():
   } =
     useAuth();
 
+  // canApproveShiftSwaps — החלפת משמרות.
   const canApproveShiftSwaps =
     hasPermission(
       'shift_swaps.approve',
     );
 
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -116,9 +152,11 @@ export function useNotifications():
       initialState,
     );
 
+  // fetchPendingRequestCount — ממתין / נתוני הבקשה / כמות.
   const fetchPendingRequestCount =
     useCallback(
       async (): Promise<number> => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canApproveShiftSwaps.
         if (
           !canApproveShiftSwaps
         ) {
@@ -142,6 +180,7 @@ export function useNotifications():
       ],
     );
 
+  // loadNotifications — התראות.
   const loadNotifications =
     useCallback(
       async (): Promise<void> => {
@@ -159,6 +198,7 @@ export function useNotifications():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           const [
             notifications,
@@ -216,6 +256,7 @@ export function useNotifications():
   const refreshActivity =
     useCallback(
       async (): Promise<void> => {
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           const [
             notifications,
@@ -276,6 +317,7 @@ export function useNotifications():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await notificationService
             .markAsRead(
@@ -362,6 +404,7 @@ export function useNotifications():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await notificationService
             .markAllAsRead();
@@ -427,6 +470,7 @@ export function useNotifications():
       [],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback(
       (): void => {
@@ -444,6 +488,7 @@ export function useNotifications():
       [],
     );
 
+  // ערך מחושב unreadCount — כמות; נשמר בין רינדורים עד שינוי התלויות.
   const unreadCount =
     useMemo(
       () =>
@@ -461,6 +506,7 @@ export function useNotifications():
       ],
     );
 
+  // activityCount — כמות.
   const activityCount =
     unreadCount +
     state.pendingRequestCount;

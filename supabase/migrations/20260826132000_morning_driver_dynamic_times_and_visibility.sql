@@ -1,11 +1,19 @@
+-- קובץ: supabase/migrations/20260826132000_morning_driver_dynamic_times_and_visibility.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור כונני בוקר.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.update_morning_driver_schedule_shift_time, public.get_morning_driver_schedule, public.publish_morning_driver_schedule.
+-- - מבני טבלאות: public.morning_driver_schedule_assignments.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Morning-driver draft shift-time overrides.
 -- Times belong to the schedule draft, not the availability source, so editing a
 -- draft never rewrites historical availability submissions.
 
+-- עדכון מבנה או הגדרות הטבלה public.morning_driver_schedule_assignments.
 alter table public.morning_driver_schedule_assignments
   add column if not exists scheduled_start_time time,
   add column if not exists scheduled_end_time time;
 
+-- פונקציית מסד public.update_morning_driver_schedule_shift_time: עדכון כונני בוקר.
 create or replace function public.update_morning_driver_schedule_shift_time(
   requested_assignment_id uuid,
   requested_start_time time,
@@ -13,25 +21,36 @@ create or replace function public.update_morning_driver_schedule_shift_time(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- target_assignment — יעד / הקצאה.
   target_assignment public.morning_driver_schedule_assignments%rowtype;
+  -- target_period — יעד / תקופה.
   target_period public.morning_driver_schedule_periods%rowtype;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
+  -- הסתעפות לפי התנאי not ('morning_driver_schedule.edit' = any(current_permissions)).
   if not ('morning_driver_schedule.edit' = any(current_permissions)) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_start_time is null or requested_end_time is null.
   if requested_start_time is null or requested_end_time is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'start and end time are required';
   end if;
 
@@ -40,7 +59,9 @@ begin
   where a.id = requested_assignment_id
   for update;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'morning driver schedule assignment not found';
   end if;
 
@@ -48,10 +69,13 @@ begin
   from public.morning_driver_schedule_periods p
   where p.id = target_assignment.schedule_period_id;
 
+  -- הסתעפות לפי התנאי target_period.status <> 'draft'.
   if target_period.status <> 'draft' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'shift time can be changed only while schedule is draft';
   end if;
 
+  -- עדכון רשומות ב־public.morning_driver_schedule_assignments בהתאם לקלט ולתנאים להלן.
   update public.morning_driver_schedule_assignments a
   set scheduled_start_time = requested_start_time,
       scheduled_end_time = requested_end_time,
@@ -59,6 +83,7 @@ begin
   where a.schedule_period_id = target_assignment.schedule_period_id
     and a.availability_shift_id = target_assignment.availability_shift_id;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'schedulePeriodId', target_assignment.schedule_period_id,
     'availabilityShiftId', target_assignment.availability_shift_id,
@@ -68,6 +93,7 @@ begin
 end;
 $function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.update_morning_driver_schedule_shift_time(uuid, time, time) to authenticated;
 
 -- Keep the existing schedule contract, but expose draft/published schedule-time
@@ -75,32 +101,42 @@ grant execute on function public.update_morning_driver_schedule_shift_time(uuid,
 -- the current project migration and replacing only the two JSON fields.
 
 
+-- פונקציית מסד public.get_morning_driver_schedule: שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION public.get_morning_driver_schedule(requested_schedule_period_id uuid DEFAULT NULL::uuid, requested_year integer DEFAULT NULL::integer, requested_month integer DEFAULT NULL::integer)
  RETURNS jsonb
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
 
+  -- current_permissions — הרשאות.
   current_permissions text[];
 
   schedule_period
     public.morning_driver_schedule_periods%rowtype;
 
+  -- can_view_team — האם צפייה מותרת.
   can_view_team boolean;
 
+  -- can_edit — האם עריכה מותרת.
   can_edit boolean;
 
+  -- can_view_personal — האם צפייה מותרת.
   can_view_personal boolean;
 
   drivers_json jsonb;
 
+  -- assignments_json — הקצאות.
   assignments_json jsonb;
 
+  -- total_assignments — סך הכול / הקצאות.
   total_assignments integer := 0;
 
+  -- assigned_assignments — הקצאות.
   assigned_assignments integer := 0;
 
   minimum_unfilled integer := 0;
@@ -112,7 +148,9 @@ begin
   current_user_id :=
     auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not authenticated';
   end if;
@@ -138,15 +176,18 @@ begin
     'morning_driver_schedule.edit_any'
       = any(current_permissions);
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     can_view_personal
     or can_view_team
     or can_edit
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_schedule_period_id.
   if requested_schedule_period_id
     is not null
   then
@@ -178,6 +219,7 @@ begin
     limit 1;
   end if;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
     return null;
   end if;
@@ -387,6 +429,7 @@ begin
     and assignment.assigned_user_id is null
     and coalesce(assignment.is_intentionally_unassigned, false) = true;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'period',
       jsonb_build_object(
@@ -452,14 +495,18 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.publish_morning_driver_schedule: פרסום כונני בוקר.
 CREATE OR REPLACE FUNCTION public.publish_morning_driver_schedule(requested_schedule_period_id uuid)
  RETURNS jsonb
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_permissions — הרשאות.
   current_permissions text[];
 
   target_period
@@ -467,11 +514,14 @@ declare
 
   minimum_unfilled integer := 0;
   recommendation_unfilled integer := 0;
+  -- published_at_value — פורסם / ערך.
   published_at_value timestamptz := now();
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -481,10 +531,12 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'morning_driver_schedule.edit'
       = any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -494,11 +546,15 @@ begin
   where period.id = requested_schedule_period_id
   for update;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'morning driver schedule period not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period.status = 'published'.
   if target_period.status = 'published' then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'schedulePeriodId',
         target_period.id,
@@ -513,7 +569,9 @@ begin
     );
   end if;
 
+  -- הסתעפות לפי התנאי target_period.status <> 'draft'.
   if target_period.status <> 'draft' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'only draft schedules can be published';
   end if;
 
@@ -525,7 +583,9 @@ begin
     and assignment.assigned_user_id is null
     and coalesce(assignment.is_intentionally_unassigned, false) = false;
 
+  -- הסתעפות לפי התנאי minimum_unfilled > 0.
   if minimum_unfilled > 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'minimum morning driver staffing is incomplete unless explicitly marked unassigned';
   end if;
 
@@ -536,6 +596,7 @@ begin
     and assignment.assignment_slot > 1
     and assignment.assigned_user_id is null;
 
+  -- עדכון רשומות ב־public.morning_driver_schedule_periods בהתאם לקלט ולתנאים להלן.
   update public.morning_driver_schedule_periods
   set
     status = 'published',
@@ -546,6 +607,7 @@ begin
   returning *
   into target_period;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'schedulePeriodId',
       target_period.id,

@@ -1,6 +1,12 @@
+-- קובץ: supabase/migrations/20261017050000_membership_audit_snapshots.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור שיוך לתפקיד / יומן שינויים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.save_dynamic_job_type_membership.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Context-rich membership audit; preserves existing permission checks and API signature.
 -- Review against any newer deployed version of this RPC before applying.
 -- Applies to future changes only; historic audit records are untouched.
+-- פונקציית מסד public.save_dynamic_job_type_membership: שמירת סוג תפקיד.
 create or replace function public.save_dynamic_job_type_membership(
   requested_job_type_id uuid,
   requested_user_id uuid,
@@ -12,22 +18,31 @@ returns jsonb
 language plpgsql security definer set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
   normalized_scope text := nullif(trim(coalesce(requested_employment_scope,'')),'');
   should_primary boolean := false;
+  -- previous_membership — שיוך לתפקיד.
   previous_membership public.job_type_memberships%rowtype;
   previous_scope text;
   previous_effective_scope text;
   previous_definition jsonb;
   requested_effective_definition jsonb;
+  -- member_name — שם.
   member_name text;
+  -- audit_context — יומן שינויים.
   audit_context jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage') then raise exception 'not allowed'; end if;
   select * into target_job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי not found then raise exception 'job type not found'; end if;.
   if not found then raise exception 'job type not found'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.profiles p where p.id=requested_user_id) then raise exception 'user not found'; end if;.
   if not exists(select 1 from public.profiles p where p.id=requested_user_id) then raise exception 'user not found'; end if;
 
   SELECT * INTO previous_membership FROM public.job_type_memberships
@@ -53,20 +68,28 @@ begin
     'previous_employment_scope', case when previous_membership.user_id is not null then previous_effective_scope else null end
   ));
 
+  -- הסתעפות לפי התנאי not requested_is_member.
   if not requested_is_member then
+    -- מחיקת הרשומות שנבחרו מתוך public.job_type_memberships בהתאם לקלט ולתנאים להלן.
     delete from public.job_type_memberships where job_type_id=requested_job_type_id and user_id=requested_user_id;
+    -- הסתעפות לפי התנאי previous_membership.user_id IS NOT NULL.
     IF previous_membership.user_id IS NOT NULL THEN
+      -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
       insert into public.audit_logs(user_id,action,entity_type,entity_id,summary,actor_user_id,target_user_id,old_values,new_values,metadata)
       values(current_user_id,'dynamic_job_type.member.removed','job_type',requested_job_type_id,'עובד הוסר מתפקיד דינמי',current_user_id,requested_user_id,
         jsonb_strip_nulls(jsonb_build_object('is_member',true,'employment_scope',previous_effective_scope,'part_time_definition',previous_definition)),
         jsonb_build_object('is_member',false),
         jsonb_build_object('userId',requested_user_id,'job_type_id',requested_job_type_id,'audit_context',audit_context));
     END IF;
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object('saved',true,'isMember',false);
   end if;
 
+  -- הסתעפות לפי התנאי target_job.employment_scope='flexible'.
   if target_job.employment_scope='flexible' then
+    -- הסתעפות לפי התנאי normalized_scope is null then normalized_scope := 'full_time'; end if;.
     if normalized_scope is null then normalized_scope := 'full_time'; end if;
+    -- הסתעפות לפי התנאי normalized_scope not in ('full_time','part_time','as_much_as_possible') then raise exception 'invalid member employment .
     if normalized_scope not in ('full_time','part_time','as_much_as_possible') then raise exception 'invalid member employment scope'; end if;
   else
     normalized_scope := target_job.employment_scope;
@@ -79,6 +102,7 @@ begin
   end;
 
   should_primary := not exists(select 1 from public.job_type_memberships m where m.user_id=requested_user_id and m.is_primary=true);
+  -- הוספת רשומות ל־public.job_type_memberships בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_memberships(user_id,job_type_id,is_primary,source,metadata)
   values(requested_user_id,requested_job_type_id,should_primary,'manual',
     jsonb_strip_nulls(jsonb_build_object(
@@ -93,10 +117,12 @@ begin
     )),
     updated_at=now();
 
+  -- הסתעפות לפי התנאי previous_membership.user_id IS NULL.
   IF previous_membership.user_id IS NULL
      OR previous_effective_scope IS DISTINCT FROM normalized_scope
      OR coalesce(previous_definition, '{}'::jsonb)
         IS DISTINCT FROM coalesce(requested_effective_definition, '{}'::jsonb) THEN
+    -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
     insert into public.audit_logs(user_id,action,entity_type,entity_id,summary,actor_user_id,target_user_id,old_values,new_values,metadata)
     values(current_user_id,'dynamic_job_type.member.saved','job_type',requested_job_type_id,
       CASE WHEN previous_membership.user_id IS NULL THEN 'עובד צורף לתפקיד דינמי' ELSE 'הגדרות העסקה של עובד עודכנו' END,
@@ -109,5 +135,6 @@ begin
         'employmentScope',normalized_scope,
         'audit_context',audit_context || jsonb_build_object('new_employment_scope',normalized_scope)));
   END IF;
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('saved',true,'isMember',true,'employmentScope',normalized_scope);
 end;$function$;

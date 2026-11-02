@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useActiveUsers.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור פעיל / משתמשים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ActiveUsersState, UseActiveUsersResult, getErrorMessage, useActiveUsers.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useEffect,
@@ -13,24 +20,36 @@ import type {
   UserProfile,
 } from '../types/auth';
 
+/**
+ * חוזה הנתונים ActiveUsersState: פעיל / משתמשים / מצב.
+ */
 interface ActiveUsersState {
+  // users — משתמשים.
   users:
     UserProfile[];
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading:
     boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 }
 
+/**
+ * חוזה הנתונים UseActiveUsersResult: פעיל / משתמשים / תוצאה.
+ */
 interface UseActiveUsersResult {
+  // users — משתמשים.
   users:
     UserProfile[];
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading:
     boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 
@@ -38,6 +57,7 @@ interface UseActiveUsersResult {
     () => Promise<void>;
 }
 
+// initialState — מצב.
 const initialState:
   ActiveUsersState = {
     users:
@@ -50,9 +70,15 @@ const initialState:
       null,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -62,8 +88,13 @@ function getErrorMessage(
   return 'אירעה שגיאה בטעינת רשימת המשתמשים.';
 }
 
+/**
+ * פעולה useActiveUsers: חיבור מצב או הקשר עבור פעיל / משתמשים.
+ * @returns UseActiveUsersResult — הפלט בהתאם לחתימה.
+ */
 export function useActiveUsers():
   UseActiveUsersResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -72,6 +103,7 @@ export function useActiveUsers():
       initialState,
     );
 
+  // loadUsers — משתמשים.
   const loadUsers =
     useCallback(
       async (): Promise<void> => {
@@ -89,7 +121,9 @@ export function useActiveUsers():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // users — משתמשים.
           const users =
             await usersService
               .getUsers();
@@ -123,8 +157,10 @@ export function useActiveUsers():
       [],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ loadUsers, ].
   useEffect(
     () => {
+      // timeoutId — משך המתנה / מזהה.
       const timeoutId =
         window.setTimeout(
           () => {
@@ -144,6 +180,7 @@ export function useActiveUsers():
     ],
   );
 
+  // ערך מחושב activeUsers — פעיל / משתמשים; נשמר בין רינדורים עד שינוי התלויות.
   const activeUsers =
     useMemo(
       () =>

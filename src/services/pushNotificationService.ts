@@ -1,3 +1,12 @@
+/**
+ * קובץ: src/services/pushNotificationService.ts
+ * מטרה: ניהול הרשמה להתראות Push וחיבור הדפדפן לשירות ההתראות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PushPermissionState, PushSubscriptionStatus, urlBase64ToUint8Array, isPushSupported, getDeviceName, getAuthenticatedUserId, saveSubscription, PushNotificationService.
+ * - קריאות RPC המופעלות בקובץ: register_push_subscription.
+ * - מקורות נתונים הנזכרים בקריאות from: push_subscriptions, notification_preferences.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import {
   supabase,
 } from '../lib/supabase';
@@ -6,13 +15,20 @@ import {
   pushConfig,
 } from '../config/push';
 
+/**
+ * טיפוס PushPermissionState: התראות Push / הרשאות / מצב.
+ */
 export type PushPermissionState =
   | NotificationPermission
   | 'unsupported';
 
+/**
+ * חוזה הנתונים PushSubscriptionStatus: התראות Push / סטטוס.
+ */
 export interface PushSubscriptionStatus {
   isSupported: boolean;
 
+  // permission — הרשאות.
   permission:
     PushPermissionState;
 
@@ -22,6 +38,11 @@ export interface PushSubscriptionStatus {
     PushSubscription | null;
 }
 
+/**
+ * פעולה urlBase64ToUint8Array: כתובת יעד.
+ * @param value — ערך.
+ * @returns Uint8Array<ArrayBuffer> — הפלט בהתאם לחתימה.
+ */
 function urlBase64ToUint8Array(
   value: string,
 ): Uint8Array<ArrayBuffer> {
@@ -47,11 +68,13 @@ function urlBase64ToUint8Array(
         '/',
       );
 
+  // rawData — נתונים.
   const rawData =
     window.atob(
       base64,
     );
 
+  // output — פלט.
   const output =
     new Uint8Array(
       rawData.length,
@@ -71,6 +94,10 @@ function urlBase64ToUint8Array(
   return output;
 }
 
+/**
+ * פעולה isPushSupported: בדיקת תנאי עבור התראות Push.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function isPushSupported(): boolean {
   return (
     'serviceWorker' in navigator &&
@@ -79,10 +106,16 @@ function isPushSupported(): boolean {
   );
 }
 
+/**
+ * פעולה getDeviceName: שליפה או חישוב של שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDeviceName(): string {
+  // userAgent — משתמש.
   const userAgent =
     navigator.userAgent;
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר /android/i.test( userAgent, ).
   if (
     /android/i.test(
       userAgent,
@@ -91,6 +124,7 @@ function getDeviceName(): string {
     return 'מכשיר Android';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר /iphone|ipad|ipod/i.test( userAgent, ).
   if (
     /iphone|ipad|ipod/i.test(
       userAgent,
@@ -99,6 +133,7 @@ function getDeviceName(): string {
     return 'מכשיר iPhone או iPad';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר /windows/i.test( userAgent, ).
   if (
     /windows/i.test(
       userAgent,
@@ -107,6 +142,7 @@ function getDeviceName(): string {
     return 'מחשב Windows';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר /macintosh|mac os x/i.test( userAgent, ).
   if (
     /macintosh|mac os x/i.test(
       userAgent,
@@ -118,8 +154,13 @@ function getDeviceName(): string {
   return 'דפדפן';
 }
 
+/**
+ * פעולה אסינכרונית getAuthenticatedUserId: אימות המשתמש באמצעות auth.getUser ושליפת מזהה המשתמש מהתשובה.
+ * @returns Promise<string> — הפלט בהתאם לחתימה.
+ */
 async function getAuthenticatedUserId():
   Promise<string> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -127,10 +168,12 @@ async function getAuthenticatedUserId():
     await supabase.auth
       .getUser();
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
     throw error;
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data.user.
   if (!data.user) {
     throw new Error(
       'לא נמצא משתמש מחובר.',
@@ -140,6 +183,12 @@ async function getAuthenticatedUserId():
   return data.user.id;
 }
 
+/**
+ * פעולה אסינכרונית saveSubscription: שמירת הנתון saveSubscription בהקשר הפעולה.
+ * הפעולה פונה ל־RPC: register_push_subscription.
+ * @param subscription — הנתון subscription בהקשר הפעולה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function saveSubscription(
   subscription:
     PushSubscription,
@@ -147,16 +196,19 @@ async function saveSubscription(
   const serializedSubscription =
     subscription.toJSON();
 
+  // p256dhKey — מפתח.
   const p256dhKey =
     serializedSubscription
       .keys
       ?.p256dh;
 
+  // authKey — אימות משתמשים / מפתח.
   const authKey =
     serializedSubscription
       .keys
       ?.auth;
 
+  // עצירת הפעולה עם שגיאה כאשר !p256dhKey || !authKey.
   if (
     !p256dhKey ||
     !authKey
@@ -166,6 +218,7 @@ async function saveSubscription(
     );
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     error,
   } =
@@ -189,6 +242,7 @@ async function saveSubscription(
       },
     );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
@@ -201,13 +255,25 @@ async function saveSubscription(
   }
 }
 
+/**
+ * איגוד פעולות התראות Push / התראות / שירות במחלקה PushNotificationService.
+ */
 class PushNotificationService {
+  /**
+   * פעולה isSupported: בדיקת תנאי עבור הנתון isSupported בהקשר הפעולה.
+   * @returns boolean — הפלט בהתאם לחתימה.
+   */
   isSupported(): boolean {
     return isPushSupported();
   }
 
+  /**
+   * פעולה getPermission: שליפה או חישוב של הרשאות.
+   * @returns PushPermissionState — הפלט בהתאם לחתימה.
+   */
   getPermission():
     PushPermissionState {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isPushSupported().
     if (
       !isPushSupported()
     ) {
@@ -217,8 +283,13 @@ class PushNotificationService {
     return Notification.permission;
   }
 
+  /**
+   * פעולה אסינכרונית getSubscription: שליפה או חישוב של הנתון getSubscription בהקשר הפעולה.
+   * @returns Promise<PushSubscription | null> — הפלט בהתאם לחתימה.
+   */
   async getSubscription():
     Promise<PushSubscription | null> {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isPushSupported().
     if (
       !isPushSupported()
     ) {
@@ -235,11 +306,16 @@ class PushNotificationService {
       .getSubscription();
   }
 
+  /**
+   * פעולה אסינכרונית getStatus: שליפה או חישוב של סטטוס.
+   * @returns Promise<PushSubscriptionStatus> — הפלט בהתאם לחתימה.
+   */
   async getStatus():
     Promise<PushSubscriptionStatus> {
     const supported =
       isPushSupported();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !supported.
     if (
       !supported
     ) {
@@ -276,8 +352,13 @@ class PushNotificationService {
     };
   }
 
+  /**
+   * פעולה אסינכרונית enablePush: התראות Push.
+   * @returns Promise<PushSubscription> — הפלט בהתאם לחתימה.
+   */
   async enablePush():
     Promise<PushSubscription> {
+    // עצירת הפעולה עם שגיאה כאשר !isPushSupported().
     if (
       !isPushSupported()
     ) {
@@ -286,6 +367,7 @@ class PushNotificationService {
       );
     }
 
+    // permission — הרשאות.
     let permission =
       Notification.permission;
 
@@ -298,6 +380,7 @@ class PushNotificationService {
           .requestPermission();
     }
 
+    // עצירת הפעולה עם שגיאה כאשר permission !== 'granted'.
     if (
       permission !==
       'granted'
@@ -323,6 +406,7 @@ class PushNotificationService {
     if (
       !subscription
     ) {
+              // עצירת הפעולה עם שגיאה כאשר !pushConfig.vapidPublicKey.
               if (
           !pushConfig.vapidPublicKey
         ) {
@@ -354,8 +438,13 @@ class PushNotificationService {
     return subscription;
   }
 
+  /**
+   * פעולה אסינכרונית disablePush: התראות Push.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   async disablePush():
     Promise<void> {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isPushSupported().
     if (
       !isPushSupported()
     ) {
@@ -365,12 +454,14 @@ class PushNotificationService {
     const subscription =
       await this.getSubscription();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !subscription.
     if (
       !subscription
     ) {
       return;
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       error,
     } =
@@ -387,6 +478,7 @@ class PushNotificationService {
           subscription.endpoint,
         );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw error;
     }
@@ -395,6 +487,7 @@ class PushNotificationService {
       await subscription
         .unsubscribe();
 
+    // עצירת הפעולה עם שגיאה כאשר !unsubscribed.
     if (
       !unsubscribed
     ) {
@@ -404,11 +497,16 @@ class PushNotificationService {
     }
   }
 
+  /**
+   * פעולה אסינכרונית refreshSubscription: רענון הנתון refreshSubscription בהקשר הפעולה.
+   * @returns Promise<PushSubscription | null> — הפלט בהתאם לחתימה.
+   */
   async refreshSubscription():
     Promise<PushSubscription | null> {
     const subscription =
       await this.getSubscription();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !subscription.
     if (
       !subscription
     ) {
@@ -422,11 +520,17 @@ class PushNotificationService {
     return subscription;
   }
 
+  /**
+   * פעולה אסינכרונית ensurePreferences: הבטחת תנאי מקדים עבור הנתון ensurePreferences בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   async ensurePreferences():
     Promise<void> {
+    // userId — מזהה משתמש.
     const userId =
       await getAuthenticatedUserId();
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       error,
     } =
@@ -448,11 +552,13 @@ class PushNotificationService {
           },
         );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw error;
     }
   }
 }
 
+// pushNotificationService — התראות Push / התראות / שירות.
 export const pushNotificationService =
   new PushNotificationService();

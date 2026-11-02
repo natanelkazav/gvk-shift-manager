@@ -1,3 +1,11 @@
+/**
+ * קובץ: src/services/archiveService.ts
+ * מטרה: טעינת התקופות והנתונים הזמינים במסכי הארכיון.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: MorningDriverArchiveSummary, SupabaseErrorShape, normalizeArchiveError, isArchivePeriodsResponse, ArchiveService.
+ * - קריאות RPC המופעלות בקובץ: get_archive_periods, get_morning_driver_archive_summary, get_dynamic_archive_periods.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import {
   supabase,
 } from '../lib/supabase';
@@ -9,18 +17,32 @@ import type {
   UnifiedArchivePeriod,
 } from '../types/archive';
 
+/**
+ * חוזה הנתונים MorningDriverArchiveSummary: כונני בוקר.
+ */
 interface MorningDriverArchiveSummary {
+  // year — שנה.
   year: number;
+  // month — חודש.
   month: number;
+  // periodId — מזהה התקופה.
   periodId: string | null;
+  // status — סטטוס.
   status: string | null;
+  // assignmentCount — הקצאה / כמות.
   assignmentCount: number;
+  // driverCount — כוננים / כמות.
   driverCount: number;
   archivedAt: string | null;
+  // hasSchedule — שיבוץ.
   hasSchedule: boolean;
 }
 
+/**
+ * חוזה הנתונים SupabaseErrorShape: שגיאה.
+ */
 interface SupabaseErrorShape {
+  // message — הודעה (אופציונלי).
   message?: unknown;
 
   details?: unknown;
@@ -30,6 +52,11 @@ interface SupabaseErrorShape {
   code?: unknown;
 }
 
+/**
+ * פעולה normalizeArchiveError: נרמול ארכיון / שגיאה.
+ * @param error — שגיאה.
+ * @returns Error — הפלט בהתאם לחתימה.
+ */
 function normalizeArchiveError(
   error: unknown,
 ): Error {
@@ -38,6 +65,7 @@ function normalizeArchiveError(
     error,
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -49,10 +77,12 @@ function normalizeArchiveError(
       'object' &&
     error !== null
   ) {
+    // databaseError — שגיאה.
     const databaseError =
       error as
         SupabaseErrorShape;
 
+    // errorParts — שגיאה.
     const errorParts = [
       typeof databaseError.message ===
         'string' &&
@@ -84,6 +114,7 @@ function normalizeArchiveError(
         Boolean(part),
     );
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר errorParts.length > 0.
     if (
       errorParts.length > 0
     ) {
@@ -98,9 +129,15 @@ function normalizeArchiveError(
   );
 }
 
+/**
+ * פעולה isArchivePeriodsResponse: בדיקת תנאי עבור ארכיון / תקופות / תוצאת הפעולה.
+ * @param value — ערך.
+ * @returns value is ArchivePeriodsResponse — הפלט בהתאם לחתימה.
+ */
 function isArchivePeriodsResponse(
   value: unknown,
 ): value is ArchivePeriodsResponse {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !==
       'object' ||
@@ -109,6 +146,7 @@ function isArchivePeriodsResponse(
     return false;
   }
 
+  // response — תוצאת הפעולה.
   const response =
     value as
       Partial<ArchivePeriodsResponse>;
@@ -124,7 +162,15 @@ function isArchivePeriodsResponse(
   );
 }
 
+/**
+ * איגוד פעולות ארכיון / שירות במחלקה ArchiveService.
+ */
 class ArchiveService {
+  /**
+   * פעולה אסינכרונית getLegacyPeriods: שליפה או חישוב של תקופות.
+   * הפעולה פונה ל־RPC: get_archive_periods, get_morning_driver_archive_summary.
+   * @returns Promise<ArchivePeriodsResponse> — הפלט בהתאם לחתימה.
+   */
   private async getLegacyPeriods():
     Promise<ArchivePeriodsResponse> {
     const [
@@ -141,6 +187,7 @@ class ArchiveService {
         ),
       ]);
 
+    // עצירת הפעולה עם שגיאה כאשר archiveResult.error.
     if (
       archiveResult.error
     ) {
@@ -149,6 +196,7 @@ class ArchiveService {
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר morningDriverResult.error.
     if (
       morningDriverResult.error
     ) {
@@ -157,6 +205,7 @@ class ArchiveService {
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !isArchivePeriodsResponse( archiveResult.data, ).
     if (
       !isArchivePeriodsResponse(
         archiveResult.data,
@@ -176,6 +225,7 @@ class ArchiveService {
               MorningDriverArchiveSummary[]
         : [];
 
+    // summaryMap — סיכום / מפת התאמה; מיפוי לחיפוש לפי מפתח.
     const summaryMap =
       new Map(
         morningSummaries.map(
@@ -188,12 +238,14 @@ class ArchiveService {
         ),
       );
 
+    // periods — תקופות.
     const periods =
       archiveResult.data
         .periods.map(
           (
             period,
           ) => {
+            // summary — סיכום.
             const summary =
               summaryMap.get(
                 `${period.year}-${period.month}`,
@@ -241,10 +293,12 @@ class ArchiveService {
      * A historical import may theoretically contain only a morning-driver
      * period. Include those months even if the legacy archive RPC does not.
      */
+    // עיבוד כל פריט מתוך morningSummaries בנפרד.
     for (
       const summary
       of morningSummaries
     ) {
+      // key — מפתח.
       const key =
         `${summary.year}-${summary.month}`;
 
@@ -363,6 +417,11 @@ class ArchiveService {
         periods.length,
     };
   }
+  /**
+   * פעולה אסינכרונית getPeriods: שליפה או חישוב של תקופות.
+   * הפעולה פונה ל־RPC: get_dynamic_archive_periods.
+   * @returns Promise<{ periods: UnifiedArchivePeriod[]; count: number; generatedAt: string }> — הפלט בהתאם לחתימה.
+   */
   async getPeriods(): Promise<{ periods: UnifiedArchivePeriod[]; count: number; generatedAt: string }> {
     const [legacyResult, dynamicResult] = await Promise.all([
       this.getLegacyPeriods().catch((error) => {
@@ -372,10 +431,12 @@ class ArchiveService {
       supabase.rpc('get_dynamic_archive_periods'),
     ]);
 
+    // עצירת הפעולה עם שגיאה כאשר dynamicResult.error.
     if (dynamicResult.error) {
       throw normalizeArchiveError(dynamicResult.error);
     }
 
+    // dynamic — דינמי.
     const dynamic = (
       dynamicResult.data ?? {
         periods: [],
@@ -383,8 +444,10 @@ class ArchiveService {
       }
     ) as unknown as DynamicArchivePeriodsResponse;
 
+    // byMonth — חודש; מיפוי לחיפוש לפי מפתח.
     const byMonth = new Map<string, UnifiedArchivePeriod>();
 
+    // עיבוד כל פריט מתוך legacyResult.periods בנפרד.
     for (const period of legacyResult.periods) {
       byMonth.set(`${period.year}-${period.month}`, {
         ...period,
@@ -395,7 +458,9 @@ class ArchiveService {
       });
     }
 
+    // עיבוד כל פריט מתוך dynamic.periods ?? [] בנפרד.
     for (const dynamicPeriod of dynamic.periods ?? []) {
+      // key — מפתח.
       const key = `${dynamicPeriod.year}-${dynamicPeriod.month}`;
       const existing = byMonth.get(key);
       const emptyLegacy: ArchivePeriod = {
@@ -439,6 +504,7 @@ class ArchiveService {
       });
     }
 
+    // periods — תקופות.
     const periods = Array.from(byMonth.values()).sort(
       (a,b) => b.year-a.year || b.month-a.month,
     );
@@ -452,5 +518,6 @@ class ArchiveService {
 
 }
 
+// archiveService — ארכיון / שירות.
 export const archiveService =
   new ArchiveService();

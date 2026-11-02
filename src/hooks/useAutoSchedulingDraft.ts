@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useAutoSchedulingDraft.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור טיוטה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AutoSchedulingDraftState, UseAutoSchedulingDraftResult, getErrorMessage, useAutoSchedulingDraft.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useState,
@@ -12,19 +19,29 @@ import type {
   SchedulingDraft,
 } from '../types/autoScheduling';
 
+/**
+ * חוזה הנתונים AutoSchedulingDraftState: טיוטה / מצב.
+ */
 interface AutoSchedulingDraftState {
+  // draft — טיוטה.
   draft:
     SchedulingDraft | null;
 
   isGenerating: boolean;
 
+  // error — שגיאה.
   error: string | null;
 }
 
+/**
+ * חוזה הנתונים UseAutoSchedulingDraftResult: טיוטה / תוצאה.
+ */
 interface UseAutoSchedulingDraftResult {
+  // state — מצב.
   state:
     AutoSchedulingDraftState;
 
+  // generateDraft — טיוטה.
   generateDraft: (
     data:
       AssignmentCandidatesData,
@@ -34,6 +51,7 @@ interface UseAutoSchedulingDraftResult {
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   AutoSchedulingDraftState = {
     draft: null,
@@ -41,9 +59,15 @@ const initialState:
     error: null,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error.message;
   }
@@ -51,8 +75,13 @@ function getErrorMessage(
   return 'אירעה שגיאה בלתי צפויה בהכנת טיוטת השיבוץ.';
 }
 
+/**
+ * פעולה useAutoSchedulingDraft: חיבור מצב או הקשר עבור טיוטה.
+ * @returns UseAutoSchedulingDraftResult — הפלט בהתאם לחתימה.
+ */
 export function useAutoSchedulingDraft():
   UseAutoSchedulingDraftResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -61,6 +90,7 @@ export function useAutoSchedulingDraft():
       initialState,
     );
 
+  // generateDraft — טיוטה.
   const generateDraft =
     useCallback(
       (
@@ -73,7 +103,9 @@ export function useAutoSchedulingDraft():
           error: null,
         });
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // draft — טיוטה.
           const draft =
             autoSchedulingEngine
               .buildSchedulingDraft(

@@ -1,10 +1,20 @@
+/**
+ * קובץ: supabase/functions/process-shift-reminders/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת process-shift-reminders.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: jsonResponse, env, getJerusalemDateTimeParts, addDaysToIsoDate, getTimeZoneOffsetMs, jerusalemLocalToUtc, formatJerusalemDateTime, parseTimeToMinutes.
+ * - מקורות נתונים הנזכרים בקריאות from: notification_preferences, notifications, notification_recipients, dynamic_schedule_publications, dynamic_schedule_published_assignments, job_types, job_type_schedule_materializations, dynamic_schedule_reminder_deliveries, schedule_shifts, shift_reminder_deliveries.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   createClient,
 } from 'npm:@supabase/supabase-js@2';
 
+// JERUSALEM_TIME_ZONE — אזור הזמן.
 const JERUSALEM_TIME_ZONE =
   'Asia/Jerusalem';
 
+// corsHeaders — הנתון corsHeaders בהקשר הפעולה.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': [
@@ -17,6 +27,12 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+/**
+ * פעולה jsonResponse: תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 function jsonResponse(
   body: unknown,
   status = 200,
@@ -34,12 +50,19 @@ function jsonResponse(
   );
 }
 
+/**
+ * פעולה env: הנתון env בהקשר הפעולה.
+ * @param name — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function env(
   name: string,
 ): string {
+  // value — ערך.
   const value =
     Deno.env.get(name)?.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !value.
   if (!value) {
     throw new Error(
       `Missing environment variable: ${name}`,
@@ -49,11 +72,19 @@ function env(
   return value;
 }
 
+/**
+ * פעולה getJerusalemDateTimeParts: שליפה או חישוב של תאריך / זמן.
+ * @param value — ערך.
+ * @returns { date: string; time: string; minutesOfDay: number; } — הפלט בהתאם לחתימה.
+ */
 function getJerusalemDateTimeParts(
   value: Date,
 ): {
+  // date — תאריך.
   date: string;
+  // time — זמן.
   time: string;
+  // minutesOfDay — דקות / יום.
   minutesOfDay: number;
 } {
   const parts =
@@ -79,6 +110,11 @@ function getJerusalemDateTimeParts(
       value,
     );
 
+  /**
+   * פעולה valueFor: ערך.
+   * @param type — הנתון type בהקשר הפעולה.
+   * @returns string — הפלט בהתאם לחתימה.
+   */
   const valueFor =
     (
       type: string,
@@ -92,14 +128,17 @@ function getJerusalemDateTimeParts(
       )?.value ??
       '';
 
+  // year — שנה.
   const year =
     valueFor(
       'year',
     );
+  // month — חודש.
   const month =
     valueFor(
       'month',
     );
+  // day — יום.
   const day =
     valueFor(
       'day',
@@ -128,6 +167,12 @@ function getJerusalemDateTimeParts(
   };
 }
 
+/**
+ * פעולה addDaysToIsoDate: הוספת ימים / תאריך.
+ * @param isoDate — תאריך.
+ * @param days — ימים.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function addDaysToIsoDate(
   isoDate: string,
   days: number,
@@ -141,6 +186,7 @@ function addDaysToIsoDate(
       .split('-')
       .map(Number);
 
+  // value — ערך.
   const value =
     new Date(
       Date.UTC(
@@ -167,6 +213,11 @@ function addDaysToIsoDate(
   ].join('-');
 }
 
+/**
+ * פעולה getTimeZoneOffsetMs: שליפה או חישוב של אזור הזמן.
+ * @param instant — הנתון instant בהקשר הפעולה.
+ * @returns number — הפלט בהתאם לחתימה.
+ */
 function getTimeZoneOffsetMs(
   instant: Date,
 ): number {
@@ -195,6 +246,11 @@ function getTimeZoneOffsetMs(
       instant,
     );
 
+  /**
+   * פעולה numberFor: הנתון numberFor בהקשר הפעולה.
+   * @param type — הנתון type בהקשר הפעולה.
+   * @returns number — הפלט בהתאם לחתימה.
+   */
   const numberFor =
     (
       type: string,
@@ -224,6 +280,12 @@ function getTimeZoneOffsetMs(
     instant.getTime();
 }
 
+/**
+ * פעולה jerusalemLocalToUtc: הנתון jerusalemLocalToUtc בהקשר הפעולה.
+ * @param isoDate — תאריך.
+ * @param timeValue — זמן / ערך.
+ * @returns Date — הפלט בהתאם לחתימה.
+ */
 function jerusalemLocalToUtc(
   isoDate: string,
   timeValue: string,
@@ -264,6 +326,7 @@ function jerusalemLocalToUtc(
     index < 2;
     index += 1
   ) {
+    // offset — מיקום תחילת התוצאות.
     const offset =
       getTimeZoneOffsetMs(
         new Date(
@@ -281,12 +344,20 @@ function jerusalemLocalToUtc(
   );
 }
 
+/**
+ * פעולה formatJerusalemDateTime: עיצוב ערך לתצוגה עבור תאריך / זמן.
+ * @param value — ערך.
+ * @returns { date: string; time: string; } — הפלט בהתאם לחתימה.
+ */
 function formatJerusalemDateTime(
   value: string,
 ): {
+  // date — תאריך.
   date: string;
+  // time — זמן.
   time: string;
 } {
+  // date — תאריך.
   const date =
     new Date(value);
 
@@ -322,6 +393,11 @@ function formatJerusalemDateTime(
   };
 }
 
+/**
+ * פעולה parseTimeToMinutes: פענוח קלט עבור זמן / דקות.
+ * @param value — ערך.
+ * @returns number | null — הפלט בהתאם לחתימה.
+ */
 function parseTimeToMinutes(
   value: string,
 ): number | null {
@@ -330,6 +406,7 @@ function parseTimeToMinutes(
       value,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !match.
   if (!match) {
     return null;
   }
@@ -343,6 +420,7 @@ function parseTimeToMinutes(
       match[2],
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר hour < 0 || hour > 23 || minute < 0 || minute > 59.
   if (
     hour < 0 ||
     hour > 23 ||
@@ -357,8 +435,14 @@ function parseTimeToMinutes(
 }
 
 
+/**
+ * פעולה isTechnicalDynamicShiftName: בדיקת תנאי עבור דינמי / משמרת / שם.
+ * @param value — ערך.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 const isTechnicalDynamicShiftName = (value: unknown): boolean => {
   if (typeof value !== 'string') return true;
+  // normalized — הנתון normalized בהקשר הפעולה.
   const normalized = value.trim();
   if (!normalized) return true;
   return /^\d{8}-\d{4}$/i.test(normalized) ||
@@ -370,6 +454,7 @@ Deno.serve(
   async (
     request: Request,
   ): Promise<Response> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method === 'OPTIONS'.
     if (
       request.method ===
       'OPTIONS'
@@ -383,6 +468,7 @@ Deno.serve(
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !==
       'POST'
@@ -396,12 +482,14 @@ Deno.serve(
       );
     }
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       const cronSecret =
         env(
           'SHIFT_REMINDER_CRON_SECRET',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.headers .get( 'x-cron-secret', ) ?.trim() !== cronSecret.
       if (
         request.headers
           .get(
@@ -419,15 +507,18 @@ Deno.serve(
         );
       }
 
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         env(
           'SUPABASE_URL',
         );
+      // serviceRoleKey — שירות / מפתח.
       const serviceRoleKey =
         env(
           'SUPABASE_SERVICE_ROLE_KEY',
         );
 
+      // adminClient — לקוח.
       const adminClient =
         createClient(
           supabaseUrl,
@@ -454,6 +545,7 @@ Deno.serve(
           1443 * 60_000,
         );
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           preferences,
@@ -479,23 +571,27 @@ Deno.serve(
             true,
           );
 
+      // עצירת הפעולה עם שגיאה כאשר preferencesError.
       if (
         preferencesError
       ) {
         throw preferencesError;
       }
 
+      // shiftPreferenceMap — משמרת / מפת התאמה; מיפוי לחיפוש לפי מפתח.
       const shiftPreferenceMap =
         new Map<
           string,
           number
         >();
+      // driverDutyPreferenceMap — כוננים / מפת התאמה; מיפוי לחיפוש לפי מפתח.
       const driverDutyPreferenceMap =
         new Map<
           string,
           string
         >();
 
+      // עיבוד כל פריט מתוך preferences ?? [] בנפרד.
       for (
         const preference
         of preferences ?? []
@@ -538,23 +634,36 @@ Deno.serve(
         0;
       let delivered =
         0;
+      // errors — שגיאות.
       const errors:
         string[] = [];
 
+      /**
+       * פעולה אסינכרונית deliverNotification: התראות.
+       * @param input — קלט.
+       * @returns Promise<{ notificationId: string | null; delivered: boolean; }> — הפלט בהתאם לחתימה.
+       */
       const deliverNotification =
         async (
           input: {
+            // userId — מזהה משתמש.
             userId: string;
+            // title — כותרת.
             title: string;
+            // body — תוכן.
             body: string;
+            // url — כתובת יעד.
             url: string;
+            // data — נתונים.
             data: Record<string, unknown>;
             expiresAt: string;
           },
         ): Promise<{
+          // notificationId — התראות / מזהה.
           notificationId: string | null;
           delivered: boolean;
         }> => {
+          // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
           const {
             data:
               notification,
@@ -590,6 +699,7 @@ Deno.serve(
               )
               .single();
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר notificationError || !notification || typeof notification.id !== 'string'.
           if (
             notificationError ||
             !notification ||
@@ -607,6 +717,7 @@ Deno.serve(
             };
           }
 
+          // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
           const {
             error:
               recipientError,
@@ -622,6 +733,7 @@ Deno.serve(
                   input.userId,
               });
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר recipientError.
           if (
             recipientError
           ) {
@@ -638,6 +750,7 @@ Deno.serve(
 
           created += 1;
 
+          // deliveryResponse — תוצאת הפעולה.
           const deliveryResponse =
             await fetch(
               `${supabaseUrl}/functions/v1/send-notification`,
@@ -662,6 +775,7 @@ Deno.serve(
               },
             );
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר deliveryResponse.ok.
           if (
             deliveryResponse.ok
           ) {
@@ -674,6 +788,7 @@ Deno.serve(
             };
           }
 
+          // responseText — תוצאת הפעולה.
           const responseText =
             await deliveryResponse
               .text()
@@ -694,8 +809,10 @@ Deno.serve(
           };
         };
 
+      // dynamicShiftLogicalKeys — דינמי / משמרת; אוסף ערכים ייחודיים.
       const dynamicShiftLogicalKeys =
         new Set<string>();
+      // dynamicDailyLogicalKeys — דינמי; אוסף ערכים ייחודיים.
       const dynamicDailyLogicalKeys =
         new Set<string>();
 
@@ -703,9 +820,12 @@ Deno.serve(
         shiftPreferenceMap.size > 0 ||
         driverDutyPreferenceMap.size > 0
       ) {
+        // startDate — תאריך.
         const startDate = jerusalemNow.date;
+        // endDate — תאריך.
         const endDate = addDaysToIsoDate(startDate, 2);
 
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           data: dynamicPublications,
           error: dynamicPublicationsError,
@@ -719,15 +839,19 @@ Deno.serve(
             `dynamic publications: ${dynamicPublicationsError.message}`,
           );
         } else {
+          // publicationRows — שורות.
           const publicationRows = dynamicPublications ?? [];
+          // publicationIds — הנתון publicationIds בהקשר הפעולה.
           const publicationIds = publicationRows
             .map((row) => typeof row.id === 'string' ? row.id : null)
             .filter((id): id is string => Boolean(id));
+          // publicationById — מזהה; מיפוי לחיפוש לפי מפתח.
           const publicationById = new Map(
             publicationRows
               .filter((row) => typeof row.id === 'string')
               .map((row) => [row.id as string, row]),
           );
+          // jobTypeIds — מזהה סוג התפקיד.
           const jobTypeIds = Array.from(new Set(
             publicationRows
               .map((row) => typeof row.job_type_id === 'string' ? row.job_type_id : null)
@@ -769,6 +893,7 @@ Deno.serve(
               !jobTypesResult.error &&
               !materializationsResult.error
             ) {
+              // jobTypeById — סוג תפקיד; מיפוי לחיפוש לפי מפתח.
               const jobTypeById = new Map(
                 (jobTypesResult.data ?? [])
                   .filter((row) =>
@@ -778,11 +903,13 @@ Deno.serve(
                   .map((row) => [row.id as string, row]),
               );
 
+              // materializationsByJob — מימוש תצורת השיבוץ לחודש; מיפוי לחיפוש לפי מפתח.
               const materializationsByJob = new Map<
                 string,
                 Array<{ effectiveMonth: string; workMode: string }>
               >();
 
+              // עיבוד כל פריט מתוך materializationsResult.data ?? [] בנפרד.
               for (const row of materializationsResult.data ?? []) {
                 if (
                   typeof row.job_type_id !== 'string' ||
@@ -801,6 +928,7 @@ Deno.serve(
 
               checked += assignmentsResult.data?.length ?? 0;
 
+              // עיבוד כל פריט מתוך assignmentsResult.data ?? [] בנפרד.
               for (const assignment of assignmentsResult.data ?? []) {
                 if (
                   typeof assignment.id !== 'string' ||
@@ -814,23 +942,30 @@ Deno.serve(
                 }
 
                 const publication = publicationById.get(assignment.publication_id);
+                // jobTypeId — מזהה סוג התפקיד.
                 const jobTypeId =
                   publication && typeof publication.job_type_id === 'string'
                     ? publication.job_type_id
                     : null;
                 if (!jobTypeId) continue;
 
+                // jobType — סוג תפקיד.
                 const jobType = jobTypeById.get(jobTypeId);
                 if (!jobType) continue;
 
+                // effectiveMonth — חודש.
                 const effectiveMonth = `${assignment.shift_date.slice(0, 7)}-01`;
+                // workMode — מצב פעולה.
                 const workMode =
                   (materializationsByJob.get(jobTypeId) ?? [])
                     .find((row) => row.effectiveMonth <= effectiveMonth)
                     ?.workMode ?? 'shifts';
+                // jobTypeName — סוג תפקיד.
                 const jobTypeName =
                   typeof jobType.name === 'string' ? jobType.name : 'התפקיד';
+                // startTime — שעת התחלה.
                 const startTime = assignment.start_time.slice(0, 5);
+                // logicalShiftKey — משמרת / מפתח.
                 const logicalShiftKey =
                   `${assignment.user_id}|${assignment.shift_date}|${startTime}`;
                 dynamicShiftLogicalKeys.add(logicalShiftKey);
@@ -841,6 +976,7 @@ Deno.serve(
                   );
 
                   if (assignment.shift_date !== jerusalemNow.date) continue;
+                  // reminderTime — תזכורות / זמן.
                   const reminderTime =
                     driverDutyPreferenceMap.get(assignment.user_id);
                   if (!reminderTime) continue;
@@ -849,12 +985,16 @@ Deno.serve(
                     .slice(0, 5)
                     .split(':')
                     .map(Number);
+                  // reminderMinutes — תזכורות / דקות.
                   const reminderMinutes = hour * 60 + minute;
+                  // ageMinutes — דקות.
                   const ageMinutes = jerusalemNow.minutesOfDay - reminderMinutes;
                   if (ageMinutes < 0 || ageMinutes > 5) continue;
 
+                  // reminderKey — תזכורות / מפתח.
                   const reminderKey =
                     `${assignment.id}:${assignment.shift_date}:${reminderTime.slice(0, 5)}`;
+                  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
                   const { data: claimed, error: claimError } = await adminClient
                     .from('dynamic_schedule_reminder_deliveries')
                     .insert({
@@ -873,6 +1013,7 @@ Deno.serve(
                   }
                   if (!claimed) continue;
 
+                  // result — תוצאה.
                   const result = await deliverNotification({
                     userId: assignment.user_id,
                     title: `תזכורת לכוננות היום – ${jobTypeName}`,
@@ -910,20 +1051,25 @@ Deno.serve(
                   continue;
                 }
 
+                // minutesBefore — דקות.
                 const minutesBefore = shiftPreferenceMap.get(assignment.user_id);
                 if (minutesBefore === undefined) continue;
 
+                // startsAt — מועד התחלה.
                 const startsAt = jerusalemLocalToUtc(
                   assignment.shift_date,
                   assignment.start_time,
                 );
+                // reminderAt — תזכורות.
                 const reminderAt = new Date(
                   startsAt.getTime() - minutesBefore * 60_000,
                 );
                 const ageMs = now.getTime() - reminderAt.getTime();
                 if (ageMs < 0 || ageMs > 2 * 60_000) continue;
 
+                // reminderKey — תזכורות / מפתח.
                 const reminderKey = `${assignment.id}:${minutesBefore}`;
+                // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
                 const { data: claimed, error: claimError } = await adminClient
                   .from('dynamic_schedule_reminder_deliveries')
                   .insert({
@@ -943,7 +1089,9 @@ Deno.serve(
                 if (!claimed) continue;
 
                 const formatted = formatJerusalemDateTime(startsAt.toISOString());
+                // scheduleNoun — שיבוץ.
                 const scheduleNoun = workMode === 'on_call_hourly' ? 'הכוננות' : 'המשמרת';
+                // result — תוצאה.
                 const result = await deliverNotification({
                   userId: assignment.user_id,
                   title: `תזכורת ל${scheduleNoun} – ${jobTypeName}`,
@@ -991,6 +1139,7 @@ Deno.serve(
         shiftPreferenceMap.size >
         0
       ) {
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           data:
             shifts,
@@ -1035,6 +1184,7 @@ Deno.serve(
             shifts?.length ??
             0;
 
+          // עיבוד כל פריט מתוך shifts ?? [] בנפרד.
           for (
             const shift
             of shifts ?? []
@@ -1050,6 +1200,7 @@ Deno.serve(
               continue;
             }
 
+            // shiftLocal — משמרת.
             const shiftLocal = getJerusalemDateTimeParts(
               new Date(shift.starts_at),
             );
@@ -1061,6 +1212,7 @@ Deno.serve(
               continue;
             }
 
+            // minutesBefore — דקות.
             const minutesBefore =
               shiftPreferenceMap.get(
                 shift.assigned_user_id,
@@ -1073,10 +1225,12 @@ Deno.serve(
               continue;
             }
 
+            // startsAt — מועד התחלה.
             const startsAt =
               new Date(
                 shift.starts_at,
               );
+            // reminderAt — תזכורות.
             const reminderAt =
               new Date(
                 startsAt.getTime() -
@@ -1094,6 +1248,7 @@ Deno.serve(
               continue;
             }
 
+            // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
             const {
               data:
                 claimed,
@@ -1141,6 +1296,7 @@ Deno.serve(
                 shift.starts_at,
               );
 
+            // result — תוצאה.
             const result =
               await deliverNotification({
                 userId:
@@ -1204,14 +1360,17 @@ Deno.serve(
           }
         }
 
+        // startDate — תאריך.
         const startDate =
           jerusalemNow.date;
+        // endDate — תאריך.
         const endDate =
           addDaysToIsoDate(
             startDate,
             2,
           );
 
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           data:
             morningShifts,
@@ -1244,16 +1403,21 @@ Deno.serve(
           morningShifts &&
           morningShifts.length > 0
         ) {
+          // shiftMap — משמרת / מפת התאמה; מיפוי לחיפוש לפי מפתח.
           const shiftMap =
             new Map<
               string,
               {
+                // shiftDate — תאריך המשמרת.
                 shiftDate: string;
+                // startTime — שעת התחלה.
                 startTime: string;
+                // endTime — שעת סיום.
                 endTime: string;
               }
             >();
 
+          // עיבוד כל פריט מתוך morningShifts בנפרד.
           for (
             const shift
             of morningShifts
@@ -1282,6 +1446,7 @@ Deno.serve(
             }
           }
 
+          // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
           const {
             data:
               publishedPeriods,
@@ -1307,6 +1472,7 @@ Deno.serve(
               `morning periods: ${periodError.message}`,
             );
           } else {
+            // periodIds — מזהה התקופה.
             const periodIds =
               (publishedPeriods ?? [])
                 .map(
@@ -1329,6 +1495,7 @@ Deno.serve(
               periodIds.length > 0 &&
               shiftMap.size > 0
             ) {
+              // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
               const {
                 data:
                   assignments,
@@ -1369,6 +1536,7 @@ Deno.serve(
                   assignments?.length ??
                   0;
 
+                // עיבוד כל פריט מתוך assignments ?? [] בנפרד.
                 for (
                   const assignment
                   of assignments ?? []
@@ -1384,10 +1552,12 @@ Deno.serve(
                     continue;
                   }
 
+                  // minutesBefore — דקות.
                   const minutesBefore =
                     shiftPreferenceMap.get(
                       assignment.assigned_user_id,
                     );
+                  // shift — משמרת.
                   const shift =
                     shiftMap.get(
                       assignment.availability_shift_id,
@@ -1409,11 +1579,13 @@ Deno.serve(
                     continue;
                   }
 
+                  // startsAt — מועד התחלה.
                   const startsAt =
                     jerusalemLocalToUtc(
                       shift.shiftDate,
                       shift.startTime,
                     );
+                  // reminderAt — תזכורות.
                   const reminderAt =
                     new Date(
                       startsAt.getTime() -
@@ -1431,9 +1603,11 @@ Deno.serve(
                     continue;
                   }
 
+                  // reminderKey — תזכורות / מפתח.
                   const reminderKey =
                     `${assignment.id}:${minutesBefore}`;
 
+                  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
                   const {
                     data:
                       claimed,
@@ -1483,6 +1657,7 @@ Deno.serve(
                       startsAt.toISOString(),
                     );
 
+                  // result — תוצאה.
                   const result =
                     await deliverNotification({
                       userId:
@@ -1554,6 +1729,7 @@ Deno.serve(
         driverDutyPreferenceMap.size >
         0
       ) {
+        // eligibleDriverIds — כוננים.
         const eligibleDriverIds =
           Array.from(
             driverDutyPreferenceMap.keys(),
@@ -1561,10 +1737,12 @@ Deno.serve(
             (
               userId,
             ) => {
+              // reminderTime — תזכורות / זמן.
               const reminderTime =
                 driverDutyPreferenceMap.get(
                   userId,
                 );
+              // reminderMinutes — תזכורות / דקות.
               const reminderMinutes =
                 reminderTime
                   ? parseTimeToMinutes(
@@ -1572,6 +1750,7 @@ Deno.serve(
                     )
                   : null;
 
+              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר reminderMinutes === null.
               if (
                 reminderMinutes ===
                 null
@@ -1579,6 +1758,7 @@ Deno.serve(
                 return false;
               }
 
+              // ageMinutes — דקות.
               const ageMinutes =
                 jerusalemNow.minutesOfDay -
                 reminderMinutes;
@@ -1592,6 +1772,7 @@ Deno.serve(
           eligibleDriverIds.length >
           0
         ) {
+          // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
           const {
             data:
               publishedDriverPeriods,
@@ -1617,6 +1798,7 @@ Deno.serve(
               `driver periods: ${driverPeriodsError.message}`,
             );
           } else {
+            // periodIds — מזהה התקופה.
             const periodIds =
               (publishedDriverPeriods ?? [])
                 .map(
@@ -1638,6 +1820,7 @@ Deno.serve(
             if (
               periodIds.length > 0
             ) {
+              // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
               const {
                 data:
                   dutyDays,
@@ -1675,6 +1858,7 @@ Deno.serve(
                   dutyDays?.length ??
                   0;
 
+                // עיבוד כל פריט מתוך dutyDays ?? [] בנפרד.
                 for (
                   const dutyDay
                   of dutyDays ?? []
@@ -1698,6 +1882,7 @@ Deno.serve(
                     continue;
                   }
 
+                  // reminderTime — תזכורות / זמן.
                   const reminderTime =
                     driverDutyPreferenceMap.get(
                       dutyDay.assigned_user_id,
@@ -1707,9 +1892,11 @@ Deno.serve(
                     continue;
                   }
 
+                  // reminderKey — תזכורות / מפתח.
                   const reminderKey =
                     `${dutyDay.duty_date}:${reminderTime.slice(0, 5)}`;
 
+                  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
                   const {
                     data:
                       claimed,
@@ -1754,6 +1941,7 @@ Deno.serve(
                     continue;
                   }
 
+                  // result — תוצאה.
                   const result =
                     await deliverNotification({
                       userId:

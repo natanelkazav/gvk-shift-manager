@@ -1,21 +1,33 @@
+-- קובץ: supabase/migrations/20260918090000_sync_open_availability_after_role_change.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור אילוצים וזמינות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.sync_open_dynamic_availability_after_role_version_change.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Keep an already-open availability period aligned with a role definition that
 -- is re-saved for the same effective month. A structural change invalidates the
 -- old answers because slot ids/times may have changed, so submitted users are
 -- returned to draft and receive an operational Push notification.
+-- פונקציית מסד public.sync_open_dynamic_availability_after_role_version_change: סנכרון פונקציית דיווח על שינוי.
 create or replace function public.sync_open_dynamic_availability_after_role_version_change()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- target_period — יעד / תקופה.
   target_period public.dynamic_availability_periods%rowtype;
+  -- affected_user — משתמש.
   affected_user uuid;
+  -- notification_id — התראות / מזהה.
   notification_id uuid;
   rebuilt_slots integer := 0;
+  -- target_year — יעד / שנה.
   target_year integer := extract(year from new.effective_month)::integer;
+  -- target_month — יעד / חודש.
   target_month integer := extract(month from new.effective_month)::integer;
 begin
   select ap.* into target_period
@@ -26,18 +38,21 @@ begin
     and ap.status = 'open'
   limit 1;
 
+  -- הסתעפות לפי התנאי target_period.id is null.
   if target_period.id is null then
     return new;
   end if;
 
   -- Notify only people who had actually completed/submitted the previous form.
   -- Keep the ids before changing their state.
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for affected_user in
     select s.user_id
     from public.dynamic_availability_submissions s
     where s.period_id = target_period.id
       and s.status = 'submitted'
   loop
+    -- הוספת רשומות ל־public.notifications בהתאם לקלט ולתנאים להלן.
     insert into public.notifications(
       type, priority, source, title, body, url, data, created_by, expires_at
     ) values (
@@ -66,6 +81,7 @@ begin
       now() + interval '90 days'
     ) returning id into notification_id;
 
+    -- הוספת רשומות ל־public.notification_recipients בהתאם לקלט ולתנאים להלן.
     insert into public.notification_recipients(notification_id,user_id)
     values(notification_id,affected_user)
     on conflict do nothing;
@@ -74,9 +90,11 @@ begin
   -- Old entries point at the old slot structure. Removing the slots cascades
   -- those entries, then the canonical materializer rebuilds the period from the
   -- just-saved effective role snapshot.
+  -- מחיקת הרשומות שנבחרו מתוך public.dynamic_availability_slots בהתאם לקלט ולתנאים להלן.
   delete from public.dynamic_availability_slots
   where period_id = target_period.id;
 
+  -- עדכון רשומות ב־public.dynamic_availability_submissions בהתאם לקלט ולתנאים להלן.
   update public.dynamic_availability_submissions s
   set status='draft', submitted_at=null, updated_at=now()
   where s.period_id=target_period.id
@@ -84,6 +102,7 @@ begin
 
   rebuilt_slots := public.materialize_dynamic_availability_period_slots(target_period.id);
 
+  -- עדכון רשומות ב־public.dynamic_availability_periods בהתאם לקלט ולתנאים להלן.
   update public.dynamic_availability_periods ap
   set config_snapshot=coalesce(new.snapshot->'availabilityConfig',ap.config_snapshot),
       updated_at=now()
@@ -93,6 +112,7 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.sync_open_dynamic_availability_after_role_version_change() from public;
 
 -- PostgreSQL runs same-event triggers alphabetically. The z_ prefix guarantees

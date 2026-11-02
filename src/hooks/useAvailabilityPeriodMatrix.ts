@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useAvailabilityPeriodMatrix.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור תקופת אילוצים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AvailabilityMatrixStatistics, UseAvailabilityPeriodMatrixResult, getErrorMessage, calculateMatrixStatistics, useAvailabilityPeriodMatrix.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useMemo,
@@ -9,24 +16,39 @@ import type {
   AvailabilityPeriodMatrixState,
 } from '../types/availabilityMatrix';
 
+/**
+ * חוזה הנתונים AvailabilityMatrixStatistics: אילוצים וזמינות / מטריצת נתונים / סטטיסטיקה.
+ */
 interface AvailabilityMatrixStatistics {
+  // totalShifts — סך הכול / משמרות.
   totalShifts: number;
+  // noAvailableShifts — משמרות.
   noAvailableShifts: number;
+  // singleAvailableShifts — משמרות.
   singleAvailableShifts: number;
+  // multipleAvailableShifts — משמרות.
   multipleAvailableShifts: number;
+  // incompleteShifts — משמרות.
   incompleteShifts: number;
 }
 
+/**
+ * חוזה הנתונים UseAvailabilityPeriodMatrixResult: תקופת אילוצים.
+ */
 interface UseAvailabilityPeriodMatrixResult {
+  // state — מצב.
   state:
     AvailabilityPeriodMatrixState;
 
+  // selectedPeriodId — מזהה התקופה.
   selectedPeriodId:
     string | null;
 
+  // statistics — סטטיסטיקה.
   statistics:
     AvailabilityMatrixStatistics;
 
+  // loadMatrix — מטריצת נתונים.
   loadMatrix: (
     periodId: string,
   ) => Promise<void>;
@@ -34,10 +56,12 @@ interface UseAvailabilityPeriodMatrixResult {
   reset:
     () => void;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   AvailabilityPeriodMatrixState = {
     data: null,
@@ -45,9 +69,15 @@ const initialState:
     error: null,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error.message;
   }
@@ -55,13 +85,20 @@ function getErrorMessage(
   return 'אירעה שגיאה בלתי צפויה בטעינת מטריצת הזמינות.';
 }
 
+/**
+ * פעולה calculateMatrixStatistics: חישוב מטריצת נתונים / סטטיסטיקה.
+ * @param shifts — משמרות.
+ * @returns AvailabilityMatrixStatistics — הפלט בהתאם לחתימה.
+ */
 function calculateMatrixStatistics(
   shifts:
     AvailabilityMatrixShift[],
 ): AvailabilityMatrixStatistics {
+  // totalShifts — סך הכול / משמרות.
   const totalShifts =
     shifts.length;
 
+  // noAvailableShifts — משמרות.
   const noAvailableShifts =
     shifts.filter(
       (shift) =>
@@ -71,6 +108,7 @@ function calculateMatrixStatistics(
           0,
     ).length;
 
+  // singleAvailableShifts — משמרות.
   const singleAvailableShifts =
     shifts.filter(
       (shift) =>
@@ -80,6 +118,7 @@ function calculateMatrixStatistics(
           0,
     ).length;
 
+  // multipleAvailableShifts — משמרות.
   const multipleAvailableShifts =
     shifts.filter(
       (shift) =>
@@ -89,6 +128,7 @@ function calculateMatrixStatistics(
           0,
     ).length;
 
+  // incompleteShifts — משמרות.
   const incompleteShifts =
     shifts.filter(
       (shift) =>
@@ -105,8 +145,13 @@ function calculateMatrixStatistics(
   };
 }
 
+/**
+ * פעולה useAvailabilityPeriodMatrix: חיבור מצב או הקשר עבור תקופת אילוצים.
+ * @returns UseAvailabilityPeriodMatrixResult — הפלט בהתאם לחתימה.
+ */
 export function useAvailabilityPeriodMatrix():
   UseAvailabilityPeriodMatrixResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -115,6 +160,7 @@ export function useAvailabilityPeriodMatrix():
       initialState,
     );
 
+  // מצב מקומי: selectedPeriodId — מזהה התקופה; setSelectedPeriodId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedPeriodId,
     setSelectedPeriodId,
@@ -123,14 +169,17 @@ export function useAvailabilityPeriodMatrix():
       null,
     );
 
+  // loadMatrix — מטריצת נתונים.
   const loadMatrix =
     useCallback(
       async (
         periodId: string,
       ): Promise<void> => {
+        // normalizedPeriodId — מזהה התקופה.
         const normalizedPeriodId =
           periodId.trim();
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedPeriodId.
         if (!normalizedPeriodId) {
           setState({
             data: null,
@@ -154,7 +203,9 @@ export function useAvailabilityPeriodMatrix():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await availabilityMatrixService
               .getAvailabilityPeriodMatrix(
@@ -178,6 +229,7 @@ export function useAvailabilityPeriodMatrix():
       [],
     );
 
+  // ערך מחושב statistics — סטטיסטיקה; נשמר בין רינדורים עד שינוי התלויות.
   const statistics =
     useMemo(
       () =>
@@ -194,6 +246,7 @@ export function useAvailabilityPeriodMatrix():
       setState(initialState);
     }, []);
 
+  // clearError — שגיאה.
   const clearError =
     useCallback((): void => {
       setState(

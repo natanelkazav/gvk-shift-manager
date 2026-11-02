@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/UsersStatistics.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור משתמשים / סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UsersStatisticsProps, UsersStatistics.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   ShieldCheck,
   UserRoundCheck,
@@ -5,13 +12,22 @@ import {
   Users,
 } from 'lucide-react';
 
+/**
+ * חוזה הנתונים UsersStatisticsProps: משתמשים / סטטיסטיקה / מאפייני הרכיב.
+ */
 interface UsersStatisticsProps {
+  // total — סך הכול.
   total: number;
+  // active — פעיל.
   active: number;
   inactive: number;
   admins: number;
 }
 
+/**
+ * פעולה UsersStatistics: משתמשים / סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function UsersStatistics({
   total,
   active,

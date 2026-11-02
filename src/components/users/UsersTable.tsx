@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/UsersTable.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור משתמשים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UsersTableProps, UserRoleDefinition, UserRoleGroup, formatDate, getInitials, UsersTable.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CheckCircle2,
   ChevronDown,
@@ -32,56 +39,75 @@ import type {
 } from '../../types/auth';
 import type { DynamicJobType } from '../../types/dynamicScheduling';
 
+/**
+ * חוזה הנתונים UsersTableProps: משתמשים / מאפייני הרכיב.
+ */
 interface UsersTableProps {
+  // users — משתמשים.
   users:
     UserProfile[];
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading:
     boolean;
 
+  // currentUserId — המשתמש הנוכחי הנוכחי.
   currentUserId:
     string | null;
 
+  // updatingUserId — מזהה משתמש.
   updatingUserId:
     string | null;
 
+  // deletingUserId — מזהה משתמש.
   deletingUserId:
     string | null;
 
+  // resettingPasswordUserId — מזהה משתמש.
   resettingPasswordUserId:
     string | null;
 
   canResetPasswords:
     boolean;
 
+  // dynamicJobTypes — סוגי תפקידים.
   dynamicJobTypes:
     DynamicJobType[];
 
+  // dynamicFirstEnabled — דינמי / האם האפשרות מופעלת.
   dynamicFirstEnabled:
     boolean;
 
+  // onEditUser — משתמש.
   onEditUser: (
     profile: UserProfile,
   ) => void;
 
+  // onDeleteUser — משתמש.
   onDeleteUser: (
     profile: UserProfile,
   ) => void;
 
+  // onResetPassword — סיסמה.
   onResetPassword: (
     profile:
       UserProfile,
   ) => Promise<void>;
 
+  // onToggleActiveStatus — פעיל / סטטוס.
   onToggleActiveStatus: (
     profile: UserProfile,
   ) => Promise<void>;
 }
 
+/**
+ * חוזה הנתונים UserRoleDefinition: משתמש.
+ */
 interface UserRoleDefinition {
   role:
     UserRole;
 
+  // label — תווית.
   label:
     string;
 
@@ -92,20 +118,27 @@ interface UserRoleDefinition {
     typeof Crown;
 }
 
+/**
+ * חוזה הנתונים UserRoleGroup: משתמש / קבוצה.
+ */
 interface UserRoleGroup {
   definition:
     UserRoleDefinition;
 
+  // users — משתמשים.
   users:
     UserProfile[];
 
+  // activeCount — פעיל / כמות.
   activeCount:
     number;
 
+  // inactiveCount — כמות.
   inactiveCount:
     number;
 }
 
+// roleDefinitions — הנתון roleDefinitions בהקשר הפעולה.
 const roleDefinitions:
   readonly UserRoleDefinition[] = [
     {
@@ -193,6 +226,7 @@ const roleDefinitions:
     },
   ];
 
+// roleLabels — הנתון roleLabels בהקשר הפעולה.
 const roleLabels:
   Record<UserRole, string> = {
     admin:
@@ -214,19 +248,27 @@ const roleLabels:
       'צפייה בלבד',
   };
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param dateValue — תאריך / ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   dateValue:
     string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !dateValue.
   if (!dateValue) {
     return 'טרם התחבר';
   }
 
+  // date — תאריך.
   const date =
     new Date(
       dateValue,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -249,23 +291,32 @@ function formatDate(
   );
 }
 
+/**
+ * פעולה getInitials: שליפה או חישוב של הנתון getInitials בהקשר הפעולה.
+ * @param profile — פרופיל.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getInitials(
   profile:
     UserProfile,
 ): string {
+  // normalizedName — שם.
   const normalizedName =
     profile.displayName
       .trim();
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedName.
   if (!normalizedName) {
     return '?';
   }
 
+  // nameParts — שם.
   const nameParts =
     normalizedName
       .split(/\s+/)
       .filter(Boolean);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר nameParts.length === 1.
   if (
     nameParts.length === 1
   ) {
@@ -290,6 +341,10 @@ function getInitials(
     .toUpperCase();
 }
 
+/**
+ * פעולה UsersTable: משתמשים.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function UsersTable({
   users,
   isLoading,
@@ -305,6 +360,7 @@ function UsersTable({
   onResetPassword,
   onToggleActiveStatus,
 }: UsersTableProps) {
+// מצב מקומי: collapsedRoles — הנתון collapsedRoles בהקשר הפעולה; setCollapsedRoles מעדכנת אותו ומפעילה רינדור לפי React.
 const [
   collapsedRoles,
   setCollapsedRoles,
@@ -323,6 +379,7 @@ const [
     viewer: true,
   });
 
+  // מצב מקומי: isInactiveCollapsed — הנתון isInactiveCollapsed בהקשר הפעולה; setIsInactiveCollapsed מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isInactiveCollapsed,
     setIsInactiveCollapsed,
@@ -331,6 +388,7 @@ const [
       true,
     );
 
+  // ערך מחושב inactiveUsers — משתמשים; נשמר בין רינדורים עד שינוי התלויות.
   const inactiveUsers =
     useMemo(
       () =>
@@ -345,6 +403,7 @@ const [
       ],
     );
 
+  // ערך מחושב roleGroups — קבוצות; נשמר בין רינדורים עד שינוי התלויות.
   const roleGroups =
     useMemo<
       UserRoleGroup[]
@@ -359,6 +418,7 @@ const [
             (
               definition,
             ) => {
+              // roleUsers — משתמשים.
               const roleUsers =
                 users.filter(
                   (
@@ -406,6 +466,11 @@ const [
       ],
     );
 
+  /**
+   * פעולה toggleRole: החלפת בחירה עבור הנתון toggleRole בהקשר הפעולה.
+   * @param role — הנתון role בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const toggleRole =
     (
       role:
@@ -425,6 +490,7 @@ const [
       );
     };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading.
   if (isLoading) {
     return (
       <div className="users-table-container">
@@ -444,6 +510,7 @@ const [
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר users.length === 0.
   if (
     users.length === 0
   ) {
@@ -492,6 +559,7 @@ const [
           const Icon =
             definition.icon;
 
+          // isCollapsed — הנתון isCollapsed בהקשר הפעולה.
           const isCollapsed =
             Boolean(
               collapsedRoles[
@@ -499,6 +567,7 @@ const [
               ],
             );
 
+          // contentId — מזהה.
           const contentId =
             `users-role-${definition.role}`;
 
@@ -643,22 +712,27 @@ const [
                           (
                             profile,
                           ) => {
+                            // isCurrentUser — המשתמש הנוכחי.
                             const isCurrentUser =
                               profile.id ===
                               currentUserId;
 
+                            // isUpdating — הנתון isUpdating בהקשר הפעולה.
                             const isUpdating =
                               updatingUserId ===
                               profile.id;
 
+                            // isDeleting — הנתון isDeleting בהקשר הפעולה.
                             const isDeleting =
                               deletingUserId ===
                               profile.id;
 
+                            // isResettingPassword — סיסמה.
                             const isResettingPassword =
                               resettingPasswordUserId ===
                               profile.id;
 
+                            // isBusy — הנתון isBusy בהקשר הפעולה.
                             const isBusy =
                               isUpdating ||
                               isDeleting ||
@@ -1007,14 +1081,17 @@ const [
                   (
                     profile,
                   ) => {
+                    // isUpdating — הנתון isUpdating בהקשר הפעולה.
                     const isUpdating =
                       updatingUserId ===
                       profile.id;
 
+                    // isDeleting — הנתון isDeleting בהקשר הפעולה.
                     const isDeleting =
                       deletingUserId ===
                       profile.id;
 
+                    // isBusy — הנתון isBusy בהקשר הפעולה.
                     const isBusy =
                       isUpdating ||
                       isDeleting;

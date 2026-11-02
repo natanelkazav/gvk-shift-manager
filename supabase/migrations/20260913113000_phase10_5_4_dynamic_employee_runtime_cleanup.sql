@@ -1,24 +1,36 @@
+-- קובץ: supabase/migrations/20260913113000_phase10_5_4_dynamic_employee_runtime_cleanup.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_dynamic_schedule_periods, public.get_my_dynamic_schedule_workspace, public.get_my_dynamic_runtime_context.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 10.5.4 · Dynamic employee runtime cleanup.
 -- Legacy-seeded Job Types remain in the database for recovery, but are no longer
 -- valid employee memberships in the Dynamic-first runtime.
+-- מחיקת הרשומות שנבחרו מתוך public.job_type_memberships בהתאם לקלט ולתנאים להלן.
 delete from public.job_type_memberships m
 using public.job_types jt
 where m.job_type_id = jt.id
   and jt.legacy_role is not null;
 
+-- פונקציית מסד public.get_my_dynamic_schedule_periods: שליפה או חישוב של תקופות שיבוץ.
 create or replace function public.get_my_dynamic_schedule_periods()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -77,26 +89,38 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_schedule_periods() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_schedule_periods() to authenticated;
 
+-- פונקציית מסד public.get_my_dynamic_schedule_workspace: שליפה או חישוב של דינמי / שיבוץ.
 create or replace function public.get_my_dynamic_schedule_workspace(
   requested_publication_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_publication — יעד.
   target_publication public.dynamic_schedule_publications%rowtype;
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
+  -- assignments_json — הקצאות.
   assignments_json jsonb;
+  -- change_mode — מצב פעולה.
   change_mode text;
+  -- work_mode — מצב פעולה.
   work_mode text;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -104,7 +128,9 @@ begin
   from public.dynamic_schedule_publications
   where id = requested_publication_id;
 
+  -- הסתעפות לפי התנאי target_publication.id is null.
   if target_publication.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'publication not found';
   end if;
 
@@ -113,16 +139,20 @@ begin
   where id = target_publication.job_type_id
     and legacy_role is null;
 
+  -- הסתעפות לפי התנאי target_job.id is null.
   if target_job.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'dynamic job type not found';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.job_type_memberships m
     where m.job_type_id = target_publication.job_type_id
       and m.user_id = current_user_id
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -246,6 +276,7 @@ begin
       and a.user_id = current_user_id
   ) q;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'publicationId', target_publication.id,
     'jobTypeId', target_job.id,
@@ -261,25 +292,35 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_schedule_workspace(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_schedule_workspace(uuid) to authenticated;
 
 -- Dashboard context uses only real Dynamic Job Types and resolves the next-shift
 -- display name from the effective role template when imported legacy rows still
 -- carry technical shift codes as their old display names.
+-- פונקציית מסד public.get_my_dynamic_runtime_context: שליפה או חישוב של דינמי.
 create or replace function public.get_my_dynamic_runtime_context()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_month — חודש.
   current_month date := date_trunc('month', now() at time zone 'Asia/Jerusalem')::date;
+  -- can_manage — האם פעולת ניהול מותרת.
   can_manage boolean := false;
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -472,7 +513,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_runtime_context() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_runtime_context() to authenticated;
 
 commit;

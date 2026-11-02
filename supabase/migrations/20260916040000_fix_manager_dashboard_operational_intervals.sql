@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260916040000_fix_manager_dashboard_operational_intervals.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור לוח בקרה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.dynamic_resolve_assignment_local_interval, public.get_my_manager_dashboard_widgets.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 10.13.6 - Manager dashboard must use the same operational interval
 -- resolver as the dynamic calendar/runtime. This fixes daily duties and all
 -- cross-midnight shifts (for example 14:00 -> 06:00 and 23:00 -> 06:00).
@@ -6,6 +11,7 @@ begin;
 
 -- Accept both a live scheduling_config object and a full materialization
 -- source_snapshot. This keeps one interval rule for every caller.
+-- פונקציית מסד public.dynamic_resolve_assignment_local_interval: דינמי / הקצאה / מרווח זמן.
 create or replace function public.dynamic_resolve_assignment_local_interval(
   requested_shift_date date,
   requested_start_time time,
@@ -51,12 +57,16 @@ as $function$
   from resolved;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.dynamic_resolve_assignment_local_interval(date,time,time,text,jsonb) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_resolve_assignment_local_interval(date,time,time,text,jsonb) to authenticated;
 
+-- פונקציית מסד public.get_my_manager_dashboard_widgets: שליפה או חישוב של לוח בקרה.
 create or replace function public.get_my_manager_dashboard_widgets()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -65,6 +75,7 @@ declare
   v_local_now timestamp := timezone('Asia/Jerusalem', now());
   v_today date := timezone('Asia/Jerusalem', now())::date;
 begin
+  -- הסתעפות לפי התנאי not public.can_configure_manager_dashboard(v_actor).
   if not public.can_configure_manager_dashboard(v_actor) then
     return '[]'::jsonb;
   end if;
@@ -176,7 +187,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_manager_dashboard_widgets() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_manager_dashboard_widgets() to authenticated;
 
 commit;

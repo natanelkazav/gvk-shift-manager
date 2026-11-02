@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/dashboard/MorningDriverDashboard.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כונני בוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: MorningDriverDashboardProps, formatDate, formatTime, getPersonName, ShiftContent, MorningDriverDashboard.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarClock,
   Radio,
@@ -15,19 +22,30 @@ import DashboardCard
 import ProgressCard
   from './ProgressCard';
 
+/**
+ * חוזה הנתונים MorningDriverDashboardProps: כונני בוקר.
+ */
 interface MorningDriverDashboardProps {
+  // data — נתונים.
   data:
     MorningDriverDashboardData;
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -48,12 +66,23 @@ function formatDate(
   );
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
   return value.slice(0, 5);
 }
 
+/**
+ * פעולה getPersonName: שליפה או חישוב של שם.
+ * @param displayName — שם תצוגה.
+ * @param scheduleName — שיבוץ / שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getPersonName(
   displayName:
     string | null,
@@ -67,9 +96,14 @@ function getPersonName(
   );
 }
 
+/**
+ * פעולה ShiftContent: משמרת.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function ShiftContent({
   shift,
 }: {
+  // shift — משמרת.
   shift:
     DashboardMorningDriverShift;
 }) {
@@ -133,6 +167,10 @@ function ShiftContent({
   );
 }
 
+/**
+ * פעולה MorningDriverDashboard: כונני בוקר.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function MorningDriverDashboard({
   data,
 }: MorningDriverDashboardProps) {

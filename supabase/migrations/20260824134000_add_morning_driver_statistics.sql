@@ -1,27 +1,41 @@
+-- קובץ: supabase/migrations/20260824134000_add_morning_driver_statistics.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור כונני בוקר.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_morning_driver_statistics.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Morning-driver statistics for the management statistics workspace.
 
+-- פונקציית מסד public.get_morning_driver_statistics: שליפה או חישוב של כונני בוקר.
 create or replace function public.get_morning_driver_statistics(
   requested_year integer default null,
   requested_month integer default null
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
+  -- הסתעפות לפי התנאי not ('statistics.view' = any(current_permissions) or 'users.manage' = any(current_permissions)).
   if not ('statistics.view' = any(current_permissions) or 'users.manage' = any(current_permissions)) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'statistics', coalesce((
       select jsonb_agg(row_data order by (row_data->>'displayName'))

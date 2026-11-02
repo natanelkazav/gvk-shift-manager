@@ -1,3 +1,9 @@
+-- קובץ: supabase/migrations/202607310001_initial_schema.sql
+-- מטרה: הקמת הסכמה הראשונית של טבלאות, טיפוסים ופעולות מסד הנתונים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.set_updated_at, public.handle_new_auth_user, public.current_user_role, public.is_admin, public.is_manager_or_admin, public.record_schedule_assignment_change.
+-- - מבני טבלאות: public.profiles, public.schedule_periods, public.holidays, public.schedule_shifts, public.dispatcher_availability, public.schedule_assignment_history, public.audit_logs.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- =========================================================
@@ -101,6 +107,7 @@ $$;
 -- Shared utility function: updated_at
 -- =========================================================
 
+-- פונקציית מסד public.set_updated_at: קביעת מועד עדכון.
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -117,6 +124,7 @@ $$;
 -- Profiles
 -- =========================================================
 
+-- הגדרת מבנה הטבלה public.profiles והאילוצים המופיעים בהמשך.
 create table if not exists public.profiles (
   id uuid primary key
     references auth.users(id)
@@ -146,12 +154,15 @@ create table if not exists public.profiles (
     )
 );
 
+-- הגדרת האינדקס profiles_email_unique_lower_idx עבור העמודות והתנאים המפורטים בפקודה.
 create unique index if not exists profiles_email_unique_lower_idx
   on public.profiles (lower(email));
 
+-- הגדרת האינדקס profiles_role_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists profiles_role_idx
   on public.profiles (role);
 
+-- הגדרת האינדקס profiles_active_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists profiles_active_idx
   on public.profiles (is_active);
 
@@ -168,13 +179,16 @@ execute function public.set_updated_at();
 -- Profile creation after Supabase Auth signup
 -- =========================================================
 
+-- פונקציית מסד public.handle_new_auth_user: טיפול באירוע עבור אימות משתמשים / משתמש.
 create or replace function public.handle_new_auth_user()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $$
 declare
+  -- resolved_display_name — שם תצוגה.
   resolved_display_name text;
 begin
   resolved_display_name :=
@@ -185,6 +199,7 @@ begin
       'משתמש חדש'
     );
 
+  -- הוספת רשומות ל־public.profiles בהתאם לקלט ולתנאים להלן.
   insert into public.profiles (
     id,
     email,
@@ -223,6 +238,7 @@ execute function public.handle_new_auth_user();
 -- Backfill profiles for users that already exist
 -- =========================================================
 
+-- הוספת רשומות ל־public.profiles בהתאם לקלט ולתנאים להלן.
 insert into public.profiles (
   id,
   email,
@@ -256,10 +272,12 @@ on conflict (id) do nothing;
 -- Permission helper functions
 -- =========================================================
 
+-- פונקציית מסד public.current_user_role: המשתמש הנוכחי הנוכחי.
 create or replace function public.current_user_role()
 returns public.user_role
 language sql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $$
@@ -270,10 +288,12 @@ as $$
   limit 1;
 $$;
 
+-- פונקציית מסד public.is_admin: בדיקת תנאי עבור הנתון is_admin בהקשר הפעולה.
 create or replace function public.is_admin()
 returns boolean
 language sql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $$
@@ -283,10 +303,12 @@ as $$
   );
 $$;
 
+-- פונקציית מסד public.is_manager_or_admin: בדיקת תנאי עבור הנתון is_manager_or_admin בהקשר הפעולה.
 create or replace function public.is_manager_or_admin()
 returns boolean
 language sql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $$
@@ -296,16 +318,22 @@ as $$
   );
 $$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.current_user_role() from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.is_admin() from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.is_manager_or_admin() from public;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.current_user_role()
   to authenticated;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.is_admin()
   to authenticated;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.is_manager_or_admin()
   to authenticated;
 
@@ -314,6 +342,7 @@ grant execute on function public.is_manager_or_admin()
 -- Schedule periods
 -- =========================================================
 
+-- הגדרת מבנה הטבלה public.schedule_periods והאילוצים המופיעים בהמשך.
 create table if not exists public.schedule_periods (
   id uuid primary key default gen_random_uuid(),
 
@@ -354,9 +383,11 @@ create table if not exists public.schedule_periods (
     )
 );
 
+-- הגדרת האינדקס schedule_periods_status_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists schedule_periods_status_idx
   on public.schedule_periods (status);
 
+-- הגדרת האינדקס schedule_periods_date_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists schedule_periods_date_idx
   on public.schedule_periods (year desc, month desc);
 
@@ -373,6 +404,7 @@ execute function public.set_updated_at();
 -- Holidays
 -- =========================================================
 
+-- הגדרת מבנה הטבלה public.holidays והאילוצים המופיעים בהמשך.
 create table if not exists public.holidays (
   id uuid primary key default gen_random_uuid(),
 
@@ -396,9 +428,11 @@ create table if not exists public.holidays (
     unique (holiday_date, name)
 );
 
+-- הגדרת האינדקס holidays_date_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists holidays_date_idx
   on public.holidays (holiday_date);
 
+-- הגדרת האינדקס holidays_schedule_type_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists holidays_schedule_type_idx
   on public.holidays (schedule_type);
 
@@ -415,6 +449,7 @@ execute function public.set_updated_at();
 -- Schedule shifts
 -- =========================================================
 
+-- הגדרת מבנה הטבלה public.schedule_shifts והאילוצים המופיעים בהמשך.
 create table if not exists public.schedule_shifts (
   id uuid primary key default gen_random_uuid(),
 
@@ -458,15 +493,19 @@ create table if not exists public.schedule_shifts (
     unique (period_id, starts_at)
 );
 
+-- הגדרת האינדקס schedule_shifts_period_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists schedule_shifts_period_idx
   on public.schedule_shifts (period_id);
 
+-- הגדרת האינדקס schedule_shifts_date_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists schedule_shifts_date_idx
   on public.schedule_shifts (shift_date);
 
+-- הגדרת האינדקס schedule_shifts_assigned_user_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists schedule_shifts_assigned_user_idx
   on public.schedule_shifts (assigned_user_id);
 
+-- הגדרת האינדקס schedule_shifts_period_date_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists schedule_shifts_period_date_idx
   on public.schedule_shifts (period_id, shift_date, starts_at);
 
@@ -483,6 +522,7 @@ execute function public.set_updated_at();
 -- Dispatcher availability
 -- =========================================================
 
+-- הגדרת מבנה הטבלה public.dispatcher_availability והאילוצים המופיעים בהמשך.
 create table if not exists public.dispatcher_availability (
   id uuid primary key default gen_random_uuid(),
 
@@ -514,12 +554,15 @@ create table if not exists public.dispatcher_availability (
     )
 );
 
+-- הגדרת האינדקס dispatcher_availability_shift_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists dispatcher_availability_shift_idx
   on public.dispatcher_availability (shift_id);
 
+-- הגדרת האינדקס dispatcher_availability_user_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists dispatcher_availability_user_idx
   on public.dispatcher_availability (user_id);
 
+-- הגדרת האינדקס dispatcher_availability_status_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists dispatcher_availability_status_idx
   on public.dispatcher_availability (availability_status);
 
@@ -536,6 +579,7 @@ execute function public.set_updated_at();
 -- Schedule assignment history
 -- =========================================================
 
+-- הגדרת מבנה הטבלה public.schedule_assignment_history והאילוצים המופיעים בהמשך.
 create table if not exists public.schedule_assignment_history (
   id uuid primary key default gen_random_uuid(),
 
@@ -566,12 +610,15 @@ create table if not exists public.schedule_assignment_history (
     )
 );
 
+-- הגדרת האינדקס schedule_assignment_history_shift_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists schedule_assignment_history_shift_idx
   on public.schedule_assignment_history (shift_id);
 
+-- הגדרת האינדקס schedule_assignment_history_changed_by_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists schedule_assignment_history_changed_by_idx
   on public.schedule_assignment_history (changed_by);
 
+-- הגדרת האינדקס schedule_assignment_history_created_at_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists schedule_assignment_history_created_at_idx
   on public.schedule_assignment_history (created_at desc);
 
@@ -580,15 +627,18 @@ create index if not exists schedule_assignment_history_created_at_idx
 -- Automatic assignment history trigger
 -- =========================================================
 
+-- פונקציית מסד public.record_schedule_assignment_change: שיבוץ / הקצאה.
 create or replace function public.record_schedule_assignment_change()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $$
 declare
   resolved_change_type public.assignment_change_type;
 begin
+  -- הסתעפות לפי התנאי old.assigned_user_id is not distinct from new.assigned_user_id.
   if old.assigned_user_id is not distinct from new.assigned_user_id then
     return new;
   end if;
@@ -626,6 +676,7 @@ begin
         'manual_edit'::public.assignment_change_type
     end;
 
+  -- הוספת רשומות ל־public.schedule_assignment_history בהתאם לקלט ולתנאים להלן.
   insert into public.schedule_assignment_history (
     shift_id,
     previous_user_id,
@@ -659,6 +710,7 @@ execute function public.record_schedule_assignment_change();
 -- Audit logs
 -- =========================================================
 
+-- הגדרת מבנה הטבלה public.audit_logs והאילוצים המופיעים בהמשך.
 create table if not exists public.audit_logs (
   id uuid primary key default gen_random_uuid(),
 
@@ -683,12 +735,15 @@ create table if not exists public.audit_logs (
     check (length(trim(entity_type)) > 0)
 );
 
+-- הגדרת האינדקס audit_logs_user_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists audit_logs_user_idx
   on public.audit_logs (user_id);
 
+-- הגדרת האינדקס audit_logs_entity_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists audit_logs_entity_idx
   on public.audit_logs (entity_type, entity_id);
 
+-- הגדרת האינדקס audit_logs_created_at_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists audit_logs_created_at_idx
   on public.audit_logs (created_at desc);
 
@@ -697,26 +752,34 @@ create index if not exists audit_logs_created_at_idx
 -- Grants
 -- =========================================================
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant usage on schema public to authenticated;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant select on public.profiles
   to authenticated;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant select, insert, update, delete on public.schedule_periods
   to authenticated;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant select, insert, update, delete on public.holidays
   to authenticated;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant select, insert, update, delete on public.schedule_shifts
   to authenticated;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant select, insert, update, delete on public.dispatcher_availability
   to authenticated;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant select, insert on public.schedule_assignment_history
   to authenticated;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant select on public.audit_logs
   to authenticated;
 
@@ -725,24 +788,31 @@ grant select on public.audit_logs
 -- Enable Row Level Security
 -- =========================================================
 
+-- עדכון מבנה או הגדרות הטבלה public.profiles.
 alter table public.profiles
   enable row level security;
 
+-- עדכון מבנה או הגדרות הטבלה public.schedule_periods.
 alter table public.schedule_periods
   enable row level security;
 
+-- עדכון מבנה או הגדרות הטבלה public.holidays.
 alter table public.holidays
   enable row level security;
 
+-- עדכון מבנה או הגדרות הטבלה public.schedule_shifts.
 alter table public.schedule_shifts
   enable row level security;
 
+-- עדכון מבנה או הגדרות הטבלה public.dispatcher_availability.
 alter table public.dispatcher_availability
   enable row level security;
 
+-- עדכון מבנה או הגדרות הטבלה public.schedule_assignment_history.
 alter table public.schedule_assignment_history
   enable row level security;
 
+-- עדכון מבנה או הגדרות הטבלה public.audit_logs.
 alter table public.audit_logs
   enable row level security;
 
@@ -754,6 +824,7 @@ alter table public.audit_logs
 drop policy if exists "Authenticated users can view active profiles"
   on public.profiles;
 
+-- הגדרת מדיניות RLS: "Authenticated users can view active profiles". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Authenticated users can view active profiles"
 on public.profiles
 for select
@@ -767,6 +838,7 @@ using (
 drop policy if exists "Admins can insert profiles"
   on public.profiles;
 
+-- הגדרת מדיניות RLS: "Admins can insert profiles". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Admins can insert profiles"
 on public.profiles
 for insert
@@ -778,6 +850,7 @@ with check (
 drop policy if exists "Admins can update profiles"
   on public.profiles;
 
+-- הגדרת מדיניות RLS: "Admins can update profiles". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Admins can update profiles"
 on public.profiles
 for update
@@ -792,6 +865,7 @@ with check (
 drop policy if exists "Admins can delete profiles"
   on public.profiles;
 
+-- הגדרת מדיניות RLS: "Admins can delete profiles". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Admins can delete profiles"
 on public.profiles
 for delete
@@ -808,6 +882,7 @@ using (
 drop policy if exists "Authenticated users can view schedule periods"
   on public.schedule_periods;
 
+-- הגדרת מדיניות RLS: "Authenticated users can view schedule periods". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Authenticated users can view schedule periods"
 on public.schedule_periods
 for select
@@ -817,6 +892,7 @@ using (true);
 drop policy if exists "Managers can create schedule periods"
   on public.schedule_periods;
 
+-- הגדרת מדיניות RLS: "Managers can create schedule periods". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Managers can create schedule periods"
 on public.schedule_periods
 for insert
@@ -829,6 +905,7 @@ with check (
 drop policy if exists "Managers can update schedule periods"
   on public.schedule_periods;
 
+-- הגדרת מדיניות RLS: "Managers can update schedule periods". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Managers can update schedule periods"
 on public.schedule_periods
 for update
@@ -843,6 +920,7 @@ with check (
 drop policy if exists "Admins can delete schedule periods"
   on public.schedule_periods;
 
+-- הגדרת מדיניות RLS: "Admins can delete schedule periods". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Admins can delete schedule periods"
 on public.schedule_periods
 for delete
@@ -859,6 +937,7 @@ using (
 drop policy if exists "Authenticated users can view holidays"
   on public.holidays;
 
+-- הגדרת מדיניות RLS: "Authenticated users can view holidays". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Authenticated users can view holidays"
 on public.holidays
 for select
@@ -868,6 +947,7 @@ using (true);
 drop policy if exists "Managers can create holidays"
   on public.holidays;
 
+-- הגדרת מדיניות RLS: "Managers can create holidays". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Managers can create holidays"
 on public.holidays
 for insert
@@ -879,6 +959,7 @@ with check (
 drop policy if exists "Managers can update holidays"
   on public.holidays;
 
+-- הגדרת מדיניות RLS: "Managers can update holidays". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Managers can update holidays"
 on public.holidays
 for update
@@ -893,6 +974,7 @@ with check (
 drop policy if exists "Admins can delete holidays"
   on public.holidays;
 
+-- הגדרת מדיניות RLS: "Admins can delete holidays". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Admins can delete holidays"
 on public.holidays
 for delete
@@ -909,6 +991,7 @@ using (
 drop policy if exists "Authenticated users can view schedule shifts"
   on public.schedule_shifts;
 
+-- הגדרת מדיניות RLS: "Authenticated users can view schedule shifts". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Authenticated users can view schedule shifts"
 on public.schedule_shifts
 for select
@@ -918,6 +1001,7 @@ using (true);
 drop policy if exists "Managers can create schedule shifts"
   on public.schedule_shifts;
 
+-- הגדרת מדיניות RLS: "Managers can create schedule shifts". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Managers can create schedule shifts"
 on public.schedule_shifts
 for insert
@@ -929,6 +1013,7 @@ with check (
 drop policy if exists "Managers can update schedule shifts"
   on public.schedule_shifts;
 
+-- הגדרת מדיניות RLS: "Managers can update schedule shifts". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Managers can update schedule shifts"
 on public.schedule_shifts
 for update
@@ -943,6 +1028,7 @@ with check (
 drop policy if exists "Admins can delete schedule shifts"
   on public.schedule_shifts;
 
+-- הגדרת מדיניות RLS: "Admins can delete schedule shifts". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Admins can delete schedule shifts"
 on public.schedule_shifts
 for delete
@@ -959,6 +1045,7 @@ using (
 drop policy if exists "Users can view their own availability"
   on public.dispatcher_availability;
 
+-- הגדרת מדיניות RLS: "Users can view their own availability". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Users can view their own availability"
 on public.dispatcher_availability
 for select
@@ -971,6 +1058,7 @@ using (
 drop policy if exists "Users can create their own availability"
   on public.dispatcher_availability;
 
+-- הגדרת מדיניות RLS: "Users can create their own availability". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Users can create their own availability"
 on public.dispatcher_availability
 for insert
@@ -983,6 +1071,7 @@ with check (
 drop policy if exists "Users can update their own availability"
   on public.dispatcher_availability;
 
+-- הגדרת מדיניות RLS: "Users can update their own availability". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Users can update their own availability"
 on public.dispatcher_availability
 for update
@@ -999,6 +1088,7 @@ with check (
 drop policy if exists "Managers can delete availability"
   on public.dispatcher_availability;
 
+-- הגדרת מדיניות RLS: "Managers can delete availability". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Managers can delete availability"
 on public.dispatcher_availability
 for delete
@@ -1015,6 +1105,7 @@ using (
 drop policy if exists "Authenticated users can view assignment history"
   on public.schedule_assignment_history;
 
+-- הגדרת מדיניות RLS: "Authenticated users can view assignment history". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Authenticated users can view assignment history"
 on public.schedule_assignment_history
 for select
@@ -1024,6 +1115,7 @@ using (true);
 drop policy if exists "Managers can create assignment history"
   on public.schedule_assignment_history;
 
+-- הגדרת מדיניות RLS: "Managers can create assignment history". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Managers can create assignment history"
 on public.schedule_assignment_history
 for insert
@@ -1040,6 +1132,7 @@ with check (
 drop policy if exists "Managers can view audit logs"
   on public.audit_logs;
 
+-- הגדרת מדיניות RLS: "Managers can view audit logs". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 create policy "Managers can view audit logs"
 on public.audit_logs
 for select

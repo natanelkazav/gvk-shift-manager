@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/MorningDriverSchedulePage.tsx
+ * מטרה: מימוש מסך המשתמש עבור כונני בוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ViewedScheduleMonth, getPeriodLabel, getCurrentMonth, shiftMonth, MorningDriverSchedulePage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   LoaderCircle,
@@ -39,6 +46,7 @@ import type {
 
 import '../styles/morningDriverSchedule.css';
 
+// HEBREW_MONTHS — חודשים.
 const HEBREW_MONTHS = [
   'ינואר',
   'פברואר',
@@ -54,11 +62,21 @@ const HEBREW_MONTHS = [
   'דצמבר',
 ] as const;
 
+/**
+ * חוזה הנתונים ViewedScheduleMonth: שיבוץ / חודש.
+ */
 interface ViewedScheduleMonth {
+  // year — שנה.
   year: number;
+  // month — חודש.
   month: number;
 }
 
+/**
+ * פעולה getPeriodLabel: שליפה או חישוב של תקופה / תווית.
+ * @param period — תקופה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getPeriodLabel(
   period:
     MorningDriverAvailabilityPeriodListItem,
@@ -71,6 +89,10 @@ function getPeriodLabel(
   } ${period.year}`;
 }
 
+/**
+ * פעולה getCurrentMonth: שליפה או חישוב של חודש.
+ * @returns ViewedScheduleMonth — הפלט בהתאם לחתימה.
+ */
 function getCurrentMonth():
   ViewedScheduleMonth {
   const now =
@@ -85,6 +107,12 @@ function getCurrentMonth():
   };
 }
 
+/**
+ * פעולה shiftMonth: משמרת / חודש.
+ * @param currentMonth — חודש.
+ * @param monthOffset — חודש / מיקום תחילת התוצאות.
+ * @returns ViewedScheduleMonth — הפלט בהתאם לחתימה.
+ */
 function shiftMonth(
   currentMonth:
     ViewedScheduleMonth,
@@ -92,6 +120,7 @@ function shiftMonth(
   monthOffset:
     number,
 ): ViewedScheduleMonth {
+  // shiftedDate — תאריך.
   const shiftedDate =
     new Date(
       currentMonth.year,
@@ -111,6 +140,9 @@ function shiftMonth(
   };
 }
 
+/**
+ * פעולה MorningDriverSchedulePage: כונני בוקר.
+ */
 function MorningDriverSchedulePage() {
   const {
     user:
@@ -142,12 +174,14 @@ function MorningDriverSchedulePage() {
   } =
     useMorningDriverSchedule();
 
+  // מצב מקומי: selectedAvailabilityPeriodId — תקופת אילוצים; setSelectedAvailabilityPeriodId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedAvailabilityPeriodId,
     setSelectedAvailabilityPeriodId,
   ] =
     useState('');
 
+  // מצב מקומי: viewedScheduleMonth — שיבוץ / חודש; setViewedScheduleMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     viewedScheduleMonth,
     setViewedScheduleMonth,
@@ -157,6 +191,7 @@ function MorningDriverSchedulePage() {
     );
 
 
+  // מצב מקומי: selectedTransferAssignment — נבחר / הקצאה; setSelectedTransferAssignment מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedTransferAssignment,
     setSelectedTransferAssignment,
@@ -168,27 +203,33 @@ function MorningDriverSchedulePage() {
       null,
     );
 
+  // canEdit — האם עריכה מותרת.
   const canEdit =
     hasPermission(
       'morning_driver_schedule.edit',
     );
 
+  // canEditPublishedAssignments — האם עריכה מותרת.
   const canEditPublishedAssignments =
     hasPermission(
       'morning_driver_schedule.edit_any',
     );
 
+  // currentMonth — חודש.
   const currentMonth =
     getCurrentMonth();
 
+  // currentPeriodValue — תקופה / ערך.
   const currentPeriodValue =
     currentMonth.year * 12 +
     currentMonth.month - 1;
 
+  // viewedPeriodValue — תקופה / ערך.
   const viewedPeriodValue =
     viewedScheduleMonth.year * 12 +
     viewedScheduleMonth.month - 1;
 
+  // canEditViewedPublishedAssignments — האם עריכה מותרת.
   const canEditViewedPublishedAssignments =
     canEditPublishedAssignments &&
     (
@@ -200,6 +241,7 @@ function MorningDriverSchedulePage() {
     state.data?.period.status ===
       'published';
 
+  // canTransferMyAssignments — הקצאות.
   const canTransferMyAssignments =
     profile?.role ===
       'morning_driver' &&
@@ -207,8 +249,10 @@ function MorningDriverSchedulePage() {
       'morning_driver_schedule.view',
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ loadPeriods, loadSchedule, ].
   useEffect(
     () => {
+      // initialMonth — חודש.
       const initialMonth =
         getCurrentMonth();
 
@@ -225,6 +269,7 @@ function MorningDriverSchedulePage() {
     ],
   );
 
+  // ערך מחושב closedAvailabilityPeriods — תקופות אילוצים; נשמר בין רינדורים עד שינוי התלויות.
   const closedAvailabilityPeriods =
     useMemo(
       () =>
@@ -251,6 +296,11 @@ function MorningDriverSchedulePage() {
       ],
     );
 
+  /**
+   * פעולה אסינכרונית loadViewedMonth: טעינת חודש.
+   * @param targetMonth — יעד / חודש.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const loadViewedMonth =
     async (
       targetMonth:
@@ -266,6 +316,10 @@ function MorningDriverSchedulePage() {
       );
     };
 
+  /**
+   * פעולה handlePreviousMonth: טיפול באירוע עבור חודש.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handlePreviousMonth =
     (): void => {
       void loadViewedMonth(
@@ -276,6 +330,10 @@ function MorningDriverSchedulePage() {
       );
     };
 
+  /**
+   * פעולה handleNextMonth: טיפול באירוע עבור חודש.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleNextMonth =
     (): void => {
       void loadViewedMonth(
@@ -286,6 +344,10 @@ function MorningDriverSchedulePage() {
       );
     };
 
+  /**
+   * פעולה handleCurrentMonth: טיפול באירוע עבור חודש.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleCurrentMonth =
     (): void => {
       void loadViewedMonth(
@@ -293,8 +355,13 @@ function MorningDriverSchedulePage() {
       );
     };
 
+  /**
+   * פעולה אסינכרונית handleCreateDraft: טיפול באירוע עבור טיוטה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleCreateDraft =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedAvailabilityPeriodId.
       if (
         !selectedAvailabilityPeriodId
       ) {
@@ -306,10 +373,12 @@ function MorningDriverSchedulePage() {
           'ליצור טיוטת שיבוץ אוטומטית מחודש האילוצים שנבחר?\n\nשיבוצים לא נעולים בטיוטה קיימת יחושבו מחדש.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
+      // result — תוצאה.
       const result =
         await createDraft(
           selectedAvailabilityPeriodId,
@@ -611,6 +680,7 @@ function MorningDriverSchedulePage() {
           onTransfer={async (
             newDriverId,
           ) => {
+            // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
             try {
               await transferMyAssignment({
                 assignmentId:

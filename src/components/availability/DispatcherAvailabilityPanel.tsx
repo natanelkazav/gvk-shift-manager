@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/availability/DispatcherAvailabilityPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור מוקדנים / אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: formatDate, DispatcherAvailabilityPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarCheck2,
   CheckCircle2,
@@ -24,6 +31,7 @@ import type {
 import DispatcherAvailabilityShiftCard
   from './DispatcherAvailabilityShiftCard';
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -39,21 +47,29 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value:
     string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (
     !value
   ) {
     return 'לא הוגדר';
   }
 
+  // date — תאריך.
   const date =
     new Date(
       value,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -75,6 +91,9 @@ function formatDate(
   );
 }
 
+/**
+ * פעולה DispatcherAvailabilityPanel: מוקדנים / אילוצים וזמינות.
+ */
 function DispatcherAvailabilityPanel() {
   const {
     state,
@@ -91,6 +110,12 @@ function DispatcherAvailabilityPanel() {
   } =
     useDispatcherAvailability();
 
+  /**
+   * פעולה handleSelectStatus: טיפול באירוע עבור סטטוס.
+   * @param shiftSlotId — משמרת / מזהה.
+   * @param status — סטטוס.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleSelectStatus =
     (
       shiftSlotId:
@@ -104,6 +129,7 @@ function DispatcherAvailabilityPanel() {
       );
     };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר state.isLoading.
   if (
     state.isLoading
   ) {
@@ -124,6 +150,7 @@ function DispatcherAvailabilityPanel() {
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר state.error && !state.data.
   if (
     state.error &&
     !state.data
@@ -161,6 +188,7 @@ function DispatcherAvailabilityPanel() {
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !state.data.
   if (
     !state.data
   ) {
@@ -192,10 +220,12 @@ function DispatcherAvailabilityPanel() {
   } =
     state.data;
 
+  // isSubmitted — הוגש.
   const isSubmitted =
     submission.status ===
     'submitted';
 
+  // canSubmit — הנתון canSubmit בהקשר הפעולה.
   const canSubmit =
     !isSubmitted &&
     !isDirty &&
@@ -206,14 +236,20 @@ function DispatcherAvailabilityPanel() {
     !isSavingDraft &&
     !isSubmitting;
 
+  // periodTitle — תקופה / כותרת.
   const periodTitle =
     period.title ??
     `${hebrewMonths[
       period.month - 1
     ]} ${period.year}`;
 
+  /**
+   * פעולה אסינכרונית handleSubmitAvailability: טיפול באירוע עבור אילוצים וזמינות.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSubmitAvailability =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canSubmit.
       if (
         !canSubmit
       ) {
@@ -225,12 +261,14 @@ function DispatcherAvailabilityPanel() {
           'האם להגיש את האילוצים?\n\nלאחר ההגשה לא יהיה ניתן לשנות את הבחירות ללא פתיחה מחדש על ידי מנהל.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (
         !confirmed
       ) {
         return;
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await submitAvailability();
       } catch {
@@ -238,6 +276,10 @@ function DispatcherAvailabilityPanel() {
       }
     };
 
+  /**
+   * פעולה handleMarkAllAvailable: טיפול באירוע עבור הנתון handleMarkAllAvailable בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleMarkAllAvailable =
     (): void => {
       const confirmed =

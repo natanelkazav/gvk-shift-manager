@@ -1,9 +1,15 @@
+-- קובץ: supabase/migrations/20260828073000_dynamic_job_types_admin_api.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סוגי תפקידים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_scheduling_admin, public.save_dynamic_job_type.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 
 -- Seed Phase-2 default permissions so the three legacy job types are represented
 -- the same way they are currently created in the frontend. These rows are still
 -- configuration only while the feature flag is disabled.
+-- הוספת רשומות ל־public.job_type_default_permissions בהתאם לקלט ולתנאים להלן.
 insert into public.job_type_default_permissions (job_type_id, permission_key, source)
 select jt.id, seed.permission_key, 'seed'
 from public.job_types jt
@@ -27,6 +33,7 @@ join (values
   on seed.job_code = jt.code
 on conflict (job_type_id, permission_key) do nothing;
 
+-- הוספת רשומות ל־public.job_type_capabilities בהתאם לקלט ולתנאים להלן.
 insert into public.job_type_capabilities (job_type_id, capability_key, enabled, source)
 select jt.id, seed.capability_key, true, 'seed'
 from public.job_types jt
@@ -41,26 +48,34 @@ join (values
 on conflict (job_type_id, capability_key)
 do update set enabled = true;
 
+-- פונקציית מסד public.get_dynamic_scheduling_admin: שליפה או חישוב של דינמי.
 create or replace function public.get_dynamic_scheduling_admin()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- can_view — האם צפייה מותרת.
   can_view boolean := false;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles p
     where p.id = current_user_id
       and p.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
@@ -71,10 +86,13 @@ begin
       and up.permission_key in ('users.view', 'users.manage')
   ) into can_view;
 
+  -- הסתעפות לפי התנאי not can_view.
   if not can_view then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'featureEnabled', coalesce((
       select f.enabled
@@ -170,52 +188,76 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_scheduling_admin() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_scheduling_admin() to authenticated;
 
+-- פונקציית מסד public.save_dynamic_job_type: שמירת סוג תפקיד.
 create or replace function public.save_dynamic_job_type(
   requested_payload jsonb
 )
 returns uuid
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_id — יעד / מזהה.
   target_id uuid;
+  -- target_group_id — יעד / קבוצה / מזהה.
   target_group_id uuid;
+  -- target_code — יעד.
   target_code text;
+  -- target_name — יעד / שם.
   target_name text;
+  -- target_description — יעד.
   target_description text;
+  -- target_scope — יעד.
   target_scope text;
+  -- target_pay_model — יעד.
   target_pay_model text;
+  -- target_is_active — האם הרשומה פעילה היעד.
   target_is_active boolean;
+  -- target_pay_config — יעד / תצורה.
   target_pay_config jsonb;
+  -- target_availability_config — יעד / אילוצים וזמינות / תצורה.
   target_availability_config jsonb;
+  -- target_statistics_config — יעד / סטטיסטיקה / תצורה.
   target_statistics_config jsonb;
+  -- capability_value — ערך.
   capability_value jsonb;
+  -- permission_value — הרשאות / ערך.
   permission_value jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles p
     where p.id = current_user_id
       and p.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions up
     where up.user_id = current_user_id
       and up.permission_key = 'users.manage'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -231,29 +273,41 @@ begin
   target_availability_config := coalesce(requested_payload -> 'availabilityConfig', '{}'::jsonb);
   target_statistics_config := coalesce(requested_payload -> 'statisticsConfig', '{}'::jsonb);
 
+  -- הסתעפות לפי התנאי target_group_id is null or not exists (.
   if target_group_id is null or not exists (
     select 1 from public.schedule_groups sg where sg.id = target_group_id
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'schedule group not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_code = '' or target_code !~ '^[a-z0-9_]+$'.
   if target_code = '' or target_code !~ '^[a-z0-9_]+$' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid job type code';
   end if;
 
+  -- הסתעפות לפי התנאי target_name = ''.
   if target_name = '' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type name is required';
   end if;
 
+  -- הסתעפות לפי התנאי target_scope not in ('full_time','part_time','flexible','other').
   if target_scope not in ('full_time','part_time','flexible','other') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid employment scope';
   end if;
 
+  -- הסתעפות לפי התנאי target_pay_model not in ('hourly','per_shift','per_day','mixed','none').
   if target_pay_model not in ('hourly','per_shift','per_day','mixed','none') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid pay model';
   end if;
 
+  -- הסתעפות לפי התנאי target_id is null.
   if target_id is null then
+    -- הוספת רשומות ל־public.job_types בהתאם לקלט ולתנאים להלן.
     insert into public.job_types (
       schedule_group_id,
       code,
@@ -281,10 +335,13 @@ begin
     )
     returning id into target_id;
   else
+    -- הסתעפות לפי התנאי not exists (select 1 from public.job_types jt where jt.id = target_id).
     if not exists (select 1 from public.job_types jt where jt.id = target_id) then
+      -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
       raise exception 'job type not found';
     end if;
 
+    -- עדכון רשומות ב־public.job_types בהתאם לקלט ולתנאים להלן.
     update public.job_types
     set schedule_group_id = target_group_id,
         code = case when legacy_role is null then target_code else code end,
@@ -299,13 +356,16 @@ begin
     where id = target_id;
   end if;
 
+  -- מחיקת הרשומות שנבחרו מתוך public.job_type_capabilities בהתאם לקלט ולתנאים להלן.
   delete from public.job_type_capabilities
   where job_type_id = target_id;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for capability_value in
     select value
     from jsonb_array_elements(coalesce(requested_payload -> 'capabilities', '[]'::jsonb))
   loop
+    -- הוספת רשומות ל־public.job_type_capabilities בהתאם לקלט ולתנאים להלן.
     insert into public.job_type_capabilities (
       job_type_id,
       capability_key,
@@ -321,13 +381,16 @@ begin
     do update set enabled = true, source = 'manual';
   end loop;
 
+  -- מחיקת הרשומות שנבחרו מתוך public.job_type_default_permissions בהתאם לקלט ולתנאים להלן.
   delete from public.job_type_default_permissions
   where job_type_id = target_id;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for permission_value in
     select value
     from jsonb_array_elements(coalesce(requested_payload -> 'defaultPermissions', '[]'::jsonb))
   loop
+    -- הוספת רשומות ל־public.job_type_default_permissions בהתאם לקלט ולתנאים להלן.
     insert into public.job_type_default_permissions (
       job_type_id,
       permission_key,
@@ -344,7 +407,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.save_dynamic_job_type(jsonb) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.save_dynamic_job_type(jsonb) to authenticated;
 
 commit;

@@ -1,3 +1,11 @@
+/**
+ * קובץ: supabase/functions/send-notification/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת send-notification.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DeliverySummary, parseRequestBody, readRequestBody, createPushPayload.
+ * - מקורות נתונים הנזכרים בקריאות from: profiles, audit_logs.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import type {
   PushPayload,
   SendNotificationRequest,
@@ -29,7 +37,11 @@ import {
   createJsonResponse,
 } from './utils/responses.ts';
 
+/**
+ * חוזה הנתונים DeliverySummary: סיכום.
+ */
 interface DeliverySummary {
+  // totalRecipients — סך הכול.
   totalRecipients:
     number;
 
@@ -42,6 +54,7 @@ interface DeliverySummary {
   recipientsWithoutDevices:
     number;
 
+  // totalDevices — סך הכול.
   totalDevices:
     number;
 
@@ -52,9 +65,15 @@ interface DeliverySummary {
     number;
 }
 
+/**
+ * פעולה parseRequestBody: פענוח קלט עבור נתוני הבקשה / תוכן.
+ * @param value — ערך.
+ * @returns SendNotificationRequest — הפלט בהתאם לחתימה.
+ */
 function parseRequestBody(
   value: unknown,
 ): SendNotificationRequest {
+  // עצירת הפעולה עם שגיאה כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !==
       'object' ||
@@ -66,14 +85,17 @@ function parseRequestBody(
     );
   }
 
+  // body — תוכן.
   const body =
     value as
       Partial<SendNotificationRequest>;
 
+  // notificationId — התראות / מזהה.
   const notificationId =
     body.notificationId
       ?.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !notificationId.
   if (
     !notificationId
   ) {
@@ -87,13 +109,20 @@ function parseRequestBody(
   };
 }
 
+/**
+ * פעולה אסינכרונית readRequestBody: נתוני הבקשה / תוכן.
+ * @param request — נתוני הבקשה.
+ * @returns Promise<SendNotificationRequest> — הפלט בהתאם לחתימה.
+ */
 async function readRequestBody(
   request:
     Request,
 ): Promise<SendNotificationRequest> {
+  // rawBody — תוכן.
   let rawBody:
     unknown;
 
+  // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
   try {
     rawBody =
       await request.json();
@@ -108,21 +137,33 @@ async function readRequestBody(
   );
 }
 
+/**
+ * פעולה createPushPayload: יצירת התראות Push.
+ * @param notification — התראות.
+ * @param recipientId — מזהה.
+ * @param userId — מזהה משתמש.
+ * @returns PushPayload — הפלט בהתאם לחתימה.
+ */
 function createPushPayload(
   notification: {
+    // id — מזהה.
     id: string;
 
     type: string;
 
     priority: string;
 
+    // title — כותרת.
     title: string;
 
+    // body — תוכן.
     body: string;
 
+    // url — כתובת יעד.
     url:
       string | null;
 
+    // data — נתונים.
     data:
       Record<string, unknown>;
   },
@@ -177,6 +218,7 @@ Deno.serve(
     request:
       Request,
   ): Promise<Response> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method === 'OPTIONS'.
     if (
       request.method ===
       'OPTIONS'
@@ -190,6 +232,7 @@ Deno.serve(
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !==
       'POST'
@@ -203,27 +246,33 @@ Deno.serve(
       );
     }
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         getRequiredEnvironmentVariable(
           'SUPABASE_URL',
         );
 
+      // supabaseAnonKey — מפתח.
       const supabaseAnonKey =
         getRequiredEnvironmentVariable(
           'SUPABASE_ANON_KEY',
         );
 
+      // serviceRoleKey — שירות / מפתח.
       const serviceRoleKey =
         getRequiredEnvironmentVariable(
           'SUPABASE_SERVICE_ROLE_KEY',
         );
 
+      // vapidPublicKey — מפתח.
       const vapidPublicKey =
         getRequiredEnvironmentVariable(
           'VAPID_PUBLIC_KEY',
         );
 
+      // vapidPrivateKey — מפתח.
       const vapidPrivateKey =
         getRequiredEnvironmentVariable(
           'VAPID_PRIVATE_KEY',
@@ -234,11 +283,13 @@ Deno.serve(
           'VAPID_SUBJECT',
         );
 
+      // requestBody — נתוני הבקשה / תוכן.
       const requestBody =
         await readRequestBody(
           request,
         );
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         userId:
           authenticatedUserId,
@@ -265,6 +316,7 @@ Deno.serve(
         vapidPrivateKey,
       });
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         notification,
         targets,
@@ -274,6 +326,7 @@ Deno.serve(
           requestBody.notificationId,
         );
 
+      // summary — סיכום.
       const summary:
         DeliverySummary = {
           totalRecipients:
@@ -298,6 +351,7 @@ Deno.serve(
             0,
         };
 
+      // עיבוד כל פריט מתוך targets בנפרד.
       for (
         const target
         of targets
@@ -333,13 +387,16 @@ Deno.serve(
             recipient.user_id,
           );
 
+        // recipientSentCount — כמות.
         let recipientSentCount =
           0;
 
+        // עיבוד כל פריט מתוך subscriptions בנפרד.
         for (
           const subscription
           of subscriptions
         ) {
+          // result — תוצאה.
           const result =
             await sendPushNotification(
               subscription,
@@ -408,6 +465,7 @@ Deno.serve(
         notification.source ===
           'manager'
       ) {
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           data:
             actorProfile,
@@ -425,6 +483,7 @@ Deno.serve(
             )
             .maybeSingle();
 
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           error:
             auditLogError,

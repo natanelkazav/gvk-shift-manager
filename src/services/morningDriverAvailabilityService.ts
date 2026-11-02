@@ -1,3 +1,11 @@
+/**
+ * קובץ: src/services/morningDriverAvailabilityService.ts
+ * מטרה: ניהול תקופות אילוצים והגשות הזמינות של כונני הבוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: normalizeMorningDriverAvailabilityError, MorningDriverAvailabilityService.
+ * - קריאות RPC המופעלות בקובץ: get_morning_driver_availability_periods, create_morning_driver_availability_period, open_morning_driver_availability_period, reopen_morning_driver_availability_period, delete_morning_driver_availability_period, get_my_morning_driver_availability, save_my_morning_driver_availability, submit_my_morning_driver_availability, get_morning_driver_availability_management, reopen_morning_driver_availability_submission, close_morning_driver_availability_period.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import {
   supabase,
 } from '../lib/supabase';
@@ -18,6 +26,11 @@ import type {
   SubmitMorningDriverAvailabilityResponse,
 } from '../types/morningDriverAvailability';
 
+/**
+ * פעולה normalizeMorningDriverAvailabilityError: נרמול כונני בוקר.
+ * @param error — שגיאה.
+ * @returns Error — הפלט בהתאם לחתימה.
+ */
 function normalizeMorningDriverAvailabilityError(
   error: unknown,
 ): Error {
@@ -26,6 +39,7 @@ function normalizeMorningDriverAvailabilityError(
     error,
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -37,14 +51,17 @@ function normalizeMorningDriverAvailabilityError(
       'object' &&
     error !== null
   ) {
+    // supabaseError — שגיאה.
     const supabaseError =
       error as {
+        // message — הודעה (אופציונלי).
         message?: unknown;
         details?: unknown;
         hint?: unknown;
         code?: unknown;
       };
 
+    // errorParts — שגיאה.
     const errorParts = [
       typeof supabaseError
         .message ===
@@ -82,6 +99,7 @@ function normalizeMorningDriverAvailabilityError(
         ),
     );
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר errorParts.length > 0.
     if (
       errorParts.length >
       0
@@ -99,11 +117,20 @@ function normalizeMorningDriverAvailabilityError(
   );
 }
 
+/**
+ * איגוד פעולות כונני בוקר במחלקה MorningDriverAvailabilityService.
+ */
 class MorningDriverAvailabilityService {
+  /**
+   * פעולה אסינכרונית getPeriods: שליפה או חישוב של תקופות.
+   * הפעולה פונה ל־RPC: get_morning_driver_availability_periods.
+   * @returns Promise< MorningDriverAvailabilityPeriodListItem[] > — הפלט בהתאם לחתימה.
+   */
   async getPeriods():
     Promise<
       MorningDriverAvailabilityPeriodListItem[]
     > {
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -112,16 +139,19 @@ class MorningDriverAvailabilityService {
         'get_morning_driver_availability_periods',
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
     if (!data) {
       return [];
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !Array.isArray( data, ).
     if (
       !Array.isArray(
         data,
@@ -136,10 +166,17 @@ class MorningDriverAvailabilityService {
       MorningDriverAvailabilityPeriodListItem[];
   }
 
+  /**
+   * פעולה אסינכרונית createPeriod: יצירת תקופה.
+   * הפעולה פונה ל־RPC: create_morning_driver_availability_period.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<CreateMorningDriverAvailabilityPeriodResponse> — הפלט בהתאם לחתימה.
+   */
   async createPeriod(
     request:
       CreateMorningDriverAvailabilityPeriodRequest,
   ): Promise<CreateMorningDriverAvailabilityPeriodResponse> {
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -169,12 +206,14 @@ class MorningDriverAvailabilityService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת יצירת חודש אילוצי כונני הבוקר.',
@@ -185,12 +224,20 @@ class MorningDriverAvailabilityService {
       CreateMorningDriverAvailabilityPeriodResponse;
   }
 
+  /**
+   * פעולה אסינכרונית openPeriod: פתיחת תקופה.
+   * הפעולה פונה ל־RPC: open_morning_driver_availability_period.
+   * @param periodId — מזהה התקופה.
+   * @returns Promise<OpenMorningDriverAvailabilityPeriodResponse> — הפלט בהתאם לחתימה.
+   */
   async openPeriod(
     periodId: string,
   ): Promise<OpenMorningDriverAvailabilityPeriodResponse> {
+    // normalizedPeriodId — מזהה התקופה.
     const normalizedPeriodId =
       periodId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
     if (
       !normalizedPeriodId
     ) {
@@ -199,6 +246,7 @@ class MorningDriverAvailabilityService {
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -211,12 +259,14 @@ class MorningDriverAvailabilityService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת פתיחת חודש אילוצי כונני הבוקר.',
@@ -228,18 +278,27 @@ class MorningDriverAvailabilityService {
   }
 
 
+  /**
+   * פעולה אסינכרונית reopenPeriod: פתיחה מחדש של תקופה.
+   * הפעולה פונה ל־RPC: reopen_morning_driver_availability_period.
+   * @param periodId — מזהה התקופה.
+   * @returns Promise<ReopenMorningDriverAvailabilityPeriodResponse> — הפלט בהתאם לחתימה.
+   */
   async reopenPeriod(
     periodId: string,
   ): Promise<ReopenMorningDriverAvailabilityPeriodResponse> {
+    // normalizedPeriodId — מזהה התקופה.
     const normalizedPeriodId =
       periodId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
     if (!normalizedPeriodId) {
       throw new Error(
         'Morning driver availability period id is required.',
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -252,12 +311,14 @@ class MorningDriverAvailabilityService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת פתיחת חודש אילוצי כונני הבוקר מחדש.',
@@ -268,12 +329,20 @@ class MorningDriverAvailabilityService {
       ReopenMorningDriverAvailabilityPeriodResponse;
   }
 
+  /**
+   * פעולה אסינכרונית deletePeriod: מחיקת תקופה.
+   * הפעולה פונה ל־RPC: delete_morning_driver_availability_period.
+   * @param periodId — מזהה התקופה.
+   * @returns Promise<DeleteMorningDriverAvailabilityPeriodResponse> — הפלט בהתאם לחתימה.
+   */
   async deletePeriod(
     periodId: string,
   ): Promise<DeleteMorningDriverAvailabilityPeriodResponse> {
+    // normalizedPeriodId — מזהה התקופה.
     const normalizedPeriodId =
       periodId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
     if (
       !normalizedPeriodId
     ) {
@@ -282,6 +351,7 @@ class MorningDriverAvailabilityService {
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -294,12 +364,14 @@ class MorningDriverAvailabilityService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת מחיקת חודש אילוצי כונני הבוקר.',
@@ -310,12 +382,20 @@ class MorningDriverAvailabilityService {
       DeleteMorningDriverAvailabilityPeriodResponse;
   }
 
+  /**
+   * פעולה אסינכרונית getMyAvailability: שליפה או חישוב של אילוצים וזמינות.
+   * הפעולה פונה ל־RPC: get_my_morning_driver_availability.
+   * @param periodId — מזהה התקופה.
+   * @returns Promise<MorningDriverAvailabilityPersonalData | null> — הפלט בהתאם לחתימה.
+   */
   async getMyAvailability(
     periodId: string | null = null,
   ): Promise<MorningDriverAvailabilityPersonalData | null> {
+    // normalizedPeriodId — מזהה התקופה.
     const normalizedPeriodId =
       periodId?.trim() || null;
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -327,6 +407,7 @@ class MorningDriverAvailabilityService {
       },
     );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
@@ -338,18 +419,27 @@ class MorningDriverAvailabilityService {
       : null;
   }
 
+  /**
+   * פעולה אסינכרונית saveMyAvailability: שמירת אילוצים וזמינות.
+   * הפעולה פונה ל־RPC: save_my_morning_driver_availability.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<SaveMorningDriverAvailabilityResponse> — הפלט בהתאם לחתימה.
+   */
   async saveMyAvailability(
     request: SaveMorningDriverAvailabilityRequest,
   ): Promise<SaveMorningDriverAvailabilityResponse> {
+    // normalizedPeriodId — מזהה התקופה.
     const normalizedPeriodId =
       request.periodId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
     if (!normalizedPeriodId) {
       throw new Error(
         'Morning driver availability period id is required.',
       );
     }
 
+    // requestedEntries — רשומות.
     const requestedEntries =
       request.entries.map(
         (entry) => ({
@@ -364,6 +454,7 @@ class MorningDriverAvailabilityService {
         }),
       );
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -378,12 +469,14 @@ class MorningDriverAvailabilityService {
       },
     );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת שמירת אילוצי כונני הבוקר.',
@@ -394,18 +487,27 @@ class MorningDriverAvailabilityService {
       SaveMorningDriverAvailabilityResponse;
   }
 
+  /**
+   * פעולה אסינכרונית submitMyAvailability: הגשת אילוצים וזמינות.
+   * הפעולה פונה ל־RPC: submit_my_morning_driver_availability.
+   * @param periodId — מזהה התקופה.
+   * @returns Promise<SubmitMorningDriverAvailabilityResponse> — הפלט בהתאם לחתימה.
+   */
   async submitMyAvailability(
     periodId: string,
   ): Promise<SubmitMorningDriverAvailabilityResponse> {
+    // normalizedPeriodId — מזהה התקופה.
     const normalizedPeriodId =
       periodId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
     if (!normalizedPeriodId) {
       throw new Error(
         'Morning driver availability period id is required.',
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -417,12 +519,14 @@ class MorningDriverAvailabilityService {
       },
     );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת הגשת אילוצי כונני הבוקר.',
@@ -433,18 +537,27 @@ class MorningDriverAvailabilityService {
       SubmitMorningDriverAvailabilityResponse;
   }
 
+/**
+ * פעולה אסינכרונית getManagementData: שליפה או חישוב של נתונים.
+ * הפעולה פונה ל־RPC: get_morning_driver_availability_management.
+ * @param periodId — מזהה התקופה.
+ * @returns Promise<MorningDriverAvailabilityManagementData> — הפלט בהתאם לחתימה.
+ */
 async getManagementData(
     periodId: string,
   ): Promise<MorningDriverAvailabilityManagementData> {
+    // normalizedPeriodId — מזהה התקופה.
     const normalizedPeriodId =
       periodId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
     if (!normalizedPeriodId) {
       throw new Error(
         'Morning driver availability period id is required.',
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -457,12 +570,14 @@ async getManagementData(
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת טעינת נתוני ניהול אילוצי כונני הבוקר.',
@@ -473,28 +588,40 @@ async getManagementData(
       MorningDriverAvailabilityManagementData;
   }
 
+  /**
+   * פעולה אסינכרונית reopenSubmission: פתיחה מחדש של הנתון reopenSubmission בהקשר הפעולה.
+   * הפעולה פונה ל־RPC: reopen_morning_driver_availability_submission.
+   * @param periodId — מזהה התקופה.
+   * @param userId — מזהה משתמש.
+   * @returns Promise<ReopenMorningDriverAvailabilitySubmissionResponse> — הפלט בהתאם לחתימה.
+   */
   async reopenSubmission(
     periodId: string,
     userId: string,
   ): Promise<ReopenMorningDriverAvailabilitySubmissionResponse> {
+    // normalizedPeriodId — מזהה התקופה.
     const normalizedPeriodId =
       periodId.trim();
 
+    // normalizedUserId — מזהה משתמש.
     const normalizedUserId =
       userId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
     if (!normalizedPeriodId) {
       throw new Error(
         'Morning driver availability period id is required.',
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedUserId.
     if (!normalizedUserId) {
       throw new Error(
         'Morning driver user id is required.',
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -510,12 +637,14 @@ async getManagementData(
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת פתיחת ההגשה מחדש.',
@@ -526,19 +655,29 @@ async getManagementData(
       ReopenMorningDriverAvailabilitySubmissionResponse;
   }
 
+  /**
+   * פעולה אסינכרונית closePeriod: סגירת תקופה.
+   * הפעולה פונה ל־RPC: close_morning_driver_availability_period.
+   * @param periodId — מזהה התקופה.
+   * @param force — הנתון force בהקשר הפעולה.
+   * @returns Promise<CloseMorningDriverAvailabilityPeriodResponse> — הפלט בהתאם לחתימה.
+   */
   async closePeriod(
     periodId: string,
     force = false,
   ): Promise<CloseMorningDriverAvailabilityPeriodResponse> {
+    // normalizedPeriodId — מזהה התקופה.
     const normalizedPeriodId =
       periodId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
     if (!normalizedPeriodId) {
       throw new Error(
         'Morning driver availability period id is required.',
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -554,12 +693,14 @@ async getManagementData(
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeMorningDriverAvailabilityError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת סגירת חודש אילוצי כונני הבוקר.',
@@ -571,5 +712,6 @@ async getManagementData(
   }
 }
 
+// morningDriverAvailabilityService — כונני בוקר.
 export const morningDriverAvailabilityService =
   new MorningDriverAvailabilityService();

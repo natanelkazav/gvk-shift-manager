@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/schedule/ScheduleDraftOverview.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור שיבוץ / טיוטה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ScheduleDraftOverviewProps, DispatcherBalanceRow, BalanceMetric, CoreShiftGroup, BalanceColumnGroup, getLocalStartHour, getActualWeekday, getCoreShiftGroup, getMetricClass, buildBalanceRows ועוד.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   useState,
 } from 'react';
@@ -17,14 +24,24 @@ import type {
   ScheduleShift,
 } from '../../types/schedule';
 
+/**
+ * חוזה הנתונים ScheduleDraftOverviewProps: שיבוץ / טיוטה / מאפייני הרכיב.
+ */
 interface ScheduleDraftOverviewProps {
+  // shifts — משמרות.
   shifts: ScheduleShift[];
   context: ScheduleDraftEditContext | null;
 }
 
+/**
+ * חוזה הנתונים DispatcherBalanceRow: מוקדנים / שורה.
+ */
 interface DispatcherBalanceRow {
+  // userId — מזהה משתמש.
   userId: string;
+  // displayName — שם תצוגה.
   displayName: string;
+  // scheduleName — שיבוץ / שם.
   scheduleName: string | null;
   weekdayEvening: number;
   weekdayNight: number;
@@ -34,22 +51,34 @@ interface DispatcherBalanceRow {
   saturdayMorning: number;
   saturdayAfternoon: number;
   saturdayNight: number;
+  // premium — תעריף מוגדל.
   premium: number;
+  // holiday — חג.
   holiday: number;
+  // total — סך הכול.
   total: number;
 }
 
+/**
+ * טיפוס BalanceMetric: הנתון BalanceMetric בהקשר הפעולה.
+ */
 type BalanceMetric = Exclude<
   keyof DispatcherBalanceRow,
   'userId' | 'displayName' | 'scheduleName'
 >;
 
+/**
+ * טיפוס CoreShiftGroup: משמרת / קבוצה.
+ */
 type CoreShiftGroup =
   | 'weekday'
   | 'fridayLike'
   | 'saturdayLike'
   | 'holidayOnly';
 
+/**
+ * טיפוס BalanceColumnGroup: קבוצה.
+ */
 type BalanceColumnGroup =
   | 'weekday'
   | 'friday'
@@ -58,8 +87,11 @@ type BalanceColumnGroup =
   | 'holiday'
   | 'total';
 
+// balanceColumnOptions — אפשרויות בחירה.
 const balanceColumnOptions: Array<{
+  // key — מפתח.
   key: BalanceColumnGroup;
+  // label — תווית.
   label: string;
 }> = [
   { key: 'total', label: 'סה״כ' },
@@ -70,6 +102,7 @@ const balanceColumnOptions: Array<{
   { key: 'premium', label: '200%' },
 ];
 
+// defaultBalanceGroups — קבוצות; אוסף ערכים ייחודיים.
 const defaultBalanceGroups = new Set<BalanceColumnGroup>([
   'total',
   'weekday',
@@ -77,8 +110,15 @@ const defaultBalanceGroups = new Set<BalanceColumnGroup>([
   'saturday',
 ]);
 
+/**
+ * פעולה getLocalStartHour: שליפה או חישוב של הנתון getLocalStartHour בהקשר הפעולה.
+ * @param shift — משמרת.
+ * @returns number — הפלט בהתאם לחתימה.
+ */
 function getLocalStartHour(shift: ScheduleShift): number {
+  // date — תאריך.
   const date = new Date(shift.startsAt);
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN(date.getTime()).
   if (Number.isNaN(date.getTime())) {
     return 0;
   }
@@ -92,11 +132,17 @@ function getLocalStartHour(shift: ScheduleShift): number {
   );
 }
 
+/**
+ * פעולה getActualWeekday: שליפה או חישוב של הנתון getActualWeekday בהקשר הפעולה.
+ * @param shift — משמרת.
+ * @returns number — הפלט בהתאם לחתימה.
+ */
 function getActualWeekday(shift: ScheduleShift): number {
   const [year, month, day] = shift.shiftDate
     .split('-')
     .map(Number);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !year || !month || !day.
   if (!year || !month || !day) {
     return -1;
   }
@@ -104,15 +150,23 @@ function getActualWeekday(shift: ScheduleShift): number {
   return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 }
 
+/**
+ * פעולה getCoreShiftGroup: שליפה או חישוב של משמרת / קבוצה.
+ * @param shift — משמרת.
+ * @returns CoreShiftGroup — הפלט בהתאם לחתימה.
+ */
 function getCoreShiftGroup(shift: ScheduleShift): CoreShiftGroup {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר shift.scheduleType === 'friday' || shift.scheduleType === 'holiday_eve'.
   if (shift.scheduleType === 'friday' || shift.scheduleType === 'holiday_eve') {
     return 'fridayLike';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר shift.scheduleType === 'saturday' || shift.scheduleType === 'holiday_end'.
   if (shift.scheduleType === 'saturday' || shift.scheduleType === 'holiday_end') {
     return 'saturdayLike';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר shift.scheduleType === 'holiday_full'.
   if (shift.scheduleType === 'holiday_full') {
     return 'holidayOnly';
   }
@@ -126,27 +180,39 @@ function getCoreShiftGroup(shift: ScheduleShift): CoreShiftGroup {
   return 'weekday';
 }
 
+/**
+ * פעולה getMetricClass: שליפה או חישוב של הנתון getMetricClass בהקשר הפעולה.
+ * @param rows — שורות.
+ * @param metric — הנתון metric בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getMetricClass(
   rows: DispatcherBalanceRow[],
   metric: BalanceMetric,
   value: number,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר rows.length <= 1.
   if (rows.length <= 1) {
     return 'schedule-draft-balance-cell-balanced';
   }
 
+  // values — ערכים.
   const values = rows.map((row) => row[metric]);
   const min = Math.min(...values);
   const max = Math.max(...values);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר min === max.
   if (min === max) {
     return 'schedule-draft-balance-cell-balanced';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר value === min.
   if (value === min) {
     return 'schedule-draft-balance-cell-low';
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר value === max.
   if (value === max) {
     return max - min >= 2
       ? 'schedule-draft-balance-cell-high'
@@ -156,12 +222,20 @@ function getMetricClass(
   return 'schedule-draft-balance-cell-medium';
 }
 
+/**
+ * פעולה buildBalanceRows: הרכבת שורות.
+ * @param shifts — משמרות.
+ * @param context — הנתון context בהקשר הפעולה.
+ * @returns DispatcherBalanceRow[] — הפלט בהתאם לחתימה.
+ */
 function buildBalanceRows(
   shifts: ScheduleShift[],
   context: ScheduleDraftEditContext | null,
 ): DispatcherBalanceRow[] {
+  // rows — שורות; מיפוי לחיפוש לפי מפתח.
   const rows = new Map<string, DispatcherBalanceRow>();
 
+  // עיבוד כל פריט מתוך context?.dispatchers ?? [] בנפרד.
   for (const dispatcher of context?.dispatchers ?? []) {
     rows.set(dispatcher.id, {
       userId: dispatcher.id,
@@ -181,12 +255,15 @@ function buildBalanceRows(
     });
   }
 
+  // עיבוד כל פריט מתוך shifts בנפרד.
   for (const shift of shifts) {
+    // userId — מזהה משתמש.
     const userId = shift.assignedUser?.id;
     if (!userId) {
       continue;
     }
 
+    // row — שורה.
     const row = rows.get(userId);
     if (!row) {
       continue;
@@ -211,6 +288,7 @@ function buildBalanceRows(
     }
 
     const hour = getLocalStartHour(shift);
+    // group — קבוצה.
     const group = getCoreShiftGroup(shift);
 
     if (group === 'holidayOnly') {
@@ -243,6 +321,11 @@ function buildBalanceRows(
   );
 }
 
+/**
+ * פעולה getBalanceLabel: שליפה או חישוב של תווית.
+ * @param gap — הנתון gap בהקשר הפעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getBalanceLabel(gap: number): string {
   if (gap === 0) return 'מאוזן לחלוטין';
   if (gap === 1) return 'איזון מצוין';
@@ -250,21 +333,32 @@ function getBalanceLabel(gap: number): string {
   return 'כדאי לבדוק את הפער';
 }
 
+/**
+ * פעולה ScheduleDraftOverview: שיבוץ / טיוטה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 export default function ScheduleDraftOverview({
   shifts,
   context,
 }: ScheduleDraftOverviewProps) {
+  // מצב מקומי: visibleGroups — קבוצות; setVisibleGroups מעדכנת אותו ומפעילה רינדור לפי React.
   const [visibleGroups, setVisibleGroups] =
     useState<Set<BalanceColumnGroup>>(
       () => new Set(defaultBalanceGroups),
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !context.
   if (!context) {
     return null;
   }
 
+  /**
+   * פעולה toggleBalanceGroup: החלפת בחירה עבור קבוצה.
+   * @param group — קבוצה.
+   */
   const toggleBalanceGroup = (group: BalanceColumnGroup) => {
     setVisibleGroups((current) => {
+      // next — הנתון next בהקשר הפעולה; אוסף ערכים ייחודיים.
       const next = new Set(current);
       if (next.has(group)) {
         next.delete(group);
@@ -275,33 +369,52 @@ export default function ScheduleDraftOverview({
     });
   };
 
+  /**
+   * פעולה resetBalanceGroups: איפוס קבוצות.
+   */
   const resetBalanceGroups = () => {
     setVisibleGroups(new Set(defaultBalanceGroups));
   };
 
+  /**
+   * פעולה showAllBalanceGroups: קבוצות.
+   */
   const showAllBalanceGroups = () => {
     setVisibleGroups(
       new Set(balanceColumnOptions.map((option) => option.key)),
     );
   };
 
+  // totalShifts — סך הכול / משמרות.
   const totalShifts = context.shifts.length;
   const noAvailable = context.shifts.filter((item) => item.availableCount === 0).length;
   const singleAvailable = context.shifts.filter((item) => item.availableCount === 1).length;
   const multipleAvailable = context.shifts.filter((item) => item.availableCount > 1).length;
+  // balanceRows — שורות.
   const balanceRows = buildBalanceRows(shifts, context);
+  // assignedShifts — משמרות.
   const assignedShifts = balanceRows.reduce((sum, row) => sum + row.total, 0);
   const intentionallyUnassigned = shifts.filter(
     (shift) => shift.isIntentionallyUnassigned,
   ).length;
+  // totals — הנתון totals בהקשר הפעולה.
   const totals = balanceRows.map((row) => row.total);
+  // minimumAssignments — הקצאות.
   const minimumAssignments = totals.length > 0 ? Math.min(...totals) : 0;
+  // maximumAssignments — הקצאות.
   const maximumAssignments = totals.length > 0 ? Math.max(...totals) : 0;
+  // assignmentGap — הקצאה.
   const assignmentGap = maximumAssignments - minimumAssignments;
+  // averageAssignments — הקצאות.
   const averageAssignments = balanceRows.length > 0
     ? assignedShifts / balanceRows.length
     : 0;
 
+  /**
+   * פעולה renderCell: בניית תצוגה עבור הנתון renderCell בהקשר הפעולה.
+   * @param row — שורה.
+   * @param metric — הנתון metric בהקשר הפעולה.
+   */
   const renderCell = (row: DispatcherBalanceRow, metric: BalanceMetric) => (
     <td className={getMetricClass(balanceRows, metric, row[metric])}>
       <span className="schedule-draft-balance-value">{row[metric]}</span>
@@ -475,6 +588,7 @@ export default function ScheduleDraftOverview({
             </thead>
             <tbody>
               {balanceRows.map((row) => {
+                // totalClass — סך הכול.
                 const totalClass = getMetricClass(balanceRows, 'total', row.total);
                 const progress = maximumAssignments > 0
                   ? Math.max(8, (row.total / maximumAssignments) * 100)

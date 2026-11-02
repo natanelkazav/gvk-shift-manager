@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260828160000_fix_dynamic_shadow_legacy_comparison.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / טיוטות שיבוץ במנגנון הדינמי.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.compare_dynamic_availability_shadow_to_legacy.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 6.1 hotfix:
@@ -7,6 +12,7 @@ begin;
 -- Keep the Shadow comparison read-only and aligned with the current legacy
 -- availability schema.
 
+-- פונקציית מסד public.compare_dynamic_availability_shadow_to_legacy: השוואת דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.compare_dynamic_availability_shadow_to_legacy(
   requested_job_type_id uuid,
   requested_year integer,
@@ -14,33 +20,47 @@ create or replace function public.compare_dynamic_availability_shadow_to_legacy(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   job public.job_types%rowtype;
+  -- dynamic_period — דינמי / תקופה.
   dynamic_period public.dynamic_availability_periods%rowtype;
+  -- legacy_period_id — מזהה התקופה.
   legacy_period_id uuid;
+  -- dynamic_slots — דינמי.
   dynamic_slots integer := 0;
+  -- dynamic_members — דינמי / חברי התפקיד.
   dynamic_members integer := 0;
+  -- dynamic_entries — דינמי / רשומות.
   dynamic_entries integer := 0;
   legacy_slots integer := 0;
+  -- legacy_entries — רשומות.
   legacy_entries integer := 0;
+  -- legacy_members — חברי התפקיד.
   legacy_members integer := 0;
   supported boolean := true;
+  -- note — הערה.
   note text := null;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions up
     where up.user_id = current_user_id
       and up.permission_key in ('users.view', 'users.manage')
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -49,7 +69,9 @@ begin
   from public.job_types jt
   where jt.id = requested_job_type_id;
 
+  -- הסתעפות לפי התנאי job.id is null.
   if job.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type not found';
   end if;
 
@@ -60,6 +82,7 @@ begin
     and dap.year = requested_year
     and dap.month = requested_month;
 
+  -- הסתעפות לפי התנאי dynamic_period.id is not null.
   if dynamic_period.id is not null then
     select count(*)::integer
     into dynamic_slots
@@ -79,6 +102,7 @@ begin
     where dasub.period_id = dynamic_period.id;
   end if;
 
+  -- הסתעפות לפי התנאי job.legacy_role = 'dispatcher'.
   if job.legacy_role = 'dispatcher' then
     select ap.id
     into legacy_period_id
@@ -88,6 +112,7 @@ begin
     order by ap.created_at desc
     limit 1;
 
+    -- הסתעפות לפי התנאי legacy_period_id is not null.
     if legacy_period_id is not null then
       select count(*)::integer
       into legacy_slots
@@ -108,6 +133,7 @@ begin
     note := 'השוואה אוטומטית מלאה ל־Legacy עבור סוג תפקיד זה תתווסף בזמן הסבת ה־flow הישן. נתוני ה־Dynamic עדיין מוצגים במלואם.';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'mode', 'shadow',
     'supported', supported,
@@ -130,7 +156,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.compare_dynamic_availability_shadow_to_legacy(uuid, integer, integer) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.compare_dynamic_availability_shadow_to_legacy(uuid, integer, integer) to authenticated;
 
 commit;

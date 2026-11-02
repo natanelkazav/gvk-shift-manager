@@ -1,8 +1,15 @@
+-- קובץ: supabase/migrations/20261006194500_dynamic_availability_closed_period_snapshots.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / אילוצים וזמינות / תקופה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.capture_dynamic_availability_period_snapshot, public.guard_closed_dynamic_availability_history, public.set_dynamic_period_status.
+-- - מבני טבלאות: public.dynamic_availability_period_snapshots.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Durable monthly availability history for every dynamic job type.
 -- Closed periods remain the operational source for statistics, while this table
 -- keeps an independent immutable copy that can be audited/recovered later.
+-- הגדרת מבנה הטבלה public.dynamic_availability_period_snapshots והאילוצים המופיעים בהמשך.
 create table if not exists public.dynamic_availability_period_snapshots (
   id uuid primary key default gen_random_uuid(),
   period_id uuid not null references public.dynamic_availability_periods(id) on delete restrict,
@@ -17,12 +24,16 @@ create table if not exists public.dynamic_availability_period_snapshots (
   constraint dynamic_availability_snapshot_object check (jsonb_typeof(snapshot)='object')
 );
 
+-- עדכון מבנה או הגדרות הטבלה public.dynamic_availability_period_snapshots.
 alter table public.dynamic_availability_period_snapshots enable row level security;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.dynamic_availability_period_snapshots from anon, authenticated;
 
+-- פונקציית מסד public.capture_dynamic_availability_period_snapshot: תקופת אילוצים.
 create or replace function public.capture_dynamic_availability_period_snapshot(requested_period_id uuid)
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -31,7 +42,9 @@ declare
   payload jsonb;
 begin
   select * into p from public.dynamic_availability_periods where id=requested_period_id;
+  -- הסתעפות לפי התנאי p.id is null then raise exception 'dynamic availability period not found'; end if;.
   if p.id is null then raise exception 'dynamic availability period not found'; end if;
+  -- הסתעפות לפי התנאי p.status not in ('closed','archived') then raise exception 'snapshot requires a closed or archived period'; end if;.
   if p.status not in ('closed','archived') then raise exception 'snapshot requires a closed or archived period'; end if;
 
   select jsonb_build_object(
@@ -70,6 +83,7 @@ begin
     ),'[]'::jsonb)
   ) into payload;
 
+  -- הוספת רשומות ל־public.dynamic_availability_period_snapshots בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_availability_period_snapshots(period_id,job_type_id,year,month,period_status,captured_at,snapshot)
   values(p.id,p.job_type_id,p.year,p.month,p.status,now(),payload)
   on conflict(period_id) do update set
@@ -80,15 +94,19 @@ $function$;
 
 -- Prevent accidental mutation of historical availability after a period is closed.
 -- Reopening the period intentionally makes it editable again; closing it recaptures the snapshot.
+-- פונקציית מסד public.guard_closed_dynamic_availability_history: דינמי / אילוצים וזמינות / היסטוריה.
 create or replace function public.guard_closed_dynamic_availability_history()
 returns trigger
 language plpgsql
 set search_path=''
 as $function$
 declare
+  -- target_period_id — מזהה התקופה היעד.
   target_period_id uuid;
+  -- target_status — יעד / סטטוס.
   target_status text;
 begin
+  -- הסתעפות לפי התנאי tg_table_name='dynamic_availability_submissions'.
   if tg_table_name='dynamic_availability_submissions' then
     target_period_id:=coalesce(new.period_id,old.period_id);
   elsif tg_table_name='dynamic_availability_entries' then
@@ -100,7 +118,9 @@ begin
   end if;
 
   select p.status into target_status from public.dynamic_availability_periods p where p.id=target_period_id;
+  -- הסתעפות לפי התנאי target_status in ('closed','archived').
   if target_status in ('closed','archived') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'closed dynamic availability history is immutable; reopen the period before editing';
   end if;
   return coalesce(new,old);
@@ -123,6 +143,7 @@ before update on public.dynamic_availability_slots
 for each row execute function public.guard_closed_dynamic_availability_history();
 
 -- Extend the existing workflow: every close now captures a full monthly snapshot.
+-- פונקציית מסד public.set_dynamic_period_status: קביעת קבוצה ייחודית / דינמי / תקופה / סטטוס.
 create or replace function public.set_dynamic_period_status(
   requested_job_type_id uuid,
   requested_year integer,
@@ -131,21 +152,29 @@ create or replace function public.set_dynamic_period_status(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid();
+  -- target_period — יעד / תקופה.
   target_period public.dynamic_availability_periods%rowtype;
+  -- next_status — סטטוס.
   next_status text;
   slot_count integer:=0;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי requested_action = 'open'.
   if requested_action = 'open' then
+    -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('availability.open_period', requested_job_type_id, current_user_id) then rais.
     if not public.has_dynamic_job_type_permission('availability.open_period', requested_job_type_id, current_user_id) then raise exception 'not allowed'; end if;
   elsif requested_action in ('close','archive') then
+    -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('availability.close_period', requested_job_type_id, current_user_id) then rai.
     if not public.has_dynamic_job_type_permission('availability.close_period', requested_job_type_id, current_user_id) then raise exception 'not allowed'; end if;
   else
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid period action';
   end if;
 
@@ -153,8 +182,10 @@ begin
   from public.dynamic_availability_periods
   where job_type_id=requested_job_type_id and year=requested_year and month=requested_month;
 
+  -- הסתעפות לפי התנאי target_period.id is null then raise exception 'dynamic period not found'; end if;.
   if target_period.id is null then raise exception 'dynamic period not found'; end if;
 
+  -- הסתעפות לפי התנאי requested_action='open' and target_period.status in ('shadow','draft','closed','open').
   if requested_action='open' and target_period.status in ('shadow','draft','closed','open') then
     perform public.materialize_dynamic_availability_period_slots(target_period.id);
     next_status:='open';
@@ -166,13 +197,16 @@ begin
   ) then
     next_status:='archived';
   else
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid period transition from % using %',target_period.status,requested_action;
   end if;
 
+  -- עדכון רשומות ב־public.dynamic_availability_periods בהתאם לקלט ולתנאים להלן.
   update public.dynamic_availability_periods
   set status=next_status,updated_at=now()
   where id=target_period.id;
 
+  -- הסתעפות לפי התנאי next_status in ('closed','archived').
   if next_status in ('closed','archived') then
     perform public.capture_dynamic_availability_period_snapshot(target_period.id);
   end if;
@@ -181,6 +215,7 @@ begin
   from public.dynamic_availability_slots
   where period_id=target_period.id;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'periodId',target_period.id,
     'status',next_status,
@@ -195,12 +230,14 @@ $function$;
 do $backfill$
 declare r record;
 begin
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for r in select id from public.dynamic_availability_periods where status in ('closed','archived') loop
     perform public.capture_dynamic_availability_period_snapshot(r.id);
   end loop;
 end;
 $backfill$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.set_dynamic_period_status(uuid,integer,integer,text) to authenticated;
 
 commit;

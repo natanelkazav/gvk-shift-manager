@@ -1,8 +1,14 @@
+-- קובץ: supabase/migrations/20261013193000_expose_employee_preferences_visibility.sql
+-- מטרה: חשיפת תצורת הנראות של העדפות עובדים בתפקיד.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_dynamic_availability_workspace.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Forward-only fix: expose monthly-versioned employee preference visibility.
 -- No data updates; preserves all existing workspace fields and grants.
 -- Expose the job scheduling rules in the employee availability workspace so the
 -- client can calculate the theoretical monthly maximum without changing or
 -- rebuilding any existing availability submission/entry.
+-- פונקציית מסד public.get_my_dynamic_availability_workspace: שליפה או חישוב של דינמי / אילוצים וזמינות.
 create or replace function public.get_my_dynamic_availability_workspace(
   requested_job_type_id uuid,
   requested_year integer,
@@ -10,26 +16,37 @@ create or replace function public.get_my_dynamic_availability_workspace(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
   sub public.dynamic_availability_submissions%rowtype;
+  -- normalized_config — תצורה.
   normalized_config jsonb;
+  -- effective_availability_config — אילוצים וזמינות / תצורה.
   effective_availability_config jsonb;
+  -- version_availability_config — גרסה / אילוצים וזמינות / תצורה.
   version_availability_config jsonb;
   show_employee_preferences boolean;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.job_type_memberships m where m.user_id=current_user_id and m.job_type_id=requested_job_t.
   if not exists(select 1 from public.job_type_memberships m where m.user_id=current_user_id and m.job_type_id=requested_job_type_id) then raise exception 'not a member of this job type'; end if;
   select * into job from public.job_types where id=requested_job_type_id and is_active=true;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי period.id is null then raise exception 'dynamic period not found'; end if;.
   if period.id is null then raise exception 'dynamic period not found'; end if;
+  -- הסתעפות לפי התנאי period.status not in ('open','closed','archived') then raise exception 'period is not available to employees'; end if;.
   if period.status not in ('open','closed','archived') then raise exception 'period is not available to employees'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.dynamic_availability_slots s where s.period_id=period.id) then perform public.materializ.
   if not exists(select 1 from public.dynamic_availability_slots s where s.period_id=period.id) then perform public.materialize_dynamic_availability_period_slots(period.id); end if;
   select * into sub from public.dynamic_availability_submissions where period_id=period.id and user_id=current_user_id;
   effective_availability_config:=coalesce(period.config_snapshot,job.availability_config,'{}'::jsonb);
@@ -58,6 +75,7 @@ begin
     'monthlyCapacity',coalesce(effective_availability_config->'monthlyCapacity','{"enabled":false,"minEnabled":false,"targetEnabled":false,"maxEnabled":false,"defaultMin":null,"defaultTarget":null,"defaultMax":null}'::jsonb),
     'limits',coalesce(effective_availability_config->'limits','{"maxNightsEnabled":false,"defaultMaxNights":null,"maxWeekendsEnabled":false,"defaultMaxWeekends":null,"maxHolidaysEnabled":false,"defaultMaxHolidays":null}'::jsonb)
   );
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'materialized',true,'mode','dynamic_role','periodId',period.id,'jobTypeId',job.id,'jobTypeName',job.name,
     'availabilityConfig',normalized_config,
@@ -72,5 +90,7 @@ begin
   );
 end;
 $function$;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_availability_workspace(uuid,integer,integer) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_availability_workspace(uuid,integer,integer) to authenticated;

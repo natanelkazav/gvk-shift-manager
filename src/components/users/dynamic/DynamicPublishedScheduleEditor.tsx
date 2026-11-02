@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/dynamic/DynamicPublishedScheduleEditor.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי / פורסם / שיבוץ.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: Props, DynamicPublishedScheduleEditor.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { AlertTriangle, CalendarDays, CheckCircle2, List, LoaderCircle, Save, UserRoundX } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
@@ -6,14 +13,22 @@ import { Button } from '../../ui';
 import { dynamicShiftDisplayName } from '../../../utils/dynamicShiftDisplayName';
 import MonthCalendar from '../../calendar/MonthCalendar';
 
+/**
+ * חוזה הנתונים Props: מאפייני הרכיב.
+ */
 interface Props {
+  // publicationId — מזהה.
   publicationId: string;
+  // refreshKey — מפתח (אופציונלי).
   refreshKey?: number;
+  // onChanged — פונקציית דיווח על שינוי (אופציונלי).
   onChanged?: () => void;
 }
 
+// UNASSIGNED_VALUE — ערך.
 const UNASSIGNED_VALUE = '__UNASSIGNED__';
 
+// availabilityLabel — אילוצים וזמינות / תווית.
 const availabilityLabel: Record<string, string> = {
   preferred: 'מעדיף',
   available: 'זמין',
@@ -21,26 +36,53 @@ const availabilityLabel: Record<string, string> = {
   unavailable: 'לא זמין',
 };
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const formatDate = (value: string): string => {
   const [year, month, day] = value.slice(0, 10).split('-');
   return `${day}/${month}/${year}`;
 };
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const formatTime = (value: string): string => value.slice(0, 5);
 
+/**
+ * פעולה DynamicPublishedScheduleEditor: דינמי / פורסם / שיבוץ.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChanged }: Props) {
+  // מצב מקומי: workspace — הנתון workspace בהקשר הפעולה; setWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspace, setWorkspace] = useState<DynamicPublishedEditorWorkspace | null>(null);
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy, setBusy] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: message — הודעה; setMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [message, setMessage] = useState<string | null>(null);
+  // מצב מקומי: selection — בחירה; setSelection מעדכנת אותו ומפעילה רינדור לפי React.
   const [selection, setSelection] = useState<Record<string, string>>({});
+  // מצב מקומי: reason — הנתון reason בהקשר הפעולה; setReason מעדכנת אותו ומפעילה רינדור לפי React.
   const [reason, setReason] = useState<Record<string, string>>({});
+  // מצב מקומי: viewMode — מצב פעולה; setViewMode מעדכנת אותו ומפעילה רינדור לפי React.
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 
+  /**
+   * פעולה אסינכרונית load: טעינת הנתון load בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const load = async (): Promise<void> => {
     setBusy(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // next — הנתון next בהקשר הפעולה.
       const next = await dynamicSchedulingService.getPublishedScheduleEditor(publicationId);
       setWorkspace(next);
       setSelection({});
@@ -52,30 +94,39 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
     }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [publicationId, refreshKey].
   useEffect(() => { void load(); }, [publicationId, refreshKey]);
 
+  // ערך מחושב assignmentCount — הקצאה / כמות; נשמר בין רינדורים עד שינוי התלויות.
   const assignmentCount = useMemo(
     () => workspace?.slots.reduce((sum, slot) => sum + slot.assignments.length, 0) ?? 0,
     [workspace],
   );
 
+  // ערך מחושב unassignedCount — כמות; נשמר בין רינדורים עד שינוי התלויות.
   const unassignedCount = useMemo(
     () => workspace?.slots.reduce((sum, slot) => sum + slot.intentionallyUnassignedCount, 0) ?? 0,
     [workspace],
   );
 
+  // ערך מחושב pendingChanges — ממתין; נשמר בין רינדורים עד שינוי התלויות.
   const pendingChanges = useMemo(() => {
     if (!workspace) return [];
 
     const changes: Array<{
+      // slotId — מזהה.
       slotId: string;
+      // assignmentId — הקצאה / מזהה.
       assignmentId: string | null;
+      // userId — מזהה משתמש.
       userId: string | null;
+      // reasonKey — מפתח.
       reasonKey: string;
     }> = [];
 
     workspace.slots.forEach((slot) => {
       slot.assignments.forEach((assignment) => {
+        // selected — נבחר.
         const selected = selection[assignment.id];
         if (!selected || selected === assignment.userId) return;
 
@@ -87,7 +138,9 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
         });
       });
 
+      // emptyKey — מפתח.
       const emptyKey = `empty-${slot.slotId}`;
+      // selectedForEmpty — נבחר.
       const selectedForEmpty = selection[emptyKey];
       if (slot.intentionallyUnassignedCount > 0 && selectedForEmpty) {
         changes.push({
@@ -102,12 +155,25 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
     return changes;
   }, [selection, workspace]);
 
+  // hasUnsavedChanges — הנתון hasUnsavedChanges בהקשר הפעולה.
   const hasUnsavedChanges = pendingChanges.length > 0;
 
+  /**
+   * פעולה candidateLabel: תווית.
+   * @param displayName — שם תצוגה.
+   * @param status — סטטוס.
+   * @returns string — הפלט בהתאם לחתימה.
+   */
   const candidateLabel = (displayName: string, status: string | null): string =>
     `${displayName} · ${status ? availabilityLabel[status] ?? status : 'לא הוגש'}`;
 
+  /**
+   * פעולה renderAssignmentSelect: בניית תצוגה עבור הקצאה.
+   * @param slot — הנתון slot בהקשר הפעולה.
+   * @param assignment — הקצאה.
+   */
   const renderAssignmentSelect = (slot: DynamicPublishedEditorWorkspace['slots'][number], assignment: DynamicPublishedEditorWorkspace['slots'][number]['assignments'][number]) => {
+    // selected — נבחר.
     const selected = selection[assignment.id] ?? assignment.userId;
     return (
       <select
@@ -127,7 +193,13 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
     );
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [hasUnsavedChanges].
   useEffect(() => {
+    /**
+     * פעולה handleBeforeUnload: טיפול באירוע עבור הנתון handleBeforeUnload בהקשר הפעולה.
+     * @param event — אירוע.
+     * @returns void — הפלט בהתאם לחתימה.
+     */
     const handleBeforeUnload = (event: BeforeUnloadEvent): void => {
       if (!hasUnsavedChanges) return;
       event.preventDefault();
@@ -138,6 +210,10 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
+  /**
+   * פעולה אסינכרונית saveAll: שמירת הנתון saveAll בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const saveAll = async (): Promise<void> => {
     if (!workspace?.editable || pendingChanges.length === 0) return;
 
@@ -145,7 +221,9 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
     setError(null);
     setMessage(null);
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // עיבוד כל פריט מתוך pendingChanges בנפרד.
       for (const change of pendingChanges) {
         await dynamicSchedulingService.setPublishedScheduleAssignment({
           publicationId,
@@ -156,6 +234,7 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
         });
       }
 
+      // savedCount — כמות.
       const savedCount = pendingChanges.length;
       setMessage(savedCount === 1 ? 'השינוי נשמר בהצלחה.' : `${savedCount} שינויים נשמרו בהצלחה.`);
       await load();
@@ -167,10 +246,12 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
     }
   };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר busy && !workspace.
   if (busy && !workspace) {
     return <div className="dynamic-job-types-loading"><LoaderCircle className="spin" size={18} /> טוען לוח מפורסם…</div>;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !workspace.
   if (!workspace) {
     return error ? <div className="users-error" role="alert">{error}</div> : null;
   }
@@ -207,6 +288,7 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
             year={workspace.year}
             month={workspace.month}
             renderDayContent={({ date }) => {
+              // daySlots — יום.
               const daySlots = workspace.slots.filter((slot) => slot.shiftDate.slice(0, 10) === date);
               if (daySlots.length === 0) return <span className="dynamic-draft-calendar-empty">אין משמרות</span>;
               return (
@@ -256,7 +338,9 @@ function DynamicPublishedScheduleEditor({ publicationId, refreshKey = 0, onChang
             </header>
 
             {slot.assignments.map((assignment) => {
+              // key — מפתח.
               const key = assignment.id;
+              // selected — נבחר.
               const selected = selection[key] ?? assignment.userId;
               const changed = selected !== assignment.userId;
 

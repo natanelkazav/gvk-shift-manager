@@ -1,5 +1,13 @@
+/**
+ * קובץ: tests/e2e/role-navigation.spec.mjs
+ * מטרה: מימוש ניווט.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: login.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import { test, expect } from '@playwright/test';
 
+// roleCases — הנתון roleCases בהקשר הפעולה.
 const roleCases = [
   {
     name: 'manager',
@@ -27,6 +35,12 @@ const roleCases = [
   },
 ];
 
+/**
+ * פעולה אסינכרונית login: הנתון login בהקשר הפעולה.
+ * @param page — הנתון page בהקשר הפעולה.
+ * @param email — כתובת דוא״ל.
+ * @param password — סיסמה.
+ */
 async function login(page, email, password) {
   await page.goto('/login');
   await page.getByLabel('כתובת אימייל').fill(email);
@@ -35,17 +49,22 @@ async function login(page, email, password) {
   await expect(page).not.toHaveURL(/\/login(?:$|\?)/);
 }
 
+// עיבוד כל פריט מתוך roleCases בנפרד.
 for (const roleCase of roleCases) {
   test(`${roleCase.name}: login and permitted pages do not crash`, async ({ page }) => {
+    // email — כתובת דוא״ל.
     const email = process.env[roleCase.emailEnv];
+    // password — סיסמה.
     const password = process.env[roleCase.passwordEnv];
     test.skip(!email || !password, `Missing ${roleCase.emailEnv}/${roleCase.passwordEnv}`);
 
+    // pageErrors — שגיאות.
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
 
     await login(page, email, password);
 
+    // עיבוד כל פריט מתוך roleCase.paths בנפרד.
     for (const route of roleCase.paths) {
       await page.goto(route);
       await page.waitForLoadState('networkidle');

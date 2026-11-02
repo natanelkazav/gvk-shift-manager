@@ -1,11 +1,26 @@
+/**
+ * קובץ: src/components/ui/PageHeader.tsx
+ * מטרה: כותרת עמוד משותפת הכוללת את התוכן והפעולות שנמסרים לרכיב.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PageHeaderProps, PageHeader.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import type { ReactNode } from 'react';
 
+/**
+ * חוזה הנתונים PageHeaderProps: מאפייני הרכיב.
+ */
 interface PageHeaderProps {
+  // title — כותרת.
   title: string;
   description?: string;
   actions?: ReactNode;
 }
 
+/**
+ * פעולה PageHeader: הנתון PageHeader בהקשר הפעולה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function PageHeader({
   title,
   description,

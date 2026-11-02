@@ -1,7 +1,22 @@
+/**
+ * קובץ: src/components/ui/LoadingScreen.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור טעינה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: LoadingScreenProps, LoadingScreen.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
+/**
+ * חוזה הנתונים LoadingScreenProps: טעינה / מאפייני הרכיב.
+ */
 interface LoadingScreenProps {
+  // message — הודעה (אופציונלי).
   message?: string;
 }
 
+/**
+ * פעולה LoadingScreen: טעינה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function LoadingScreen({
   message = 'טוען את המערכת...',
 }: LoadingScreenProps) {

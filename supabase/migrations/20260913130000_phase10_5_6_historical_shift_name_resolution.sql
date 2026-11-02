@@ -1,27 +1,43 @@
+-- קובץ: supabase/migrations/20260913130000_phase10_5_6_historical_shift_name_resolution.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור נתונים היסטוריים / משמרת / שם.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_dynamic_schedule_workspace.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 10.5.6 - Resolve friendly names for imported historical personal schedules
 -- Historical months may predate the Dynamic Job Type materialization itself.
 -- Reuse the closest Dynamic shift template by code/time instead of leaking technical legacy codes.
 
 begin;
 
+-- פונקציית מסד public.get_my_dynamic_schedule_workspace: שליפה או חישוב של דינמי / שיבוץ.
 create or replace function public.get_my_dynamic_schedule_workspace(
   requested_publication_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_publication — יעד.
   target_publication public.dynamic_schedule_publications%rowtype;
+  -- target_history — יעד / היסטוריה.
   target_history public.dynamic_historical_periods%rowtype;
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
+  -- assignments_json — הקצאות.
   assignments_json jsonb;
+  -- change_mode — מצב פעולה.
   change_mode text;
+  -- work_mode — מצב פעולה.
   work_mode text;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -29,22 +45,27 @@ begin
   from public.dynamic_schedule_publications
   where id = requested_publication_id;
 
+  -- הסתעפות לפי התנאי target_publication.id is not null.
   if target_publication.id is not null then
     select * into target_job
     from public.job_types
     where id = target_publication.job_type_id
       and legacy_role is null;
 
+    -- הסתעפות לפי התנאי target_job.id is null.
     if target_job.id is null then
+      -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
       raise exception 'dynamic job type not found';
     end if;
 
+    -- הסתעפות לפי התנאי not exists (.
     if not exists (
       select 1
       from public.job_type_memberships m
       where m.job_type_id = target_publication.job_type_id
         and m.user_id = current_user_id
     ) then
+      -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
       raise exception 'not allowed';
     end if;
 
@@ -168,6 +189,7 @@ begin
         and a.user_id = current_user_id
     ) q;
 
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'publicationId', target_publication.id,
       'periodSource', 'publication',
@@ -188,7 +210,9 @@ begin
   from public.dynamic_historical_periods
   where id = requested_publication_id;
 
+  -- הסתעפות לפי התנאי target_history.id is null.
   if target_history.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'schedule period not found';
   end if;
 
@@ -197,16 +221,20 @@ begin
   where id = target_history.job_type_id
     and legacy_role is null;
 
+  -- הסתעפות לפי התנאי target_job.id is null.
   if target_job.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'dynamic job type not found';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.job_type_memberships m
     where m.job_type_id = target_history.job_type_id
       and m.user_id = current_user_id
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -359,6 +387,7 @@ begin
       and ha.assigned_user_id = current_user_id
   ) q;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'publicationId', target_history.id,
     'periodSource', 'history',
@@ -377,7 +406,9 @@ end;
 $function$;
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_schedule_workspace(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_schedule_workspace(uuid) to authenticated;
 
 commit;

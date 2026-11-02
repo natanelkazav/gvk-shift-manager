@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260828173000_phase7_scarcity_aware_shadow_optimizer.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור טיוטות שיבוץ במנגנון הדינמי / מיטוב שיבוץ.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.analyze_dynamic_schedule_feasibility, public.create_dynamic_schedule_shadow_draft.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 7: scarcity-aware whole-period Shadow optimizer.
@@ -10,6 +15,7 @@ begin;
 --     whole month, rather than by calendar order, to avoid consuming flexible
 --     capacity before hard-to-cover shifts are handled.
 
+-- פונקציית מסד public.analyze_dynamic_schedule_feasibility: דינמי / שיבוץ / בדיקת היתכנות שיבוץ.
 create or replace function public.analyze_dynamic_schedule_feasibility(
   requested_job_type_id uuid,
   requested_year integer,
@@ -17,25 +23,35 @@ create or replace function public.analyze_dynamic_schedule_feasibility(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
+  -- required_total — סך הכול.
   required_total integer := 0;
+  -- target_total — יעד / סך הכול.
   target_total integer := 0;
   aggregate_min integer := 0;
+  -- aggregate_target — יעד.
   aggregate_target integer := 0;
   aggregate_max integer := 0;
   shortage_slots integer := 0;
   avoid_fallback_slots integer := 0;
   member_json jsonb;
+  -- min_mode — מצב פעולה.
   min_mode text;
+  -- max_mode — מצב פעולה.
   max_mode text;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(.
   if not exists(
     select 1 from public.user_permissions up
     where up.user_id=current_user_id
@@ -43,13 +59,16 @@ begin
   ) then raise exception 'not allowed'; end if;
 
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
 
   select * into period
   from public.dynamic_availability_periods
   where job_type_id=job.id and year=requested_year and month=requested_month;
 
+  -- הסתעפות לפי התנאי period.id is null.
   if period.id is null then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'materialized',false,'mode','shadow',
       'message','יש ליצור קודם תקופת אילוצים ב־Shadow Mode.'
@@ -167,6 +186,7 @@ begin
         and e.availability_status in ('available','preferred','avoid')
     ) >= sl.min_workers;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'materialized',true,
     'periodId',period.id,
@@ -199,6 +219,7 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.create_dynamic_schedule_shadow_draft: יצירת דינמי / שיבוץ / טיוטות שיבוץ במנגנון הדינמי / טיוטה.
 create or replace function public.create_dynamic_schedule_shadow_draft(
   requested_job_type_id uuid,
   requested_year integer,
@@ -206,51 +227,72 @@ create or replace function public.create_dynamic_schedule_shadow_draft(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
+  -- v_draft_id — טיוטה / מזהה.
   v_draft_id uuid;
+  -- feasibility — בדיקת היתכנות שיבוץ.
   feasibility jsonb;
   sl record;
+  -- chosen_user — משתמש.
   chosen_user uuid;
+  -- chosen_score — ניקוד.
   chosen_score numeric;
+  -- chosen_status — סטטוס.
   chosen_status text;
   chosen_assigned integer;
   chosen_min integer;
+  -- chosen_target — יעד.
   chosen_target integer;
   chosen_max integer;
   assigned_required integer := 0;
   assigned_optional integer := 0;
   unfilled integer := 0;
+  -- avoid_assignments — הקצאות.
   avoid_assignments integer := 0;
+  -- above_target_assignments — יעד / הקצאות.
   above_target_assignments integer := 0;
   no_consecutive boolean;
+  -- max_per_day — יום.
   max_per_day integer;
+  -- min_rest — מנוחה.
   min_rest integer;
   max_hard boolean;
+  -- coverage_weight — משקל בחישוב.
   coverage_weight numeric;
+  -- fairness_weight — איזון בין עובדים / משקל בחישוב.
   fairness_weight numeric;
+  -- preference_weight — משקל בחישוב.
   preference_weight numeric;
+  -- optional_weight — משקל בחישוב.
   optional_weight numeric;
   blocked_slots uuid[] := array[]::uuid[];
   remaining_positions integer;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(.
   if not exists(
     select 1 from public.user_permissions up
     where up.user_id=current_user_id and up.permission_key='users.manage'
   ) then raise exception 'not allowed'; end if;
 
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
 
   select * into period
   from public.dynamic_availability_periods
   where job_type_id=job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי period.id is null then raise exception 'shadow availability period not found'; end if;.
   if period.id is null then raise exception 'shadow availability period not found'; end if;
 
   feasibility := public.analyze_dynamic_schedule_feasibility(
@@ -276,6 +318,7 @@ begin
   preference_weight := coalesce((job.scheduling_config#>>'{weights,preference}')::numeric,30);
   optional_weight := coalesce((job.scheduling_config#>>'{weights,targetOptional}')::numeric,15);
 
+  -- הוספת רשומות ל־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_schedule_shadow_drafts(
     job_type_id,availability_period_id,year,month,status,
     feasibility_snapshot,rules_snapshot,created_by
@@ -284,6 +327,7 @@ begin
     feasibility,job.scheduling_config,current_user_id
   ) returning id into v_draft_id;
 
+  -- הוספת רשומות ל־public.dynamic_schedule_shadow_targets בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_schedule_shadow_targets(
     draft_id,user_id,requested_min,requested_target,requested_max,
     available_slots,proportional_weight,proportional_target
@@ -419,6 +463,7 @@ begin
       limit 1
     ) candidate;
 
+    -- הסתעפות לפי התנאי chosen_user is null.
     if chosen_user is null then
       select greatest(
         sl.min_workers-count(*),0
@@ -433,6 +478,7 @@ begin
       continue;
     end if;
 
+    -- הוספת רשומות ל־public.dynamic_schedule_shadow_assignments בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_schedule_shadow_assignments(
       draft_id,slot_id,user_id,assignment_tier,score,reasons
     ) values(
@@ -458,14 +504,17 @@ begin
       )
     );
 
+    -- עדכון רשומות ב־public.dynamic_schedule_shadow_targets בהתאם לקלט ולתנאים להלן.
     update public.dynamic_schedule_shadow_targets target_row
     set assigned_count=target_row.assigned_count+1
     where target_row.draft_id=v_draft_id
       and target_row.user_id=chosen_user;
 
+    -- הסתעפות לפי התנאי chosen_status='avoid'.
     if chosen_status='avoid' then
       avoid_assignments := avoid_assignments+1;
     end if;
+    -- הסתעפות לפי התנאי chosen_assigned >= coalesce(chosen_target,0).
     if chosen_assigned >= coalesce(chosen_target,0) then
       above_target_assignments := above_target_assignments+1;
     end if;
@@ -475,6 +524,7 @@ begin
   -- Optional staffing pass. This happens only after every possible required
   -- position has been handled. "Prefer not" is intentionally not used merely
   -- to add optional staffing above the shift minimum.
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for sl in
     select *
     from public.dynamic_availability_slots candidate_slot
@@ -547,6 +597,7 @@ begin
 
       exit when chosen_user is null;
 
+      -- הוספת רשומות ל־public.dynamic_schedule_shadow_assignments בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_shadow_assignments(
         draft_id,slot_id,user_id,assignment_tier,score,reasons
       ) values(
@@ -561,11 +612,13 @@ begin
         )
       );
 
+      -- עדכון רשומות ב־public.dynamic_schedule_shadow_targets בהתאם לקלט ולתנאים להלן.
       update public.dynamic_schedule_shadow_targets target_row
       set assigned_count=target_row.assigned_count+1
       where target_row.draft_id=v_draft_id
         and target_row.user_id=chosen_user;
 
+      -- הסתעפות לפי התנאי chosen_assigned >= coalesce(chosen_target,0).
       if chosen_assigned >= coalesce(chosen_target,0) then
         above_target_assignments := above_target_assignments+1;
       end if;
@@ -573,6 +626,7 @@ begin
     end loop;
   end loop;
 
+  -- עדכון רשומות ב־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
   update public.dynamic_schedule_shadow_drafts draft_row
   set
     status=case when unfilled=0 then 'generated' else 'incomplete' end,
@@ -589,6 +643,7 @@ begin
     updated_at=now()
   where draft_row.id=v_draft_id;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'draftId',v_draft_id,
     'mode','shadow',
@@ -605,7 +660,9 @@ begin
 end;
 $function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.analyze_dynamic_schedule_feasibility(uuid,integer,integer) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.create_dynamic_schedule_shadow_draft(uuid,integer,integer) to authenticated;
 
 commit;

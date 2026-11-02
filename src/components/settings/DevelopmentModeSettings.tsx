@@ -1,14 +1,30 @@
+/**
+ * קובץ: src/components/settings/DevelopmentModeSettings.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור מצב פיתוח / מצב פעולה / הגדרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DevelopmentModeSettings.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { FlaskConical, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
 import { useDevelopmentMode } from '../../features/developmentMode/DevelopmentModeContext';
 
+/**
+ * פעולה DevelopmentModeSettings: מצב פיתוח / מצב פעולה / הגדרות.
+ */
 export default function DevelopmentModeSettings() {
   const { enabled, expiresAt, isLoading, setEnabled } = useDevelopmentMode();
+  // מצב מקומי: duration — משך; setDuration מעדכנת אותו ומפעילה רינדור לפי React.
   const [duration, setDuration] = useState('60');
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * פעולה אסינכרונית toggle: החלפת בחירה עבור הנתון toggle בהקשר הפעולה.
+   */
   const toggle = async () => {
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await setEnabled(!enabled, enabled ? null : Number(duration));
     } catch (caught) {

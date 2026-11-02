@@ -1,6 +1,12 @@
+-- קובץ: supabase/migrations/20260925213500_strengthen_balance_and_200_percent_fairness.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור איזון בין עובדים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.dynamic_shadow_shift_type_assigned_count, public.dynamic_shadow_shift_type_opportunity_weight, public.dynamic_shadow_shift_type_expected_count, public.dynamic_shadow_slot_200_hours, public.dynamic_shadow_200_assigned_hours, public.dynamic_shadow_200_opportunity_weight, public.dynamic_shadow_200_expected_hours, public.create_dynamic_schedule_shadow_draft.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Stronger availability-aware balancing plus 200% premium-hour fairness.
 -- Shift-type fairness is intentionally based on the visible shift time, not shift_code,
 -- so equivalent templates (for example weekday/special-day variants) compete in one pool.
+-- פונקציית מסד public.dynamic_shadow_shift_type_assigned_count: דינמי / טיוטות שיבוץ במנגנון הדינמי / משמרת / כמות.
 create or replace function public.dynamic_shadow_shift_type_assigned_count(requested_draft_id uuid, requested_user_id uuid, requested_slot_id uuid)
 returns integer language sql stable security definer set search_path='' as $function$
   select count(*)::integer
@@ -11,6 +17,7 @@ returns integer language sql stable security definer set search_path='' as $func
     and assigned_slot.start_time=requested_slot.start_time and assigned_slot.end_time=requested_slot.end_time;
 $function$;
 
+-- פונקציית מסד public.dynamic_shadow_shift_type_opportunity_weight: דינמי / טיוטות שיבוץ במנגנון הדינמי / משמרת / משקל בחישוב.
 create or replace function public.dynamic_shadow_shift_type_opportunity_weight(requested_draft_id uuid, requested_user_id uuid, requested_slot_id uuid)
 returns numeric language sql stable security definer set search_path='' as $function$
   select coalesce(sum(case e.availability_status when 'preferred' then 1.25 when 'available' then 1.0 when 'avoid' then 0.15 else 0 end),0)::numeric
@@ -23,6 +30,7 @@ returns numeric language sql stable security definer set search_path='' as $func
   where d.id=requested_draft_id;
 $function$;
 
+-- פונקציית מסד public.dynamic_shadow_shift_type_expected_count: דינמי / טיוטות שיבוץ במנגנון הדינמי / משמרת / כמות.
 create or replace function public.dynamic_shadow_shift_type_expected_count(requested_draft_id uuid, requested_user_id uuid, requested_slot_id uuid)
 returns numeric language sql stable security definer set search_path='' as $function$
   with requested as (
@@ -43,6 +51,7 @@ returns numeric language sql stable security definer set search_path='' as $func
 $function$;
 
 -- Hours inside a slot that are paid at 200% or above, from the period snapshot.
+-- פונקציית מסד public.dynamic_shadow_slot_200_hours: דינמי / טיוטות שיבוץ במנגנון הדינמי / שעות.
 create or replace function public.dynamic_shadow_slot_200_hours(requested_slot_id uuid)
 returns numeric language sql stable security definer set search_path='' as $function$
   select coalesce(sum(
@@ -55,6 +64,7 @@ returns numeric language sql stable security definer set search_path='' as $func
   where sl.id=requested_slot_id;
 $function$;
 
+-- פונקציית מסד public.dynamic_shadow_200_assigned_hours: דינמי / טיוטות שיבוץ במנגנון הדינמי / שעות.
 create or replace function public.dynamic_shadow_200_assigned_hours(requested_draft_id uuid, requested_user_id uuid)
 returns numeric language sql stable security definer set search_path='' as $function$
   select coalesce(sum(public.dynamic_shadow_slot_200_hours(a.slot_id)),0)::numeric
@@ -62,6 +72,7 @@ returns numeric language sql stable security definer set search_path='' as $func
   where a.draft_id=requested_draft_id and a.user_id=requested_user_id;
 $function$;
 
+-- פונקציית מסד public.dynamic_shadow_200_opportunity_weight: דינמי / טיוטות שיבוץ במנגנון הדינמי / משקל בחישוב.
 create or replace function public.dynamic_shadow_200_opportunity_weight(requested_draft_id uuid, requested_user_id uuid)
 returns numeric language sql stable security definer set search_path='' as $function$
   select coalesce(sum(
@@ -75,6 +86,7 @@ returns numeric language sql stable security definer set search_path='' as $func
   where d.id=requested_draft_id;
 $function$;
 
+-- פונקציית מסד public.dynamic_shadow_200_expected_hours: דינמי / טיוטות שיבוץ במנגנון הדינמי / שעות.
 create or replace function public.dynamic_shadow_200_expected_hours(requested_draft_id uuid, requested_user_id uuid, requested_slot_id uuid)
 returns numeric language sql stable security definer set search_path='' as $function$
   with draft as (
@@ -92,14 +104,22 @@ returns numeric language sql stable security definer set search_path='' as $func
     * coalesce(max(weight) filter(where user_id=requested_user_id),0) / sum(weight) end from weights;
 $function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_shadow_shift_type_assigned_count(uuid,uuid,uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_shadow_shift_type_opportunity_weight(uuid,uuid,uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_shadow_shift_type_expected_count(uuid,uuid,uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_shadow_slot_200_hours(uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_shadow_200_assigned_hours(uuid,uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_shadow_200_opportunity_weight(uuid,uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_shadow_200_expected_hours(uuid,uuid,uuid) to authenticated;
 
+-- פונקציית מסד public.create_dynamic_schedule_shadow_draft: יצירת דינמי / שיבוץ / טיוטות שיבוץ במנגנון הדינמי / טיוטה.
 create or replace function public.create_dynamic_schedule_shadow_draft(
   requested_job_type_id uuid,
   requested_year integer,
@@ -107,44 +127,65 @@ create or replace function public.create_dynamic_schedule_shadow_draft(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
+  -- v_draft_id — טיוטה / מזהה.
   v_draft_id uuid;
+  -- feasibility — בדיקת היתכנות שיבוץ.
   feasibility jsonb;
   sl record;
+  -- chosen_user — משתמש.
   chosen_user uuid;
+  -- chosen_score — ניקוד.
   chosen_score numeric;
+  -- chosen_status — סטטוס.
   chosen_status text;
   chosen_assigned integer;
   chosen_min integer;
+  -- chosen_target — יעד.
   chosen_target integer;
   chosen_max integer;
   assigned_required integer := 0;
   assigned_optional integer := 0;
   unfilled integer := 0;
+  -- avoid_assignments — הקצאות.
   avoid_assignments integer := 0;
+  -- above_target_assignments — יעד / הקצאות.
   above_target_assignments integer := 0;
   no_consecutive boolean;
+  -- max_per_day — יום.
   max_per_day integer;
+  -- min_rest — מנוחה.
   min_rest integer;
   max_hard boolean;
+  -- coverage_weight — משקל בחישוב.
   coverage_weight numeric;
+  -- fairness_weight — איזון בין עובדים / משקל בחישוב.
   fairness_weight numeric;
+  -- preference_weight — משקל בחישוב.
   preference_weight numeric;
+  -- optional_weight — משקל בחישוב.
   optional_weight numeric;
   blocked_slots uuid[] := array[]::uuid[];
   remaining_positions integer;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('schedule.create_draft', requested_job_type_id, current_user_id) then raise e.
   if not public.has_dynamic_job_type_permission('schedule.create_draft', requested_job_type_id, current_user_id) then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי period.id is null then raise exception 'shadow availability period not found'; end if;.
   if period.id is null then raise exception 'shadow availability period not found'; end if;
 
   feasibility := public.analyze_dynamic_schedule_feasibility(job.id,requested_year,requested_month);
@@ -157,10 +198,12 @@ begin
   preference_weight := coalesce((job.scheduling_config#>>'{weights,preference}')::numeric,30);
   optional_weight := coalesce((job.scheduling_config#>>'{weights,targetOptional}')::numeric,15);
 
+  -- הוספת רשומות ל־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_schedule_shadow_drafts(job_type_id,availability_period_id,year,month,status,feasibility_snapshot,rules_snapshot,created_by)
   values(job.id,period.id,requested_year,requested_month,'shadow',feasibility,job.scheduling_config,current_user_id)
   returning id into v_draft_id;
 
+  -- הוספת רשומות ל־public.dynamic_schedule_shadow_targets בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_schedule_shadow_targets(
     draft_id,user_id,requested_min,requested_target,requested_max,available_slots,
     proportional_weight,proportional_target,employment_scope,employment_factor
@@ -217,6 +260,7 @@ begin
       order by score desc,t.assigned_count asc,t.user_id limit 1
     ) c;
 
+    -- הסתעפות לפי התנאי chosen_user is null.
     if chosen_user is null then
       select greatest(sl.min_workers-count(*),0) into remaining_positions
       from public.dynamic_schedule_shadow_assignments a
@@ -226,6 +270,7 @@ begin
       continue;
     end if;
 
+    -- הוספת רשומות ל־public.dynamic_schedule_shadow_assignments בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_schedule_shadow_assignments(draft_id,slot_id,user_id,assignment_tier,score,reasons)
     values(v_draft_id,sl.id,chosen_user,'required',chosen_score,jsonb_build_array(
       'כיסוי משמרת','קדימות למשמרות עם מעט מועמדים',
@@ -234,13 +279,17 @@ begin
            else 'העובד נשאר מועמד גם לאחר הגעה ליעד' end,
       case chosen_status when 'preferred' then 'מעדיף' when 'available' then 'זמין' when 'avoid' then 'מעדיף שלא — נבחר רק לאחר שקלול עדיפות נמוכה' else chosen_status end
     ));
+    -- עדכון רשומות ב־public.dynamic_schedule_shadow_targets בהתאם לקלט ולתנאים להלן.
     update public.dynamic_schedule_shadow_targets t set assigned_count=t.assigned_count+1
     where t.draft_id=v_draft_id and t.user_id=chosen_user;
+    -- הסתעפות לפי התנאי chosen_status='avoid' then avoid_assignments:=avoid_assignments+1; end if;.
     if chosen_status='avoid' then avoid_assignments:=avoid_assignments+1; end if;
+    -- הסתעפות לפי התנאי chosen_assigned>=coalesce(chosen_target,0) then above_target_assignments:=above_target_assignments+1; end if;.
     if chosen_assigned>=coalesce(chosen_target,0) then above_target_assignments:=above_target_assignments+1; end if;
     assigned_required:=assigned_required+1;
   end loop;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for sl in select * from public.dynamic_availability_slots s where s.period_id=period.id and s.target_workers>s.min_workers order by s.shift_date,s.start_time,s.id loop
     loop
       exit when (select count(*) from public.dynamic_schedule_shadow_assignments a where a.draft_id=v_draft_id and a.slot_id=sl.id)>=sl.target_workers;
@@ -268,19 +317,23 @@ begin
         order by score desc,t.assigned_count asc,t.user_id limit 1
       ) c;
       exit when chosen_user is null;
+      -- הוספת רשומות ל־public.dynamic_schedule_shadow_assignments בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_shadow_assignments(draft_id,slot_id,user_id,assignment_tier,score,reasons)
       values(v_draft_id,sl.id,chosen_user,'target_optional',chosen_score,jsonb_build_array(
         'עובד נוסף עד יעד האיוש למשמרת',
         case when chosen_assigned<coalesce(chosen_target,0) then 'איזון לכיוון היעד החודשי' else 'היעד החודשי הוא העדפה ולא חסם' end,
         case when chosen_status='preferred' then 'מעדיף' else 'זמין' end
       ));
+      -- עדכון רשומות ב־public.dynamic_schedule_shadow_targets בהתאם לקלט ולתנאים להלן.
       update public.dynamic_schedule_shadow_targets t set assigned_count=t.assigned_count+1
       where t.draft_id=v_draft_id and t.user_id=chosen_user;
+      -- הסתעפות לפי התנאי chosen_assigned>=coalesce(chosen_target,0) then above_target_assignments:=above_target_assignments+1; end if;.
       if chosen_assigned>=coalesce(chosen_target,0) then above_target_assignments:=above_target_assignments+1; end if;
       assigned_optional:=assigned_optional+1;
     end loop;
   end loop;
 
+  -- עדכון רשומות ב־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
   update public.dynamic_schedule_shadow_drafts d
   set status=case when unfilled=0 then 'generated' else 'incomplete' end,
       metrics=jsonb_build_object(
@@ -293,6 +346,7 @@ begin
       ),updated_at=now()
   where d.id=v_draft_id;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'draftId',v_draft_id,'mode','shadow','requiredAssignmentsCreated',assigned_required,
     'optionalAssignmentsCreated',assigned_optional,'unfilledRequiredPositions',unfilled,

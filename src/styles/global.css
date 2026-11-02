@@ -1,11 +1,18 @@
+/*
+ * קובץ: src/styles/global.css
+ * מטרה: הגדרת סגנונות הבסיס החלים על היישום כולו.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
 @import './tokens.css';
 
 *,
 *::before,
+/* כללי עיצוב עבור *::after  */
 *::after {
   box-sizing: border-box;
 }
 
+/* כללי עיצוב עבור html  */
 html {
   direction: rtl;
   font-family: var(--font-family);
@@ -15,6 +22,7 @@ html {
   text-rendering: optimizeLegibility;
 }
 
+/* כללי עיצוב עבור body  */
 body {
   margin: 0;
   min-width: 320px;
@@ -26,6 +34,7 @@ body,
 button,
 input,
 select,
+/* כללי עיצוב עבור textarea  */
 textarea {
   font-family: inherit;
 }
@@ -33,14 +42,17 @@ textarea {
 button,
 input,
 select,
+/* כללי עיצוב עבור textarea  */
 textarea {
   font-size: var(--font-size-md);
 }
 
+/* כללי עיצוב עבור button  */
 button {
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור a  */
 a {
   color: inherit;
   text-decoration: none;
@@ -50,22 +62,26 @@ h1,
 h2,
 h3,
 h4,
+/* כללי עיצוב עבור p  */
 p {
   margin-top: 0;
 }
 
+/* כללי עיצוב עבור h1  */
 h1 {
   margin-bottom: var(--space-2);
   font-size: var(--font-size-2xl);
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור h2  */
 h2 {
   margin-bottom: var(--space-4);
   font-size: var(--font-size-xl);
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור p  */
 p {
   line-height: 1.6;
   color: var(--color-gray-600);
@@ -75,6 +91,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible,
+/* כללי עיצוב עבור textarea:focus-visible  */
 textarea:focus-visible {
   outline: 3px solid rgb(59 130 246 / 30%);
   outline-offset: 2px;

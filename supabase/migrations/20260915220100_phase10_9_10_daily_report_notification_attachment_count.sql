@@ -1,9 +1,16 @@
+-- קובץ: supabase/migrations/20260915220100_phase10_9_10_daily_report_notification_attachment_count.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דוחות פעילות יומיים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.decorate_daily_report_notification.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
+-- פונקציית מסד public.decorate_daily_report_notification: דוחות פעילות יומיים.
 create or replace function public.decorate_daily_report_notification()
 returns trigger language plpgsql security definer set search_path=''
 as $$
 declare rid uuid; attachment_count_value bigint;
 begin
+ -- הסתעפות לפי התנאי new.source<>'daily_report' or not (new.data ? 'reportId') then return new; end if;.
  if new.source<>'daily_report' or not (new.data ? 'reportId') then return new; end if;
  begin rid:=(new.data->>'reportId')::uuid; exception when others then return new; end;
  select count(*) into attachment_count_value from public.daily_report_attachments a where a.report_id=rid;

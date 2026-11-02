@@ -1,3 +1,7 @@
+-- קובץ: supabase/migrations/20260915200000_phase10_9_6_daily_report_existing_role_permissions.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דוחות פעילות יומיים.
+-- מטרות עיקריות:
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Existing roles created during the 10.9 rollout can already have Daily Reports
@@ -19,6 +23,7 @@ with enabled_daily_roles as (
       )
     )
 )
+-- הוספת רשומות ל־public.job_type_permission_settings בהתאם לקלט ולתנאים להלן.
 insert into public.job_type_permission_settings
   (job_type_id,permission_key,audience,enabled,source,updated_at)
 select r.id, dm.permission_key, dm.audience,

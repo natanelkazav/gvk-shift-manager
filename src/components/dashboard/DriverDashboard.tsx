@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/dashboard/DriverDashboard.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כוננים / לוח בקרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DriverDashboardProps, formatDate, formatTime, getDispatcherName, DutyContent, DriverDashboard.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarClock,
   Radio,
@@ -15,19 +22,30 @@ import DashboardCard
 import ProgressCard
   from './ProgressCard';
 
+/**
+ * חוזה הנתונים DriverDashboardProps: כוננים / לוח בקרה / מאפייני הרכיב.
+ */
 interface DriverDashboardProps {
+  // data — נתונים.
   data:
     DriverDashboardData;
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -53,12 +71,19 @@ function formatDate(
   );
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -84,6 +109,12 @@ function formatTime(
   );
 }
 
+/**
+ * פעולה getDispatcherName: שליפה או חישוב של מוקדנים / שם.
+ * @param displayName — שם תצוגה.
+ * @param scheduleName — שיבוץ / שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDispatcherName(
   displayName:
     string | null,
@@ -98,6 +129,10 @@ function getDispatcherName(
   );
 }
 
+/**
+ * פעולה DutyContent: הנתון DutyContent בהקשר הפעולה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DutyContent({
   duty,
 }: {
@@ -171,6 +206,10 @@ function DutyContent({
   );
 }
 
+/**
+ * פעולה DriverDashboard: כוננים / לוח בקרה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DriverDashboard({
   data,
 }: DriverDashboardProps) {

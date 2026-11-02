@@ -1,3 +1,11 @@
+/**
+ * קובץ: src/services/driverScheduleService.ts
+ * מטרה: ניהול טיוטות, פרסום ושינויי שיבוץ של כוננים טכניים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: normalizeDriverScheduleError, DriverScheduleService.
+ * - קריאות RPC המופעלות בקובץ: create_driver_schedule_draft, publish_driver_schedule, get_driver_schedule_draft, update_driver_schedule_day, update_current_driver_schedule_day, transfer_my_driver_duty.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import {
   schedulePublicationNotificationService,
 } from './schedulePublicationNotificationService';
@@ -17,6 +25,11 @@ import type {
   TransferMyDriverDutyResponse,
 } from '../types/driverSchedule';
 
+/**
+ * פעולה normalizeDriverScheduleError: נרמול כוננים / שיבוץ / שגיאה.
+ * @param error — שגיאה.
+ * @returns Error — הפלט בהתאם לחתימה.
+ */
 function normalizeDriverScheduleError(
   error: unknown,
 ): Error {
@@ -25,6 +38,7 @@ function normalizeDriverScheduleError(
     error,
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -35,8 +49,10 @@ function normalizeDriverScheduleError(
     typeof error === 'object' &&
     error !== null
   ) {
+    // supabaseError — שגיאה.
     const supabaseError =
       error as {
+        // message — הודעה (אופציונלי).
         message?: unknown;
         details?: unknown;
         hint?: unknown;
@@ -70,6 +86,7 @@ function normalizeDriverScheduleError(
         Boolean(part),
     );
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר parts.length > 0.
     if (parts.length > 0) {
       return new Error(
         parts.join(' | '),
@@ -82,13 +99,24 @@ function normalizeDriverScheduleError(
   );
 }
 
+/**
+ * איגוד פעולות כוננים / שיבוץ / שירות במחלקה DriverScheduleService.
+ */
 class DriverScheduleService {
+  /**
+   * פעולה אסינכרונית createDraft: יצירת טיוטה.
+   * הפעולה פונה ל־RPC: create_driver_schedule_draft.
+   * @param availabilityPeriodId — תקופת אילוצים.
+   * @returns Promise<CreateDriverScheduleDraftResponse> — הפלט בהתאם לחתימה.
+   */
   async createDraft(
     availabilityPeriodId: string,
   ): Promise<CreateDriverScheduleDraftResponse> {
+    // normalizedAvailabilityPeriodId — תקופת אילוצים.
     const normalizedAvailabilityPeriodId =
       availabilityPeriodId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedAvailabilityPeriodId.
     if (
       !normalizedAvailabilityPeriodId
     ) {
@@ -97,6 +125,7 @@ class DriverScheduleService {
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -109,12 +138,14 @@ class DriverScheduleService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeDriverScheduleError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת יצירת טיוטת לוח הכוננים.',
@@ -124,18 +155,27 @@ class DriverScheduleService {
     return data as
       CreateDriverScheduleDraftResponse;
   }
+  /**
+   * פעולה אסינכרונית publishSchedule: פרסום שיבוץ.
+   * הפעולה פונה ל־RPC: publish_driver_schedule.
+   * @param schedulePeriodId — תקופת שיבוץ.
+   * @returns Promise<PublishDriverScheduleResponse> — הפלט בהתאם לחתימה.
+   */
   async publishSchedule(
     schedulePeriodId: string,
   ): Promise<PublishDriverScheduleResponse> {
+    // normalizedSchedulePeriodId — תקופת שיבוץ.
     const normalizedSchedulePeriodId =
       schedulePeriodId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedSchedulePeriodId.
     if (!normalizedSchedulePeriodId) {
       throw new Error(
         'Driver schedule period id is required.',
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -148,18 +188,21 @@ class DriverScheduleService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeDriverScheduleError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת פרסום לוח הכוננים.',
       );
     }
 
+    // response — תוצאת הפעולה.
     const response =
       data as PublishDriverScheduleResponse;
 
@@ -173,23 +216,33 @@ class DriverScheduleService {
 
     return response;
   }
+  /**
+   * פעולה אסינכרונית getSchedule: שליפה או חישוב של שיבוץ.
+   * הפעולה פונה ל־RPC: get_driver_schedule_draft.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<DriverScheduleData | null> — הפלט בהתאם לחתימה.
+   */
   async getSchedule(
     request:
       GetDriverScheduleRequest = {},
   ): Promise<DriverScheduleData | null> {
+    // normalizedSchedulePeriodId — תקופת שיבוץ.
     const normalizedSchedulePeriodId =
       request.schedulePeriodId
         ?.trim() ||
       null;
 
+    // normalizedYear — שנה.
     const normalizedYear =
       request.year ??
       null;
 
+    // normalizedMonth — חודש.
     const normalizedMonth =
       request.month ??
       null;
 
+    // עצירת הפעולה עם שגיאה כאשר normalizedMonth !== null && ( !Number.isInteger( normalizedMonth, ) || normalizedMonth < 1 || normalizedMonth > 12 ).
     if (
       normalizedMonth !== null &&
       (
@@ -205,6 +258,7 @@ class DriverScheduleService {
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר normalizedYear !== null && ( !Number.isInteger( normalizedYear, ) || normalizedYear < 2020 || normalizedYear > 2100 ).
     if (
       normalizedYear !== null &&
       (
@@ -220,6 +274,7 @@ class DriverScheduleService {
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -238,19 +293,23 @@ class DriverScheduleService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeDriverScheduleError(
         error,
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
     if (!data) {
       return null;
     }
 
+    // response — תוצאת הפעולה.
     const response =
       data as DriverScheduleData;
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !response.period.
     if (!response.period) {
       return null;
     }
@@ -258,17 +317,28 @@ class DriverScheduleService {
     return response;
   }
 
+  /**
+   * פעולה אסינכרונית getLatestSchedule: שליפה או חישוב של שיבוץ.
+   * @returns Promise<DriverScheduleData | null> — הפלט בהתאם לחתימה.
+   */
   async getLatestSchedule():
     Promise<DriverScheduleData | null> {
     return this.getSchedule();
   }
 
+  /**
+   * פעולה אסינכרונית getScheduleById: שליפה או חישוב של שיבוץ / מזהה.
+   * @param schedulePeriodId — תקופת שיבוץ.
+   * @returns Promise<DriverScheduleData | null> — הפלט בהתאם לחתימה.
+   */
   async getScheduleById(
     schedulePeriodId: string,
   ): Promise<DriverScheduleData | null> {
+    // normalizedSchedulePeriodId — תקופת שיבוץ.
     const normalizedSchedulePeriodId =
       schedulePeriodId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedSchedulePeriodId.
     if (
       !normalizedSchedulePeriodId
     ) {
@@ -283,6 +353,12 @@ class DriverScheduleService {
     });
   }
 
+  /**
+   * פעולה אסינכרונית getScheduleByMonth: שליפה או חישוב של שיבוץ / חודש.
+   * @param year — שנה.
+   * @param month — חודש.
+   * @returns Promise<DriverScheduleData | null> — הפלט בהתאם לחתימה.
+   */
   async getScheduleByMonth(
     year: number,
     month: number,
@@ -292,29 +368,40 @@ class DriverScheduleService {
       month,
     });
   }
+  /**
+   * פעולה אסינכרונית updateScheduleDay: עדכון שיבוץ / יום.
+   * הפעולה פונה ל־RPC: update_driver_schedule_day.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<UpdateDriverScheduleDayResponse> — הפלט בהתאם לחתימה.
+   */
   async updateScheduleDay(
   request:
     UpdateDriverScheduleDayRequest,
 ): Promise<UpdateDriverScheduleDayResponse> {
+  // normalizedScheduleDayId — מזהה היום.
   const normalizedScheduleDayId =
     request.scheduleDayId.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !normalizedScheduleDayId.
   if (!normalizedScheduleDayId) {
     throw new Error(
       'Driver schedule day id is required.',
     );
   }
 
+  // normalizedAssignedUserId — מזהה העובד המשובץ.
   const normalizedAssignedUserId =
     request.assignedUserId
       ?.trim() ||
     null;
 
+  // normalizedNote — הערה.
   const normalizedNote =
     request.note
       ?.trim() ||
     null;
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -336,12 +423,14 @@ class DriverScheduleService {
       },
     );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
     throw normalizeDriverScheduleError(
       error,
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data.
   if (!data) {
     throw new Error(
       'לא התקבלה תשובה בעת עדכון יום בלוח הכוננים.',
@@ -351,29 +440,40 @@ class DriverScheduleService {
   return data as
     UpdateDriverScheduleDayResponse;
 }
+  /**
+   * פעולה אסינכרונית updatePublishedScheduleDay: עדכון פורסם / שיבוץ / יום.
+   * הפעולה פונה ל־RPC: update_current_driver_schedule_day.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<UpdateDriverScheduleDayResponse> — הפלט בהתאם לחתימה.
+   */
   async updatePublishedScheduleDay(
     request:
       UpdateDriverScheduleDayRequest,
   ): Promise<UpdateDriverScheduleDayResponse> {
+    // normalizedScheduleDayId — מזהה היום.
     const normalizedScheduleDayId =
       request.scheduleDayId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedScheduleDayId.
     if (!normalizedScheduleDayId) {
       throw new Error(
         'Driver schedule day id is required.',
       );
     }
 
+    // normalizedAssignedUserId — מזהה העובד המשובץ.
     const normalizedAssignedUserId =
       request.assignedUserId
         ?.trim() ||
       null;
 
+    // normalizedNote — הערה.
     const normalizedNote =
       request.note
         ?.trim() ||
       null;
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -395,12 +495,14 @@ class DriverScheduleService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeDriverScheduleError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת עדכון יום בלוח הכוננים.',
@@ -411,16 +513,25 @@ class DriverScheduleService {
       UpdateDriverScheduleDayResponse;
   }
 
+  /**
+   * פעולה אסינכרונית transferMyDuty: הנתון transferMyDuty בהקשר הפעולה.
+   * הפעולה פונה ל־RPC: transfer_my_driver_duty.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<TransferMyDriverDutyResponse> — הפלט בהתאם לחתימה.
+   */
   async transferMyDuty(
     request:
       TransferMyDriverDutyRequest,
   ): Promise<TransferMyDriverDutyResponse> {
+    // normalizedScheduleDayId — מזהה היום.
     const normalizedScheduleDayId =
       request.scheduleDayId.trim();
 
+    // normalizedNewDriverId — כוננים / מזהה.
     const normalizedNewDriverId =
       request.newDriverId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedScheduleDayId.
     if (
       !normalizedScheduleDayId
     ) {
@@ -429,6 +540,7 @@ class DriverScheduleService {
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedNewDriverId.
     if (
       !normalizedNewDriverId
     ) {
@@ -437,6 +549,7 @@ class DriverScheduleService {
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -452,12 +565,14 @@ class DriverScheduleService {
         },
       );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeDriverScheduleError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת העברת הכוננות.',
@@ -470,5 +585,6 @@ class DriverScheduleService {
 
 }
 
+// driverScheduleService — כוננים / שיבוץ / שירות.
 export const driverScheduleService =
   new DriverScheduleService();

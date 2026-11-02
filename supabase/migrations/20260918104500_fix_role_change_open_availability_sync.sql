@@ -1,21 +1,35 @@
+-- קובץ: supabase/migrations/20260918104500_fix_role_change_open_availability_sync.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור אילוצים וזמינות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.sync_open_dynamic_availability_after_role_version_change.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Fix: role edits must never be blocked by the open-availability synchronization.
 -- Rebuild the open period from the already-materialized effective role version,
 -- then reset completed submissions and notify only those users.
+-- פונקציית מסד public.sync_open_dynamic_availability_after_role_version_change: סנכרון פונקציית דיווח על שינוי.
 create or replace function public.sync_open_dynamic_availability_after_role_version_change()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- target_period — יעד / תקופה.
   target_period public.dynamic_availability_periods%rowtype;
+  -- target_materialization — יעד / מימוש תצורת השיבוץ לחודש.
   target_materialization public.job_type_schedule_materializations%rowtype;
+  -- affected_users — משתמשים.
   affected_users uuid[] := array[]::uuid[];
+  -- affected_user — משתמש.
   affected_user uuid;
+  -- created_notification_id — התראות / מזהה.
   created_notification_id uuid;
+  -- target_year — יעד / שנה.
   target_year integer := extract(year from new.effective_month)::integer;
+  -- target_month — יעד / חודש.
   target_month integer := extract(month from new.effective_month)::integer;
   rebuilt_slots integer := 0;
   actor uuid := coalesce(auth.uid(), new.created_by);
@@ -28,6 +42,7 @@ begin
     and ap.status='open'
   limit 1;
 
+  -- הסתעפות לפי התנאי target_period.id is null.
   if target_period.id is null then
     return new;
   end if;
@@ -41,6 +56,7 @@ begin
     and m.effective_month=new.effective_month
   limit 1;
 
+  -- הסתעפות לפי התנאי target_materialization.id is null.
   if target_materialization.id is null then
     raise warning 'availability sync skipped: materialization missing for job type %, month %',
       new.job_type_id,new.effective_month;
@@ -56,11 +72,13 @@ begin
   -- Existing answers are structurally tied to the old slot ids. Slot deletion
   -- cascades availability entries and draft candidates that reference them;
   -- the canonical role materializer then creates the new form structure.
+  -- מחיקת הרשומות שנבחרו מתוך public.dynamic_availability_slots בהתאם לקלט ולתנאים להלן.
   delete from public.dynamic_availability_slots
   where period_id=target_period.id;
 
   rebuilt_slots := public.materialize_dynamic_availability_period_slots(target_period.id);
 
+  -- עדכון רשומות ב־public.dynamic_availability_periods בהתאם לקלט ולתנאים להלן.
   update public.dynamic_availability_periods ap
   set config_snapshot=coalesce(
         target_materialization.source_snapshot->'availabilityConfig',
@@ -70,6 +88,7 @@ begin
       updated_at=now()
   where ap.id=target_period.id;
 
+  -- עדכון רשומות ב־public.dynamic_availability_submissions בהתאם לקלט ולתנאים להלן.
   update public.dynamic_availability_submissions s
   set status='draft',submitted_at=null,updated_at=now()
   where s.period_id=target_period.id
@@ -77,6 +96,7 @@ begin
 
   foreach affected_user in array affected_users loop
     begin
+      -- הוספת רשומות ל־public.notifications בהתאם לקלט ולתנאים להלן.
       insert into public.notifications(
         type,priority,source,title,body,url,data,created_by,expires_at
       ) values (
@@ -102,6 +122,7 @@ begin
         now()+interval '90 days'
       ) returning id into created_notification_id;
 
+      -- הוספת רשומות ל־public.notification_recipients בהתאם לקלט ולתנאים להלן.
       insert into public.notification_recipients(notification_id,user_id)
       values(created_notification_id,affected_user)
       on conflict do nothing;
@@ -112,6 +133,7 @@ begin
     end;
   end loop;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(action,actor_user_id,entity_type,entity_id,summary,metadata)
   values(
     'system_event',actor,'dynamic_availability_period',target_period.id,
@@ -136,6 +158,7 @@ exception when others then
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.sync_open_dynamic_availability_after_role_version_change() from public;
 
 drop trigger if exists z_sync_open_dynamic_availability_after_role_version_change

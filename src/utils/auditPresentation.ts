@@ -1,6 +1,14 @@
+/**
+ * קובץ: src/utils/auditPresentation.ts
+ * מטרה: פונקציות עזר לעיבוד וחישוב עבור יומן שינויים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: auditFieldLabel, auditIsTechnical, auditValue, AuditChange, auditNestedChanges, shiftStructureChanges, auditChanges, auditReadableSummary, auditActorName, auditAssignmentChange.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import type { AuditLogEntry } from '../types/audit';
 import { auditActionLabel, effectiveAuditAction } from './auditCatalog';
 
+// fieldLabels — הנתון fieldLabels בהקשר הפעולה.
 const fieldLabels: Record<string, string> = {
   user_id: 'עובד', userId: 'עובד', new_user_id: 'עובד חדש', old_user_id: 'עובד קודם',
   job_type_id: 'תפקיד', jobTypeId: 'תפקיד', job_type_name: 'שם התפקיד', jobTypeName: 'שם התפקיד',
@@ -30,6 +38,7 @@ const fieldLabels: Record<string, string> = {
   days: 'ימי עבודה',
   audit_context: 'צילום מצב האירוע', shift_name: 'שם המשמרת', old_user_id_name: 'העובד הקודם', new_user_id_name: 'העובד החדש', user_id_name: 'שם העובד', userId_name: 'שם העובד', target_user_id_name: 'שם העובד',
 };
+// valueLabels — ערך.
 const valueLabels: Record<string, string> = {
   weekday: 'יום חול', friday: 'יום שישי', saturday: 'שבת',
   holiday_eve: 'ערב חג', holiday_full: 'חג', holiday_end: 'מוצאי חג',
@@ -40,17 +49,38 @@ const valueLabels: Record<string, string> = {
   friday_1: 'משמרת יום שישי 1', saturday_1: 'משמרת שבת 1', weekday_1: 'משמרת חול 1', saturday_daily_on_call: 'כוננות שבת (יום שלם)',
   oncall_new: 'בדיקה כוננים חדש',
 };
+// technicalKeys — הנתון technicalKeys בהקשר הפעולה; אוסף ערכים ייחודיים.
 const technicalKeys = new Set(['slot_id','assignment_id','publication_id','job_type_id','jobTypeId','user_id','userId','old_user_id','new_user_id','emailId']);
+// uuidPattern — הנתון uuidPattern בהקשר הפעולה.
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/**
+ * פעולה auditFieldLabel: יומן שינויים / תווית.
+ * @param key — מפתח.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 export function auditFieldLabel(key: string): string {
   return fieldLabels[key] ?? key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]/g,' ');
 }
+/**
+ * פעולה auditIsTechnical: יומן שינויים.
+ * @param key — מפתח.
+ * @param value — ערך.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 export function auditIsTechnical(key: string, value: unknown): boolean {
   return technicalKeys.has(key) || (typeof value === 'string' && uuidPattern.test(value));
 }
+/**
+ * פעולה auditValue: יומן שינויים / ערך.
+ * @param value — ערך.
+ * @param _key — מפתח.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 export function auditValue(value: unknown, _key = ''): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר _key === 'part_time_definition' && value && typeof value === 'object' && !Array.isArray(value).
   if (_key === 'part_time_definition' && value && typeof value === 'object' && !Array.isArray(value)) {
     const definition = value as Record<string, unknown>;
+    // days — ימים.
     const days = Array.isArray(definition.days) ? definition.days : [];
     const labels = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
     const rendered = days.map(day => typeof day === 'number' && labels[day] ? labels[day] : String(day));
@@ -64,8 +94,10 @@ export function auditValue(value: unknown, _key = ''): string {
   if (typeof value === 'string' && /(?:startTime|endTime|start_time|end_time)$/.test(_key) && /^\\d{2}:\\d{2}/.test(value)) return value.slice(0,5);
   if (typeof value === 'boolean') return value ? 'כן' : 'לא';
   if (typeof value === 'number') return String(value);
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value === 'string'.
   if (typeof value === 'string') {
     if (valueLabels[value]) return valueLabels[value];
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר /^\d{4}-\d{2}-\d{2}$/.test(value).
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
       const [year, month, day] = value.split('-'); return `${day}.${month}.${year}`;
     }
@@ -78,20 +110,41 @@ export function auditValue(value: unknown, _key = ''): string {
     .map(([k,v]) => `${auditFieldLabel(k)}: ${auditValue(v,k)}`).join(' · ');
   return String(value);
 }
+/**
+ * חוזה הנתונים AuditChange: יומן שינויים.
+ */
 export interface AuditChange { key: string; label: string; before?: unknown; after?: unknown; kind: 'changed'|'added'|'removed'; }
+/**
+ * פעולה isRecord: בדיקת תנאי עבור הנתון isRecord בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns value is Record<string, unknown> — הפלט בהתאם לחתימה.
+ */
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
 /** Display nested configuration changes individually instead of printing entire JSON objects. */
+/**
+ * פעולה auditNestedChanges: יומן שינויים.
+ * @param before — הנתון before בהקשר הפעולה.
+ * @param after — הנתון after בהקשר הפעולה.
+ * @param prefix — הנתון prefix בהקשר הפעולה.
+ * @returns AuditChange[] — הפלט בהתאם לחתימה.
+ */
 function auditNestedChanges(before: Record<string, unknown>, after: Record<string, unknown>, prefix = ''): AuditChange[] {
+  // result — תוצאה.
   const result: AuditChange[] = [];
+  // עיבוד כל פריט מתוך new Set([...Object.keys(before), ...Object.keys(after)]) בנפרד.
   for (const key of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    // previous — הנתון previous בהקשר הפעולה.
     const previous = before[key];
+    // next — הנתון next בהקשר הפעולה.
     const next = after[key];
+    // path — נתיב.
     const path = prefix ? `${prefix}.${key}` : key;
     if (isRecord(previous) && isRecord(next)) {
       result.push(...auditNestedChanges(previous, next, path));
     } else if (JSON.stringify(previous) !== JSON.stringify(next)) {
+      // isDefaultAddition — הנתון isDefaultAddition בהקשר הפעולה.
       const isDefaultAddition = path === 'availabilityConfig.showEmployeePreferences' && previous === undefined && next === true;
       result.push({
         key: path,
@@ -105,30 +158,55 @@ function auditNestedChanges(before: Record<string, unknown>, after: Record<strin
   return result;
 }
 
+/**
+ * פעולה shiftStructureChanges: משמרת.
+ * @param before — הנתון before בהקשר הפעולה.
+ * @param after — הנתון after בהקשר הפעולה.
+ * @returns AuditChange[] — הפלט בהתאם לחתימה.
+ */
 function shiftStructureChanges(before: Record<string, unknown>, after: Record<string, unknown>): AuditChange[] {
   const changes: AuditChange[] = [];
   const collections = new Set(['shiftTemplates', 'dayRules']);
+  /**
+   * פעולה names: הנתון names בהקשר הפעולה.
+   * @param item — פריט.
+   * @param fallback — הנתון fallback בהקשר הפעולה.
+   */
   const names = (item: Record<string, unknown>, fallback: string) =>
     String(item.name ?? item.code ?? item.dayKind ?? fallback);
+  // עיבוד כל פריט מתוך collections בנפרד.
   for (const collection of collections) {
     if (!(collection in before) && !(collection in after)) continue;
+    // oldItems — פריטים.
     const oldItems = Array.isArray(before[collection]) ? before[collection] as unknown[] : [];
+    // newItems — פריטים.
     const newItems = Array.isArray(after[collection]) ? after[collection] as unknown[] : [];
+    /**
+     * פעולה keyFor: מפתח.
+     * @param item — פריט.
+     * @param index — מיקום באוסף.
+     */
     const keyFor = (item: unknown, index: number) => {
       if (!isRecord(item)) return String(index);
       return String(item.code ?? item.dayKind ?? index);
     };
+    // oldMap — מפת התאמה; מיפוי לחיפוש לפי מפתח.
     const oldMap = new Map(oldItems.map((item,index)=>[keyFor(item,index),item]));
+    // newMap — מפת התאמה; מיפוי לחיפוש לפי מפתח.
     const newMap = new Map(newItems.map((item,index)=>[keyFor(item,index),item]));
+    // עיבוד כל פריט מתוך new Set([...oldMap.keys(),...newMap.keys()]) בנפרד.
     for (const id of new Set([...oldMap.keys(),...newMap.keys()])) {
       const oldItem = oldMap.get(id), newItem = newMap.get(id);
+      // item — פריט.
       const item = isRecord(newItem) ? newItem : isRecord(oldItem) ? oldItem : {};
+      // label — תווית.
       const label = collection === 'shiftTemplates' ? 'משמרת' : 'כלל יום';
       const prefix = `${label} „${names(item,id)}”`;
       if (oldItem === undefined || newItem === undefined) {
         changes.push({key:`${collection}.${id}`,label:prefix,before:oldItem,after:newItem,
           kind:oldItem === undefined ? 'added':'removed'});
       } else if (isRecord(oldItem) && isRecord(newItem)) {
+        // עיבוד כל פריט מתוך auditNestedChanges(oldItem,newItem) בנפרד.
         for (const change of auditNestedChanges(oldItem,newItem)) {
           if (['id','updated_at','created_at','schedule_group_id'].includes(change.key)) continue;
           changes.push({...change,key:`${collection}.${id}.${change.key}`,
@@ -139,17 +217,26 @@ function shiftStructureChanges(before: Record<string, unknown>, after: Record<st
       }
     }
   }
+  // restBefore — מנוחה.
   const restBefore=Object.fromEntries(Object.entries(before).filter(([key])=>!collections.has(key)));
+  // restAfter — מנוחה.
   const restAfter=Object.fromEntries(Object.entries(after).filter(([key])=>!collections.has(key)));
   return [...auditNestedChanges(restBefore,restAfter),...changes];
 }
 
+/**
+ * פעולה auditChanges: יומן שינויים.
+ * @param entry — רשומה.
+ * @returns AuditChange[] — הפלט בהתאם לחתימה.
+ */
 export function auditChanges(entry: AuditLogEntry): AuditChange[] {
   const before = entry.oldValues ?? {};
   const after = entry.newValues ?? {};
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר entry.action === 'schedule_group.configuration.updated'.
   if (entry.action === 'schedule_group.configuration.updated') {
     return shiftStructureChanges(before, after);
   }
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר /^(dynamic_job_type\.(created|updated)|schedule_group\.)/.test(entry.action).
   if (/^(dynamic_job_type\.(created|updated)|schedule_group\.)/.test(entry.action)) {
     return auditNestedChanges(before, after);
   }
@@ -157,21 +244,33 @@ export function auditChanges(entry: AuditLogEntry): AuditChange[] {
     .filter(key => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
     .map(key => ({key,label:auditFieldLabel(key),before:before[key],after:after[key],kind:!(key in before)?'added' as const:!(key in after)?'removed' as const:'changed' as const}));
 }
+/**
+ * פעולה auditReadableSummary: יומן שינויים / סיכום.
+ * @param entry — רשומה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 export function auditReadableSummary(entry: AuditLogEntry): string {
   const action = effectiveAuditAction(entry);
   const context = (entry.metadata?.audit_context ?? {}) as Record<string, unknown>;
+  // data — נתונים.
   const data = {...(entry.metadata ?? {}), ...(entry.newValues ?? {}), ...context};
   const role = typeof data.job_type_name === 'string' ? ` בתפקיד „${data.job_type_name}”` : '';
+  // previousEmployee — הנתון previousEmployee בהקשר הפעולה.
   const previousEmployee = typeof context.previous_employee_name === 'string' ? context.previous_employee_name : typeof context.old_user_id_name === 'string' ? context.old_user_id_name : '';
+  // nextEmployee — הנתון nextEmployee בהקשר הפעולה.
   const nextEmployee = typeof context.new_employee_name === 'string' ? context.new_employee_name : typeof context.new_user_id_name === 'string' ? context.new_user_id_name : '';
   const employeeChange = previousEmployee && nextEmployee ? `: ${previousEmployee} הוחלף/ה ב־${nextEmployee}` : '';
+  // shiftDate — תאריך המשמרת.
   const shiftDate = typeof data.shift_date === 'string' ? auditValue(data.shift_date) : '';
+  // shiftCode — משמרת.
   const shiftCode = typeof data.shift_name === 'string' ? data.shift_name : typeof data.shift_code === 'string' ? auditValue(data.shift_code) : '';
+  // shift — משמרת.
   const shift = [shiftCode, shiftDate].filter(Boolean).join(' בתאריך ');
   if (action === 'schedule.assignment.unassigned' && shift) return `${shift}${role} סומנה כלא מאוישת.`;
   if (action === 'schedule.assignment.filled' && shift) return `${shift}${role} אוישה.`;
   if (/^schedule\.assignment\./.test(action) && shift) return `בוצע שינוי בשיבוץ ${shift}${role}${employeeChange}.`;
   if (action === 'dynamic_job_type.deleted' && typeof data.job_type_name === 'string') return `התפקיד „${data.job_type_name}” נמחק.`;
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר action === 'dynamic_job_type.member.saved' || action === 'dynamic_job_type.member.removed'.
   if (action === 'dynamic_job_type.member.saved' || action === 'dynamic_job_type.member.removed') {
     const person = typeof context.member_name === 'string' ? context.member_name : 'עובד ששמו לא נשמר';
     const job = typeof context.job_type_name === 'string' ? ` לתפקיד „${context.job_type_name}”` : ' לתפקיד';
@@ -185,6 +284,11 @@ export function auditReadableSummary(entry: AuditLogEntry): string {
   if (role && /^availability\./.test(action)) return `${entry.summary?.trim() || auditActionLabel(action)}${role}.`;
   return entry.summary?.trim() || auditActionLabel(action);
 }
+/**
+ * פעולה auditActorName: יומן שינויים / שם.
+ * @param entry — רשומה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 export function auditActorName(entry: AuditLogEntry): string {
   if (entry.actorDisplayName?.trim()) return entry.actorDisplayName;
   if (entry.actorEmail?.trim()) return entry.actorEmail;
@@ -194,13 +298,25 @@ export function auditActorName(entry: AuditLogEntry): string {
 }
 
 // Names in audit_context are immutable snapshots. Do not infer historic names from current assignments.
+/**
+ * פעולה auditAssignmentChange: יומן שינויים / הקצאה.
+ * @param entry — רשומה.
+ * @returns { before: string; after: string; changed: boolean } | null — הפלט בהתאם לחתימה.
+ */
 export function auditAssignmentChange(entry: AuditLogEntry): { before: string; after: string; changed: boolean } | null {
   if (!/^schedule\.assignment\./.test(effectiveAuditAction(entry))) return null;
+  // beforeId — מזהה.
   const beforeId = entry.oldValues?.user_id ?? entry.oldValues?.old_user_id;
+  // afterId — מזהה.
   const afterId = entry.newValues?.user_id ?? entry.newValues?.new_user_id;
   if (beforeId === undefined && afterId === undefined) return null;
   const snapshot = entry.metadata?.audit_context;
   const ctx: Record<string, unknown> = snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) ? snapshot as Record<string, unknown> : {};
+  /**
+   * פעולה name: שם.
+   * @param key — מפתח.
+   * @returns string | null — הפלט בהתאם לחתימה.
+   */
   const name = (key: string): string | null => typeof ctx[key] === 'string' && String(ctx[key]).trim() ? String(ctx[key]) : null;
   const before = beforeId == null ? 'לא מאוישת' : name('previous_employee_name') ?? name('old_user_id_name') ?? 'שם העובד הקודם לא נשמר';
   const after = afterId == null ? 'לא מאוישת' : name('new_employee_name') ?? name('new_user_id_name') ?? (afterId === beforeId ? name('user_id_name') : null) ?? 'שם העובד החדש לא נשמר';

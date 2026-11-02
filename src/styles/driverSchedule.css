@@ -1,9 +1,16 @@
+/*
+ * קובץ: src/styles/driverSchedule.css
+ * מטרה: הגדרת עיצוב ופריסה עבור כוננים / שיבוץ.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .driver-schedule-page  */
 .driver-schedule-page {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-access-summary  */
 .driver-schedule-access-summary {
   display: flex;
   align-items: center;
@@ -15,29 +22,34 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .driver-schedule-access-heading  */
 .driver-schedule-access-heading {
   display: flex;
   align-items: center;
   gap: 11px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-access-heading > div  */
 .driver-schedule-access-heading > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-access-heading strong  */
 .driver-schedule-access-heading strong {
   color: var(--theme-text-strong);
   font-size: 0.84rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-access-heading span  */
 .driver-schedule-access-heading span {
   color: var(--theme-text-muted);
   font-size: 0.7rem;
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .driver-schedule-access-badges  */
 .driver-schedule-access-badges {
   display: flex;
   flex-wrap: wrap;
@@ -45,6 +57,7 @@
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-access-badges span  */
 .driver-schedule-access-badges span {
   padding: 5px 9px;
   border-radius: 999px;
@@ -55,6 +68,7 @@
 }
 
 .driver-schedule-error,
+/* כללי עיצוב עבור .driver-schedule-success  */
 .driver-schedule-success {
   display: flex;
   align-items: center;
@@ -64,12 +78,14 @@
   border-radius: 13px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-error  */
 .driver-schedule-error {
   border-color: #fecaca;
   background: #fef2f2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .driver-schedule-success  */
 .driver-schedule-success {
   border-color: #bbf7d0;
   background: #f0fdf4;
@@ -77,6 +93,7 @@
 }
 
 .driver-schedule-error > div,
+/* כללי עיצוב עבור .driver-schedule-success > div  */
 .driver-schedule-success > div {
   display: flex;
   flex-direction: column;
@@ -84,16 +101,19 @@
 }
 
 .driver-schedule-error strong,
+/* כללי עיצוב עבור .driver-schedule-success strong  */
 .driver-schedule-success strong {
   font-size: 0.84rem;
 }
 
 .driver-schedule-error span,
+/* כללי עיצוב עבור .driver-schedule-success span  */
 .driver-schedule-success span {
   font-size: 0.72rem;
   line-height: 1.55;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-card  */
 .driver-availability-management-card {
   display: flex;
   flex-direction: column;
@@ -104,12 +124,14 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .driver-schedule-section-header  */
 .driver-schedule-section-header {
   display: flex;
   align-items: center;
   gap: 11px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-section-icon  */
 .driver-schedule-section-icon {
   display: inline-flex;
   width: 42px;
@@ -122,12 +144,14 @@
   color: #2563eb;
 }
 
+/* כללי עיצוב עבור .driver-schedule-section-header h2  */
 .driver-schedule-section-header h2 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-section-header p  */
 .driver-schedule-section-header p {
   margin: 4px 0 0;
   color: var(--theme-text-muted);
@@ -135,12 +159,14 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .driver-availability-create-form  */
 .driver-availability-create-form {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
+/* כללי עיצוב עבור .driver-availability-form-grid  */
 .driver-availability-form-grid {
   display: grid;
   grid-template-columns:
@@ -148,12 +174,14 @@
   gap: 13px;
 }
 
+/* כללי עיצוב עבור .driver-availability-create-form label  */
 .driver-availability-create-form label {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .driver-availability-create-form label > span  */
 .driver-availability-create-form label > span {
   color: var(--theme-text-secondary);
   font-size: 0.7rem;
@@ -162,6 +190,7 @@
 
 .driver-availability-create-form input,
 .driver-availability-create-form select,
+/* כללי עיצוב עבור .driver-availability-create-form textarea  */
 .driver-availability-create-form textarea {
   width: 100%;
   border: 1px solid var(--theme-border-strong);
@@ -172,11 +201,13 @@
 }
 
 .driver-availability-create-form input,
+/* כללי עיצוב עבור .driver-availability-create-form select  */
 .driver-availability-create-form select {
   min-height: 42px;
   padding: 8px 11px;
 }
 
+/* כללי עיצוב עבור .driver-availability-create-form textarea  */
 .driver-availability-create-form textarea {
   min-height: 105px;
   padding: 10px 11px;
@@ -186,6 +217,7 @@
 
 .driver-availability-create-form input:focus,
 .driver-availability-create-form select:focus,
+/* כללי עיצוב עבור .driver-availability-create-form textarea:focus  */
 .driver-availability-create-form textarea:focus {
   outline: 2px solid #bfdbfe;
   border-color: #60a5fa;
@@ -193,22 +225,26 @@
 
 .driver-availability-create-form input:disabled,
 .driver-availability-create-form select:disabled,
+/* כללי עיצוב עבור .driver-availability-create-form textarea:disabled  */
 .driver-availability-create-form textarea:disabled {
   cursor: not-allowed;
   background: var(--theme-surface-muted);
   color: #94a3b8;
 }
 
+/* כללי עיצוב עבור .driver-availability-instructions-field  */
 .driver-availability-instructions-field {
   grid-column: 1 / -1;
 }
 
+/* כללי עיצוב עבור .driver-availability-create-actions  */
 .driver-availability-create-actions {
   display: flex;
   justify-content: flex-start;
 }
 
 .driver-schedule-placeholder-card,
+/* כללי עיצוב עבור .driver-schedule-empty-state  */
 .driver-schedule-empty-state {
   display: flex;
   align-items: center;
@@ -222,33 +258,39 @@
 }
 
 .driver-schedule-placeholder-card > div,
+/* כללי עיצוב עבור .driver-schedule-empty-state  */
 .driver-schedule-empty-state {
   flex-direction: column;
 }
 
+/* כללי עיצוב עבור .driver-schedule-placeholder-card > div  */
 .driver-schedule-placeholder-card > div {
   display: flex;
   gap: 4px;
 }
 
 .driver-schedule-placeholder-card strong,
+/* כללי עיצוב עבור .driver-schedule-empty-state strong  */
 .driver-schedule-empty-state strong {
   color: #1e293b;
   font-size: 0.88rem;
 }
 
 .driver-schedule-placeholder-card span,
+/* כללי עיצוב עבור .driver-schedule-empty-state span  */
 .driver-schedule-empty-state span {
   max-width: 620px;
   font-size: 0.72rem;
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .driver-schedule-empty-state  */
 .driver-schedule-empty-state {
   justify-content: center;
   text-align: center;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .driver-schedule-access-summary {
     align-items: flex-start;
@@ -268,6 +310,7 @@
     flex-direction: column;
   }
 }
+/* כללי עיצוב עבור .driver-availability-periods-card  */
 .driver-availability-periods-card {
   display: flex;
   flex-direction: column;
@@ -278,12 +321,14 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .driver-availability-periods-list  */
 .driver-availability-periods-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .driver-availability-period-item  */
 .driver-availability-period-item {
   display: flex;
   align-items: center;
@@ -295,22 +340,26 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .driver-availability-period-main  */
 .driver-availability-period-main {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .driver-availability-period-main strong  */
 .driver-availability-period-main strong {
   color: var(--theme-text-strong);
   font-size: 0.84rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-period-main span  */
 .driver-availability-period-main span {
   color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-period-actions  */
 .driver-availability-period-actions {
   display: flex;
   align-items: center;
@@ -319,6 +368,7 @@
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .driver-availability-status  */
 .driver-availability-status {
   padding: 5px 9px;
   border-radius: 999px;
@@ -326,32 +376,38 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .driver-availability-status-draft  */
 .driver-availability-status-draft {
   background: var(--theme-surface-soft);
   color: var(--theme-text-secondary);
 }
 
+/* כללי עיצוב עבור .driver-availability-status-open  */
 .driver-availability-status-open {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .driver-availability-status-closed  */
 .driver-availability-status-closed {
   background: #dbeafe;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .driver-availability-status-archived  */
 .driver-availability-status-archived {
   background: #e5e7eb;
   color: #4b5563;
 }
 
 .driver-availability-open-note,
+/* כללי עיצוב עבור .driver-availability-submission-summary  */
 .driver-availability-submission-summary {
   color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .driver-availability-period-item {
     align-items: flex-start;
@@ -363,6 +419,7 @@
     justify-content: flex-start;
   }
 }
+/* כללי עיצוב עבור .my-driver-availability-panel  */
 .my-driver-availability-panel {
   display: flex;
   flex-direction: column;
@@ -373,6 +430,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .my-driver-availability-header  */
 .my-driver-availability-header {
   display: flex;
   align-items: center;
@@ -380,12 +438,14 @@
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-heading  */
 .my-driver-availability-heading {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-heading-icon  */
 .my-driver-availability-heading-icon {
   display: inline-flex;
   width: 44px;
@@ -398,29 +458,34 @@
   color: #2563eb;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-heading > div  */
 .my-driver-availability-heading > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-heading span  */
 .my-driver-availability-heading span {
   color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-heading h2  */
 .my-driver-availability-heading h2 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 1.05rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-heading p  */
 .my-driver-availability-heading p {
   margin: 0;
   color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-period-info  */
 .my-driver-availability-period-info {
   display: flex;
   align-items: center;
@@ -431,6 +496,7 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .my-driver-availability-period-info > div  */
 .my-driver-availability-period-info > div {
   display: flex;
   align-items: center;
@@ -440,10 +506,12 @@
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-period-info strong  */
 .my-driver-availability-period-info strong {
   color: #1e293b;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-submission-status  */
 .my-driver-availability-submission-status {
   padding: 5px 9px;
   border-radius: 999px;
@@ -451,21 +519,25 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-submission-status-draft  */
 .my-driver-availability-submission-status-draft {
   background: var(--theme-surface-soft);
   color: var(--theme-text-secondary);
 }
 
+/* כללי עיצוב עבור .my-driver-availability-submission-status-submitted  */
 .my-driver-availability-submission-status-submitted {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-submission-status-reopened  */
 .my-driver-availability-submission-status-reopened {
   background: #fef3c7;
   color: #92400e;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-instructions  */
 .my-driver-availability-instructions {
   padding: 13px 14px;
   border: 1px solid #fde68a;
@@ -473,11 +545,13 @@
   background: #fffbeb;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-instructions strong  */
 .my-driver-availability-instructions strong {
   color: #92400e;
   font-size: 0.74rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-instructions p  */
 .my-driver-availability-instructions p {
   margin: 5px 0 0;
   color: #78350f;
@@ -486,6 +560,7 @@
   white-space: pre-wrap;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-summary  */
 .my-driver-availability-summary {
   display: grid;
   grid-template-columns:
@@ -493,6 +568,7 @@
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-summary article  */
 .my-driver-availability-summary article {
   display: flex;
   align-items: center;
@@ -504,6 +580,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .my-driver-availability-summary article > div  */
 .my-driver-availability-summary article > div {
   display: flex;
   min-width: 0;
@@ -511,16 +588,19 @@
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-summary strong  */
 .my-driver-availability-summary strong {
   color: var(--theme-text-strong);
   font-size: 0.94rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-summary span  */
 .my-driver-availability-summary span {
   color: var(--theme-text-muted);
   font-size: 0.65rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-days-grid  */
 .my-driver-availability-days-grid {
   display: grid;
   grid-template-columns:
@@ -528,6 +608,7 @@
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day  */
 .my-driver-availability-day {
   display: flex;
   min-width: 0;
@@ -540,6 +621,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day > header  */
 .my-driver-availability-day > header {
   display: flex;
   align-items: flex-start;
@@ -547,6 +629,7 @@
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day > header > div  */
 .my-driver-availability-day > header > div {
   display: flex;
   min-width: 0;
@@ -554,16 +637,19 @@
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day > header span  */
 .my-driver-availability-day > header span {
   color: var(--theme-text-muted);
   font-size: 0.61rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day > header strong  */
 .my-driver-availability-day > header strong {
   color: #1e293b;
   font-size: 0.68rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-number  */
 .my-driver-availability-day-number {
   display: inline-flex;
   width: 25px;
@@ -578,6 +664,7 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-status  */
 .my-driver-availability-day-status {
   display: flex;
   align-items: center;
@@ -587,26 +674,31 @@
   border-top: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-status strong  */
 .my-driver-availability-day-status strong {
   font-size: 0.66rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-available  */
 .my-driver-availability-day-available {
   border-color: #bbf7d0;
   background: #f0fdf4;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-unavailable  */
 .my-driver-availability-day-unavailable {
   border-color: #fecaca;
   background: #fef2f2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-unmarked  */
 .my-driver-availability-day-unmarked {
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-note  */
 .my-driver-availability-day-note {
   margin: 0;
   color: var(--theme-text-muted);
@@ -614,6 +706,7 @@
   line-height: 1.45;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-readonly-note  */
 .my-driver-availability-readonly-note {
   padding: 11px 13px;
   border-radius: 10px;
@@ -625,6 +718,7 @@
 
 .my-driver-availability-loading,
 .my-driver-availability-error,
+/* כללי עיצוב עבור .my-driver-availability-empty  */
 .my-driver-availability-empty {
   display: flex;
   min-height: 240px;
@@ -638,6 +732,7 @@
 
 .my-driver-availability-loading strong,
 .my-driver-availability-error strong,
+/* כללי עיצוב עבור .my-driver-availability-empty strong  */
 .my-driver-availability-empty strong {
   color: #1e293b;
   font-size: 0.92rem;
@@ -645,6 +740,7 @@
 
 .my-driver-availability-loading span,
 .my-driver-availability-error span,
+/* כללי עיצוב עבור .my-driver-availability-empty span  */
 .my-driver-availability-empty span {
   max-width: 480px;
   color: var(--theme-text-muted);
@@ -652,10 +748,12 @@
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-error  */
 .my-driver-availability-error {
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-loading-icon  */
 .my-driver-availability-loading-icon {
   animation:
     driver-availability-spin
@@ -664,12 +762,14 @@
     infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes driver-availability-spin */
 @keyframes driver-availability-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1180px) */
 @media (max-width: 1180px) {
   .my-driver-availability-days-grid {
     grid-template-columns:
@@ -677,6 +777,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .my-driver-availability-summary {
     grid-template-columns:
@@ -689,6 +790,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 620px) */
 @media (max-width: 620px) {
   .my-driver-availability-header,
   .my-driver-availability-period-info {
@@ -705,6 +807,7 @@
       repeat(2, minmax(0, 1fr));
   }
 }
+/* כללי עיצוב עבור .my-driver-availability-day-actions  */
 .my-driver-availability-day-actions {
   display: grid;
   grid-template-columns:
@@ -712,6 +815,7 @@
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-choice  */
 .my-driver-availability-choice {
   display: inline-flex;
   min-height: 34px;
@@ -729,40 +833,47 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-choice:hover:not(:disabled)  */
 .my-driver-availability-choice:hover:not(:disabled) {
   border-color: #94a3b8;
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .my-driver-availability-choice:disabled  */
 .my-driver-availability-choice:disabled {
   cursor: not-allowed;
   opacity: 0.62;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-choice-available.my-driver-availability-choice-active  */
 .my-driver-availability-choice-available.my-driver-availability-choice-active {
   border-color: #86efac;
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-choice-unavailable.my-driver-availability-choice-active  */
 .my-driver-availability-choice-unavailable.my-driver-availability-choice-active {
   border-color: #fca5a5;
   background: #fee2e2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-note-field  */
 .my-driver-availability-day-note-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-note-field span  */
 .my-driver-availability-day-note-field span {
   color: var(--theme-text-muted);
   font-size: 0.6rem;
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-note-field textarea  */
 .my-driver-availability-day-note-field textarea {
   width: 100%;
   min-height: 52px;
@@ -777,17 +888,20 @@
   resize: vertical;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-note-field textarea:focus  */
 .my-driver-availability-day-note-field textarea:focus {
   outline: 2px solid #bfdbfe;
   border-color: #60a5fa;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-day-note-field textarea:disabled  */
 .my-driver-availability-day-note-field textarea:disabled {
   cursor: not-allowed;
   background: var(--theme-surface-muted);
   color: #94a3b8;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-footer  */
 .my-driver-availability-footer {
   position: sticky;
   bottom: 12px;
@@ -806,16 +920,19 @@
   backdrop-filter: blur(8px);
 }
 
+/* כללי עיצוב עבור .my-driver-availability-footer span  */
 .my-driver-availability-footer span {
   color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-unsaved  */
 .my-driver-availability-unsaved {
   color: #b45309 !important;
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-save-success  */
 .my-driver-availability-save-success {
   display: flex;
   align-items: center;
@@ -827,21 +944,25 @@
   color: #166534;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-save-success > div  */
 .my-driver-availability-save-success > div {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-save-success strong  */
 .my-driver-availability-save-success strong {
   font-size: 0.76rem;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-save-success span  */
 .my-driver-availability-save-success span {
   font-size: 0.67rem;
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .my-driver-availability-locked-note  */
 .my-driver-availability-locked-note {
   padding: 11px 13px;
   border: 1px solid #fde68a;
@@ -852,6 +973,7 @@
   line-height: 1.55;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 620px) */
 @media (max-width: 620px) {
   .my-driver-availability-footer {
     align-items: stretch;
@@ -862,12 +984,14 @@
     width: 100%;
   }
 }
+/* כללי עיצוב עבור .my-driver-availability-footer-actions  */
 .my-driver-availability-footer-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 620px) */
 @media (max-width: 620px) {
   .my-driver-availability-footer-actions {
     width: 100%;
@@ -878,6 +1002,7 @@
     width: 100%;
   }
 }
+/* כללי עיצוב עבור .driver-availability-management-panel  */
 .driver-availability-management-panel {
   display: flex;
   flex-direction: column;
@@ -888,6 +1013,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .driver-availability-management-header  */
 .driver-availability-management-header {
   display: flex;
   align-items: center;
@@ -895,12 +1021,14 @@
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-heading  */
 .driver-availability-management-heading {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-heading-icon  */
 .driver-availability-management-heading-icon {
   display: inline-flex;
   width: 44px;
@@ -913,29 +1041,34 @@
   color: #2563eb;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-heading > div  */
 .driver-availability-management-heading > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-heading span  */
 .driver-availability-management-heading span {
   color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-heading h2  */
 .driver-availability-management-heading h2 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 1.05rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-heading p  */
 .driver-availability-management-heading p {
   margin: 0;
   color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-period-info  */
 .driver-availability-management-period-info {
   display: flex;
   align-items: center;
@@ -948,11 +1081,13 @@
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-period-info strong  */
 .driver-availability-management-period-info strong {
   margin-inline-end: 10px;
   color: #1e293b;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-statistics  */
 .driver-availability-management-statistics {
   display: grid;
   grid-template-columns:
@@ -960,6 +1095,7 @@
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-statistics article  */
 .driver-availability-management-statistics article {
   display: flex;
   align-items: center;
@@ -970,23 +1106,27 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .driver-availability-management-statistics article > div  */
 .driver-availability-management-statistics article > div {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-statistics strong  */
 .driver-availability-management-statistics strong {
   color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-statistics span  */
 .driver-availability-management-statistics span {
   color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
 .driver-availability-submissions-section,
+/* כללי עיצוב עבור .driver-availability-matrix-section  */
 .driver-availability-matrix-section {
   display: flex;
   flex-direction: column;
@@ -994,6 +1134,7 @@
 }
 
 .driver-availability-submissions-section > header,
+/* כללי עיצוב עבור .driver-availability-matrix-section > header  */
 .driver-availability-matrix-section > header {
   display: flex;
   align-items: end;
@@ -1002,6 +1143,7 @@
 }
 
 .driver-availability-submissions-section h3,
+/* כללי עיצוב עבור .driver-availability-matrix-section h3  */
 .driver-availability-matrix-section h3 {
   margin: 0;
   color: var(--theme-text-strong);
@@ -1009,12 +1151,14 @@
 }
 
 .driver-availability-submissions-section header span,
+/* כללי עיצוב עבור .driver-availability-matrix-section header span  */
 .driver-availability-matrix-section header span {
   color: var(--theme-text-muted);
   font-size: 0.65rem;
 }
 
 .driver-availability-submissions-table-wrapper,
+/* כללי עיצוב עבור .driver-availability-matrix-wrapper  */
 .driver-availability-matrix-wrapper {
   overflow: auto;
   border: 1px solid var(--theme-border);
@@ -1022,6 +1166,7 @@
 }
 
 .driver-availability-submissions-table,
+/* כללי עיצוב עבור .driver-availability-matrix  */
 .driver-availability-matrix {
   width: 100%;
   border-collapse: collapse;
@@ -1031,6 +1176,7 @@
 .driver-availability-submissions-table th,
 .driver-availability-submissions-table td,
 .driver-availability-matrix th,
+/* כללי עיצוב עבור .driver-availability-matrix td  */
 .driver-availability-matrix td {
   padding: 10px;
   border-bottom: 1px solid var(--theme-border);
@@ -1039,6 +1185,7 @@
 }
 
 .driver-availability-submissions-table thead th,
+/* כללי עיצוב עבור .driver-availability-matrix thead th  */
 .driver-availability-matrix thead th {
   background: var(--theme-surface-muted);
   color: var(--theme-text-secondary);
@@ -1046,26 +1193,31 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .driver-availability-submissions-table tbody td  */
 .driver-availability-submissions-table tbody td {
   color: var(--theme-text-secondary);
   font-size: 0.68rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-submissions-table tbody td:first-child  */
 .driver-availability-submissions-table tbody td:first-child {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .driver-availability-submissions-table tbody td:first-child strong  */
 .driver-availability-submissions-table tbody td:first-child strong {
   color: #1e293b;
 }
 
+/* כללי עיצוב עבור .driver-availability-submissions-table tbody td:first-child span  */
 .driver-availability-submissions-table tbody td:first-child span {
   color: #94a3b8;
   font-size: 0.61rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-submission-badge  */
 .driver-availability-submission-badge {
   display: inline-flex;
   padding: 5px 9px;
@@ -1074,26 +1226,31 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .driver-availability-submission-badge-submitted  */
 .driver-availability-submission-badge-submitted {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .driver-availability-submission-badge-draft  */
 .driver-availability-submission-badge-draft {
   background: #dbeafe;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .driver-availability-submission-badge-reopened  */
 .driver-availability-submission-badge-reopened {
   background: #fef3c7;
   color: #92400e;
 }
 
+/* כללי עיצוב עבור .driver-availability-submission-badge-not-started  */
 .driver-availability-submission-badge-not-started {
   background: var(--theme-surface-soft);
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .driver-availability-matrix-date-column  */
 .driver-availability-matrix-date-column {
   position: sticky;
   right: 0;
@@ -1103,21 +1260,25 @@
 }
 
 .driver-availability-matrix-date-column strong,
+/* כללי עיצוב עבור .driver-availability-matrix-date-column span  */
 .driver-availability-matrix-date-column span {
   display: block;
 }
 
+/* כללי עיצוב עבור .driver-availability-matrix-date-column strong  */
 .driver-availability-matrix-date-column strong {
   color: #1e293b;
   font-size: 0.66rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-matrix-date-column span  */
 .driver-availability-matrix-date-column span {
   margin-top: 2px;
   color: var(--theme-text-muted);
   font-size: 0.61rem;
 }
 
+/* כללי עיצוב עבור .driver-availability-matrix-cell  */
 .driver-availability-matrix-cell {
   display: inline-flex;
   min-width: 92px;
@@ -1130,16 +1291,19 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .driver-availability-matrix-cell-available  */
 .driver-availability-matrix-cell-available {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .driver-availability-matrix-cell-unavailable  */
 .driver-availability-matrix-cell-unavailable {
   background: #fee2e2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .driver-availability-matrix-cell-unmarked  */
 .driver-availability-matrix-cell-unmarked {
   background: var(--theme-surface-soft);
   color: var(--theme-text-muted);
@@ -1147,6 +1311,7 @@
 
 .driver-availability-management-loading,
 .driver-availability-management-error,
+/* כללי עיצוב עבור .driver-availability-management-empty  */
 .driver-availability-management-empty {
   display: flex;
   min-height: 240px;
@@ -1160,6 +1325,7 @@
 
 .driver-availability-management-loading strong,
 .driver-availability-management-error strong,
+/* כללי עיצוב עבור .driver-availability-management-empty strong  */
 .driver-availability-management-empty strong {
   color: #1e293b;
   font-size: 0.92rem;
@@ -1167,6 +1333,7 @@
 
 .driver-availability-management-loading span,
 .driver-availability-management-error span,
+/* כללי עיצוב עבור .driver-availability-management-empty span  */
 .driver-availability-management-empty span {
   max-width: 480px;
   color: var(--theme-text-muted);
@@ -1174,6 +1341,7 @@
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .driver-availability-management-loading-icon  */
 .driver-availability-management-loading-icon {
   animation:
     driver-availability-spin
@@ -1182,6 +1350,7 @@
     infinite;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .driver-availability-management-statistics {
     grid-template-columns:
@@ -1189,6 +1358,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 620px) */
 @media (max-width: 620px) {
   .driver-availability-management-header,
   .driver-availability-submissions-section > header,
@@ -1201,6 +1371,7 @@
     grid-template-columns: 1fr;
   }
 }
+/* כללי עיצוב עבור .driver-schedule-draft-preview  */
 .driver-schedule-draft-preview {
   display: flex;
   flex-direction: column;
@@ -1211,6 +1382,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .driver-schedule-draft-statistics  */
 .driver-schedule-draft-statistics {
   display: grid;
   grid-template-columns:
@@ -1218,6 +1390,7 @@
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-draft-statistics article  */
 .driver-schedule-draft-statistics article {
   display: flex;
   flex-direction: column;
@@ -1228,22 +1401,26 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .driver-schedule-draft-statistics strong  */
 .driver-schedule-draft-statistics strong {
   color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-draft-statistics span  */
 .driver-schedule-draft-statistics span {
   color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-draft-list  */
 .driver-schedule-draft-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-draft-item  */
 .driver-schedule-draft-item {
   display: grid;
   grid-template-columns:
@@ -1258,17 +1435,20 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .driver-schedule-draft-item-warning  */
 .driver-schedule-draft-item-warning {
   border-color: #fcd34d;
   background: #fffbeb;
 }
 
+/* כללי עיצוב עבור .driver-schedule-draft-item-unassigned  */
 .driver-schedule-draft-item-unassigned {
   border-color: #fca5a5;
   background: #fef2f2;
 }
 
 .driver-schedule-draft-date,
+/* כללי עיצוב עבור .driver-schedule-draft-assignment  */
 .driver-schedule-draft-assignment {
   display: flex;
   flex-direction: column;
@@ -1276,6 +1456,7 @@
 }
 
 .driver-schedule-draft-date strong,
+/* כללי עיצוב עבור .driver-schedule-draft-assignment strong  */
 .driver-schedule-draft-assignment strong {
   color: #1e293b;
   font-size: 0.74rem;
@@ -1283,11 +1464,13 @@
 
 .driver-schedule-draft-date span,
 .driver-schedule-draft-assignment span,
+/* כללי עיצוב עבור .driver-schedule-draft-source  */
 .driver-schedule-draft-source {
   color: var(--theme-text-muted);
   font-size: 0.65rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-draft-note  */
 .driver-schedule-draft-note {
   grid-column: 1 / -1;
   margin: 0;
@@ -1298,6 +1481,7 @@
   line-height: 1.55;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .driver-schedule-draft-statistics {
     grid-template-columns:
@@ -1309,6 +1493,7 @@
     align-items: flex-start;
   }
 }
+/* כללי עיצוב עבור .driver-schedule-day-editor  */
 .driver-schedule-day-editor {
   display: flex;
   flex-direction: column;
@@ -1319,21 +1504,25 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-warning  */
 .driver-schedule-day-editor-warning {
   border-color: #fcd34d;
   background: #fffbeb;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-unassigned  */
 .driver-schedule-day-editor-unassigned {
   border-color: #fca5a5;
   background: #fef2f2;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-locked  */
 .driver-schedule-day-editor-locked {
   border-color: var(--theme-border-strong);
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-header  */
 .driver-schedule-day-editor-header {
   display: flex;
   align-items: center;
@@ -1341,22 +1530,26 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-date  */
 .driver-schedule-day-editor-date {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-date strong  */
 .driver-schedule-day-editor-date strong {
   color: var(--theme-text-strong);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-date span  */
 .driver-schedule-day-editor-date span {
   color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-lock-button  */
 .driver-schedule-day-lock-button {
   display: inline-flex;
   align-items: center;
@@ -1373,17 +1566,20 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-lock-button-active  */
 .driver-schedule-day-lock-button-active {
   border-color: #93c5fd;
   background: #dbeafe;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-lock-button:disabled  */
 .driver-schedule-day-lock-button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-grid  */
 .driver-schedule-day-editor-grid {
   display: grid;
   grid-template-columns:
@@ -1392,12 +1588,14 @@
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-field  */
 .driver-schedule-day-editor-field {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-field > span  */
 .driver-schedule-day-editor-field > span {
   color: var(--theme-text-secondary);
   font-size: 0.64rem;
@@ -1405,6 +1603,7 @@
 }
 
 .driver-schedule-day-editor-field select,
+/* כללי עיצוב עבור .driver-schedule-day-editor-field textarea  */
 .driver-schedule-day-editor-field textarea {
   width: 100%;
   padding: 8px 9px;
@@ -1416,6 +1615,7 @@
   font-size: 0.68rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-field textarea  */
 .driver-schedule-day-editor-field textarea {
   min-height: 58px;
   line-height: 1.5;
@@ -1423,11 +1623,13 @@
 }
 
 .driver-schedule-day-editor-field select:focus,
+/* כללי עיצוב עבור .driver-schedule-day-editor-field textarea:focus  */
 .driver-schedule-day-editor-field textarea:focus {
   outline: 2px solid #bfdbfe;
   border-color: #60a5fa;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-current  */
 .driver-schedule-day-editor-current {
   display: flex;
   align-items: center;
@@ -1437,11 +1639,13 @@
   font-size: 0.64rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-current strong  */
 .driver-schedule-day-editor-current strong {
   margin-inline-end: 8px;
   color: #1e293b;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-warning-box  */
 .driver-schedule-day-editor-warning-box {
   display: flex;
   align-items: flex-start;
@@ -1453,22 +1657,26 @@
   color: #92400e;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-warning-box > div  */
 .driver-schedule-day-editor-warning-box > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-warning-box strong  */
 .driver-schedule-day-editor-warning-box strong {
   font-size: 0.68rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-warning-box span  */
 .driver-schedule-day-editor-warning-box span {
   font-size: 0.64rem;
   line-height: 1.5;
   white-space: pre-wrap;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-actions  */
 .driver-schedule-day-editor-actions {
   display: flex;
   align-items: center;
@@ -1478,6 +1686,7 @@
   border-top: 1px solid var(--theme-border);
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 700px) */
 @media (max-width: 700px) {
   .driver-schedule-day-editor-grid {
     grid-template-columns: 1fr;
@@ -1492,6 +1701,7 @@
     width: 100%;
   }
 }
+/* כללי עיצוב עבור .driver-schedule-workspace-tabs  */
 .driver-schedule-workspace-tabs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -1499,6 +1709,7 @@
   margin-block: 4px 18px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-workspace-tab  */
 .driver-schedule-workspace-tab {
   display: flex;
   align-items: center;
@@ -1519,17 +1730,20 @@
     transform 160ms ease;
 }
 
+/* כללי עיצוב עבור .driver-schedule-workspace-tab:hover  */
 .driver-schedule-workspace-tab:hover {
   border-color: #bfdbfe;
   background: #f8fbff;
   transform: translateY(-1px);
 }
 
+/* כללי עיצוב עבור .driver-schedule-workspace-tab:focus-visible  */
 .driver-schedule-workspace-tab:focus-visible {
   outline: 3px solid #bfdbfe;
   outline-offset: 2px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-workspace-tab-active  */
 .driver-schedule-workspace-tab-active {
   border-color: #60a5fa;
   background: #eff6ff;
@@ -1537,6 +1751,7 @@
   box-shadow: 0 8px 24px rgba(37, 99, 235, 0.1);
 }
 
+/* כללי עיצוב עבור .driver-schedule-workspace-tab-icon  */
 .driver-schedule-workspace-tab-icon {
   display: inline-flex;
   width: 40px;
@@ -1550,11 +1765,13 @@
 }
 
 .driver-schedule-workspace-tab-active
+/* כללי עיצוב עבור .driver-schedule-workspace-tab-icon  */
 .driver-schedule-workspace-tab-icon {
   background: #dbeafe;
   color: #2563eb;
 }
 
+/* כללי עיצוב עבור .driver-schedule-workspace-tab-content  */
 .driver-schedule-workspace-tab-content {
   display: flex;
   min-width: 0;
@@ -1562,11 +1779,13 @@
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-workspace-tab-content strong  */
 .driver-schedule-workspace-tab-content strong {
   color: inherit;
   font-size: 0.76rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-workspace-tab-content small  */
 .driver-schedule-workspace-tab-content small {
   overflow: hidden;
   color: var(--theme-text-muted);
@@ -1576,6 +1795,7 @@
   white-space: nowrap;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .driver-schedule-workspace-tabs {
     grid-template-columns: 1fr;
@@ -1589,12 +1809,14 @@
     white-space: normal;
   }
 }
+/* כללי עיצוב עבור .driver-schedule-view  */
 .driver-schedule-view {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-view-toolbar  */
 .driver-schedule-view-toolbar {
   display: flex;
   align-items: center;
@@ -1606,22 +1828,26 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .driver-schedule-view-toolbar > div:first-child  */
 .driver-schedule-view-toolbar > div:first-child {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .driver-schedule-view-toolbar strong  */
 .driver-schedule-view-toolbar strong {
   color: var(--theme-text-strong);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-view-toolbar span  */
 .driver-schedule-view-toolbar span {
   color: var(--theme-text-muted);
   font-size: 0.63rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-view-switcher  */
 .driver-schedule-view-switcher {
   display: inline-flex;
   align-items: center;
@@ -1632,6 +1858,7 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .driver-schedule-view-button  */
 .driver-schedule-view-button {
   display: inline-flex;
   align-items: center;
@@ -1648,11 +1875,13 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .driver-schedule-view-button:hover  */
 .driver-schedule-view-button:hover {
   background: var(--theme-surface);
   color: var(--theme-text);
 }
 
+/* כללי עיצוב עבור .driver-schedule-view-button-active  */
 .driver-schedule-view-button-active {
   background: var(--theme-surface);
   color: #2563eb;
@@ -1661,11 +1890,13 @@
     rgba(15, 23, 42, 0.12);
 }
 
+/* כללי עיצוב עבור .driver-schedule-view-button:focus-visible  */
 .driver-schedule-view-button:focus-visible {
   outline: 3px solid #bfdbfe;
   outline-offset: 2px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 700px) */
 @media (max-width: 700px) {
   .driver-schedule-view-toolbar {
     align-items: stretch;
@@ -1680,17 +1911,20 @@
     flex: 1;
   }
 }
+/* כללי עיצוב עבור .driver-calendar-period-status-empty  */
 .driver-calendar-period-status-empty {
   background: var(--theme-surface-soft);
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-list  */
 .driver-duty-transfer-list {
   display: flex;
   flex-direction: column;
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-list-item  */
 .driver-duty-transfer-list-item {
   display: flex;
   align-items: center;
@@ -1702,22 +1936,26 @@
   background: #f8fbff;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-list-item > div  */
 .driver-duty-transfer-list-item > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-list-item strong  */
 .driver-duty-transfer-list-item strong {
   color: var(--theme-text-strong);
   font-size: 0.76rem;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-list-item span  */
 .driver-duty-transfer-list-item span {
   color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-backdrop  */
 .driver-duty-transfer-backdrop {
   position: fixed;
   inset: 0;
@@ -1730,6 +1968,7 @@
   backdrop-filter: blur(3px);
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-dialog  */
 .driver-duty-transfer-dialog {
   display: flex;
   width: min(100%, 520px);
@@ -1744,6 +1983,7 @@
   box-shadow: 0 24px 65px rgba(15, 23, 42, 0.25);
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-header  */
 .driver-duty-transfer-header {
   display: flex;
   align-items: flex-start;
@@ -1751,12 +1991,14 @@
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-heading  */
 .driver-duty-transfer-heading {
   display: flex;
   align-items: center;
   gap: 11px;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-icon  */
 .driver-duty-transfer-icon {
   display: inline-flex;
   width: 43px;
@@ -1769,18 +2011,21 @@
   color: #15803d;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-heading h2  */
 .driver-duty-transfer-heading h2 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-heading p  */
 .driver-duty-transfer-heading p {
   margin: 4px 0 0;
   color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-close  */
 .driver-duty-transfer-close {
   display: inline-flex;
   width: 36px;
@@ -1794,6 +2039,7 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-close:disabled  */
 .driver-duty-transfer-close:disabled {
   cursor: not-allowed;
   opacity: 0.55;
@@ -1802,11 +2048,13 @@
 .driver-duty-transfer-date,
 .driver-duty-transfer-current,
 .driver-duty-transfer-confirmation,
+/* כללי עיצוב עבור .driver-duty-transfer-notice  */
 .driver-duty-transfer-notice {
   padding: 12px 13px;
   border-radius: 11px;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-date  */
 .driver-duty-transfer-date {
   display: flex;
   align-items: center;
@@ -1816,6 +2064,7 @@
 }
 
 .driver-duty-transfer-date > div,
+/* כללי עיצוב עבור .driver-duty-transfer-current  */
 .driver-duty-transfer-current {
   display: flex;
   flex-direction: column;
@@ -1823,33 +2072,39 @@
 }
 
 .driver-duty-transfer-date span,
+/* כללי עיצוב עבור .driver-duty-transfer-current span  */
 .driver-duty-transfer-current span {
   color: var(--theme-text-muted);
   font-size: 0.64rem;
 }
 
 .driver-duty-transfer-date strong,
+/* כללי עיצוב עבור .driver-duty-transfer-current strong  */
 .driver-duty-transfer-current strong {
   color: #1e293b;
   font-size: 0.76rem;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-current  */
 .driver-duty-transfer-current {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-field  */
 .driver-duty-transfer-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-field > span  */
 .driver-duty-transfer-field > span {
   color: var(--theme-text-secondary);
   font-size: 0.68rem;
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-field select  */
 .driver-duty-transfer-field select {
   width: 100%;
   min-height: 43px;
@@ -1861,11 +2116,13 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-field select:focus  */
 .driver-duty-transfer-field select:focus {
   outline: 3px solid #bfdbfe;
   border-color: #60a5fa;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-confirmation  */
 .driver-duty-transfer-confirmation {
   border: 1px solid #bbf7d0;
   background: #f0fdf4;
@@ -1873,6 +2130,7 @@
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-notice  */
 .driver-duty-transfer-notice {
   border: 1px solid #fde68a;
   background: #fffbeb;
@@ -1881,6 +2139,7 @@
   line-height: 1.55;
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-actions  */
 .driver-duty-transfer-actions {
   display: flex;
   justify-content: flex-end;
@@ -1889,10 +2148,12 @@
   border-top: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .driver-duty-transfer-loading  */
 .driver-duty-transfer-loading {
   animation: driver-availability-spin 1s linear infinite;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 620px) */
 @media (max-width: 620px) {
   .driver-duty-transfer-list-item {
     align-items: stretch;
@@ -1909,6 +2170,7 @@
   }
 }
 
+/* כללי עיצוב עבור .availability-holiday-badge  */
 .availability-holiday-badge {
   display: inline-flex;
   align-items: center;
@@ -1922,6 +2184,7 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-holidays  */
 .driver-schedule-day-editor-holidays {
   display: flex;
   gap: 0.35rem;
@@ -1929,6 +2192,7 @@
   margin-top: 0.35rem;
 }
 
+/* כללי עיצוב עבור .driver-schedule-day-editor-holidays span  */
 .driver-schedule-day-editor-holidays span {
   border-radius: 999px;
   padding: 0.18rem 0.5rem;

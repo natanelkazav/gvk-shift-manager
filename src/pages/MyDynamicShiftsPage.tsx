@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/MyDynamicShiftsPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור דינמי / משמרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ViewMode, selfEditCandidateLabel, localDate, formatDate, formatTime, modeTitle, changeModeText, MyDynamicShiftsPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { AlertTriangle, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, List, LoaderCircle, Pencil, RefreshCw, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import MonthCalendar from '../components/calendar/MonthCalendar';
@@ -17,10 +24,15 @@ import type {
 import '../styles/myDynamicShifts.css';
 import { dynamicShiftDisplayName } from '../utils/dynamicShiftDisplayName';
 
+/**
+ * טיפוס ViewMode: מצב פעולה.
+ */
 type ViewMode = 'list' | 'calendar';
 
+// weekdays — הנתון weekdays בהקשר הפעולה.
 const weekdays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
+// availabilityLabel — אילוצים וזמינות / תווית.
 const availabilityLabel: Record<string, string> = {
   preferred: 'מעדיף',
   available: 'זמין',
@@ -28,47 +40,92 @@ const availabilityLabel: Record<string, string> = {
   unavailable: 'לא זמין',
 };
 
+/**
+ * פעולה selfEditCandidateLabel: תווית.
+ * @param displayName — שם תצוגה.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function selfEditCandidateLabel(displayName: string, status: string | null): string {
   return `${displayName} · ${status ? availabilityLabel[status] ?? status : 'לא הוגש'}`;
 }
 
+/**
+ * פעולה localDate: תאריך.
+ * @param value — ערך.
+ * @returns Date — הפלט בהתאם לחתימה.
+ */
 function localDate(value: string): Date {
   const [year, month, day] = value.slice(0, 10).split('-').map(Number);
   return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(value: string): string {
   const [year, month, day] = value.slice(0, 10).split('-');
   return `${day}/${month}/${year}`;
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(value: string): string {
   return value.slice(0, 5);
 }
 
 
+/**
+ * פעולה modeTitle: מצב פעולה / כותרת.
+ * @param workMode — מצב פעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function modeTitle(workMode: MyDynamicSchedulePeriod['workMode'] | MyDynamicScheduleWorkspace['workMode']): string {
   return workMode === 'shifts' ? 'המשמרות שלי' : 'הכוננויות שלי';
 }
 
+/**
+ * פעולה changeModeText: מצב פעולה.
+ * @param mode — מצב פעולה.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function changeModeText(mode: MyDynamicScheduleWorkspace['scheduleChangeMode']): string | null {
   if (mode === 'shift_exchange') return 'לתפקיד הזה פעילה מערכת חילופי משמרות. ניתן להגיש בקשה בלחיצה על משמרת אישית בלוח השנה או דרך טאב „חילופי משמרות”.';
   return null;
 }
 
+/**
+ * פעולה MyDynamicShiftsPage: דינמי / משמרות.
+ */
 function MyDynamicShiftsPage() {
+  // מצב מקומי: periods — תקופות; setPeriods מעדכנת אותו ומפעילה רינדור לפי React.
   const [periods, setPeriods] = useState<MyDynamicSchedulePeriod[]>([]);
+  // מצב מקומי: selectedId — נבחר / מזהה; setSelectedId מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedId, setSelectedId] = useState<string>('');
+  // מצב מקומי: selectedJobTypeId — מזהה סוג התפקיד; setSelectedJobTypeId מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedJobTypeId, setSelectedJobTypeId] = useState<string>('');
+  // מצב מקומי: workspace — הנתון workspace בהקשר הפעולה; setWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspace, setWorkspace] = useState<MyDynamicScheduleWorkspace | null>(null);
+  // מצב מקומי: viewMode — מצב פעולה; setViewMode מעדכנת אותו ומפעילה רינדור לפי React.
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  // מצב מקומי: coverageConflicts — הנתון coverageConflicts בהקשר הפעולה; setCoverageConflicts מעדכנת אותו ומפעילה רינדור לפי React.
   const [coverageConflicts, setCoverageConflicts] = useState<MyOnCallCoverageConflict[]>([]);
+  // מצב מקומי: coverageError — שגיאה; setCoverageError מעדכנת אותו ומפעילה רינדור לפי React.
   const [coverageError, setCoverageError] = useState(false);
+  /**
+   * פעולה refreshCoverage: רענון הנתון refreshCoverage בהקשר הפעולה.
+   */
   const refreshCoverage = () => {
     void dynamicSchedulingService.getMyOnCallCoverageConflicts()
       .then((items) => { setCoverageConflicts(items); setCoverageError(false); })
       .catch(() => setCoverageError(true));
   };
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
     refreshCoverage();
     window.addEventListener('gvk:dynamic-schedule-changed', refreshCoverage);
@@ -79,37 +136,64 @@ function MyDynamicShiftsPage() {
     };
   }, []);
 
+  // מצב מקומי: holidays — חגים; setHolidays מעדכנת אותו ומפעילה רינדור לפי React.
   const [holidays, setHolidays] = useState<CalendarHoliday[]>([]);
+  // מצב מקומי: loading — טעינה; setLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [loading, setLoading] = useState(true);
+  // מצב מקומי: workspaceLoading — טעינה; setWorkspaceLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: selfEditOpen — הנתון selfEditOpen בהקשר הפעולה; setSelfEditOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [selfEditOpen, setSelfEditOpen] = useState(false);
+  // מצב מקומי: selfEditWorkspace — הנתון selfEditWorkspace בהקשר הפעולה; setSelfEditWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [selfEditWorkspace, setSelfEditWorkspace] = useState<DynamicSelfEditWorkspace | null>(null);
+  // מצב מקומי: selfEditLoading — טעינה; setSelfEditLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [selfEditLoading, setSelfEditLoading] = useState(false);
+  // מצב מקומי: selfEditSavingId — שמירה / מזהה; setSelfEditSavingId מעדכנת אותו ומפעילה רינדור לפי React.
   const [selfEditSavingId, setSelfEditSavingId] = useState<string | null>(null);
+  // מצב מקומי: selectedCalendarAssignmentId — נבחר / לוח שנה / הקצאה / מזהה; setSelectedCalendarAssignmentId מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedCalendarAssignmentId, setSelectedCalendarAssignmentId] = useState<string | null>(null);
+  // מצב מקומי: exchangeFormOpen — הנתון exchangeFormOpen בהקשר הפעולה; setExchangeFormOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [exchangeFormOpen, setExchangeFormOpen] = useState(false);
+  // מצב מקומי: exchangeOptions — אפשרויות בחירה; setExchangeOptions מעדכנת אותו ומפעילה רינדור לפי React.
   const [exchangeOptions, setExchangeOptions] = useState<DynamicShiftExchangeOptions | null>(null);
+  // מצב מקומי: exchangeLoading — טעינה; setExchangeLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [exchangeLoading, setExchangeLoading] = useState(false);
+  // מצב מקומי: exchangeSubmitting — הנתון exchangeSubmitting בהקשר הפעולה; setExchangeSubmitting מעדכנת אותו ומפעילה רינדור לפי React.
   const [exchangeSubmitting, setExchangeSubmitting] = useState(false);
+  // מצב מקומי: exchangeError — שגיאה; setExchangeError מעדכנת אותו ומפעילה רינדור לפי React.
   const [exchangeError, setExchangeError] = useState<string | null>(null);
+  // מצב מקומי: exchangeSuccess — הנתון exchangeSuccess בהקשר הפעולה; setExchangeSuccess מעדכנת אותו ומפעילה רינדור לפי React.
   const [exchangeSuccess, setExchangeSuccess] = useState(false);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [exchangeSuccess].
   useEffect(() => {
     if (!exchangeSuccess) return;
+    // timeoutId — משך המתנה / מזהה.
     const timeoutId = window.setTimeout(() => setExchangeSuccess(false), 4000);
     return () => window.clearTimeout(timeoutId);
   }, [exchangeSuccess]);
+  // מצב מקומי: exchangeType — הנתון exchangeType בהקשר הפעולה; setExchangeType מעדכנת אותו ומפעילה רינדור לפי React.
   const [exchangeType, setExchangeType] = useState<DynamicShiftExchangeType>('one_way');
+  // מצב מקומי: exchangeCounterpartyId — מזהה; setExchangeCounterpartyId מעדכנת אותו ומפעילה רינדור לפי React.
   const [exchangeCounterpartyId, setExchangeCounterpartyId] = useState('');
+  // מצב מקומי: exchangeCounterpartyAssignmentId — הקצאה / מזהה; setExchangeCounterpartyAssignmentId מעדכנת אותו ומפעילה רינדור לפי React.
   const [exchangeCounterpartyAssignmentId, setExchangeCounterpartyAssignmentId] = useState('');
+  // מצב מקומי: selectedAssigneeId — נבחר / מזהה; setSelectedAssigneeId מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string>('all');
+  // מצב מקומי: selfEditPermissionState — הרשאות / מצב; setSelfEditPermissionState מעדכנת אותו ומפעילה רינדור לפי React.
   const [selfEditPermissionState, setSelfEditPermissionState] = useState({ canSelfEdit: false, canViewOthers: false, canEditAll: false });
 
+  /**
+   * פעולה אסינכרונית loadPeriods: טעינת תקופות.
+   */
   const loadPeriods = async () => {
     setLoading(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // nextPeriods — תקופות.
       const nextPeriods = await dynamicSchedulingService.getMyDynamicSchedulePeriods();
       setPeriods(nextPeriods);
       setSelectedId((current) =>
@@ -129,10 +213,16 @@ function MyDynamicShiftsPage() {
     }
   };
 
+  /**
+   * פעולה אסינכרונית loadSelfEditWorkspace: טעינת הנתון loadSelfEditWorkspace בהקשר הפעולה.
+   * @param publicationId — מזהה.
+   */
   const loadSelfEditWorkspace = async (publicationId: string) => {
     setSelfEditLoading(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // data — נתונים.
       const data = await dynamicSchedulingService.getMyDynamicSelfEditWorkspace(publicationId);
       setSelfEditWorkspace(data);
     } catch (caught) {
@@ -143,15 +233,26 @@ function MyDynamicShiftsPage() {
     }
   };
 
+  /**
+   * פעולה אסינכרונית reloadPersonalWorkspace: הנתון reloadPersonalWorkspace בהקשר הפעולה.
+   * @param publicationId — מזהה.
+   */
   const reloadPersonalWorkspace = async (publicationId: string) => {
+    // data — נתונים.
     const data = await dynamicSchedulingService.getMyDynamicScheduleWorkspace(publicationId);
     setWorkspace(data);
   };
 
+  /**
+   * פעולה אסינכרונית handleSelfEditAssignment: טיפול באירוע עבור הקצאה.
+   * @param assignmentId — הקצאה / מזהה.
+   * @param userId — מזהה משתמש.
+   */
   const handleSelfEditAssignment = async (assignmentId: string, userId: string) => {
     if (!selectedId) return;
     setSelfEditSavingId(assignmentId);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.updateMyDynamicPublishedAssignment(selectedId, assignmentId, userId);
       await Promise.all([
@@ -166,20 +267,24 @@ function MyDynamicShiftsPage() {
     }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
     void loadPeriods();
   }, []);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [selectedId].
   useEffect(() => {
     setSelfEditOpen(false);
     setSelfEditWorkspace(null);
     setSelectedCalendarAssignmentId(null);
     setSelectedAssigneeId('all');
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedId.
     if (!selectedId) {
       setWorkspace(null);
       return;
     }
 
+    // active — פעיל.
     let active = true;
     setWorkspaceLoading(true);
     setError(null);
@@ -196,9 +301,14 @@ function MyDynamicShiftsPage() {
     return () => { active = false; };
   }, [selectedId]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [selectedId].
   useEffect(() => {
     if (!selectedId) return;
+    // active — פעיל.
     let active = true;
+    /**
+     * פעולה refreshPublishedSchedule: רענון פורסם / שיבוץ.
+     */
     const refreshPublishedSchedule = () => {
       if (!active || document.visibilityState === 'hidden') return;
       void dynamicSchedulingService.getMyDynamicScheduleWorkspace(selectedId)
@@ -207,6 +317,9 @@ function MyDynamicShiftsPage() {
           if (active) setError(caught instanceof Error ? caught.message : 'רענון השיבוץ נכשל.');
         });
     };
+    /**
+     * פעולה onVisibilityChange: הנתון onVisibilityChange בהקשר הפעולה.
+     */
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') refreshPublishedSchedule();
     };
@@ -221,12 +334,15 @@ function MyDynamicShiftsPage() {
     };
   }, [selectedId]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [workspace?.jobTypeId, workspace?.periodSource, workspace?.scheduleChangeMode].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !workspace || workspace.periodSource !== 'publication' || workspace.scheduleChangeMode !== 'self_edit'.
     if (!workspace || workspace.periodSource !== 'publication' || workspace.scheduleChangeMode !== 'self_edit') {
       setSelfEditPermissionState({ canSelfEdit: false, canViewOthers: false, canEditAll: false });
       return;
     }
 
+    // active — פעיל.
     let active = true;
     void Promise.all([
       dynamicSchedulingService.hasMyDynamicJobTypePermission('schedule.self_edit', workspace.jobTypeId),
@@ -241,12 +357,15 @@ function MyDynamicShiftsPage() {
     return () => { active = false; };
   }, [workspace?.jobTypeId, workspace?.periodSource, workspace?.scheduleChangeMode]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [workspace?.year, workspace?.month].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !workspace.
     if (!workspace) {
       setHolidays([]);
       return;
     }
 
+    // active — פעיל.
     let active = true;
     void calendarHolidayService.getCalendarHolidays(workspace.year, workspace.month)
       .then((items) => {
@@ -259,9 +378,11 @@ function MyDynamicShiftsPage() {
     return () => { active = false; };
   }, [workspace?.year, workspace?.month]);
 
+  // ערך מחושב holidayLabels — חג; נשמר בין רינדורים עד שינוי התלויות.
   const holidayLabels = useMemo(() => {
     const labels = new Map<string, string[]>();
     holidays.forEach((holiday) => {
+      // current — הנתון current בהקשר הפעולה.
       const current = labels.get(holiday.date) ?? [];
       if (!current.includes(holiday.name)) current.push(holiday.name);
       labels.set(holiday.date, current);
@@ -269,14 +390,18 @@ function MyDynamicShiftsPage() {
     return labels;
   }, [holidays]);
 
+  // ערך מחושב availableRoles — הנתון availableRoles בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const availableRoles = useMemo(() => {
+    // byId — מזהה; מיפוי לחיפוש לפי מפתח.
     const byId = new Map<string, MyDynamicSchedulePeriod>();
+    // עיבוד כל פריט מתוך periods בנפרד.
     for (const period of periods) {
       if (!byId.has(period.jobTypeId)) byId.set(period.jobTypeId, period);
     }
     return [...byId.values()].sort((first, second) => first.jobTypeName.localeCompare(second.jobTypeName, 'he'));
   }, [periods]);
 
+  // ערך מחושב rolePeriods — תקופות; נשמר בין רינדורים עד שינוי התלויות.
   const rolePeriods = useMemo(
     () => periods
       .filter((period) => period.jobTypeId === selectedJobTypeId)
@@ -284,14 +409,19 @@ function MyDynamicShiftsPage() {
     [periods, selectedJobTypeId],
   );
 
+  // selectedRolePeriodIndex — נבחר / תקופה / מיקום באוסף.
   const selectedRolePeriodIndex = rolePeriods.findIndex((period) => period.publicationId === selectedId);
+  // previousPeriod — תקופה.
   const previousPeriod = selectedRolePeriodIndex > 0 ? rolePeriods[selectedRolePeriodIndex - 1] : null;
+  // nextPeriod — תקופה.
   const nextPeriod = selectedRolePeriodIndex >= 0 && selectedRolePeriodIndex < rolePeriods.length - 1
     ? rolePeriods[selectedRolePeriodIndex + 1]
     : null;
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [rolePeriods, selectedId, selectedJobTypeId].
   useEffect(() => {
     if (!selectedJobTypeId) return;
+    // selectedStillBelongsToRole — נבחר.
     const selectedStillBelongsToRole = rolePeriods.some((period) => period.publicationId === selectedId);
     if (!selectedStillBelongsToRole) {
       const latest = rolePeriods[rolePeriods.length - 1];
@@ -299,16 +429,21 @@ function MyDynamicShiftsPage() {
     }
   }, [rolePeriods, selectedId, selectedJobTypeId]);
 
+  // selectedPeriod — נבחר / תקופה.
   const selectedPeriod = periods.find((period) => period.publicationId === selectedId) ?? null;
+  // pageTitle — כותרת.
   const pageTitle = workspace
     ? modeTitle(workspace.workMode)
     : selectedPeriod
       ? modeTitle(selectedPeriod.workMode)
       : 'המשמרות שלי';
 
+  // ערך מחושב visibleAssignees — הנתון visibleAssignees בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const visibleAssignees = useMemo(() => {
     if (!workspace?.canViewOthers) return [];
+    // byId — מזהה; מיפוי לחיפוש לפי מפתח.
     const byId = new Map<string, string>();
+    // עיבוד כל פריט מתוך workspace.assignments בנפרד.
     for (const assignment of workspace.assignments) {
       if (assignment.userId && assignment.displayName && !byId.has(assignment.userId)) {
         byId.set(assignment.userId, assignment.displayName);
@@ -319,21 +454,28 @@ function MyDynamicShiftsPage() {
       .sort((first, second) => first.displayName.localeCompare(second.displayName, 'he'));
   }, [workspace]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [selectedAssigneeId, visibleAssignees].
   useEffect(() => {
     if (selectedAssigneeId !== 'all' && !visibleAssignees.some((assignee) => assignee.userId === selectedAssigneeId)) {
       setSelectedAssigneeId('all');
     }
   }, [selectedAssigneeId, visibleAssignees]);
 
+  // ערך מחושב visibleAssignments — הקצאות; נשמר בין רינדורים עד שינוי התלויות.
   const visibleAssignments = useMemo(() => {
+    // assignments — הקצאות.
     const assignments = workspace?.assignments ?? [];
     if (!workspace?.canViewOthers || selectedAssigneeId === 'all') return assignments;
     return assignments.filter((assignment) => assignment.userId === selectedAssigneeId);
   }, [selectedAssigneeId, workspace]);
 
+  // ערך מחושב assignmentsByDate — הקצאות / תאריך; נשמר בין רינדורים עד שינוי התלויות.
   const assignmentsByDate = useMemo(() => {
+    // map — מפת התאמה; מיפוי לחיפוש לפי מפתח.
     const map = new Map<string, MyDynamicScheduleAssignment[]>();
+    // עיבוד כל פריט מתוך visibleAssignments בנפרד.
     for (const assignment of visibleAssignments) {
+      // current — הנתון current בהקשר הפעולה.
       const current = map.get(assignment.shiftDate) ?? [];
       current.push(assignment);
       map.set(assignment.shiftDate, current);
@@ -341,14 +483,19 @@ function MyDynamicShiftsPage() {
     return map;
   }, [visibleAssignments]);
 
+  // ערך מחושב groupedDates — תאריכים; נשמר בין רינדורים עד שינוי התלויות.
   const groupedDates = useMemo(
     () => [...assignmentsByDate.entries()].sort(([first], [second]) => first.localeCompare(second)),
     [assignmentsByDate],
   );
 
+  // ערך מחושב selfEditGroupedDates — תאריכים; נשמר בין רינדורים עד שינוי התלויות.
   const selfEditGroupedDates = useMemo(() => {
+    // map — מפת התאמה; מיפוי לחיפוש לפי מפתח.
     const map = new Map<string, DynamicSelfEditWorkspace['assignments']>();
+    // עיבוד כל פריט מתוך selfEditWorkspace?.assignments ?? [] בנפרד.
     for (const assignment of selfEditWorkspace?.assignments ?? []) {
+      // current — הנתון current בהקשר הפעולה.
       const current = map.get(assignment.shiftDate) ?? [];
       current.push(assignment);
       map.set(assignment.shiftDate, current);
@@ -356,29 +503,45 @@ function MyDynamicShiftsPage() {
     return [...map.entries()].sort(([first], [second]) => first.localeCompare(second));
   }, [selfEditWorkspace]);
 
+  // ערך מחושב selectedCalendarAssignment — נבחר / לוח שנה / הקצאה; נשמר בין רינדורים עד שינוי התלויות.
   const selectedCalendarAssignment = useMemo(
     () => workspace?.assignments.find((assignment) => assignment.id === selectedCalendarAssignmentId) ?? null,
     [workspace, selectedCalendarAssignmentId],
   );
 
+  // ערך מחושב selectedCalendarEditorAssignment — נבחר / לוח שנה / הקצאה; נשמר בין רינדורים עד שינוי התלויות.
   const selectedCalendarEditorAssignment = useMemo(
     () => selfEditWorkspace?.assignments.find((assignment) => assignment.id === selectedCalendarAssignmentId) ?? null,
     [selfEditWorkspace, selectedCalendarAssignmentId],
   );
 
+  // ערך מחושב conflictAssignmentIds — הקצאה; נשמר בין רינדורים עד שינוי התלויות.
   const conflictAssignmentIds = useMemo(() => new Set(
     coverageConflicts.filter((item) => item.publicationId === workspace?.publicationId).map((item) => item.assignmentId),
   ), [coverageConflicts, workspace?.publicationId]);
 
+  /**
+   * פעולה canEditAssignment: בדיקת אפשרות פעולה עבור האם עריכה מותרת.
+   * @param assignment — הקצאה.
+   * @returns boolean — הפלט בהתאם לחתימה.
+   */
   const canEditAssignment = (assignment: MyDynamicScheduleAssignment): boolean => {
     if (!workspace || workspace.readOnly || workspace.scheduleChangeMode !== 'self_edit') return false;
     if (selfEditPermissionState.canEditAll) return true;
     return assignment.isMine && selfEditPermissionState.canSelfEdit;
   };
 
+  /**
+   * פעולה canRequestExchange: בדיקת אפשרות פעולה עבור נתוני הבקשה.
+   * @param assignment — הקצאה.
+   * @returns boolean — הפלט בהתאם לחתימה.
+   */
   const canRequestExchange = (assignment: MyDynamicScheduleAssignment): boolean =>
     Boolean(workspace && !workspace.readOnly && workspace.scheduleChangeMode === 'shift_exchange' && assignment.isMine);
 
+  /**
+   * פעולה closeCalendarModal: סגירת לוח שנה.
+   */
   const closeCalendarModal = () => {
     if (exchangeSubmitting) return;
     setSelectedCalendarAssignmentId(null);
@@ -386,8 +549,12 @@ function MyDynamicShiftsPage() {
     setExchangeError(null);
   };
 
+  /**
+   * פעולה אסינכרונית openExchangeForm: פתיחת הנתון openExchangeForm בהקשר הפעולה.
+   */
   const openExchangeForm = async () => {
     if (!selectedCalendarAssignment) return;
+    // assignmentId — הקצאה / מזהה.
     const assignmentId = selectedCalendarAssignment.id;
     setExchangeFormOpen(true);
     setExchangeLoading(true);
@@ -396,7 +563,9 @@ function MyDynamicShiftsPage() {
     setExchangeType('one_way');
     setExchangeCounterpartyId('');
     setExchangeCounterpartyAssignmentId('');
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // options — אפשרויות בחירה.
       const options = await dynamicSchedulingService.getMyDynamicShiftExchangeOptions();
       if (!options.myShifts.some((shift) => shift.id === assignmentId)) {
         setExchangeError('המשמרת כבר אינה זמינה להגשת בקשת חילוף.');
@@ -410,8 +579,12 @@ function MyDynamicShiftsPage() {
     }
   };
 
+  /**
+   * פעולה אסינכרונית submitCalendarExchange: הגשת לוח שנה.
+   */
   const submitCalendarExchange = async () => {
     if (!selectedCalendarAssignment || !exchangeOptions || !exchangeCounterpartyId || exchangeSubmitting) return;
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר exchangeType === 'two_way' && !exchangeCounterpartyAssignmentId.
     if (exchangeType === 'two_way' && !exchangeCounterpartyAssignmentId) {
       setExchangeError('יש לבחור משמרת נגדית.');
       return;
@@ -419,6 +592,7 @@ function MyDynamicShiftsPage() {
     setExchangeSubmitting(true);
     setExchangeError(null);
     setExchangeSuccess(false);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.createDynamicShiftExchangeRequest({
         swapType: exchangeType,
@@ -431,6 +605,7 @@ function MyDynamicShiftsPage() {
       setExchangeOptions(null);
       setExchangeSuccess(true);
       refreshCoverage();
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await reloadPersonalWorkspace(selectedId);
         refreshCoverage();
@@ -444,12 +619,19 @@ function MyDynamicShiftsPage() {
     }
   };
 
+  // selectedExchangeShift — נבחר / משמרת.
   const selectedExchangeShift = exchangeOptions?.myShifts.find((shift) => shift.id === selectedCalendarAssignmentId);
+  // exchangeMembers — חברי התפקיד.
   const exchangeMembers = exchangeOptions?.members.filter((member) => member.jobTypeId === selectedExchangeShift?.jobTypeId) ?? [];
+  // exchangeCounterpartyShifts — משמרות.
   const exchangeCounterpartyShifts = exchangeOptions?.counterpartyShifts.filter((shift) =>
     shift.publicationId === selectedExchangeShift?.publicationId && shift.assignedUserId === exchangeCounterpartyId
   ) ?? [];
 
+  /**
+   * פעולה openCalendarAssignmentEditor: פתיחת לוח שנה / הקצאה.
+   * @param assignment — הקצאה.
+   */
   const openCalendarAssignmentEditor = (assignment: MyDynamicScheduleAssignment) => {
     if (!canEditAssignment(assignment) && !canRequestExchange(assignment)) return;
     setExchangeSuccess(false);
@@ -459,6 +641,7 @@ function MyDynamicShiftsPage() {
     }
   };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר loading.
   if (loading) {
     return <main className="my-dynamic-shifts page-shell" dir="rtl"><div className="my-shifts-loading"><LoaderCircle className="spin" /> טוען לוחות שפורסמו…</div></main>;
   }
@@ -627,6 +810,7 @@ function MyDynamicShiftsPage() {
                   <Button
                     variant={selfEditOpen ? 'secondary' : 'primary'}
                     onClick={() => {
+                      // nextOpen — הנתון nextOpen בהקשר הפעולה.
                       const nextOpen = !selfEditOpen;
                       setSelfEditOpen(nextOpen);
                       if (nextOpen && !selfEditWorkspace) void loadSelfEditWorkspace(workspace.publicationId);
@@ -684,6 +868,7 @@ function MyDynamicShiftsPage() {
                       </div>
                       <div className="my-shifts-self-edit-list">
                         {selfEditGroupedDates.map(([date, assignments]) => {
+                          // dateObject — תאריך.
                           const dateObject = localDate(date);
                           return (
                             <section key={date} className="my-shifts-self-edit-day">
@@ -739,6 +924,7 @@ function MyDynamicShiftsPage() {
                   dayLabels={holidayLabels}
                   getDayClassName={({ date }) => (assignmentsByDate.get(date) ?? []).some((assignment) => conflictAssignmentIds.has(assignment.id)) ? 'my-shifts-calendar-needs-coverage' : assignmentsByDate.has(date) ? 'my-shifts-calendar-has-assignment' : null}
                   renderDayContent={({ date }) => {
+                    // dayAssignments — יום / הקצאות.
                     const dayAssignments = assignmentsByDate.get(date) ?? [];
                     if (!dayAssignments.length) return null;
                     return (
@@ -777,6 +963,7 @@ function MyDynamicShiftsPage() {
               ) : (
                 <div className="my-shifts-list">
                   {groupedDates.map(([date, dayAssignments]) => {
+                    // dateObject — תאריך.
                     const dateObject = localDate(date);
                     return (
                       <section key={date} className="my-shifts-day-group">

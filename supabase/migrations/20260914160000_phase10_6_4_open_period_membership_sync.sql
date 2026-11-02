@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260914160000_phase10_6_4_open_period_membership_sync.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור תקופה / שיוך לתפקיד.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_period_workflow, public.save_dynamic_user_assignments.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 10.6.4
@@ -6,6 +11,7 @@ begin;
 -- A removed/inactive member is excluded from current progress counters, while
 -- historical submission rows remain untouched for audit/history.
 
+-- פונקציית מסד public.get_dynamic_period_workflow: שליפה או חישוב של דינמי / תקופה / תהליך עבודה.
 create or replace function public.get_dynamic_period_workflow(
   requested_job_type_id uuid,
   requested_year integer,
@@ -13,29 +19,43 @@ create or replace function public.get_dynamic_period_workflow(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
+  -- target_period — יעד / תקופה.
   target_period public.dynamic_availability_periods%rowtype;
+  -- latest_draft — טיוטה.
   latest_draft public.dynamic_schedule_shadow_drafts%rowtype;
   publication public.dynamic_schedule_publications%rowtype;
+  -- member_count — כמות.
   member_count integer := 0;
+  -- slot_count — כמות.
   slot_count integer := 0;
+  -- submission_count — כמות.
   submission_count integer := 0;
+  -- submitted_count — הוגש / כמות.
   submitted_count integer := 0;
+  -- assignment_count — הקצאה / כמות.
   assignment_count integer := 0;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not (.
   if not (
     public.has_dynamic_job_type_permission('availability.view_team', requested_job_type_id, current_user_id)
     or public.has_dynamic_job_type_permission('schedule.view_team', requested_job_type_id, current_user_id)
   ) then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי requested_month not between 1 and 12 then raise exception 'invalid month'; end if;.
   if requested_month not between 1 and 12 then raise exception 'invalid month'; end if;
 
   select * into target_job from public.job_types where id=requested_job_type_id and legacy_role is null;
+  -- הסתעפות לפי התנאי target_job.id is null then raise exception 'job type not found'; end if;.
   if target_job.id is null then raise exception 'job type not found'; end if;
 
   select count(*) into member_count
@@ -47,6 +67,7 @@ begin
   from public.dynamic_availability_periods
   where job_type_id=target_job.id and year=requested_year and month=requested_month;
 
+  -- הסתעפות לפי התנאי target_period.id is not null.
   if target_period.id is not null then
     select count(*) into slot_count
     from public.dynamic_availability_slots
@@ -72,12 +93,14 @@ begin
   from public.dynamic_schedule_publications
   where job_type_id=target_job.id and year=requested_year and month=requested_month;
 
+  -- הסתעפות לפי התנאי publication.id is not null.
   if publication.id is not null then
     select count(*) into assignment_count
     from public.dynamic_schedule_published_assignments
     where publication_id=publication.id;
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'jobTypeId', target_job.id,
     'jobTypeName', target_job.name,
@@ -120,44 +143,59 @@ begin
 end;
 $function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_period_workflow(uuid,integer,integer) to authenticated;
 
 -- Preserve the existing assignment editor behavior, while notifying a user who
 -- is newly attached to a Job Type that already has an open availability period.
+-- פונקציית מסד public.save_dynamic_user_assignments: שמירת דינמי / משתמש / הקצאות.
 create or replace function public.save_dynamic_user_assignments(
   target_user_id uuid,
   requested_assignments jsonb
 )
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
   actor uuid := auth.uid();
+  -- item — פריט.
   item jsonb;
+  -- requested_job_type_id — מזהה סוג התפקיד.
   requested_job_type_id uuid;
   requested_is_member boolean;
   requested_is_manager boolean;
   requested_employment_scope text;
+  -- requested_part_time_definition — זמן.
   requested_part_time_definition jsonb;
   configured_scope text;
   was_member boolean;
+  -- open_period — תקופה.
   open_period record;
+  -- created_notification_id — התראות / מזהה.
   created_notification_id uuid;
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.user_permissions up
     where up.user_id = actor and up.permission_key = 'users.manage'
   ) then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי not exists (select 1 from public.profiles p where p.id = target_user_id).
   if not exists (select 1 from public.profiles p where p.id = target_user_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not found';
   end if;
+  -- הסתעפות לפי התנאי jsonb_typeof(coalesce(requested_assignments, '[]'::jsonb)) <> 'array'.
   if jsonb_typeof(coalesce(requested_assignments, '[]'::jsonb)) <> 'array' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'requested_assignments must be an array';
   end if;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for item in select value from jsonb_array_elements(coalesce(requested_assignments, '[]'::jsonb)) loop
     requested_job_type_id := nullif(item->>'jobTypeId','')::uuid;
     requested_is_member := coalesce((item->>'isMember')::boolean, false);
@@ -175,15 +213,19 @@ begin
     where jt.id = requested_job_type_id
       and jt.legacy_role is null;
 
+    -- הסתעפות לפי התנאי configured_scope is null then raise exception 'dynamic job type not found'; end if;.
     if configured_scope is null then raise exception 'dynamic job type not found'; end if;
 
+    -- הסתעפות לפי התנאי requested_is_member.
     if requested_is_member then
+      -- הסתעפות לפי התנאי configured_scope <> 'flexible'.
       if configured_scope <> 'flexible' then
         requested_employment_scope := configured_scope;
       elsif requested_employment_scope not in ('full_time','part_time','as_much_as_possible') then
         requested_employment_scope := 'full_time';
       end if;
 
+      -- הוספת רשומות ל־public.job_type_memberships בהתאם לקלט ולתנאים להלן.
       insert into public.job_type_memberships(user_id, job_type_id, is_primary, source, metadata)
       values (
         target_user_id,
@@ -206,7 +248,9 @@ begin
       -- No snapshot is created: eligibility is intentionally based on the live
       -- membership table. The notification simply tells the newly-added user
       -- that an already-open period is now available to them.
+      -- הסתעפות לפי התנאי not was_member.
       if not was_member then
+        -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
         for open_period in
           select ap.id, ap.year, ap.month, ap.submission_deadline, jt.name as job_type_name
           from public.dynamic_availability_periods ap
@@ -215,6 +259,7 @@ begin
             and ap.status='open'
             and (ap.submission_deadline is null or ap.submission_deadline >= now())
         loop
+          -- הוספת רשומות ל־public.notifications בהתאם לקלט ולתנאים להלן.
           insert into public.notifications(
             type, priority, source, title, body, url, data, created_by, expires_at
           ) values (
@@ -241,11 +286,13 @@ begin
             now() + interval '90 days'
           ) returning id into created_notification_id;
 
+          -- הוספת רשומות ל־public.notification_recipients בהתאם לקלט ולתנאים להלן.
           insert into public.notification_recipients(notification_id,user_id)
           values(created_notification_id,target_user_id)
           on conflict do nothing;
         end loop;
 
+        -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
         insert into public.audit_logs(action,actor_user_id,entity_type,entity_id,summary,metadata)
         values(
           'system_event',actor,'job_type_membership',target_user_id,
@@ -258,15 +305,19 @@ begin
         );
       end if;
     else
+      -- מחיקת הרשומות שנבחרו מתוך public.job_type_memberships בהתאם לקלט ולתנאים להלן.
       delete from public.job_type_memberships
       where user_id = target_user_id and job_type_id = requested_job_type_id;
     end if;
 
+    -- הסתעפות לפי התנאי requested_is_manager.
     if requested_is_manager then
+      -- הוספת רשומות ל־public.job_type_managers בהתאם לקלט ולתנאים להלן.
       insert into public.job_type_managers(user_id, job_type_id, created_by)
       values (target_user_id, requested_job_type_id, actor)
       on conflict (user_id, job_type_id) do nothing;
     else
+      -- מחיקת הרשומות שנבחרו מתוך public.job_type_managers בהתאם לקלט ולתנאים להלן.
       delete from public.job_type_managers
       where user_id = target_user_id and job_type_id = requested_job_type_id;
     end if;
@@ -274,6 +325,7 @@ begin
 end;
 $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.save_dynamic_user_assignments(uuid,jsonb) to authenticated;
 
 commit;

@@ -1,3 +1,9 @@
+-- קובץ: supabase-audit/schema.sql
+-- מטרה: צילום סכמת מסד הנתונים לצורכי עיון וביקורת; אינו אישור למצב האבטחה החי.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: "private"."current_user_is_admin", "public"."add_daily_report_customer", "public"."add_daily_report_subject", "public"."analyze_dynamic_schedule_feasibility", "public"."apply_default_user_permissions", "public"."attendance_distance_m", "public"."can_configure_manager_dashboard", "public"."can_delete_daily_report_attachment", "public"."can_read_daily_report_attachment", "public"."can_upload_daily_report_attachment", "public"."cancel_dynamic_shift_exchange_request", "public"."cancel_shift_swap_request".
+-- - מבני טבלאות: "public"."dynamic_schedule_published_assignments", "public"."admin_development_sessions", "public"."attendance_sessions", "public"."audit_logs", "public"."availability_periods", "public"."availability_shift_slots", "public"."availability_submissions", "public"."calendar_special_days", "public"."client_app_sessions", "public"."daily_report_attachments", "public"."daily_report_customers", "public"."daily_report_items".
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 
 
 
@@ -195,6 +201,7 @@ CREATE TYPE "public"."user_role" AS ENUM (
 ALTER TYPE "public"."user_role" OWNER TO "postgres";
 
 
+-- פונקציית מסד "private"."current_user_is_admin": המשתמש הנוכחי הנוכחי.
 CREATE OR REPLACE FUNCTION "private"."current_user_is_admin"() RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -212,6 +219,7 @@ $$;
 ALTER FUNCTION "private"."current_user_is_admin"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."add_daily_report_customer": הוספת דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."add_daily_report_customer"("requested_name" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -244,6 +252,7 @@ $$;
 ALTER FUNCTION "public"."add_daily_report_customer"("requested_name" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."add_daily_report_subject": הוספת דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."add_daily_report_subject"("requested_job_type_id" "uuid", "requested_name" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -269,6 +278,7 @@ $$;
 ALTER FUNCTION "public"."add_daily_report_subject"("requested_job_type_id" "uuid", "requested_name" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."analyze_dynamic_schedule_feasibility": דינמי / שיבוץ / בדיקת היתכנות שיבוץ.
 CREATE OR REPLACE FUNCTION "public"."analyze_dynamic_schedule_feasibility"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -400,6 +410,7 @@ $$;
 ALTER FUNCTION "public"."analyze_dynamic_schedule_feasibility"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."apply_default_user_permissions": החלת משתמש / הרשאות.
 CREATE OR REPLACE FUNCTION "public"."apply_default_user_permissions"("target_user_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -433,6 +444,7 @@ $$;
 ALTER FUNCTION "public"."apply_default_user_permissions"("target_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."attendance_distance_m": נוכחות.
 CREATE OR REPLACE FUNCTION "public"."attendance_distance_m"("lat1" double precision, "lng1" double precision, "lat2" double precision, "lng2" double precision) RETURNS numeric
     LANGUAGE "sql" IMMUTABLE
     SET "search_path" TO ''
@@ -445,6 +457,7 @@ $$;
 ALTER FUNCTION "public"."attendance_distance_m"("lat1" double precision, "lng1" double precision, "lat2" double precision, "lng2" double precision) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."can_configure_manager_dashboard": בדיקת אפשרות פעולה עבור לוח בקרה.
 CREATE OR REPLACE FUNCTION "public"."can_configure_manager_dashboard"("requested_user_id" "uuid" DEFAULT "auth"."uid"()) RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -470,6 +483,7 @@ $$;
 ALTER FUNCTION "public"."can_configure_manager_dashboard"("requested_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."can_delete_daily_report_attachment": בדיקת אפשרות פעולה עבור דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."can_delete_daily_report_attachment"("requested_storage_path" "text") RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -496,6 +510,7 @@ $$;
 ALTER FUNCTION "public"."can_delete_daily_report_attachment"("requested_storage_path" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."can_read_daily_report_attachment": בדיקת אפשרות פעולה עבור דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."can_read_daily_report_attachment"("requested_storage_path" "text") RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -528,6 +543,7 @@ $$;
 ALTER FUNCTION "public"."can_read_daily_report_attachment"("requested_storage_path" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."can_upload_daily_report_attachment": בדיקת אפשרות פעולה עבור דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."can_upload_daily_report_attachment"("requested_storage_path" "text") RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -568,6 +584,7 @@ $$;
 ALTER FUNCTION "public"."can_upload_daily_report_attachment"("requested_storage_path" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."cancel_dynamic_shift_exchange_request": ביטול החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."cancel_dynamic_shift_exchange_request"("requested_request_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -592,6 +609,7 @@ $$;
 ALTER FUNCTION "public"."cancel_dynamic_shift_exchange_request"("requested_request_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."cancel_shift_swap_request": ביטול החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."cancel_shift_swap_request"("requested_request_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -641,6 +659,7 @@ $$;
 ALTER FUNCTION "public"."cancel_shift_swap_request"("requested_request_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."clock_my_attendance": נוכחות.
 CREATE OR REPLACE FUNCTION "public"."clock_my_attendance"("requested_job_type_id" "uuid", "requested_action" "text", "requested_lat" double precision, "requested_lng" double precision, "requested_accuracy_m" numeric DEFAULT NULL::numeric) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -677,6 +696,7 @@ end; $$;
 ALTER FUNCTION "public"."clock_my_attendance"("requested_job_type_id" "uuid", "requested_action" "text", "requested_lat" double precision, "requested_lng" double precision, "requested_accuracy_m" numeric) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."close_availability_period": סגירת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."close_availability_period"("requested_period_id" "uuid") RETURNS TABLE("period_id" "uuid", "period_status" "text", "closed_at" timestamp with time zone, "total_dispatchers" integer, "submitted_dispatchers" integer)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -978,6 +998,7 @@ $$;
 ALTER FUNCTION "public"."close_availability_period"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."close_driver_availability_period": סגירת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."close_driver_availability_period"("requested_period_id" "uuid", "requested_force" boolean DEFAULT false) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1211,6 +1232,7 @@ COMMENT ON FUNCTION "public"."close_driver_availability_period"("requested_perio
 
 
 
+-- פונקציית מסד "public"."close_morning_driver_availability_period": סגירת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."close_morning_driver_availability_period"("requested_period_id" "uuid", "requested_force" boolean DEFAULT false) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1416,6 +1438,7 @@ $$;
 ALTER FUNCTION "public"."close_morning_driver_availability_period"("requested_period_id" "uuid", "requested_force" boolean) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."compare_dynamic_availability_shadow_to_legacy": השוואת דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 CREATE OR REPLACE FUNCTION "public"."compare_dynamic_availability_shadow_to_legacy"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1537,6 +1560,7 @@ $$;
 ALTER FUNCTION "public"."compare_dynamic_availability_shadow_to_legacy"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."complete_initial_password_change": סיסמה.
 CREATE OR REPLACE FUNCTION "public"."complete_initial_password_change"() RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1568,6 +1592,7 @@ $$;
 ALTER FUNCTION "public"."complete_initial_password_change"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_availability_period": יצירת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."create_availability_period"("requested_year" integer, "requested_month" integer, "requested_submission_deadline" timestamp with time zone DEFAULT NULL::timestamp with time zone, "requested_title" "text" DEFAULT NULL::"text", "requested_instructions" "text" DEFAULT NULL::"text") RETURNS TABLE("period_id" "uuid", "created_slots" integer, "period_status" "text")
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1701,6 +1726,7 @@ $$;
 ALTER FUNCTION "public"."create_availability_period"("requested_year" integer, "requested_month" integer, "requested_submission_deadline" timestamp with time zone, "requested_title" "text", "requested_instructions" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_driver_availability_period": יצירת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."create_driver_availability_period"("requested_year" integer, "requested_month" integer, "requested_title" "text" DEFAULT NULL::"text", "requested_instructions" "text" DEFAULT NULL::"text", "requested_submission_deadline" timestamp with time zone DEFAULT NULL::timestamp with time zone) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1899,6 +1925,7 @@ COMMENT ON FUNCTION "public"."create_driver_availability_period"("requested_year
 
 
 
+-- פונקציית מסד "public"."create_driver_schedule_draft": יצירת כוננים / שיבוץ / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."create_driver_schedule_draft"("requested_availability_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -2665,6 +2692,7 @@ COMMENT ON FUNCTION "public"."create_driver_schedule_draft"("requested_availabil
 
 
 
+-- פונקציית מסד "public"."create_dynamic_assignment_change_notification": יצירת דינמי / הקצאה / התראות.
 CREATE OR REPLACE FUNCTION "public"."create_dynamic_assignment_change_notification"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -2741,6 +2769,7 @@ $$;
 ALTER FUNCTION "public"."create_dynamic_assignment_change_notification"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_dynamic_availability_shadow_period": יצירת דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי / תקופה.
 CREATE OR REPLACE FUNCTION "public"."create_dynamic_availability_shadow_period"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -2814,6 +2843,7 @@ $$;
 ALTER FUNCTION "public"."create_dynamic_availability_shadow_period"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_dynamic_exchange_approval_notification": יצירת דינמי / התראות.
 CREATE OR REPLACE FUNCTION "public"."create_dynamic_exchange_approval_notification"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -2889,6 +2919,7 @@ $$;
 ALTER FUNCTION "public"."create_dynamic_exchange_approval_notification"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_dynamic_monthly_rotation_draft": יצירת דינמי / סבב כוננויות / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."create_dynamic_monthly_rotation_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -3083,6 +3114,7 @@ end;$$;
 ALTER FUNCTION "public"."create_dynamic_monthly_rotation_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_dynamic_schedule_publication_notification": יצירת דינמי / שיבוץ / התראות.
 CREATE OR REPLACE FUNCTION "public"."create_dynamic_schedule_publication_notification"("requested_publication_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -3231,6 +3263,7 @@ $$;
 ALTER FUNCTION "public"."create_dynamic_schedule_publication_notification"("requested_publication_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_dynamic_schedule_shadow_draft": יצירת דינמי / שיבוץ / טיוטות שיבוץ במנגנון הדינמי / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."create_dynamic_schedule_shadow_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -3425,6 +3458,7 @@ $$;
 ALTER FUNCTION "public"."create_dynamic_schedule_shadow_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_dynamic_shift_exchange_request": יצירת החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."create_dynamic_shift_exchange_request"("requested_swap_type" "text", "requested_requester_assignment_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_assignment_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -3507,6 +3541,7 @@ $$;
 ALTER FUNCTION "public"."create_dynamic_shift_exchange_request"("requested_swap_type" "text", "requested_requester_assignment_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_assignment_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_morning_driver_availability_period": יצירת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."create_morning_driver_availability_period"("requested_year" integer, "requested_month" integer, "requested_title" "text" DEFAULT NULL::"text", "requested_instructions" "text" DEFAULT NULL::"text", "requested_submission_deadline" timestamp with time zone DEFAULT NULL::timestamp with time zone) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -3886,6 +3921,7 @@ $$;
 ALTER FUNCTION "public"."create_morning_driver_availability_period"("requested_year" integer, "requested_month" integer, "requested_title" "text", "requested_instructions" "text", "requested_submission_deadline" timestamp with time zone) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_morning_driver_schedule_draft": יצירת כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."create_morning_driver_schedule_draft"("requested_availability_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -4072,6 +4108,7 @@ $$;
 ALTER FUNCTION "public"."create_morning_driver_schedule_draft"("requested_availability_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_operational_announcement": יצירת הודעות מנהל.
 CREATE OR REPLACE FUNCTION "public"."create_operational_announcement"("requested_user_ids" "uuid"[], "requested_title" "text", "requested_body" "text", "requested_priority" "text" DEFAULT 'normal'::"text", "requested_expires_at" timestamp with time zone DEFAULT NULL::timestamp with time zone) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -4120,6 +4157,7 @@ $$;
 ALTER FUNCTION "public"."create_operational_announcement"("requested_user_ids" "uuid"[], "requested_title" "text", "requested_body" "text", "requested_priority" "text", "requested_expires_at" timestamp with time zone) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_schedule_publication_notification": יצירת שיבוץ / התראות.
 CREATE OR REPLACE FUNCTION "public"."create_schedule_publication_notification"("requested_schedule_kind" "text", "requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -4285,6 +4323,7 @@ $$;
 ALTER FUNCTION "public"."create_schedule_publication_notification"("requested_schedule_kind" "text", "requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_shift_swap_request": יצירת החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."create_shift_swap_request"("requested_swap_type" "text", "requested_requester_shift_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_shift_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -4471,6 +4510,7 @@ $$;
 ALTER FUNCTION "public"."create_shift_swap_request"("requested_swap_type" "text", "requested_requester_shift_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_shift_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."create_shift_swap_workflow_notification": יצירת החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."create_shift_swap_workflow_notification"("recipient_user_ids" "uuid"[], "requested_request_id" "uuid", "requested_actor_user_id" "uuid", "requested_event" "text", "requested_title" "text", "requested_body" "text") RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -4545,6 +4585,7 @@ $$;
 ALTER FUNCTION "public"."create_shift_swap_workflow_notification"("recipient_user_ids" "uuid"[], "requested_request_id" "uuid", "requested_actor_user_id" "uuid", "requested_event" "text", "requested_title" "text", "requested_body" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."current_user_created_notification": המשתמש הנוכחי הנוכחי.
 CREATE OR REPLACE FUNCTION "public"."current_user_created_notification"("requested_notification_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -4561,6 +4602,7 @@ $$;
 ALTER FUNCTION "public"."current_user_created_notification"("requested_notification_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."current_user_has_permission": המשתמש הנוכחי הנוכחי.
 CREATE OR REPLACE FUNCTION "public"."current_user_has_permission"("requested_permission" "text") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -4577,6 +4619,7 @@ $$;
 ALTER FUNCTION "public"."current_user_has_permission"("requested_permission" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."current_user_role": המשתמש הנוכחי הנוכחי.
 CREATE OR REPLACE FUNCTION "public"."current_user_role"() RETURNS "public"."user_role"
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -4592,6 +4635,7 @@ $$;
 ALTER FUNCTION "public"."current_user_role"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."decorate_daily_report_notification": דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."decorate_daily_report_notification"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -4609,6 +4653,7 @@ end $$;
 ALTER FUNCTION "public"."decorate_daily_report_notification"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."delete_availability_period": מחיקת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."delete_availability_period"("requested_period_id" "uuid") RETURNS TABLE("deleted_period_id" "uuid", "deleted_period_title" "text", "deleted_period_year" integer, "deleted_period_month" integer, "deleted_shift_slots" integer, "deleted_availability_rows" integer, "deleted_submissions" integer)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -4837,6 +4882,7 @@ $$;
 ALTER FUNCTION "public"."delete_availability_period"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."delete_driver_availability_period": מחיקת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."delete_driver_availability_period"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -4967,6 +5013,7 @@ $$;
 ALTER FUNCTION "public"."delete_driver_availability_period"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."delete_dynamic_job_type": מחיקת סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."delete_dynamic_job_type"("requested_job_type_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -5039,6 +5086,7 @@ $$;
 ALTER FUNCTION "public"."delete_dynamic_job_type"("requested_job_type_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."delete_morning_driver_availability_period": מחיקת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."delete_morning_driver_availability_period"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -5187,6 +5235,7 @@ SET default_tablespace = '';
 SET default_table_access_method = "heap";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_schedule_published_assignments" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_published_assignments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "publication_id" "uuid" NOT NULL,
@@ -5211,9 +5260,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_published_assignments" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_published_assignments".
 ALTER TABLE "public"."dynamic_schedule_published_assignments" OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_assignment_ends_at": מועד סיום.
 CREATE OR REPLACE FUNCTION "public"."dynamic_assignment_ends_at"("a" "public"."dynamic_schedule_published_assignments") RETURNS timestamp with time zone
     LANGUAGE "sql" STABLE
     SET "search_path" TO ''
@@ -5227,6 +5278,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_assignment_ends_at"("a" "public"."dynamic_schedule_published_assignments") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_assignment_starts_at": מועד התחלה.
 CREATE OR REPLACE FUNCTION "public"."dynamic_assignment_starts_at"("a" "public"."dynamic_schedule_published_assignments") RETURNS timestamp with time zone
     LANGUAGE "sql" STABLE
     SET "search_path" TO ''
@@ -5238,6 +5290,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_assignment_starts_at"("a" "public"."dynamic_schedule_published_assignments") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_copy_rotation_original_to_publication": דינמי / סבב כוננויות.
 CREATE OR REPLACE FUNCTION "public"."dynamic_copy_rotation_original_to_publication"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -5255,6 +5308,7 @@ end;$$;
 ALTER FUNCTION "public"."dynamic_copy_rotation_original_to_publication"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_job_type_live_snapshot": סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."dynamic_job_type_live_snapshot"("requested_job_type_id" "uuid") RETURNS "jsonb"
     LANGUAGE "sql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -5321,6 +5375,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_job_type_live_snapshot"("requested_job_type_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_minutes_after": דינמי / דקות.
 CREATE OR REPLACE FUNCTION "public"."dynamic_minutes_after"("base_time" time without time zone, "target_time" time without time zone) RETURNS integer
     LANGUAGE "sql" IMMUTABLE
     SET "search_path" TO ''
@@ -5337,6 +5392,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_minutes_after"("base_time" time without time zone, "target_time" time without time zone) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_refresh_draft_metrics": דינמי / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."dynamic_refresh_draft_metrics"("requested_draft_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -5404,6 +5460,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_refresh_draft_metrics"("requested_draft_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_resolve_assignment_local_interval": דינמי / הקצאה / מרווח זמן.
 CREATE OR REPLACE FUNCTION "public"."dynamic_resolve_assignment_local_interval"("requested_shift_date" "date", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_work_mode" "text", "requested_scheduling_config" "jsonb") RETURNS TABLE("start_at" timestamp without time zone, "end_at" timestamp without time zone)
     LANGUAGE "sql" STABLE
     SET "search_path" TO ''
@@ -5445,6 +5502,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_resolve_assignment_local_interval"("requested_shift_date" "date", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_work_mode" "text", "requested_scheduling_config" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_shadow_assignment_engine_user": דינמי / טיוטות שיבוץ במנגנון הדינמי / הקצאה / משתמש.
 CREATE OR REPLACE FUNCTION "public"."dynamic_shadow_assignment_engine_user"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
@@ -5459,6 +5517,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_shadow_assignment_engine_user"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_shadow_candidate_allowed": דינמי / טיוטות שיבוץ במנגנון הדינמי.
 CREATE OR REPLACE FUNCTION "public"."dynamic_shadow_candidate_allowed"("requested_draft_id" "uuid", "requested_user_id" "uuid", "requested_slot_id" "uuid", "requested_max_shifts_per_day" integer, "requested_no_consecutive" boolean, "requested_min_rest_minutes" integer) RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -5506,6 +5565,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_shadow_candidate_allowed"("requested_draft_id" "uuid", "requested_user_id" "uuid", "requested_slot_id" "uuid", "requested_max_shifts_per_day" integer, "requested_no_consecutive" boolean, "requested_min_rest_minutes" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_shadow_candidate_block_reason": דינמי / טיוטות שיבוץ במנגנון הדינמי.
 CREATE OR REPLACE FUNCTION "public"."dynamic_shadow_candidate_block_reason"("requested_draft_id" "uuid", "requested_user_id" "uuid", "requested_slot_id" "uuid", "requested_max_shifts_per_day" integer, "requested_no_consecutive" boolean, "requested_min_rest_minutes" integer, "requested_max_hard" boolean) RETURNS "text"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -5555,6 +5615,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_shadow_candidate_block_reason"("requested_draft_id" "uuid", "requested_user_id" "uuid", "requested_slot_id" "uuid", "requested_max_shifts_per_day" integer, "requested_no_consecutive" boolean, "requested_min_rest_minutes" integer, "requested_max_hard" boolean) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_time_minutes": דינמי / זמן / דקות.
 CREATE OR REPLACE FUNCTION "public"."dynamic_time_minutes"("value_time" time without time zone) RETURNS integer
     LANGUAGE "sql" IMMUTABLE
     SET "search_path" TO ''
@@ -5567,6 +5628,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_time_minutes"("value_time" time without time zone) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."dynamic_user_has_overlap": דינמי / משתמש.
 CREATE OR REPLACE FUNCTION "public"."dynamic_user_has_overlap"("requested_publication_id" "uuid", "requested_user_id" "uuid", "requested_assignment_id" "uuid", "ignored_assignment_id" "uuid" DEFAULT NULL::"uuid") RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -5601,6 +5663,7 @@ $$;
 ALTER FUNCTION "public"."dynamic_user_has_overlap"("requested_publication_id" "uuid", "requested_user_id" "uuid", "requested_assignment_id" "uuid", "ignored_assignment_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."enforce_dynamic_availability_open_deadline": דינמי / אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION "public"."enforce_dynamic_availability_open_deadline"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -5618,6 +5681,7 @@ $$;
 ALTER FUNCTION "public"."enforce_dynamic_availability_open_deadline"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."execute_schedule_excel_import": שיבוץ / Excel / ייבוא.
 CREATE OR REPLACE FUNCTION "public"."execute_schedule_excel_import"("requested_file_name" "text", "requested_file_size_bytes" bigint, "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_warnings" "jsonb" DEFAULT '[]'::"jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -6921,6 +6985,7 @@ $$;
 ALTER FUNCTION "public"."execute_schedule_excel_import"("requested_file_name" "text", "requested_file_size_bytes" bigint, "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_warnings" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."execute_schedule_excel_import": שיבוץ / Excel / ייבוא.
 CREATE OR REPLACE FUNCTION "public"."execute_schedule_excel_import"("requested_file_name" "text", "requested_file_size_bytes" bigint, "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_morning_driver_shifts" "jsonb", "requested_warnings" "jsonb" DEFAULT '[]'::"jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -7097,6 +7162,7 @@ $$;
 ALTER FUNCTION "public"."execute_schedule_excel_import"("requested_file_name" "text", "requested_file_size_bytes" bigint, "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_morning_driver_shifts" "jsonb", "requested_warnings" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_announcement_recipient_catalog": שליפה או חישוב של הודעות מנהל.
 CREATE OR REPLACE FUNCTION "public"."get_announcement_recipient_catalog"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -7130,6 +7196,7 @@ $$;
 ALTER FUNCTION "public"."get_announcement_recipient_catalog"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_archive_periods": שליפה או חישוב של ארכיון / תקופות.
 CREATE OR REPLACE FUNCTION "public"."get_archive_periods"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -7469,6 +7536,7 @@ $$;
 ALTER FUNCTION "public"."get_archive_periods"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_audit_logs": שליפה או חישוב של יומן שינויים.
 CREATE OR REPLACE FUNCTION "public"."get_audit_logs"("requested_limit" integer DEFAULT 100, "requested_offset" integer DEFAULT 0, "requested_action" "text" DEFAULT NULL::"text", "requested_actor_user_id" "uuid" DEFAULT NULL::"uuid", "requested_target_user_id" "uuid" DEFAULT NULL::"uuid", "requested_search_term" "text" DEFAULT NULL::"text") RETURNS TABLE("id" "uuid", "action" "text", "actor_user_id" "uuid", "actor_email" "text", "actor_display_name" "text", "target_user_id" "uuid", "target_email" "text", "target_display_name" "text", "entity_type" "text", "summary" "text", "old_values" "jsonb", "new_values" "jsonb", "metadata" "jsonb", "created_at" timestamp with time zone)
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -7587,6 +7655,7 @@ $$;
 ALTER FUNCTION "public"."get_audit_logs"("requested_limit" integer, "requested_offset" integer, "requested_action" "text", "requested_actor_user_id" "uuid", "requested_target_user_id" "uuid", "requested_search_term" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_availability_assignment_candidates": שליפה או חישוב של אילוצים וזמינות / הקצאה.
 CREATE OR REPLACE FUNCTION "public"."get_availability_assignment_candidates"("requested_period_id" "uuid") RETURNS TABLE("period_id" "uuid", "period_year" integer, "period_month" integer, "period_title" "text", "period_status" "text", "shift_slot_id" "uuid", "shift_date" "date", "weekday_number" integer, "weekday_name" "text", "start_time" time without time zone, "end_time" time without time zone, "ends_next_day" boolean, "schedule_type" "text", "holiday_name" "text", "is_premium" boolean, "sort_order" integer, "total_dispatchers" integer, "available_dispatchers" integer, "unavailable_dispatchers" integer, "assignment_state" "text", "sole_available_user_id" "uuid", "sole_available_display_name" "text", "sole_available_schedule_name" "text", "available_user_ids" "uuid"[], "available_display_names" "text"[], "available_schedule_names" "text"[])
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -7866,6 +7935,7 @@ $$;
 ALTER FUNCTION "public"."get_availability_assignment_candidates"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_availability_period_matrix": שליפה או חישוב של תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."get_availability_period_matrix"("requested_period_id" "uuid") RETURNS TABLE("period_id" "uuid", "period_year" integer, "period_month" integer, "period_title" "text", "period_status" "text", "shift_slot_id" "uuid", "shift_date" "date", "weekday_number" integer, "weekday_name" "text", "start_time" time without time zone, "end_time" time without time zone, "ends_next_day" boolean, "schedule_type" "text", "holiday_name" "text", "is_premium" boolean, "sort_order" integer, "total_dispatchers" integer, "available_dispatchers" integer, "unavailable_dispatchers" integer, "unanswered_dispatchers" integer, "user_id" "uuid", "display_name" "text", "email" "text", "schedule_name" "text", "submission_status" "text", "availability_status" "text", "availability_note" "text", "availability_updated_at" timestamp with time zone)
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -8106,6 +8176,7 @@ $$;
 ALTER FUNCTION "public"."get_availability_period_matrix"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_availability_period_submissions": שליפה או חישוב של תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."get_availability_period_submissions"("requested_period_id" "uuid") RETURNS TABLE("period_id" "uuid", "period_year" integer, "period_month" integer, "period_title" "text", "period_status" "text", "submission_deadline" timestamp with time zone, "total_dispatchers" integer, "submitted_dispatchers" integer, "draft_dispatchers" integer, "not_started_dispatchers" integer, "user_id" "uuid", "display_name" "text", "email" "text", "schedule_name" "text", "submission_status" "text", "submitted_at" timestamp with time zone, "last_saved_at" timestamp with time zone, "available_count" integer, "unavailable_count" integer, "answered_count" integer, "unanswered_count" integer, "total_shift_count" integer, "completion_percentage" integer)
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -8386,6 +8457,7 @@ $$;
 ALTER FUNCTION "public"."get_availability_period_submissions"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_calendar_holidays": שליפה או חישוב של לוח שנה / חגים.
 CREATE OR REPLACE FUNCTION "public"."get_calendar_holidays"("requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -8485,6 +8557,7 @@ $$;
 ALTER FUNCTION "public"."get_calendar_holidays"("requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_client_version_admin_overview": שליפה או חישוב של לקוח / גרסה.
 CREATE OR REPLACE FUNCTION "public"."get_client_version_admin_overview"("requested_current_version" "text", "requested_current_build_id" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -8610,6 +8683,7 @@ $$;
 ALTER FUNCTION "public"."get_client_version_admin_overview"("requested_current_version" "text", "requested_current_build_id" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_current_schedule": שליפה או חישוב של שיבוץ.
 CREATE OR REPLACE FUNCTION "public"."get_current_schedule"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -9805,6 +9879,7 @@ COMMENT ON FUNCTION "public"."get_current_schedule"() IS 'Returns the current mo
 
 
 
+-- פונקציית מסד "public"."get_current_schedule_edit_options": שליפה או חישוב של שיבוץ / אפשרויות בחירה.
 CREATE OR REPLACE FUNCTION "public"."get_current_schedule_edit_options"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -9865,6 +9940,7 @@ $$;
 ALTER FUNCTION "public"."get_current_schedule_edit_options"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_daily_report_admin_options": שליפה או חישוב של דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."get_daily_report_admin_options"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -9896,6 +9972,7 @@ $$;
 ALTER FUNCTION "public"."get_daily_report_admin_options"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_daily_report_attachment_download": שליפה או חישוב של דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."get_daily_report_attachment_download"("requested_attachment_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -9921,6 +9998,7 @@ end $$;
 ALTER FUNCTION "public"."get_daily_report_attachment_download"("requested_attachment_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_daily_report_notification_detail": שליפה או חישוב של דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."get_daily_report_notification_detail"("requested_report_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -9959,6 +10037,7 @@ end $$;
 ALTER FUNCTION "public"."get_daily_report_notification_detail"("requested_report_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dispatcher_availability_statistics": שליפה או חישוב של מוקדנים / אילוצים וזמינות / סטטיסטיקה.
 CREATE OR REPLACE FUNCTION "public"."get_dispatcher_availability_statistics"("requested_year" integer DEFAULT NULL::integer, "requested_month" integer DEFAULT NULL::integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -10272,6 +10351,7 @@ $$;
 ALTER FUNCTION "public"."get_dispatcher_availability_statistics"("requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dispatcher_schedule_by_month": שליפה או חישוב של מוקדנים / שיבוץ / חודש.
 CREATE OR REPLACE FUNCTION "public"."get_dispatcher_schedule_by_month"("requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -10538,6 +10618,7 @@ $$;
 ALTER FUNCTION "public"."get_dispatcher_schedule_by_month"("requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_driver_availability_management": שליפה או חישוב של כוננים / אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION "public"."get_driver_availability_management"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -10914,6 +10995,7 @@ COMMENT ON FUNCTION "public"."get_driver_availability_management"("requested_per
 
 
 
+-- פונקציית מסד "public"."get_driver_availability_periods": שליפה או חישוב של תקופות אילוצים.
 CREATE OR REPLACE FUNCTION "public"."get_driver_availability_periods"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -11072,6 +11154,7 @@ COMMENT ON FUNCTION "public"."get_driver_availability_periods"() IS 'Returns dri
 
 
 
+-- פונקציית מסד "public"."get_driver_schedule_draft": שליפה או חישוב של כוננים / שיבוץ / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."get_driver_schedule_draft"("requested_schedule_period_id" "uuid" DEFAULT NULL::"uuid", "requested_year" integer DEFAULT NULL::integer, "requested_month" integer DEFAULT NULL::integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -11438,6 +11521,7 @@ COMMENT ON FUNCTION "public"."get_driver_schedule_draft"("requested_schedule_per
 
 
 
+-- פונקציית מסד "public"."get_dynamic_archive_periods": שליפה או חישוב של דינמי / ארכיון / תקופות.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_archive_periods"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -11488,6 +11572,7 @@ end;$$;
 ALTER FUNCTION "public"."get_dynamic_archive_periods"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_attendance_statistics": שליפה או חישוב של דינמי / נוכחות / סטטיסטיקה.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_attendance_statistics"("requested_job_type_id" "uuid", "requested_years" integer[] DEFAULT NULL::integer[], "requested_months" integer[] DEFAULT NULL::integer[], "requested_user_ids" "uuid"[] DEFAULT NULL::"uuid"[]) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -11512,6 +11597,7 @@ end; $$;
 ALTER FUNCTION "public"."get_dynamic_attendance_statistics"("requested_job_type_id" "uuid", "requested_years" integer[], "requested_months" integer[], "requested_user_ids" "uuid"[]) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_availability_shadow_summary": שליפה או חישוב של דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי / סיכום.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_availability_shadow_summary"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -11547,6 +11633,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_availability_shadow_summary"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_availability_shadow_workspace": שליפה או חישוב של דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_availability_shadow_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -11584,6 +11671,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_availability_shadow_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_cutover_state": שליפה או חישוב של דינמי / מעבר למנגנון הדינמי / מצב.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_cutover_state"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -11645,6 +11733,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_cutover_state"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_dashboard_context_policy": שליפה או חישוב של דינמי / לוח בקרה / מדיניות.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -11694,6 +11783,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_historical_slot_editor": שליפה או חישוב של דינמי / נתונים היסטוריים.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_historical_slot_editor"("requested_historical_period_id" "uuid", "requested_work_date" "date", "requested_shift_code" "text", "requested_start_time" "text", "requested_end_time" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -11821,6 +11911,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_historical_slot_editor"("requested_historical_period_id" "uuid", "requested_work_date" "date", "requested_shift_code" "text", "requested_start_time" "text", "requested_end_time" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_job_type_active_features": שליפה או חישוב של סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_job_type_active_features"("requested_job_type_id" "uuid") RETURNS "text"[]
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -11848,6 +11939,7 @@ end; $$;
 ALTER FUNCTION "public"."get_dynamic_job_type_active_features"("requested_job_type_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_job_type_effective_config": שליפה או חישוב של סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_job_type_effective_config"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -11916,6 +12008,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_job_type_effective_config"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_job_type_materialization": שליפה או חישוב של סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_job_type_materialization"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -11990,6 +12083,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_job_type_materialization"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_job_type_membership_admin": שליפה או חישוב של סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_job_type_membership_admin"("requested_job_type_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -12020,6 +12114,7 @@ end;$$;
 ALTER FUNCTION "public"."get_dynamic_job_type_membership_admin"("requested_job_type_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_job_type_permission_editor": שליפה או חישוב של סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_job_type_permission_editor"("requested_job_type_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -12095,6 +12190,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_job_type_permission_editor"("requested_job_type_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_job_type_rotation_workspace": שליפה או חישוב של סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_job_type_rotation_workspace"("requested_job_type_id" "uuid", "requested_start_date" "date" DEFAULT CURRENT_DATE, "requested_days" integer DEFAULT 35) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -12195,6 +12291,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_job_type_rotation_workspace"("requested_job_type_id" "uuid", "requested_start_date" "date", "requested_days" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_job_type_statistics": שליפה או חישוב של סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_job_type_statistics"("requested_job_type_id" "uuid", "requested_years" integer[] DEFAULT NULL::integer[], "requested_months" integer[] DEFAULT NULL::integer[], "requested_user_ids" "uuid"[] DEFAULT NULL::"uuid"[]) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -12562,6 +12659,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_job_type_statistics"("requested_job_type_id" "uuid", "requested_years" integer[], "requested_months" integer[], "requested_user_ids" "uuid"[]) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_period_workflow": שליפה או חישוב של דינמי / תקופה / תהליך עבודה.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_period_workflow"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -12674,6 +12772,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_period_workflow"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_pilot_qa_report": שליפה או חישוב של דינמי / דוח.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_pilot_qa_report"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -13018,6 +13117,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_pilot_qa_report"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_published_schedule_editor": שליפה או חישוב של דינמי / פורסם / שיבוץ.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_published_schedule_editor"("requested_publication_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -13119,6 +13219,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_published_schedule_editor"("requested_publication_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_role_workspace": שליפה או חישוב של דינמי.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_role_workspace"("requested_job_type_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -13226,6 +13327,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_role_workspace"("requested_job_type_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_schedule_calendar_workspace": שליפה או חישוב של דינמי / שיבוץ / לוח שנה.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_schedule_calendar_workspace"("requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -13668,6 +13770,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_schedule_calendar_workspace"("requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_schedule_draft_editor": שליפה או חישוב של דינמי / שיבוץ / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_schedule_draft_editor"("requested_draft_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -13746,6 +13849,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_schedule_draft_editor"("requested_draft_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_schedule_export_workspace": שליפה או חישוב של דינמי / שיבוץ / ייצוא.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_schedule_export_workspace"("requested_year" integer, "requested_month" integer, "requested_job_type_ids" "uuid"[] DEFAULT NULL::"uuid"[]) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -13929,6 +14033,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_schedule_export_workspace"("requested_year" integer, "requested_month" integer, "requested_job_type_ids" "uuid"[]) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_schedule_group_snapshot": שליפה או חישוב של דינמי / שיבוץ / קבוצה.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_schedule_group_snapshot"("requested_group_id" "uuid") RETURNS "jsonb"
     LANGUAGE "sql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -13999,6 +14104,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_schedule_group_snapshot"("requested_group_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_schedule_shadow_diagnostics": שליפה או חישוב של דינמי / שיבוץ / טיוטות שיבוץ במנגנון הדינמי.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_schedule_shadow_diagnostics"("requested_draft_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -14070,6 +14176,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_schedule_shadow_diagnostics"("requested_draft_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_schedule_shadow_draft": שליפה או חישוב של דינמי / שיבוץ / טיוטות שיבוץ במנגנון הדינמי / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_schedule_shadow_draft"("requested_draft_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -14089,6 +14196,7 @@ end;$$;
 ALTER FUNCTION "public"."get_dynamic_schedule_shadow_draft"("requested_draft_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_schedule_shadow_validation": שליפה או חישוב של דינמי / שיבוץ / טיוטות שיבוץ במנגנון הדינמי / אימות נתונים.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_schedule_shadow_validation"("requested_draft_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -14386,6 +14494,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_schedule_shadow_validation"("requested_draft_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_scheduling_admin": שליפה או חישוב של דינמי.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_scheduling_admin"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -14426,6 +14535,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_scheduling_admin"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_shift_exchange_requests": שליפה או חישוב של החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_shift_exchange_requests"() RETURNS "jsonb"
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -14459,6 +14569,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_shift_exchange_requests"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_shifts_management_workspace": שליפה או חישוב של דינמי / משמרות.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_shifts_management_workspace"("requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -14585,6 +14696,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_shifts_management_workspace"("requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_statistics_job_types": שליפה או חישוב של סוגי תפקידים.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_statistics_job_types"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -14600,6 +14712,7 @@ end; $$;
 ALTER FUNCTION "public"."get_dynamic_statistics_job_types"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_dynamic_user_assignment_editor": שליפה או חישוב של דינמי / משתמש / הקצאה.
 CREATE OR REPLACE FUNCTION "public"."get_dynamic_user_assignment_editor"("target_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -14646,6 +14759,7 @@ $$;
 ALTER FUNCTION "public"."get_dynamic_user_assignment_editor"("target_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_inherited_dynamic_job_type_permission": שליפה או חישוב של סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."get_inherited_dynamic_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -14682,6 +14796,7 @@ $$;
 ALTER FUNCTION "public"."get_inherited_dynamic_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_legacy_freeze_readiness": שליפה או חישוב של הנתון get_legacy_freeze_readiness בהקשר הפעולה.
 CREATE OR REPLACE FUNCTION "public"."get_legacy_freeze_readiness"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -14757,6 +14872,7 @@ $$;
 ALTER FUNCTION "public"."get_legacy_freeze_readiness"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_morning_driver_archive_summary": שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."get_morning_driver_archive_summary"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -14890,6 +15006,7 @@ $$;
 ALTER FUNCTION "public"."get_morning_driver_archive_summary"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_morning_driver_availability_management": שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."get_morning_driver_availability_management"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -15245,6 +15362,7 @@ $$;
 ALTER FUNCTION "public"."get_morning_driver_availability_management"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_morning_driver_availability_periods": שליפה או חישוב של תקופות אילוצים.
 CREATE OR REPLACE FUNCTION "public"."get_morning_driver_availability_periods"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -15351,6 +15469,7 @@ $$;
 ALTER FUNCTION "public"."get_morning_driver_availability_periods"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_morning_driver_schedule": שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."get_morning_driver_schedule"("requested_schedule_period_id" "uuid" DEFAULT NULL::"uuid", "requested_year" integer DEFAULT NULL::integer, "requested_month" integer DEFAULT NULL::integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -15730,6 +15849,7 @@ $$;
 ALTER FUNCTION "public"."get_morning_driver_schedule"("requested_schedule_period_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_morning_driver_schedule_by_month": שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."get_morning_driver_schedule_by_month"("requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -15969,6 +16089,7 @@ $$;
 ALTER FUNCTION "public"."get_morning_driver_schedule_by_month"("requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_morning_driver_statistics": שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."get_morning_driver_statistics"("requested_year" integer DEFAULT NULL::integer, "requested_month" integer DEFAULT NULL::integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -16071,6 +16192,7 @@ $$;
 ALTER FUNCTION "public"."get_morning_driver_statistics"("requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_attendance_workspace": שליפה או חישוב של נוכחות.
 CREATE OR REPLACE FUNCTION "public"."get_my_attendance_workspace"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -16104,6 +16226,7 @@ end; $$;
 ALTER FUNCTION "public"."get_my_attendance_workspace"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_daily_report_workspace": שליפה או חישוב של דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."get_my_daily_report_workspace"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -16137,6 +16260,7 @@ end $$;
 ALTER FUNCTION "public"."get_my_daily_report_workspace"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_dashboard": שליפה או חישוב של לוח בקרה.
 CREATE OR REPLACE FUNCTION "public"."get_my_dashboard"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -17083,6 +17207,7 @@ $$;
 ALTER FUNCTION "public"."get_my_dashboard"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_dashboard_widget_settings": שליפה או חישוב של לוח בקרה / הגדרות.
 CREATE OR REPLACE FUNCTION "public"."get_my_dashboard_widget_settings"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -17137,6 +17262,7 @@ $$;
 ALTER FUNCTION "public"."get_my_dashboard_widget_settings"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_development_mode": שליפה או חישוב של מצב פיתוח / מצב פעולה.
 CREATE OR REPLACE FUNCTION "public"."get_my_development_mode"() RETURNS TABLE("enabled" boolean, "enabled_at" timestamp with time zone, "expires_at" timestamp with time zone)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -17174,6 +17300,7 @@ $$;
 ALTER FUNCTION "public"."get_my_development_mode"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_driver_availability": שליפה או חישוב של כוננים / אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION "public"."get_my_driver_availability"("requested_period_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -17479,6 +17606,7 @@ COMMENT ON FUNCTION "public"."get_my_driver_availability"("requested_period_id" 
 
 
 
+-- פונקציית מסד "public"."get_my_dynamic_availability_periods": שליפה או חישוב של תקופות אילוצים.
 CREATE OR REPLACE FUNCTION "public"."get_my_dynamic_availability_periods"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -17518,6 +17646,7 @@ $$;
 ALTER FUNCTION "public"."get_my_dynamic_availability_periods"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_dynamic_availability_workspace": שליפה או חישוב של דינמי / אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION "public"."get_my_dynamic_availability_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -17637,6 +17766,7 @@ $$;
 ALTER FUNCTION "public"."get_my_dynamic_availability_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_dynamic_runtime_context": שליפה או חישוב של דינמי.
 CREATE OR REPLACE FUNCTION "public"."get_my_dynamic_runtime_context"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -17951,6 +18081,7 @@ $$;
 ALTER FUNCTION "public"."get_my_dynamic_runtime_context"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_dynamic_schedule_periods": שליפה או חישוב של תקופות שיבוץ.
 CREATE OR REPLACE FUNCTION "public"."get_my_dynamic_schedule_periods"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -18084,6 +18215,7 @@ $$;
 ALTER FUNCTION "public"."get_my_dynamic_schedule_periods"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_dynamic_schedule_workspace": שליפה או חישוב של דינמי / שיבוץ.
 CREATE OR REPLACE FUNCTION "public"."get_my_dynamic_schedule_workspace"("requested_publication_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -18493,6 +18625,7 @@ $_$;
 ALTER FUNCTION "public"."get_my_dynamic_schedule_workspace"("requested_publication_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_dynamic_self_edit_workspace": שליפה או חישוב של דינמי.
 CREATE OR REPLACE FUNCTION "public"."get_my_dynamic_self_edit_workspace"("requested_publication_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -18637,6 +18770,7 @@ $$;
 ALTER FUNCTION "public"."get_my_dynamic_self_edit_workspace"("requested_publication_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_dynamic_shift_exchange_options": שליפה או חישוב של החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."get_my_dynamic_shift_exchange_options"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -18719,6 +18853,7 @@ $$;
 ALTER FUNCTION "public"."get_my_dynamic_shift_exchange_options"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_manager_dashboard_widgets": שליפה או חישוב של לוח בקרה.
 CREATE OR REPLACE FUNCTION "public"."get_my_manager_dashboard_widgets"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -18843,6 +18978,7 @@ $$;
 ALTER FUNCTION "public"."get_my_manager_dashboard_widgets"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_morning_driver_availability": שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."get_my_morning_driver_availability"("requested_period_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -19043,6 +19179,7 @@ $$;
 ALTER FUNCTION "public"."get_my_morning_driver_availability"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_morning_driver_dashboard": שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."get_my_morning_driver_dashboard"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -19303,6 +19440,7 @@ $$;
 ALTER FUNCTION "public"."get_my_morning_driver_dashboard"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_open_availability": שליפה או חישוב של אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION "public"."get_my_open_availability"() RETURNS TABLE("period_id" "uuid", "period_year" integer, "period_month" integer, "period_title" "text", "period_instructions" "text", "submission_deadline" timestamp with time zone, "period_status" "text", "submission_status" "text", "submitted_at" timestamp with time zone, "last_saved_at" timestamp with time zone, "available_count" integer, "unavailable_count" integer, "shift_slot_id" "uuid", "shift_date" "date", "weekday_number" integer, "weekday_name" "text", "start_time" time without time zone, "end_time" time without time zone, "ends_next_day" boolean, "schedule_type" "text", "holiday_name" "text", "is_premium" boolean, "sort_order" integer, "availability_status" "text", "availability_note" "text", "availability_updated_at" timestamp with time zone)
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -19430,6 +19568,7 @@ $$;
 ALTER FUNCTION "public"."get_my_open_availability"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_pending_operational_push_notifications": שליפה או חישוב של ממתין / התראות Push / התראות.
 CREATE OR REPLACE FUNCTION "public"."get_my_pending_operational_push_notifications"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -19454,6 +19593,7 @@ $$;
 ALTER FUNCTION "public"."get_my_pending_operational_push_notifications"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_my_permissions": שליפה או חישוב של הרשאות.
 CREATE OR REPLACE FUNCTION "public"."get_my_permissions"() RETURNS "text"[]
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -19475,6 +19615,7 @@ $$;
 ALTER FUNCTION "public"."get_my_permissions"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_payroll_statistics": שליפה או חישוב של חישובי שכר / סטטיסטיקה.
 CREATE OR REPLACE FUNCTION "public"."get_payroll_statistics"("requested_years" integer[] DEFAULT NULL::integer[], "requested_months" integer[] DEFAULT NULL::integer[]) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -19556,6 +19697,7 @@ $$;
 ALTER FUNCTION "public"."get_payroll_statistics"("requested_years" integer[], "requested_months" integer[]) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_permission_admin_catalog": שליפה או חישוב של הרשאות.
 CREATE OR REPLACE FUNCTION "public"."get_permission_admin_catalog"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -19613,6 +19755,7 @@ $$;
 ALTER FUNCTION "public"."get_permission_admin_catalog"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_schedule_draft_edit_context": שליפה או חישוב של שיבוץ / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."get_schedule_draft_edit_context"("requested_schedule_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -19822,6 +19965,7 @@ $$;
 ALTER FUNCTION "public"."get_schedule_draft_edit_context"("requested_schedule_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_schedule_import_users": שליפה או חישוב של שיבוץ / ייבוא / משתמשים.
 CREATE OR REPLACE FUNCTION "public"."get_schedule_import_users"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -20059,6 +20203,7 @@ $$;
 ALTER FUNCTION "public"."get_schedule_import_users"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_shift_swap_create_options": שליפה או חישוב של החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."get_shift_swap_create_options"() RETURNS "jsonb"
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -20158,6 +20303,7 @@ $$;
 ALTER FUNCTION "public"."get_shift_swap_create_options"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_shift_swap_requests": שליפה או חישוב של החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."get_shift_swap_requests"() RETURNS "jsonb"
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -20213,6 +20359,7 @@ $$;
 ALTER FUNCTION "public"."get_shift_swap_requests"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_shift_time_distribution_statistics": שליפה או חישוב של משמרת / זמן / סטטיסטיקה.
 CREATE OR REPLACE FUNCTION "public"."get_shift_time_distribution_statistics"("requested_year" integer DEFAULT NULL::integer, "requested_month" integer DEFAULT NULL::integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -20398,6 +20545,7 @@ $$;
 ALTER FUNCTION "public"."get_shift_time_distribution_statistics"("requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_statistics_dashboard": שליפה או חישוב של סטטיסטיקה / לוח בקרה.
 CREATE OR REPLACE FUNCTION "public"."get_statistics_dashboard"("requested_year" integer DEFAULT NULL::integer, "requested_month" integer DEFAULT NULL::integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -21403,6 +21551,7 @@ $$;
 ALTER FUNCTION "public"."get_statistics_dashboard"("requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_statistics_people": שליפה או חישוב של סטטיסטיקה.
 CREATE OR REPLACE FUNCTION "public"."get_statistics_people"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -21444,6 +21593,7 @@ $$;
 ALTER FUNCTION "public"."get_statistics_people"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_user_dynamic_job_type_permission_editor": שליפה או חישוב של סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."get_user_dynamic_job_type_permission_editor"("target_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -21510,6 +21660,7 @@ $$;
 ALTER FUNCTION "public"."get_user_dynamic_job_type_permission_editor"("target_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_user_dynamic_permission_summary": שליפה או חישוב של משתמש / דינמי / הרשאות / סיכום.
 CREATE OR REPLACE FUNCTION "public"."get_user_dynamic_permission_summary"("target_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -21561,6 +21712,7 @@ $$;
 ALTER FUNCTION "public"."get_user_dynamic_permission_summary"("target_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_user_permission_policy": שליפה או חישוב של משתמש / הרשאות / מדיניות.
 CREATE OR REPLACE FUNCTION "public"."get_user_permission_policy"("target_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -21597,6 +21749,7 @@ $$;
 ALTER FUNCTION "public"."get_user_permission_policy"("target_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."get_user_permissions": שליפה או חישוב של משתמש / הרשאות.
 CREATE OR REPLACE FUNCTION "public"."get_user_permissions"("target_user_id" "uuid") RETURNS "text"[]
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -21626,6 +21779,7 @@ $$;
 ALTER FUNCTION "public"."get_user_permissions"("target_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."guard_development_mode_production_write": מצב פיתוח / מצב פעולה.
 CREATE OR REPLACE FUNCTION "public"."guard_development_mode_production_write"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -21644,6 +21798,7 @@ $$;
 ALTER FUNCTION "public"."guard_development_mode_production_write"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."handle_new_auth_user": טיפול באירוע עבור אימות משתמשים / משתמש.
 CREATE OR REPLACE FUNCTION "public"."handle_new_auth_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -21688,6 +21843,7 @@ $$;
 ALTER FUNCTION "public"."handle_new_auth_user"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."handle_profile_audit_update": טיפול באירוע עבור פרופיל / יומן שינויים.
 CREATE OR REPLACE FUNCTION "public"."handle_profile_audit_update"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -21894,6 +22050,7 @@ $$;
 ALTER FUNCTION "public"."handle_profile_audit_update"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."handle_profile_permissions_created": טיפול באירוע עבור פרופיל / הרשאות.
 CREATE OR REPLACE FUNCTION "public"."handle_profile_permissions_created"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -21911,6 +22068,7 @@ $$;
 ALTER FUNCTION "public"."handle_profile_permissions_created"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."has_dynamic_job_type_permission": בדיקת קיום עבור סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."has_dynamic_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid" DEFAULT "auth"."uid"()) RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -21942,6 +22100,7 @@ $$;
 ALTER FUNCTION "public"."has_dynamic_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."has_job_type_permission": בדיקת קיום עבור סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."has_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid" DEFAULT "auth"."uid"()) RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -21971,6 +22130,7 @@ $$;
 ALTER FUNCTION "public"."has_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."import_dynamic_legacy_history": ייבוא ייבוא / דינמי / היסטוריה.
 CREATE OR REPLACE FUNCTION "public"."import_dynamic_legacy_history"("requested_job_type_id" "uuid", "requested_source_kind" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -22257,6 +22417,7 @@ $$;
 ALTER FUNCTION "public"."import_dynamic_legacy_history"("requested_job_type_id" "uuid", "requested_source_kind" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."import_morning_driver_schedule_assignments": ייבוא כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."import_morning_driver_schedule_assignments"("requested_import_run_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_morning_driver_shifts" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -22732,6 +22893,7 @@ $$;
 ALTER FUNCTION "public"."import_morning_driver_schedule_assignments"("requested_import_run_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_morning_driver_shifts" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."initialize_dynamic_job_type_rotation_state": סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."initialize_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -22819,6 +22981,7 @@ $$;
 ALTER FUNCTION "public"."initialize_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."is_admin": בדיקת תנאי עבור הנתון is_admin בהקשר הפעולה.
 CREATE OR REPLACE FUNCTION "public"."is_admin"() RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -22833,6 +22996,7 @@ $$;
 ALTER FUNCTION "public"."is_admin"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."is_current_user_admin": בדיקת תנאי עבור המשתמש הנוכחי.
 CREATE OR REPLACE FUNCTION "public"."is_current_user_admin"() RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -22850,6 +23014,7 @@ $$;
 ALTER FUNCTION "public"."is_current_user_admin"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."is_manager_or_admin": בדיקת תנאי עבור הנתון is_manager_or_admin בהקשר הפעולה.
 CREATE OR REPLACE FUNCTION "public"."is_manager_or_admin"() RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -22864,6 +23029,7 @@ $$;
 ALTER FUNCTION "public"."is_manager_or_admin"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."is_my_development_mode": בדיקת תנאי עבור מצב פיתוח / מצב פעולה.
 CREATE OR REPLACE FUNCTION "public"."is_my_development_mode"() RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -22884,6 +23050,7 @@ $$;
 ALTER FUNCTION "public"."is_my_development_mode"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."mark_my_operational_push_dispatched": התראות Push.
 CREATE OR REPLACE FUNCTION "public"."mark_my_operational_push_dispatched"("requested_notification_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -22910,6 +23077,7 @@ $$;
 ALTER FUNCTION "public"."mark_my_operational_push_dispatched"("requested_notification_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."materialize_dynamic_availability_period_slots": תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."materialize_dynamic_availability_period_slots"("requested_period_id" "uuid") RETURNS integer
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -23113,6 +23281,7 @@ $$;
 ALTER FUNCTION "public"."materialize_dynamic_availability_period_slots"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."materialize_dynamic_job_type_snapshot": סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."materialize_dynamic_job_type_snapshot"("requested_job_type_id" "uuid", "requested_effective_month" "date", "requested_snapshot" "jsonb") RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -23266,6 +23435,7 @@ $$;
 ALTER FUNCTION "public"."materialize_dynamic_job_type_snapshot"("requested_job_type_id" "uuid", "requested_effective_month" "date", "requested_snapshot" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."normalize_schedule_import_name": נרמול שיבוץ / ייבוא / שם.
 CREATE OR REPLACE FUNCTION "public"."normalize_schedule_import_name"("requested_name" "text") RETURNS "text"
     LANGUAGE "sql" IMMUTABLE
     SET "search_path" TO ''
@@ -23290,6 +23460,7 @@ $$;
 ALTER FUNCTION "public"."normalize_schedule_import_name"("requested_name" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."open_availability_period": פתיחת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."open_availability_period"("requested_period_id" "uuid") RETURNS TABLE("period_id" "uuid", "period_status" "text", "opened_at" timestamp with time zone, "shift_slots_count" integer)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -23509,6 +23680,7 @@ $$;
 ALTER FUNCTION "public"."open_availability_period"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."open_driver_availability_period": פתיחת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."open_driver_availability_period"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -23677,6 +23849,7 @@ COMMENT ON FUNCTION "public"."open_driver_availability_period"("requested_period
 
 
 
+-- פונקציית מסד "public"."open_morning_driver_availability_period": פתיחת תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."open_morning_driver_availability_period"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -23834,6 +24007,7 @@ $$;
 ALTER FUNCTION "public"."open_morning_driver_availability_period"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."prepare_my_daily_report_upload": דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."prepare_my_daily_report_upload"("requested_job_type_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -23878,6 +24052,7 @@ $$;
 ALTER FUNCTION "public"."prepare_my_daily_report_upload"("requested_job_type_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."preview_dynamic_legacy_import": דינמי / ייבוא.
 CREATE OR REPLACE FUNCTION "public"."preview_dynamic_legacy_import"("requested_job_type_id" "uuid", "requested_source_kind" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -24223,6 +24398,7 @@ $$;
 ALTER FUNCTION "public"."preview_dynamic_legacy_import"("requested_job_type_id" "uuid", "requested_source_kind" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."preview_dynamic_schedule_group": דינמי / שיבוץ / קבוצה.
 CREATE OR REPLACE FUNCTION "public"."preview_dynamic_schedule_group"("requested_group_id" "uuid", "requested_year" integer, "requested_month" integer) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -24324,6 +24500,7 @@ $$;
 ALTER FUNCTION "public"."preview_dynamic_schedule_group"("requested_group_id" "uuid", "requested_year" integer, "requested_month" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."preview_gvk_legacy_migration": הנתון preview_gvk_legacy_migration בהקשר הפעולה.
 CREATE OR REPLACE FUNCTION "public"."preview_gvk_legacy_migration"("requested_mappings" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -24472,6 +24649,7 @@ $$;
 ALTER FUNCTION "public"."preview_gvk_legacy_migration"("requested_mappings" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."preview_schedule_excel_import": שיבוץ / Excel / ייבוא.
 CREATE OR REPLACE FUNCTION "public"."preview_schedule_excel_import"("requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -25300,6 +25478,7 @@ $_$;
 ALTER FUNCTION "public"."preview_schedule_excel_import"("requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."preview_schedule_excel_import": שיבוץ / Excel / ייבוא.
 CREATE OR REPLACE FUNCTION "public"."preview_schedule_excel_import"("requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_morning_driver_shifts" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -25656,6 +25835,7 @@ $_$;
 ALTER FUNCTION "public"."preview_schedule_excel_import"("requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_morning_driver_shifts" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."publish_driver_schedule": פרסום כוננים / שיבוץ.
 CREATE OR REPLACE FUNCTION "public"."publish_driver_schedule"("requested_schedule_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -25916,6 +26096,7 @@ COMMENT ON FUNCTION "public"."publish_driver_schedule"("requested_schedule_perio
 
 
 
+-- פונקציית מסד "public"."publish_dynamic_schedule_draft": פרסום דינמי / שיבוץ / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."publish_dynamic_schedule_draft"("requested_draft_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -25995,6 +26176,7 @@ $$;
 ALTER FUNCTION "public"."publish_dynamic_schedule_draft"("requested_draft_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."publish_morning_driver_schedule": פרסום כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."publish_morning_driver_schedule"("requested_schedule_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -26106,6 +26288,7 @@ $$;
 ALTER FUNCTION "public"."publish_morning_driver_schedule"("requested_schedule_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."publish_schedule_period": פרסום תקופת שיבוץ.
 CREATE OR REPLACE FUNCTION "public"."publish_schedule_period"("requested_schedule_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -26493,6 +26676,7 @@ COMMENT ON FUNCTION "public"."publish_schedule_period"("requested_schedule_perio
 
 
 
+-- פונקציית מסד "public"."rebuild_availability_period_slots": תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."rebuild_availability_period_slots"("requested_period_id" "uuid") RETURNS TABLE("period_id" "uuid", "created_slots" integer)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -27104,6 +27288,7 @@ $$;
 ALTER FUNCTION "public"."rebuild_availability_period_slots"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."record_driver_schedule_assignment_change": כוננים / שיבוץ / הקצאה.
 CREATE OR REPLACE FUNCTION "public"."record_driver_schedule_assignment_change"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -27170,6 +27355,7 @@ $$;
 ALTER FUNCTION "public"."record_driver_schedule_assignment_change"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."record_schedule_assignment_change": שיבוץ / הקצאה.
 CREATE OR REPLACE FUNCTION "public"."record_schedule_assignment_change"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -27237,6 +27423,7 @@ $$;
 ALTER FUNCTION "public"."record_schedule_assignment_change"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."record_user_login": משתמש.
 CREATE OR REPLACE FUNCTION "public"."record_user_login"() RETURNS timestamp with time zone
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -27269,6 +27456,7 @@ $$;
 ALTER FUNCTION "public"."record_user_login"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."register_my_daily_report_attachment": דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."register_my_daily_report_attachment"("requested_report_id" "uuid", "requested_storage_path" "text", "requested_file_name" "text", "requested_mime_type" "text", "requested_file_size" bigint) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -27292,6 +27480,7 @@ end $$;
 ALTER FUNCTION "public"."register_my_daily_report_attachment"("requested_report_id" "uuid", "requested_storage_path" "text", "requested_file_name" "text", "requested_mime_type" "text", "requested_file_size" bigint) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."register_push_subscription": התראות Push.
 CREATE OR REPLACE FUNCTION "public"."register_push_subscription"("requested_endpoint" "text", "requested_p256dh_key" "text", "requested_auth_key" "text", "requested_user_agent" "text" DEFAULT NULL::"text", "requested_device_name" "text" DEFAULT NULL::"text") RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -27414,6 +27603,7 @@ $$;
 ALTER FUNCTION "public"."register_push_subscription"("requested_endpoint" "text", "requested_p256dh_key" "text", "requested_auth_key" "text", "requested_user_agent" "text", "requested_device_name" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."remove_dynamic_schedule_draft_assignment": הסרת דינמי / שיבוץ / טיוטה / הקצאה.
 CREATE OR REPLACE FUNCTION "public"."remove_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_assignment_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -27442,6 +27632,7 @@ $$;
 ALTER FUNCTION "public"."remove_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_assignment_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."reopen_availability_period": פתיחה מחדש של תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."reopen_availability_period"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -27576,6 +27767,7 @@ $$;
 ALTER FUNCTION "public"."reopen_availability_period"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."reopen_driver_availability_period": פתיחה מחדש של תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."reopen_driver_availability_period"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -27773,6 +27965,7 @@ $$;
 ALTER FUNCTION "public"."reopen_driver_availability_period"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."reopen_morning_driver_availability_period": פתיחה מחדש של תקופת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."reopen_morning_driver_availability_period"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -27873,6 +28066,7 @@ $$;
 ALTER FUNCTION "public"."reopen_morning_driver_availability_period"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."reopen_morning_driver_availability_submission": פתיחה מחדש של כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."reopen_morning_driver_availability_submission"("requested_period_id" "uuid", "requested_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -27977,6 +28171,7 @@ $$;
 ALTER FUNCTION "public"."reopen_morning_driver_availability_submission"("requested_period_id" "uuid", "requested_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."report_my_client_version": דוח / לקוח / גרסה.
 CREATE OR REPLACE FUNCTION "public"."report_my_client_version"("requested_client_id" "text", "requested_app_version" "text", "requested_build_id" "text", "requested_is_pwa" boolean DEFAULT false, "requested_platform" "text" DEFAULT NULL::"text", "requested_user_agent" "text" DEFAULT NULL::"text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -28034,6 +28229,7 @@ $$;
 ALTER FUNCTION "public"."report_my_client_version"("requested_client_id" "text", "requested_app_version" "text", "requested_build_id" "text", "requested_is_pwa" boolean, "requested_platform" "text", "requested_user_agent" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."resolve_dynamic_shift_display_name": קביעת ערך עבור שם תצוגה.
 CREATE OR REPLACE FUNCTION "public"."resolve_dynamic_shift_display_name"("requested_job_type_id" "uuid", "requested_shift_date" "date", "requested_shift_code" "text", "requested_shift_name" "text", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_fallback" "text" DEFAULT 'משמרת'::"text") RETURNS "text"
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -28071,6 +28267,7 @@ $_$;
 ALTER FUNCTION "public"."resolve_dynamic_shift_display_name"("requested_job_type_id" "uuid", "requested_shift_date" "date", "requested_shift_code" "text", "requested_shift_name" "text", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_fallback" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."respond_to_dynamic_shift_exchange_request": החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."respond_to_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -28112,6 +28309,7 @@ $$;
 ALTER FUNCTION "public"."respond_to_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."respond_to_shift_swap_request": החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."respond_to_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -28191,6 +28389,7 @@ $$;
 ALTER FUNCTION "public"."respond_to_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."review_dynamic_shift_exchange_request": החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."review_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -28239,6 +28438,7 @@ $$;
 ALTER FUNCTION "public"."review_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."review_shift_swap_request": החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."review_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -28377,6 +28577,7 @@ $$;
 ALTER FUNCTION "public"."review_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."run_gvk_legacy_migration": הנתון run_gvk_legacy_migration בהקשר הפעולה.
 CREATE OR REPLACE FUNCTION "public"."run_gvk_legacy_migration"("requested_mappings" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -28759,6 +28960,7 @@ $$;
 ALTER FUNCTION "public"."run_gvk_legacy_migration"("requested_mappings" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_dynamic_availability_shadow_submission": שמירת דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 CREATE OR REPLACE FUNCTION "public"."save_dynamic_availability_shadow_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_user_id" "uuid", "requested_payload" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -28810,6 +29012,7 @@ $$;
 ALTER FUNCTION "public"."save_dynamic_availability_shadow_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_user_id" "uuid", "requested_payload" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_dynamic_dashboard_context_policy": שמירת דינמי / לוח בקרה / מדיניות.
 CREATE OR REPLACE FUNCTION "public"."save_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid", "requested_target_job_type_ids" "uuid"[] DEFAULT ARRAY[]::"uuid"[]) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -28876,6 +29079,7 @@ $$;
 ALTER FUNCTION "public"."save_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid", "requested_target_job_type_ids" "uuid"[]) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_dynamic_job_type": שמירת סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."save_dynamic_job_type"("requested_payload" "jsonb") RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -29043,6 +29247,7 @@ $_$;
 ALTER FUNCTION "public"."save_dynamic_job_type"("requested_payload" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_dynamic_job_type_member_employment_scope": שמירת סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."save_dynamic_job_type_member_employment_scope"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_employment_scope" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -29093,6 +29298,7 @@ $$;
 ALTER FUNCTION "public"."save_dynamic_job_type_member_employment_scope"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_employment_scope" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_dynamic_job_type_membership": שמירת סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."save_dynamic_job_type_membership"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_is_member" boolean, "requested_employment_scope" "text" DEFAULT NULL::"text", "requested_part_time_definition" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -29147,6 +29353,7 @@ end;$$;
 ALTER FUNCTION "public"."save_dynamic_job_type_membership"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_is_member" boolean, "requested_employment_scope" "text", "requested_part_time_definition" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_dynamic_job_type_permission_policy": שמירת סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."save_dynamic_job_type_permission_policy"("requested_job_type_id" "uuid", "requested_member_permission_keys" "text"[] DEFAULT ARRAY[]::"text"[], "requested_manager_permission_keys" "text"[] DEFAULT ARRAY[]::"text"[]) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -29186,6 +29393,7 @@ $$;
 ALTER FUNCTION "public"."save_dynamic_job_type_permission_policy"("requested_job_type_id" "uuid", "requested_member_permission_keys" "text"[], "requested_manager_permission_keys" "text"[]) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_dynamic_schedule_group": שמירת דינמי / שיבוץ / קבוצה.
 CREATE OR REPLACE FUNCTION "public"."save_dynamic_schedule_group"("requested_payload" "jsonb") RETURNS integer
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -29349,6 +29557,7 @@ $_$;
 ALTER FUNCTION "public"."save_dynamic_schedule_group"("requested_payload" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_dynamic_user_assignments": שמירת דינמי / משתמש / הקצאות.
 CREATE OR REPLACE FUNCTION "public"."save_dynamic_user_assignments"("target_user_id" "uuid", "requested_assignments" "jsonb") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -29498,6 +29707,7 @@ $$;
 ALTER FUNCTION "public"."save_dynamic_user_assignments"("target_user_id" "uuid", "requested_assignments" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_my_dashboard_widget_settings": שמירת לוח בקרה / הגדרות.
 CREATE OR REPLACE FUNCTION "public"."save_my_dashboard_widget_settings"("requested_widgets" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -29548,6 +29758,7 @@ $$;
 ALTER FUNCTION "public"."save_my_dashboard_widget_settings"("requested_widgets" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_my_driver_availability": שמירת כוננים / אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION "public"."save_my_driver_availability"("requested_period_id" "uuid", "requested_entries" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -29971,6 +30182,7 @@ COMMENT ON FUNCTION "public"."save_my_driver_availability"("requested_period_id"
 
 
 
+-- פונקציית מסד "public"."save_my_dynamic_availability_submission": שמירת דינמי / אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION "public"."save_my_dynamic_availability_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_payload" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -30036,6 +30248,7 @@ $$;
 ALTER FUNCTION "public"."save_my_dynamic_availability_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_payload" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_my_morning_driver_availability": שמירת כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."save_my_morning_driver_availability"("requested_period_id" "uuid", "requested_entries" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -30270,6 +30483,7 @@ $$;
 ALTER FUNCTION "public"."save_my_morning_driver_availability"("requested_period_id" "uuid", "requested_entries" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_my_shift_availability": שמירת משמרת / אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION "public"."save_my_shift_availability"("requested_shift_slot_id" "uuid", "requested_availability_status" "text", "requested_note" "text" DEFAULT NULL::"text") RETURNS TABLE("shift_slot_id" "uuid", "availability_status" "text", "availability_note" "text", "availability_updated_at" timestamp with time zone, "available_count" integer, "unavailable_count" integer, "answered_count" integer, "total_shift_count" integer)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -30533,6 +30747,7 @@ $$;
 ALTER FUNCTION "public"."save_my_shift_availability"("requested_shift_slot_id" "uuid", "requested_availability_status" "text", "requested_note" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_schedule_draft": שמירת שיבוץ / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."save_schedule_draft"("requested_availability_period_id" "uuid", "requested_assignments" "jsonb", "requested_confirm_warnings" boolean DEFAULT false) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -31644,6 +31859,7 @@ COMMENT ON FUNCTION "public"."save_schedule_draft"("requested_availability_perio
 
 
 
+-- פונקציית מסד "public"."save_schedule_import_name_alias": שמירת שיבוץ / ייבוא / שם.
 CREATE OR REPLACE FUNCTION "public"."save_schedule_import_name_alias"("requested_source_name" "text", "requested_user_id" "uuid", "requested_user_type" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -31808,6 +32024,7 @@ $$;
 ALTER FUNCTION "public"."save_schedule_import_name_alias"("requested_source_name" "text", "requested_user_id" "uuid", "requested_user_type" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_user_dynamic_job_type_permissions": שמירת סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."save_user_dynamic_job_type_permissions"("target_user_id" "uuid", "requested_permissions" "jsonb" DEFAULT '[]'::"jsonb") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -31851,6 +32068,7 @@ $$;
 ALTER FUNCTION "public"."save_user_dynamic_job_type_permissions"("target_user_id" "uuid", "requested_permissions" "jsonb") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."save_user_permission_policy": שמירת משתמש / הרשאות / מדיניות.
 CREATE OR REPLACE FUNCTION "public"."save_user_permission_policy"("target_user_id" "uuid", "requested_profile_code" "text", "requested_scope_mode" "text", "requested_job_type_ids" "uuid"[] DEFAULT ARRAY[]::"uuid"[]) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -31902,6 +32120,7 @@ $$;
 ALTER FUNCTION "public"."save_user_permission_policy"("target_user_id" "uuid", "requested_profile_code" "text", "requested_scope_mode" "text", "requested_job_type_ids" "uuid"[]) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_dynamic_cutover_state": קביעת קבוצה ייחודית / דינמי / מעבר למנגנון הדינמי / מצב.
 CREATE OR REPLACE FUNCTION "public"."set_dynamic_cutover_state"("p_enabled" boolean) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -31957,6 +32176,7 @@ $$;
 ALTER FUNCTION "public"."set_dynamic_cutover_state"("p_enabled" boolean) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_dynamic_historical_assignment": קביעת קבוצה ייחודית / דינמי / נתונים היסטוריים / הקצאה.
 CREATE OR REPLACE FUNCTION "public"."set_dynamic_historical_assignment"("requested_historical_period_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid" DEFAULT NULL::"uuid", "requested_reason" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -32085,6 +32305,7 @@ $$;
 ALTER FUNCTION "public"."set_dynamic_historical_assignment"("requested_historical_period_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_reason" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_dynamic_job_type_active": קביעת סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."set_dynamic_job_type_active"("requested_job_type_id" "uuid", "requested_is_active" boolean) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -32136,6 +32357,7 @@ $$;
 ALTER FUNCTION "public"."set_dynamic_job_type_active"("requested_job_type_id" "uuid", "requested_is_active" boolean) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_dynamic_job_type_manager": קביעת סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."set_dynamic_job_type_manager"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_is_manager" boolean) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -32165,6 +32387,7 @@ $$;
 ALTER FUNCTION "public"."set_dynamic_job_type_manager"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_is_manager" boolean) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_dynamic_period_status": קביעת קבוצה ייחודית / דינמי / תקופה / סטטוס.
 CREATE OR REPLACE FUNCTION "public"."set_dynamic_period_status"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_action" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -32226,6 +32449,7 @@ $$;
 ALTER FUNCTION "public"."set_dynamic_period_status"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_action" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_dynamic_period_submission_deadline": קביעת מועד אחרון להגשת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."set_dynamic_period_submission_deadline"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_deadline" timestamp with time zone) RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -32248,6 +32472,7 @@ end; $$;
 ALTER FUNCTION "public"."set_dynamic_period_submission_deadline"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_deadline" timestamp with time zone) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_dynamic_published_schedule_assignment": קביעת קבוצה ייחודית / דינמי / פורסם / שיבוץ.
 CREATE OR REPLACE FUNCTION "public"."set_dynamic_published_schedule_assignment"("requested_publication_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid" DEFAULT NULL::"uuid", "requested_user_id" "uuid" DEFAULT NULL::"uuid", "requested_reason" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -32433,6 +32658,7 @@ $$;
 ALTER FUNCTION "public"."set_dynamic_published_schedule_assignment"("requested_publication_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_reason" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_dynamic_schedule_draft_assignment": קביעת קבוצה ייחודית / דינמי / שיבוץ / טיוטה.
 CREATE OR REPLACE FUNCTION "public"."set_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_note" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -32497,6 +32723,7 @@ $$;
 ALTER FUNCTION "public"."set_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_note" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_dynamic_schedule_slot_intentionally_unassigned": קביעת קבוצה ייחודית / דינמי / שיבוץ.
 CREATE OR REPLACE FUNCTION "public"."set_dynamic_schedule_slot_intentionally_unassigned"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_count" integer, "requested_note" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -32540,6 +32767,7 @@ $$;
 ALTER FUNCTION "public"."set_dynamic_schedule_slot_intentionally_unassigned"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_count" integer, "requested_note" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_legacy_freeze_state": קביעת קבוצה ייחודית / מצב.
 CREATE OR REPLACE FUNCTION "public"."set_legacy_freeze_state"("p_frozen" boolean) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -32595,6 +32823,7 @@ $$;
 ALTER FUNCTION "public"."set_legacy_freeze_state"("p_frozen" boolean) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_morning_driver_assignment_intentionally_unassigned": קביעת כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."set_morning_driver_assignment_intentionally_unassigned"("requested_assignment_id" "uuid", "requested_is_intentionally_unassigned" boolean) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -32642,6 +32871,7 @@ $$;
 ALTER FUNCTION "public"."set_morning_driver_assignment_intentionally_unassigned"("requested_assignment_id" "uuid", "requested_is_intentionally_unassigned" boolean) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_my_development_mode": קביעת קבוצה ייחודית / מצב פיתוח / מצב פעולה.
 CREATE OR REPLACE FUNCTION "public"."set_my_development_mode"("requested_enabled" boolean, "requested_duration_minutes" integer DEFAULT 60) RETURNS TABLE("enabled" boolean, "enabled_at" timestamp with time zone, "expires_at" timestamp with time zone)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -32716,6 +32946,7 @@ $$;
 ALTER FUNCTION "public"."set_my_development_mode"("requested_enabled" boolean, "requested_duration_minutes" integer) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_push_updated_at": קביעת מועד עדכון.
 CREATE OR REPLACE FUNCTION "public"."set_push_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -32731,6 +32962,7 @@ $$;
 ALTER FUNCTION "public"."set_push_updated_at"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_updated_at": קביעת מועד עדכון.
 CREATE OR REPLACE FUNCTION "public"."set_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
@@ -32745,6 +32977,7 @@ $$;
 ALTER FUNCTION "public"."set_updated_at"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."set_user_permissions": קביעת קבוצה ייחודית / משתמש / הרשאות.
 CREATE OR REPLACE FUNCTION "public"."set_user_permissions"("target_user_id" "uuid", "requested_permissions" "text"[]) RETURNS "text"[]
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -32856,6 +33089,7 @@ $$;
 ALTER FUNCTION "public"."set_user_permissions"("target_user_id" "uuid", "requested_permissions" "text"[]) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."submit_dynamic_scheduling_rule_proposal": הגשת דינמי / כלל.
 CREATE OR REPLACE FUNCTION "public"."submit_dynamic_scheduling_rule_proposal"("requested_job_type_id" "uuid", "requested_text" "text") RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -32875,6 +33109,7 @@ end;$$;
 ALTER FUNCTION "public"."submit_dynamic_scheduling_rule_proposal"("requested_job_type_id" "uuid", "requested_text" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."submit_my_availability": הגשת אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION "public"."submit_my_availability"() RETURNS TABLE("period_id" "uuid", "submission_status" "text", "submitted_at" timestamp with time zone, "available_count" integer, "unavailable_count" integer, "answered_count" integer, "total_shift_count" integer)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -33193,6 +33428,7 @@ $$;
 ALTER FUNCTION "public"."submit_my_availability"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."submit_my_daily_report": הגשת דוחות פעילות יומיים.
 CREATE OR REPLACE FUNCTION "public"."submit_my_daily_report"("requested_job_type_id" "uuid", "requested_items" "jsonb", "requested_report_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -33396,6 +33632,7 @@ $$;
 ALTER FUNCTION "public"."submit_my_daily_report"("requested_job_type_id" "uuid", "requested_items" "jsonb", "requested_report_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."submit_my_driver_availability": הגשת כוננים / אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION "public"."submit_my_driver_availability"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -33622,6 +33859,7 @@ COMMENT ON FUNCTION "public"."submit_my_driver_availability"("requested_period_i
 
 
 
+-- פונקציית מסד "public"."submit_my_morning_driver_availability": הגשת כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."submit_my_morning_driver_availability"("requested_period_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -33744,6 +33982,7 @@ $$;
 ALTER FUNCTION "public"."submit_my_morning_driver_availability"("requested_period_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."sync_calendar_special_day_to_holidays": סנכרון לוח שנה / יום / חגים.
 CREATE OR REPLACE FUNCTION "public"."sync_calendar_special_day_to_holidays"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -33840,6 +34079,7 @@ $$;
 ALTER FUNCTION "public"."sync_calendar_special_day_to_holidays"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."sync_dynamic_job_type_permission_settings": סנכרון סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."sync_dynamic_job_type_permission_settings"("requested_job_type_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -33872,6 +34112,7 @@ $$;
 ALTER FUNCTION "public"."sync_dynamic_job_type_permission_settings"("requested_job_type_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."sync_open_dynamic_availability_after_role_version_change": סנכרון פונקציית דיווח על שינוי.
 CREATE OR REPLACE FUNCTION "public"."sync_open_dynamic_availability_after_role_version_change"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -34007,6 +34248,7 @@ $$;
 ALTER FUNCTION "public"."sync_open_dynamic_availability_after_role_version_change"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."track_profile_deactivation": פרופיל.
 CREATE OR REPLACE FUNCTION "public"."track_profile_deactivation"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
@@ -34025,6 +34267,7 @@ $$;
 ALTER FUNCTION "public"."track_profile_deactivation"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."transfer_my_driver_duty": כוננים.
 CREATE OR REPLACE FUNCTION "public"."transfer_my_driver_duty"("requested_schedule_day_id" "uuid", "requested_new_driver_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -34289,6 +34532,7 @@ $$;
 ALTER FUNCTION "public"."transfer_my_driver_duty"("requested_schedule_day_id" "uuid", "requested_new_driver_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."transfer_my_morning_driver_assignment": כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."transfer_my_morning_driver_assignment"("requested_assignment_id" "uuid", "requested_new_driver_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -34619,6 +34863,7 @@ $$;
 ALTER FUNCTION "public"."transfer_my_morning_driver_assignment"("requested_assignment_id" "uuid", "requested_new_driver_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."trg_sync_dynamic_job_type_permissions": סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."trg_sync_dynamic_job_type_permissions"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -34633,6 +34878,7 @@ $$;
 ALTER FUNCTION "public"."trg_sync_dynamic_job_type_permissions"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."trigger_materialize_dynamic_job_type_version": סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."trigger_materialize_dynamic_job_type_version"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -34647,6 +34893,7 @@ $$;
 ALTER FUNCTION "public"."trigger_materialize_dynamic_job_type_version"() OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."update_availability_submission_deadline": עדכון מועד אחרון להגשת אילוצים.
 CREATE OR REPLACE FUNCTION "public"."update_availability_submission_deadline"("requested_category" "text", "requested_period_id" "uuid", "requested_deadline" timestamp with time zone) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -34836,6 +35083,7 @@ $$;
 ALTER FUNCTION "public"."update_availability_submission_deadline"("requested_category" "text", "requested_period_id" "uuid", "requested_deadline" timestamp with time zone) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."update_current_driver_schedule_day": עדכון כוננים / שיבוץ / יום.
 CREATE OR REPLACE FUNCTION "public"."update_current_driver_schedule_day"("requested_schedule_day_id" "uuid", "requested_assigned_user_id" "uuid" DEFAULT NULL::"uuid", "requested_is_locked" boolean DEFAULT false, "requested_note" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -35136,6 +35384,7 @@ $$;
 ALTER FUNCTION "public"."update_current_driver_schedule_day"("requested_schedule_day_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."update_current_schedule_shift": עדכון שיבוץ / משמרת.
 CREATE OR REPLACE FUNCTION "public"."update_current_schedule_shift"("requested_shift_id" "uuid", "requested_new_user_id" "uuid", "requested_reason" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -35688,6 +35937,7 @@ $$;
 ALTER FUNCTION "public"."update_current_schedule_shift"("requested_shift_id" "uuid", "requested_new_user_id" "uuid", "requested_reason" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."update_driver_schedule_day": עדכון כוננים / שיבוץ / יום.
 CREATE OR REPLACE FUNCTION "public"."update_driver_schedule_day"("requested_schedule_day_id" "uuid", "requested_assigned_user_id" "uuid" DEFAULT NULL::"uuid", "requested_is_locked" boolean DEFAULT false, "requested_note" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -36120,6 +36370,7 @@ COMMENT ON FUNCTION "public"."update_driver_schedule_day"("requested_schedule_da
 
 
 
+-- פונקציית מסד "public"."update_dynamic_job_type_rotation_state": עדכון סוג תפקיד.
 CREATE OR REPLACE FUNCTION "public"."update_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid", "requested_rotation_user_ids" "uuid"[], "requested_anchor_date" "date", "requested_reason" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -36181,6 +36432,7 @@ $$;
 ALTER FUNCTION "public"."update_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid", "requested_rotation_user_ids" "uuid"[], "requested_anchor_date" "date", "requested_reason" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."update_morning_driver_schedule_assignment": עדכון כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."update_morning_driver_schedule_assignment"("requested_assignment_id" "uuid", "requested_assigned_user_id" "uuid" DEFAULT NULL::"uuid", "requested_is_locked" boolean DEFAULT false, "requested_note" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -36514,6 +36766,7 @@ $$;
 ALTER FUNCTION "public"."update_morning_driver_schedule_assignment"("requested_assignment_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."update_morning_driver_schedule_shift_time": עדכון כונני בוקר.
 CREATE OR REPLACE FUNCTION "public"."update_morning_driver_schedule_shift_time"("requested_assignment_id" "uuid", "requested_start_time" time without time zone, "requested_end_time" time without time zone) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -36574,6 +36827,7 @@ $$;
 ALTER FUNCTION "public"."update_morning_driver_schedule_shift_time"("requested_assignment_id" "uuid", "requested_start_time" time without time zone, "requested_end_time" time without time zone) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."update_my_dynamic_published_assignment": עדכון דינמי / פורסם / הקצאה.
 CREATE OR REPLACE FUNCTION "public"."update_my_dynamic_published_assignment"("requested_publication_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -36736,6 +36990,7 @@ $$;
 ALTER FUNCTION "public"."update_my_dynamic_published_assignment"("requested_publication_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."update_schedule_draft_shift": עדכון שיבוץ / טיוטה / משמרת.
 CREATE OR REPLACE FUNCTION "public"."update_schedule_draft_shift"("requested_shift_id" "uuid", "requested_new_user_id" "uuid" DEFAULT NULL::"uuid", "requested_intentionally_unassigned" boolean DEFAULT false) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -36862,6 +37117,7 @@ $$;
 ALTER FUNCTION "public"."update_schedule_draft_shift"("requested_shift_id" "uuid", "requested_new_user_id" "uuid", "requested_intentionally_unassigned" boolean) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."update_user_compensation": עדכון משתמש.
 CREATE OR REPLACE FUNCTION "public"."update_user_compensation"("target_user_id" "uuid", "requested_hourly_rate" numeric DEFAULT NULL::numeric, "requested_daily_duty_rate" numeric DEFAULT NULL::numeric, "requested_morning_shift_rate" numeric DEFAULT NULL::numeric) RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -36927,6 +37183,7 @@ $$;
 ALTER FUNCTION "public"."update_user_compensation"("target_user_id" "uuid", "requested_hourly_rate" numeric, "requested_daily_duty_rate" numeric, "requested_morning_shift_rate" numeric) OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."validate_shift_swap_final_state": בדיקת תקינות של החלפת משמרות.
 CREATE OR REPLACE FUNCTION "public"."validate_shift_swap_final_state"("requested_swap_type" "text", "requested_requester_user_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_requester_shift_id" "uuid", "requested_counterparty_shift_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -37168,6 +37425,7 @@ $$;
 ALTER FUNCTION "public"."validate_shift_swap_final_state"("requested_swap_type" "text", "requested_requester_user_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_requester_shift_id" "uuid", "requested_counterparty_shift_id" "uuid") OWNER TO "postgres";
 
 
+-- פונקציית מסד "public"."write_audit_log": יומן שינויים.
 CREATE OR REPLACE FUNCTION "public"."write_audit_log"("requested_action" "public"."audit_action_type", "requested_target_user_id" "uuid", "requested_summary" "text", "requested_old_values" "jsonb" DEFAULT NULL::"jsonb", "requested_new_values" "jsonb" DEFAULT NULL::"jsonb", "requested_metadata" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -37298,6 +37556,7 @@ $$;
 ALTER FUNCTION "public"."write_audit_log"("requested_action" "public"."audit_action_type", "requested_target_user_id" "uuid", "requested_summary" "text", "requested_old_values" "jsonb", "requested_new_values" "jsonb", "requested_metadata" "jsonb") OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."admin_development_sessions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."admin_development_sessions" (
     "user_id" "uuid" NOT NULL,
     "enabled" boolean DEFAULT false NOT NULL,
@@ -37307,6 +37566,7 @@ CREATE TABLE IF NOT EXISTS "public"."admin_development_sessions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."admin_development_sessions".
 ALTER TABLE "public"."admin_development_sessions" OWNER TO "postgres";
 
 
@@ -37314,6 +37574,7 @@ COMMENT ON TABLE "public"."admin_development_sessions" IS 'Per-admin Safe Develo
 
 
 
+-- הגדרת מבנה הטבלה "public"."attendance_sessions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."attendance_sessions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -37342,9 +37603,11 @@ CREATE TABLE IF NOT EXISTS "public"."attendance_sessions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."attendance_sessions".
 ALTER TABLE "public"."attendance_sessions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."audit_logs" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."audit_logs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid",
@@ -37367,9 +37630,11 @@ CREATE TABLE IF NOT EXISTS "public"."audit_logs" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."audit_logs".
 ALTER TABLE "public"."audit_logs" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."availability_periods" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."availability_periods" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "year" integer NOT NULL,
@@ -37390,9 +37655,11 @@ CREATE TABLE IF NOT EXISTS "public"."availability_periods" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."availability_periods".
 ALTER TABLE "public"."availability_periods" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."availability_shift_slots" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."availability_shift_slots" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -37412,9 +37679,11 @@ CREATE TABLE IF NOT EXISTS "public"."availability_shift_slots" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."availability_shift_slots".
 ALTER TABLE "public"."availability_shift_slots" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."availability_submissions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."availability_submissions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -37435,9 +37704,11 @@ CREATE TABLE IF NOT EXISTS "public"."availability_submissions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."availability_submissions".
 ALTER TABLE "public"."availability_submissions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."calendar_special_days" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."calendar_special_days" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "event_date" "date" NOT NULL,
@@ -37455,9 +37726,11 @@ CREATE TABLE IF NOT EXISTS "public"."calendar_special_days" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."calendar_special_days".
 ALTER TABLE "public"."calendar_special_days" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."client_app_sessions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."client_app_sessions" (
     "user_id" "uuid" NOT NULL,
     "client_id" "text" NOT NULL,
@@ -37474,9 +37747,11 @@ CREATE TABLE IF NOT EXISTS "public"."client_app_sessions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."client_app_sessions".
 ALTER TABLE "public"."client_app_sessions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."daily_report_attachments" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."daily_report_attachments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "report_id" "uuid" NOT NULL,
@@ -37490,9 +37765,11 @@ CREATE TABLE IF NOT EXISTS "public"."daily_report_attachments" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."daily_report_attachments".
 ALTER TABLE "public"."daily_report_attachments" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."daily_report_customers" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."daily_report_customers" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "name" "text" NOT NULL,
@@ -37503,9 +37780,11 @@ CREATE TABLE IF NOT EXISTS "public"."daily_report_customers" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."daily_report_customers".
 ALTER TABLE "public"."daily_report_customers" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."daily_report_items" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."daily_report_items" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "report_id" "uuid" NOT NULL,
@@ -37519,9 +37798,11 @@ CREATE TABLE IF NOT EXISTS "public"."daily_report_items" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."daily_report_items".
 ALTER TABLE "public"."daily_report_items" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."daily_report_subjects" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."daily_report_subjects" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -37532,9 +37813,11 @@ CREATE TABLE IF NOT EXISTS "public"."daily_report_subjects" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."daily_report_subjects".
 ALTER TABLE "public"."daily_report_subjects" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."daily_reports" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."daily_reports" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -37547,9 +37830,11 @@ CREATE TABLE IF NOT EXISTS "public"."daily_reports" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."daily_reports".
 ALTER TABLE "public"."daily_reports" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dispatcher_availability" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dispatcher_availability" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -37565,9 +37850,11 @@ CREATE TABLE IF NOT EXISTS "public"."dispatcher_availability" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dispatcher_availability".
 ALTER TABLE "public"."dispatcher_availability" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."driver_availability_days" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."driver_availability_days" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -37580,9 +37867,11 @@ CREATE TABLE IF NOT EXISTS "public"."driver_availability_days" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_availability_days".
 ALTER TABLE "public"."driver_availability_days" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."driver_availability_entries" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."driver_availability_entries" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -37596,9 +37885,11 @@ CREATE TABLE IF NOT EXISTS "public"."driver_availability_entries" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_availability_entries".
 ALTER TABLE "public"."driver_availability_entries" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."driver_availability_periods" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."driver_availability_periods" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "year" integer NOT NULL,
@@ -37619,9 +37910,11 @@ CREATE TABLE IF NOT EXISTS "public"."driver_availability_periods" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_availability_periods".
 ALTER TABLE "public"."driver_availability_periods" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."driver_availability_submissions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."driver_availability_submissions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -37639,9 +37932,11 @@ CREATE TABLE IF NOT EXISTS "public"."driver_availability_submissions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_availability_submissions".
 ALTER TABLE "public"."driver_availability_submissions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."driver_schedule_assignment_history" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."driver_schedule_assignment_history" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "schedule_day_id" "uuid" NOT NULL,
@@ -37654,9 +37949,11 @@ CREATE TABLE IF NOT EXISTS "public"."driver_schedule_assignment_history" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_schedule_assignment_history".
 ALTER TABLE "public"."driver_schedule_assignment_history" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."driver_schedule_days" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."driver_schedule_days" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -37676,6 +37973,7 @@ CREATE TABLE IF NOT EXISTS "public"."driver_schedule_days" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_schedule_days".
 ALTER TABLE "public"."driver_schedule_days" OWNER TO "postgres";
 
 
@@ -37683,6 +37981,7 @@ COMMENT ON COLUMN "public"."driver_schedule_days"."import_run_id" IS 'Identifies
 
 
 
+-- הגדרת מבנה הטבלה "public"."driver_schedule_periods" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."driver_schedule_periods" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "year" integer NOT NULL,
@@ -37703,9 +38002,11 @@ CREATE TABLE IF NOT EXISTS "public"."driver_schedule_periods" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_schedule_periods".
 ALTER TABLE "public"."driver_schedule_periods" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."driver_schedule_swaps" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."driver_schedule_swaps" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "first_schedule_day_id" "uuid" NOT NULL,
@@ -37720,9 +38021,11 @@ CREATE TABLE IF NOT EXISTS "public"."driver_schedule_swaps" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_schedule_swaps".
 ALTER TABLE "public"."driver_schedule_swaps" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_availability_entries" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_availability_entries" (
     "submission_id" "uuid" NOT NULL,
     "slot_id" "uuid" NOT NULL,
@@ -37734,9 +38037,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_availability_entries" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_availability_entries".
 ALTER TABLE "public"."dynamic_availability_entries" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_availability_periods" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_availability_periods" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "schedule_group_id" "uuid" NOT NULL,
@@ -37758,9 +38063,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_availability_periods" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_availability_periods".
 ALTER TABLE "public"."dynamic_availability_periods" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_availability_slots" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_availability_slots" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -37788,9 +38095,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_availability_slots" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_availability_slots".
 ALTER TABLE "public"."dynamic_availability_slots" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_availability_submissions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_availability_submissions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -37812,9 +38121,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_availability_submissions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_availability_submissions".
 ALTER TABLE "public"."dynamic_availability_submissions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_cutover_settings" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_cutover_settings" (
     "singleton" boolean DEFAULT true NOT NULL,
     "dynamic_first_enabled" boolean DEFAULT false NOT NULL,
@@ -37825,9 +38136,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_cutover_settings" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_cutover_settings".
 ALTER TABLE "public"."dynamic_cutover_settings" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_historical_assignments" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_historical_assignments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "historical_period_id" "uuid" NOT NULL,
@@ -37846,9 +38159,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_historical_assignments" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_historical_assignments".
 ALTER TABLE "public"."dynamic_historical_assignments" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_historical_availability" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_historical_availability" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "historical_period_id" "uuid" NOT NULL,
@@ -37864,9 +38179,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_historical_availability" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_historical_availability".
 ALTER TABLE "public"."dynamic_historical_availability" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_historical_periods" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_historical_periods" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -37882,9 +38199,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_historical_periods" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_historical_periods".
 ALTER TABLE "public"."dynamic_historical_periods" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_job_type_rotation_state" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_job_type_rotation_state" (
     "job_type_id" "uuid" NOT NULL,
     "rotation_user_ids" "uuid"[] NOT NULL,
@@ -37899,9 +38218,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_job_type_rotation_state" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_job_type_rotation_state".
 ALTER TABLE "public"."dynamic_job_type_rotation_state" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_legacy_import_batches" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_legacy_import_batches" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -37919,9 +38240,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_legacy_import_batches" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_legacy_import_batches".
 ALTER TABLE "public"."dynamic_legacy_import_batches" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_permission_manifest" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_permission_manifest" (
     "feature_key" "text" NOT NULL,
     "permission_key" "text" NOT NULL,
@@ -37934,9 +38257,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_permission_manifest" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_permission_manifest".
 ALTER TABLE "public"."dynamic_permission_manifest" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_schedule_draft_slot_overrides" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_draft_slot_overrides" (
     "draft_id" "uuid" NOT NULL,
     "slot_id" "uuid" NOT NULL,
@@ -37948,9 +38273,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_draft_slot_overrides" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_draft_slot_overrides".
 ALTER TABLE "public"."dynamic_schedule_draft_slot_overrides" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_schedule_publications" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_publications" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -37969,9 +38296,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_publications" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_publications".
 ALTER TABLE "public"."dynamic_schedule_publications" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_schedule_published_unassigned" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_published_unassigned" (
     "publication_id" "uuid" NOT NULL,
     "slot_id" "uuid",
@@ -37986,9 +38315,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_published_unassigned" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_published_unassigned".
 ALTER TABLE "public"."dynamic_schedule_published_unassigned" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_schedule_reminder_deliveries" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_reminder_deliveries" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "assignment_id" "uuid",
@@ -38002,9 +38333,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_reminder_deliveries" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_reminder_deliveries".
 ALTER TABLE "public"."dynamic_schedule_reminder_deliveries" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_schedule_shadow_assignments" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_shadow_assignments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "draft_id" "uuid" NOT NULL,
@@ -38024,9 +38357,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_shadow_assignments" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_shadow_assignments".
 ALTER TABLE "public"."dynamic_schedule_shadow_assignments" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_schedule_shadow_drafts" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_shadow_drafts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -38045,9 +38380,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_shadow_drafts" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_shadow_drafts".
 ALTER TABLE "public"."dynamic_schedule_shadow_drafts" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_schedule_shadow_targets" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_shadow_targets" (
     "draft_id" "uuid" NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -38067,9 +38404,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_schedule_shadow_targets" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_shadow_targets".
 ALTER TABLE "public"."dynamic_schedule_shadow_targets" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."dynamic_shift_exchange_requests" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."dynamic_shift_exchange_requests" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "publication_id" "uuid" NOT NULL,
@@ -38092,9 +38431,11 @@ CREATE TABLE IF NOT EXISTS "public"."dynamic_shift_exchange_requests" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_shift_exchange_requests".
 ALTER TABLE "public"."dynamic_shift_exchange_requests" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."gvk_legacy_migration_runs" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."gvk_legacy_migration_runs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "dispatcher_job_type_id" "uuid" NOT NULL,
@@ -38109,9 +38450,11 @@ CREATE TABLE IF NOT EXISTS "public"."gvk_legacy_migration_runs" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."gvk_legacy_migration_runs".
 ALTER TABLE "public"."gvk_legacy_migration_runs" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."holidays" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."holidays" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "holiday_date" "date" NOT NULL,
@@ -38127,9 +38470,11 @@ CREATE TABLE IF NOT EXISTS "public"."holidays" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."holidays".
 ALTER TABLE "public"."holidays" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_ai_suggestions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_ai_suggestions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_type_id" "uuid",
@@ -38146,6 +38491,7 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_ai_suggestions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_ai_suggestions".
 ALTER TABLE "public"."job_type_ai_suggestions" OWNER TO "postgres";
 
 
@@ -38153,6 +38499,7 @@ COMMENT ON TABLE "public"."job_type_ai_suggestions" IS 'Human-review queue for f
 
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_capabilities" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_capabilities" (
     "job_type_id" "uuid" NOT NULL,
     "capability_key" "text" NOT NULL,
@@ -38167,9 +38514,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_capabilities" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_capabilities".
 ALTER TABLE "public"."job_type_capabilities" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_configuration_versions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_configuration_versions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -38184,9 +38533,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_configuration_versions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_configuration_versions".
 ALTER TABLE "public"."job_type_configuration_versions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_dashboard_context_rules" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_dashboard_context_rules" (
     "source_job_type_id" "uuid" NOT NULL,
     "target_job_type_id" "uuid" NOT NULL,
@@ -38197,9 +38548,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_dashboard_context_rules" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_dashboard_context_rules".
 ALTER TABLE "public"."job_type_dashboard_context_rules" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_default_permissions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_default_permissions" (
     "job_type_id" "uuid" NOT NULL,
     "permission_key" "text" NOT NULL,
@@ -38210,9 +38563,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_default_permissions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_default_permissions".
 ALTER TABLE "public"."job_type_default_permissions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_managers" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_managers" (
     "job_type_id" "uuid" NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -38221,9 +38576,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_managers" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_managers".
 ALTER TABLE "public"."job_type_managers" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_materialized_day_rules" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_materialized_day_rules" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "materialization_id" "uuid" NOT NULL,
@@ -38239,9 +38596,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_materialized_day_rules" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_materialized_day_rules".
 ALTER TABLE "public"."job_type_materialized_day_rules" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_materialized_pay_components" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_materialized_pay_components" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "shift_template_id" "uuid" NOT NULL,
@@ -38258,9 +38617,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_materialized_pay_components" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_materialized_pay_components".
 ALTER TABLE "public"."job_type_materialized_pay_components" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_materialized_shift_templates" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_materialized_shift_templates" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "materialization_id" "uuid" NOT NULL,
@@ -38284,9 +38645,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_materialized_shift_templates" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_materialized_shift_templates".
 ALTER TABLE "public"."job_type_materialized_shift_templates" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_memberships" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_memberships" (
     "user_id" "uuid" NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -38299,9 +38662,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_memberships" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_memberships".
 ALTER TABLE "public"."job_type_memberships" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_permission_settings" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_permission_settings" (
     "job_type_id" "uuid" NOT NULL,
     "permission_key" "text" NOT NULL,
@@ -38313,9 +38678,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_permission_settings" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_permission_settings".
 ALTER TABLE "public"."job_type_permission_settings" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_schedule_materializations" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_schedule_materializations" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -38338,9 +38705,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_schedule_materializations" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_schedule_materializations".
 ALTER TABLE "public"."job_type_schedule_materializations" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_type_shift_eligibility" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_type_shift_eligibility" (
     "job_type_id" "uuid" NOT NULL,
     "shift_template_id" "uuid" NOT NULL,
@@ -38352,9 +38721,11 @@ CREATE TABLE IF NOT EXISTS "public"."job_type_shift_eligibility" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_shift_eligibility".
 ALTER TABLE "public"."job_type_shift_eligibility" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."job_types" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."job_types" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "schedule_group_id" "uuid" NOT NULL,
@@ -38383,6 +38754,7 @@ CREATE TABLE IF NOT EXISTS "public"."job_types" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_types".
 ALTER TABLE "public"."job_types" OWNER TO "postgres";
 
 
@@ -38390,6 +38762,7 @@ COMMENT ON TABLE "public"."job_types" IS 'Dynamic job types. scheduling_config.s
 
 
 
+-- הגדרת מבנה הטבלה "public"."monthly_schedule_archive_runs" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."monthly_schedule_archive_runs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "year" integer NOT NULL,
@@ -38408,9 +38781,11 @@ CREATE TABLE IF NOT EXISTS "public"."monthly_schedule_archive_runs" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."monthly_schedule_archive_runs".
 ALTER TABLE "public"."monthly_schedule_archive_runs" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."morning_driver_availability_entries" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."morning_driver_availability_entries" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -38424,9 +38799,11 @@ CREATE TABLE IF NOT EXISTS "public"."morning_driver_availability_entries" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_availability_entries".
 ALTER TABLE "public"."morning_driver_availability_entries" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."morning_driver_availability_periods" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."morning_driver_availability_periods" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "year" integer NOT NULL,
@@ -38448,9 +38825,11 @@ CREATE TABLE IF NOT EXISTS "public"."morning_driver_availability_periods" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_availability_periods".
 ALTER TABLE "public"."morning_driver_availability_periods" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."morning_driver_availability_shifts" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."morning_driver_availability_shifts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -38470,6 +38849,7 @@ CREATE TABLE IF NOT EXISTS "public"."morning_driver_availability_shifts" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_availability_shifts".
 ALTER TABLE "public"."morning_driver_availability_shifts" OWNER TO "postgres";
 
 
@@ -38477,6 +38857,7 @@ COMMENT ON COLUMN "public"."morning_driver_availability_shifts"."required_worker
 
 
 
+-- הגדרת מבנה הטבלה "public"."morning_driver_availability_submissions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."morning_driver_availability_submissions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -38490,9 +38871,11 @@ CREATE TABLE IF NOT EXISTS "public"."morning_driver_availability_submissions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_availability_submissions".
 ALTER TABLE "public"."morning_driver_availability_submissions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."morning_driver_schedule_assignments" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."morning_driver_schedule_assignments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "schedule_period_id" "uuid" NOT NULL,
@@ -38512,9 +38895,11 @@ CREATE TABLE IF NOT EXISTS "public"."morning_driver_schedule_assignments" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_schedule_assignments".
 ALTER TABLE "public"."morning_driver_schedule_assignments" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."morning_driver_schedule_periods" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."morning_driver_schedule_periods" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "year" integer NOT NULL,
@@ -38531,9 +38916,11 @@ CREATE TABLE IF NOT EXISTS "public"."morning_driver_schedule_periods" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_schedule_periods".
 ALTER TABLE "public"."morning_driver_schedule_periods" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."notification_preferences" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."notification_preferences" (
     "user_id" "uuid" NOT NULL,
     "push_enabled" boolean DEFAULT true NOT NULL,
@@ -38547,9 +38934,11 @@ CREATE TABLE IF NOT EXISTS "public"."notification_preferences" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."notification_preferences".
 ALTER TABLE "public"."notification_preferences" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."notification_recipients" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."notification_recipients" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "notification_id" "uuid" NOT NULL,
@@ -38563,9 +38952,11 @@ CREATE TABLE IF NOT EXISTS "public"."notification_recipients" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."notification_recipients".
 ALTER TABLE "public"."notification_recipients" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."notifications" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."notifications" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "type" "text" NOT NULL,
@@ -38583,9 +38974,11 @@ CREATE TABLE IF NOT EXISTS "public"."notifications" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."notifications".
 ALTER TABLE "public"."notifications" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."permission_profile_permissions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."permission_profile_permissions" (
     "profile_id" "uuid" NOT NULL,
     "permission_key" "text" NOT NULL,
@@ -38593,9 +38986,11 @@ CREATE TABLE IF NOT EXISTS "public"."permission_profile_permissions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."permission_profile_permissions".
 ALTER TABLE "public"."permission_profile_permissions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."permission_profiles" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."permission_profiles" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "code" "text" NOT NULL,
@@ -38608,9 +39003,11 @@ CREATE TABLE IF NOT EXISTS "public"."permission_profiles" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."permission_profiles".
 ALTER TABLE "public"."permission_profiles" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."permissions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."permissions" (
     "permission_key" "text" NOT NULL,
     "display_name" "text" NOT NULL,
@@ -38621,9 +39018,11 @@ CREATE TABLE IF NOT EXISTS "public"."permissions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."permissions".
 ALTER TABLE "public"."permissions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."profiles" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" "uuid" NOT NULL,
     "email" "text" NOT NULL,
@@ -38648,9 +39047,11 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."profiles".
 ALTER TABLE "public"."profiles" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."push_delivery_log" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."push_delivery_log" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "recipient_id" "uuid" NOT NULL,
@@ -38661,9 +39062,11 @@ CREATE TABLE IF NOT EXISTS "public"."push_delivery_log" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."push_delivery_log".
 ALTER TABLE "public"."push_delivery_log" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."push_subscriptions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."push_subscriptions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -38679,18 +39082,22 @@ CREATE TABLE IF NOT EXISTS "public"."push_subscriptions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."push_subscriptions".
 ALTER TABLE "public"."push_subscriptions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."role_default_permissions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."role_default_permissions" (
     "role_name" "text" NOT NULL,
     "permission_key" "text" NOT NULL
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."role_default_permissions".
 ALTER TABLE "public"."role_default_permissions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."schedule_assignment_history" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."schedule_assignment_history" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "shift_id" "uuid" NOT NULL,
@@ -38704,9 +39111,11 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_assignment_history" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_assignment_history".
 ALTER TABLE "public"."schedule_assignment_history" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."schedule_group_day_rules" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."schedule_group_day_rules" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "schedule_group_id" "uuid" NOT NULL,
@@ -38722,9 +39131,11 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_group_day_rules" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_group_day_rules".
 ALTER TABLE "public"."schedule_group_day_rules" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."schedule_group_shift_templates" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."schedule_group_shift_templates" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "schedule_group_id" "uuid" NOT NULL,
@@ -38748,9 +39159,11 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_group_shift_templates" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_group_shift_templates".
 ALTER TABLE "public"."schedule_group_shift_templates" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."schedule_group_versions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."schedule_group_versions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "schedule_group_id" "uuid" NOT NULL,
@@ -38763,9 +39176,11 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_group_versions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_group_versions".
 ALTER TABLE "public"."schedule_group_versions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."schedule_groups" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."schedule_groups" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "code" "text" NOT NULL,
@@ -38782,6 +39197,7 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_groups" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_groups".
 ALTER TABLE "public"."schedule_groups" OWNER TO "postgres";
 
 
@@ -38789,6 +39205,7 @@ COMMENT ON TABLE "public"."schedule_groups" IS 'Phase-1 dynamic scheduling found
 
 
 
+-- הגדרת מבנה הטבלה "public"."schedule_import_name_aliases" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."schedule_import_name_aliases" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "source_name" "text" NOT NULL,
@@ -38805,9 +39222,11 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_import_name_aliases" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_import_name_aliases".
 ALTER TABLE "public"."schedule_import_name_aliases" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."schedule_import_runs" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."schedule_import_runs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "file_name" "text" NOT NULL,
@@ -38846,6 +39265,7 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_import_runs" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_import_runs".
 ALTER TABLE "public"."schedule_import_runs" OWNER TO "postgres";
 
 
@@ -38853,6 +39273,7 @@ COMMENT ON TABLE "public"."schedule_import_runs" IS 'Tracks Excel schedule impor
 
 
 
+-- הגדרת מבנה הטבלה "public"."schedule_periods" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."schedule_periods" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "year" integer NOT NULL,
@@ -38875,9 +39296,11 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_periods" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_periods".
 ALTER TABLE "public"."schedule_periods" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."schedule_shift_pay_segments" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."schedule_shift_pay_segments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "shift_template_id" "uuid" NOT NULL,
@@ -38894,9 +39317,11 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_shift_pay_segments" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_shift_pay_segments".
 ALTER TABLE "public"."schedule_shift_pay_segments" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."schedule_shifts" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."schedule_shifts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "period_id" "uuid" NOT NULL,
@@ -38925,6 +39350,7 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_shifts" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_shifts".
 ALTER TABLE "public"."schedule_shifts" OWNER TO "postgres";
 
 
@@ -38932,6 +39358,7 @@ COMMENT ON COLUMN "public"."schedule_shifts"."import_run_id" IS 'Identifies the 
 
 
 
+-- הגדרת מבנה הטבלה "public"."scheduled_reminder_deliveries" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."scheduled_reminder_deliveries" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -38945,9 +39372,11 @@ CREATE TABLE IF NOT EXISTS "public"."scheduled_reminder_deliveries" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."scheduled_reminder_deliveries".
 ALTER TABLE "public"."scheduled_reminder_deliveries" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."scheduling_feature_flags" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."scheduling_feature_flags" (
     "key" "text" NOT NULL,
     "enabled" boolean DEFAULT false NOT NULL,
@@ -38959,9 +39388,11 @@ CREATE TABLE IF NOT EXISTS "public"."scheduling_feature_flags" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."scheduling_feature_flags".
 ALTER TABLE "public"."scheduling_feature_flags" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."scheduling_rule_registry" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."scheduling_rule_registry" (
     "rule_key" "text" NOT NULL,
     "name" "text" NOT NULL,
@@ -38977,9 +39408,11 @@ CREATE TABLE IF NOT EXISTS "public"."scheduling_rule_registry" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."scheduling_rule_registry".
 ALTER TABLE "public"."scheduling_rule_registry" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."shift_reminder_deliveries" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."shift_reminder_deliveries" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "shift_id" "uuid" NOT NULL,
@@ -38992,9 +39425,11 @@ CREATE TABLE IF NOT EXISTS "public"."shift_reminder_deliveries" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."shift_reminder_deliveries".
 ALTER TABLE "public"."shift_reminder_deliveries" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."shift_swap_requests" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."shift_swap_requests" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "swap_type" "text" NOT NULL,
@@ -39018,9 +39453,11 @@ CREATE TABLE IF NOT EXISTS "public"."shift_swap_requests" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."shift_swap_requests".
 ALTER TABLE "public"."shift_swap_requests" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."user_dashboard_widgets" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."user_dashboard_widgets" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -39037,9 +39474,11 @@ CREATE TABLE IF NOT EXISTS "public"."user_dashboard_widgets" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."user_dashboard_widgets".
 ALTER TABLE "public"."user_dashboard_widgets" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."user_job_type_permissions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."user_job_type_permissions" (
     "user_id" "uuid" NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -39051,9 +39490,11 @@ CREATE TABLE IF NOT EXISTS "public"."user_job_type_permissions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."user_job_type_permissions".
 ALTER TABLE "public"."user_job_type_permissions" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."user_permission_job_type_scopes" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."user_permission_job_type_scopes" (
     "user_id" "uuid" NOT NULL,
     "job_type_id" "uuid" NOT NULL,
@@ -39061,9 +39502,11 @@ CREATE TABLE IF NOT EXISTS "public"."user_permission_job_type_scopes" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."user_permission_job_type_scopes".
 ALTER TABLE "public"."user_permission_job_type_scopes" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."user_permission_policies" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."user_permission_policies" (
     "user_id" "uuid" NOT NULL,
     "profile_id" "uuid",
@@ -39074,9 +39517,11 @@ CREATE TABLE IF NOT EXISTS "public"."user_permission_policies" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."user_permission_policies".
 ALTER TABLE "public"."user_permission_policies" OWNER TO "postgres";
 
 
+-- הגדרת מבנה הטבלה "public"."user_permissions" והאילוצים המופיעים בהמשך.
 CREATE TABLE IF NOT EXISTS "public"."user_permissions" (
     "user_id" "uuid" NOT NULL,
     "permission_key" "text" NOT NULL,
@@ -39085,1131 +39530,1377 @@ CREATE TABLE IF NOT EXISTS "public"."user_permissions" (
 );
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."user_permissions".
 ALTER TABLE "public"."user_permissions" OWNER TO "postgres";
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."admin_development_sessions"
     ADD CONSTRAINT "admin_development_sessions_pkey" PRIMARY KEY ("user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."attendance_sessions"
     ADD CONSTRAINT "attendance_sessions_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."audit_logs"
     ADD CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_periods"
     ADD CONSTRAINT "availability_periods_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_periods"
     ADD CONSTRAINT "availability_periods_year_month_unique" UNIQUE ("year", "month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_shift_slots"
     ADD CONSTRAINT "availability_shift_slots_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_shift_slots"
     ADD CONSTRAINT "availability_shift_slots_unique" UNIQUE ("period_id", "shift_date", "start_time", "end_time");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_submissions"
     ADD CONSTRAINT "availability_submissions_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_submissions"
     ADD CONSTRAINT "availability_submissions_unique" UNIQUE ("period_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."calendar_special_days"
     ADD CONSTRAINT "calendar_special_days_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."calendar_special_days"
     ADD CONSTRAINT "calendar_special_days_unique_event" UNIQUE ("event_date", "schedule_type", "event_name");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."client_app_sessions"
     ADD CONSTRAINT "client_app_sessions_pkey" PRIMARY KEY ("user_id", "client_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_attachments"
     ADD CONSTRAINT "daily_report_attachments_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_attachments"
     ADD CONSTRAINT "daily_report_attachments_storage_path_key" UNIQUE ("storage_path");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_customers"
     ADD CONSTRAINT "daily_report_customers_normalized_name_key" UNIQUE ("normalized_name");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_customers"
     ADD CONSTRAINT "daily_report_customers_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_items"
     ADD CONSTRAINT "daily_report_items_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_subjects"
     ADD CONSTRAINT "daily_report_subjects_job_type_id_name_key" UNIQUE ("job_type_id", "name");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_subjects"
     ADD CONSTRAINT "daily_report_subjects_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_reports"
     ADD CONSTRAINT "daily_reports_job_type_id_user_id_report_date_key" UNIQUE ("job_type_id", "user_id", "report_date");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_reports"
     ADD CONSTRAINT "daily_reports_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dispatcher_availability"
     ADD CONSTRAINT "dispatcher_availability_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dispatcher_availability"
     ADD CONSTRAINT "dispatcher_availability_unique" UNIQUE ("shift_slot_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_days"
     ADD CONSTRAINT "driver_availability_days_period_date_unique" UNIQUE ("period_id", "availability_date");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_days"
     ADD CONSTRAINT "driver_availability_days_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_entries"
     ADD CONSTRAINT "driver_availability_entries_day_user_unique" UNIQUE ("day_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_entries"
     ADD CONSTRAINT "driver_availability_entries_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_periods"
     ADD CONSTRAINT "driver_availability_periods_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_periods"
     ADD CONSTRAINT "driver_availability_periods_year_month_unique" UNIQUE ("year", "month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_submissions"
     ADD CONSTRAINT "driver_availability_submissions_period_user_unique" UNIQUE ("period_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_submissions"
     ADD CONSTRAINT "driver_availability_submissions_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_assignment_history"
     ADD CONSTRAINT "driver_schedule_assignment_history_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_days"
     ADD CONSTRAINT "driver_schedule_days_period_date_unique" UNIQUE ("period_id", "duty_date");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_days"
     ADD CONSTRAINT "driver_schedule_days_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_periods"
     ADD CONSTRAINT "driver_schedule_periods_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_periods"
     ADD CONSTRAINT "driver_schedule_periods_year_month_unique" UNIQUE ("year", "month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_swaps"
     ADD CONSTRAINT "driver_schedule_swaps_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_entries"
     ADD CONSTRAINT "dynamic_availability_entries_pkey" PRIMARY KEY ("submission_id", "slot_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_periods"
     ADD CONSTRAINT "dynamic_availability_periods_job_type_id_year_month_key" UNIQUE ("job_type_id", "year", "month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_periods"
     ADD CONSTRAINT "dynamic_availability_periods_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_slots"
     ADD CONSTRAINT "dynamic_availability_slots_period_id_shift_date_shift_code_key" UNIQUE ("period_id", "shift_date", "shift_code");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_slots"
     ADD CONSTRAINT "dynamic_availability_slots_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_submissions"
     ADD CONSTRAINT "dynamic_availability_submissions_period_id_user_id_key" UNIQUE ("period_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_submissions"
     ADD CONSTRAINT "dynamic_availability_submissions_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_cutover_settings"
     ADD CONSTRAINT "dynamic_cutover_settings_pkey" PRIMARY KEY ("singleton");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_assignments"
     ADD CONSTRAINT "dynamic_historical_assignment_historical_period_id_source_k_key" UNIQUE ("historical_period_id", "source_kind", "source_record_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_assignments"
     ADD CONSTRAINT "dynamic_historical_assignments_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_availability"
     ADD CONSTRAINT "dynamic_historical_availabili_historical_period_id_source_k_key" UNIQUE ("historical_period_id", "source_kind", "source_record_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_availability"
     ADD CONSTRAINT "dynamic_historical_availability_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_periods"
     ADD CONSTRAINT "dynamic_historical_periods_job_type_id_source_kind_source_p_key" UNIQUE ("job_type_id", "source_kind", "source_period_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_periods"
     ADD CONSTRAINT "dynamic_historical_periods_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_job_type_rotation_state"
     ADD CONSTRAINT "dynamic_job_type_rotation_state_pkey" PRIMARY KEY ("job_type_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_legacy_import_batches"
     ADD CONSTRAINT "dynamic_legacy_import_batches_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_permission_manifest"
     ADD CONSTRAINT "dynamic_permission_manifest_pkey" PRIMARY KEY ("feature_key", "permission_key", "audience");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_draft_slot_overrides"
     ADD CONSTRAINT "dynamic_schedule_draft_slot_overrides_pkey" PRIMARY KEY ("draft_id", "slot_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_publications"
     ADD CONSTRAINT "dynamic_schedule_publications_job_type_id_year_month_key" UNIQUE ("job_type_id", "year", "month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_publications"
     ADD CONSTRAINT "dynamic_schedule_publications_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_assignments"
     ADD CONSTRAINT "dynamic_schedule_published_as_publication_id_shift_date_shi_key" UNIQUE ("publication_id", "shift_date", "shift_code", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_assignments"
     ADD CONSTRAINT "dynamic_schedule_published_assignments_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_unassigned"
     ADD CONSTRAINT "dynamic_schedule_published_unassigned_pkey" PRIMARY KEY ("publication_id", "shift_date", "shift_code");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_reminder_deliveries"
     ADD CONSTRAINT "dynamic_schedule_reminder_del_user_id_reminder_kind_reminde_key" UNIQUE ("user_id", "reminder_kind", "reminder_key");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_reminder_deliveries"
     ADD CONSTRAINT "dynamic_schedule_reminder_deliveries_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_assignments"
     ADD CONSTRAINT "dynamic_schedule_shadow_assignment_draft_id_slot_id_user_id_key" UNIQUE ("draft_id", "slot_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_assignments"
     ADD CONSTRAINT "dynamic_schedule_shadow_assignments_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_drafts"
     ADD CONSTRAINT "dynamic_schedule_shadow_drafts_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_targets"
     ADD CONSTRAINT "dynamic_schedule_shadow_targets_pkey" PRIMARY KEY ("draft_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_shift_exchange_requests"
     ADD CONSTRAINT "dynamic_shift_exchange_requests_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."gvk_legacy_migration_runs"
     ADD CONSTRAINT "gvk_legacy_migration_runs_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."holidays"
     ADD CONSTRAINT "holidays_date_name_unique" UNIQUE ("holiday_date", "name");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."holidays"
     ADD CONSTRAINT "holidays_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_ai_suggestions"
     ADD CONSTRAINT "job_type_ai_suggestions_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_capabilities"
     ADD CONSTRAINT "job_type_capabilities_pkey" PRIMARY KEY ("job_type_id", "capability_key");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_configuration_versions"
     ADD CONSTRAINT "job_type_configuration_versions_job_type_id_effective_month_key" UNIQUE ("job_type_id", "effective_month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_configuration_versions"
     ADD CONSTRAINT "job_type_configuration_versions_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_dashboard_context_rules"
     ADD CONSTRAINT "job_type_dashboard_context_rules_pkey" PRIMARY KEY ("source_job_type_id", "target_job_type_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_default_permissions"
     ADD CONSTRAINT "job_type_default_permissions_pkey" PRIMARY KEY ("job_type_id", "permission_key");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_managers"
     ADD CONSTRAINT "job_type_managers_pkey" PRIMARY KEY ("job_type_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_materialized_day_rules"
     ADD CONSTRAINT "job_type_materialized_day_rules_materialization_id_day_kind_key" UNIQUE ("materialization_id", "day_kind");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_materialized_day_rules"
     ADD CONSTRAINT "job_type_materialized_day_rules_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_materialized_pay_components"
     ADD CONSTRAINT "job_type_materialized_pay_components_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_materialized_shift_templates"
     ADD CONSTRAINT "job_type_materialized_shift_templat_materialization_id_code_key" UNIQUE ("materialization_id", "code");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_materialized_shift_templates"
     ADD CONSTRAINT "job_type_materialized_shift_templates_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_memberships"
     ADD CONSTRAINT "job_type_memberships_pkey" PRIMARY KEY ("user_id", "job_type_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_permission_settings"
     ADD CONSTRAINT "job_type_permission_settings_pkey" PRIMARY KEY ("job_type_id", "permission_key", "audience");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_schedule_materializations"
     ADD CONSTRAINT "job_type_schedule_materializati_job_type_id_effective_month_key" UNIQUE ("job_type_id", "effective_month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_schedule_materializations"
     ADD CONSTRAINT "job_type_schedule_materializations_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_shift_eligibility"
     ADD CONSTRAINT "job_type_shift_eligibility_pkey" PRIMARY KEY ("job_type_id", "shift_template_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_types"
     ADD CONSTRAINT "job_types_code_key" UNIQUE ("code");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_types"
     ADD CONSTRAINT "job_types_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."monthly_schedule_archive_runs"
     ADD CONSTRAINT "monthly_schedule_archive_runs_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."monthly_schedule_archive_runs"
     ADD CONSTRAINT "monthly_schedule_archive_unique_month" UNIQUE ("year", "month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_entries"
     ADD CONSTRAINT "morning_driver_availability_entries_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_entries"
     ADD CONSTRAINT "morning_driver_availability_entries_shift_id_user_id_key" UNIQUE ("shift_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_periods"
     ADD CONSTRAINT "morning_driver_availability_periods_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_periods"
     ADD CONSTRAINT "morning_driver_availability_periods_year_month_key" UNIQUE ("year", "month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_shifts"
     ADD CONSTRAINT "morning_driver_availability_s_period_id_shift_date_shift_ty_key" UNIQUE ("period_id", "shift_date", "shift_type");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_shifts"
     ADD CONSTRAINT "morning_driver_availability_shifts_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_submissions"
     ADD CONSTRAINT "morning_driver_availability_submissions_period_id_user_id_key" UNIQUE ("period_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_submissions"
     ADD CONSTRAINT "morning_driver_availability_submissions_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_assignments"
     ADD CONSTRAINT "morning_driver_schedule_assig_schedule_period_id_availabili_key" UNIQUE ("schedule_period_id", "availability_shift_id", "assignment_slot");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_assignments"
     ADD CONSTRAINT "morning_driver_schedule_assignments_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_periods"
     ADD CONSTRAINT "morning_driver_schedule_periods_availability_period_id_key" UNIQUE ("availability_period_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_periods"
     ADD CONSTRAINT "morning_driver_schedule_periods_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_periods"
     ADD CONSTRAINT "morning_driver_schedule_periods_year_month_key" UNIQUE ("year", "month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."notification_preferences"
     ADD CONSTRAINT "notification_preferences_pkey" PRIMARY KEY ("user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."notification_recipients"
     ADD CONSTRAINT "notification_recipients_notification_id_user_id_key" UNIQUE ("notification_id", "user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."notification_recipients"
     ADD CONSTRAINT "notification_recipients_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."notifications"
     ADD CONSTRAINT "notifications_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."permission_profile_permissions"
     ADD CONSTRAINT "permission_profile_permissions_pkey" PRIMARY KEY ("profile_id", "permission_key");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."permission_profiles"
     ADD CONSTRAINT "permission_profiles_code_key" UNIQUE ("code");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."permission_profiles"
     ADD CONSTRAINT "permission_profiles_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."permissions"
     ADD CONSTRAINT "permissions_pkey" PRIMARY KEY ("permission_key");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."push_delivery_log"
     ADD CONSTRAINT "push_delivery_log_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."push_subscriptions"
     ADD CONSTRAINT "push_subscriptions_endpoint_unique" UNIQUE ("endpoint");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."push_subscriptions"
     ADD CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."role_default_permissions"
     ADD CONSTRAINT "role_default_permissions_pkey" PRIMARY KEY ("role_name", "permission_key");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_assignment_history"
     ADD CONSTRAINT "schedule_assignment_history_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_group_day_rules"
     ADD CONSTRAINT "schedule_group_day_rules_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_group_day_rules"
     ADD CONSTRAINT "schedule_group_day_rules_schedule_group_id_day_kind_key" UNIQUE ("schedule_group_id", "day_kind");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_group_shift_templates"
     ADD CONSTRAINT "schedule_group_shift_templates_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_group_shift_templates"
     ADD CONSTRAINT "schedule_group_shift_templates_schedule_group_id_code_key" UNIQUE ("schedule_group_id", "code");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_group_versions"
     ADD CONSTRAINT "schedule_group_versions_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_group_versions"
     ADD CONSTRAINT "schedule_group_versions_schedule_group_id_version_number_key" UNIQUE ("schedule_group_id", "version_number");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_groups"
     ADD CONSTRAINT "schedule_groups_code_key" UNIQUE ("code");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_groups"
     ADD CONSTRAINT "schedule_groups_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_import_name_aliases"
     ADD CONSTRAINT "schedule_import_name_aliases_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_import_runs"
     ADD CONSTRAINT "schedule_import_runs_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_periods"
     ADD CONSTRAINT "schedule_periods_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_periods"
     ADD CONSTRAINT "schedule_periods_year_month_unique" UNIQUE ("year", "month");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_shift_pay_segments"
     ADD CONSTRAINT "schedule_shift_pay_segments_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_shifts"
     ADD CONSTRAINT "schedule_shifts_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_shifts"
     ADD CONSTRAINT "schedule_shifts_unique_period_start" UNIQUE ("period_id", "starts_at");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."scheduled_reminder_deliveries"
     ADD CONSTRAINT "scheduled_reminder_deliveries_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."scheduled_reminder_deliveries"
     ADD CONSTRAINT "scheduled_reminder_deliveries_user_id_reminder_type_reminde_key" UNIQUE ("user_id", "reminder_type", "reminder_key");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."scheduling_feature_flags"
     ADD CONSTRAINT "scheduling_feature_flags_pkey" PRIMARY KEY ("key");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."scheduling_rule_registry"
     ADD CONSTRAINT "scheduling_rule_registry_pkey" PRIMARY KEY ("rule_key");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_reminder_deliveries"
     ADD CONSTRAINT "shift_reminder_deliveries_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_reminder_deliveries"
     ADD CONSTRAINT "shift_reminder_delivery_unique" UNIQUE ("shift_id", "user_id", "minutes_before");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_swap_requests"
     ADD CONSTRAINT "shift_swap_requests_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_dashboard_widgets"
     ADD CONSTRAINT "user_dashboard_widgets_pkey" PRIMARY KEY ("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_dashboard_widgets"
     ADD CONSTRAINT "user_dashboard_widgets_user_id_widget_type_time_scope_job_t_key" UNIQUE ("user_id", "widget_type", "time_scope", "job_type_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_job_type_permissions"
     ADD CONSTRAINT "user_job_type_permissions_pkey" PRIMARY KEY ("user_id", "job_type_id", "permission_key");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permission_job_type_scopes"
     ADD CONSTRAINT "user_permission_job_type_scopes_pkey" PRIMARY KEY ("user_id", "job_type_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permission_policies"
     ADD CONSTRAINT "user_permission_policies_pkey" PRIMARY KEY ("user_id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permissions"
     ADD CONSTRAINT "user_permissions_pkey" PRIMARY KEY ("user_id", "permission_key");
 
 
 
+-- הגדרת האינדקס "attendance_one_open_session_per_user_job" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE UNIQUE INDEX "attendance_one_open_session_per_user_job" ON "public"."attendance_sessions" USING "btree" ("user_id", "job_type_id") WHERE ("clock_out_at" IS NULL);
 
 
 
+-- הגדרת האינדקס "attendance_sessions_job_date_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "attendance_sessions_job_date_idx" ON "public"."attendance_sessions" USING "btree" ("job_type_id", "work_date", "user_id");
 
 
 
+-- הגדרת האינדקס "audit_logs_action_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "audit_logs_action_index" ON "public"."audit_logs" USING "btree" ("action");
 
 
 
+-- הגדרת האינדקס "audit_logs_actor_user_id_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "audit_logs_actor_user_id_index" ON "public"."audit_logs" USING "btree" ("actor_user_id");
 
 
 
+-- הגדרת האינדקס "audit_logs_created_at_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "audit_logs_created_at_idx" ON "public"."audit_logs" USING "btree" ("created_at" DESC);
 
 
 
+-- הגדרת האינדקס "audit_logs_created_at_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "audit_logs_created_at_index" ON "public"."audit_logs" USING "btree" ("created_at" DESC);
 
 
 
+-- הגדרת האינדקס "audit_logs_entity_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "audit_logs_entity_idx" ON "public"."audit_logs" USING "btree" ("entity_type", "entity_id");
 
 
 
+-- הגדרת האינדקס "audit_logs_target_user_id_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "audit_logs_target_user_id_index" ON "public"."audit_logs" USING "btree" ("target_user_id");
 
 
 
+-- הגדרת האינדקס "audit_logs_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "audit_logs_user_idx" ON "public"."audit_logs" USING "btree" ("user_id");
 
 
 
+-- הגדרת האינדקס "availability_periods_status_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "availability_periods_status_index" ON "public"."availability_periods" USING "btree" ("status");
 
 
 
+-- הגדרת האינדקס "availability_periods_year_month_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "availability_periods_year_month_index" ON "public"."availability_periods" USING "btree" ("year" DESC, "month" DESC);
 
 
 
+-- הגדרת האינדקס "availability_shift_slots_date_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "availability_shift_slots_date_index" ON "public"."availability_shift_slots" USING "btree" ("shift_date");
 
 
 
+-- הגדרת האינדקס "availability_shift_slots_period_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "availability_shift_slots_period_index" ON "public"."availability_shift_slots" USING "btree" ("period_id", "shift_date", "sort_order");
 
 
 
+-- הגדרת האינדקס "availability_shift_slots_premium_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "availability_shift_slots_premium_index" ON "public"."availability_shift_slots" USING "btree" ("period_id", "is_premium");
 
 
 
+-- הגדרת האינדקס "availability_submissions_period_status_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "availability_submissions_period_status_index" ON "public"."availability_submissions" USING "btree" ("period_id", "status");
 
 
 
+-- הגדרת האינדקס "availability_submissions_user_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "availability_submissions_user_index" ON "public"."availability_submissions" USING "btree" ("user_id", "period_id");
 
 
 
+-- הגדרת האינדקס "calendar_special_days_date_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "calendar_special_days_date_index" ON "public"."calendar_special_days" USING "btree" ("event_date");
 
 
 
+-- הגדרת האינדקס "calendar_special_days_group_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "calendar_special_days_group_index" ON "public"."calendar_special_days" USING "btree" ("holiday_group", "event_date");
 
 
 
+-- הגדרת האינדקס "calendar_special_days_type_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "calendar_special_days_type_index" ON "public"."calendar_special_days" USING "btree" ("schedule_type", "event_date");
 
 
 
+-- הגדרת האינדקס "client_app_sessions_last_seen_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "client_app_sessions_last_seen_idx" ON "public"."client_app_sessions" USING "btree" ("last_seen_at" DESC);
 
 
 
+-- הגדרת האינדקס "daily_reports_job_type_date_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "daily_reports_job_type_date_idx" ON "public"."daily_reports" USING "btree" ("job_type_id", "report_date" DESC);
 
 
 
+-- הגדרת האינדקס "daily_reports_user_date_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "daily_reports_user_date_idx" ON "public"."daily_reports" USING "btree" ("user_id", "report_date" DESC);
 
 
 
+-- הגדרת האינדקס "dispatcher_availability_slot_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dispatcher_availability_slot_index" ON "public"."dispatcher_availability" USING "btree" ("shift_slot_id");
 
 
 
+-- הגדרת האינדקס "dispatcher_availability_status_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dispatcher_availability_status_index" ON "public"."dispatcher_availability" USING "btree" ("period_id", "availability_status");
 
 
 
+-- הגדרת האינדקס "dispatcher_availability_user_period_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dispatcher_availability_user_period_index" ON "public"."dispatcher_availability" USING "btree" ("user_id", "period_id");
 
 
 
+-- הגדרת האינדקס "driver_availability_days_period_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_availability_days_period_idx" ON "public"."driver_availability_days" USING "btree" ("period_id", "availability_date");
 
 
 
+-- הגדרת האינדקס "driver_availability_entries_period_day_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_availability_entries_period_day_idx" ON "public"."driver_availability_entries" USING "btree" ("period_id", "day_id");
 
 
 
+-- הגדרת האינדקס "driver_availability_entries_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_availability_entries_user_idx" ON "public"."driver_availability_entries" USING "btree" ("user_id", "period_id");
 
 
 
+-- הגדרת האינדקס "driver_availability_submissions_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_availability_submissions_user_idx" ON "public"."driver_availability_submissions" USING "btree" ("user_id", "period_id");
 
 
 
+-- הגדרת האינדקס "driver_schedule_days_assigned_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_schedule_days_assigned_user_idx" ON "public"."driver_schedule_days" USING "btree" ("assigned_user_id", "duty_date");
 
 
 
+-- הגדרת האינדקס "driver_schedule_days_import_run_id_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_schedule_days_import_run_id_index" ON "public"."driver_schedule_days" USING "btree" ("import_run_id");
 
 
 
+-- הגדרת האינדקס "driver_schedule_days_original_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_schedule_days_original_user_idx" ON "public"."driver_schedule_days" USING "btree" ("original_user_id", "duty_date");
 
 
 
+-- הגדרת האינדקס "driver_schedule_days_period_date_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_schedule_days_period_date_idx" ON "public"."driver_schedule_days" USING "btree" ("period_id", "duty_date");
 
 
 
+-- הגדרת האינדקס "driver_schedule_history_day_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_schedule_history_day_idx" ON "public"."driver_schedule_assignment_history" USING "btree" ("schedule_day_id", "created_at");
 
 
 
+-- הגדרת האינדקס "driver_schedule_swaps_first_day_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_schedule_swaps_first_day_idx" ON "public"."driver_schedule_swaps" USING "btree" ("first_schedule_day_id");
 
 
 
+-- הגדרת האינדקס "driver_schedule_swaps_second_day_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "driver_schedule_swaps_second_day_idx" ON "public"."driver_schedule_swaps" USING "btree" ("second_schedule_day_id");
 
 
 
+-- הגדרת האינדקס "dynamic_availability_slots_period_date_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_availability_slots_period_date_idx" ON "public"."dynamic_availability_slots" USING "btree" ("period_id", "shift_date");
 
 
 
+-- הגדרת האינדקס "dynamic_availability_submissions_period_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_availability_submissions_period_idx" ON "public"."dynamic_availability_submissions" USING "btree" ("period_id");
 
 
 
+-- הגדרת האינדקס "dynamic_historical_assignments_period_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_historical_assignments_period_idx" ON "public"."dynamic_historical_assignments" USING "btree" ("historical_period_id", "work_date");
 
 
 
+-- הגדרת האינדקס "dynamic_historical_assignments_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_historical_assignments_user_idx" ON "public"."dynamic_historical_assignments" USING "btree" ("assigned_user_id");
 
 
 
+-- הגדרת האינדקס "dynamic_historical_periods_job_month_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_historical_periods_job_month_idx" ON "public"."dynamic_historical_periods" USING "btree" ("job_type_id", "year" DESC, "month" DESC);
 
 
 
+-- הגדרת האינדקס "dynamic_published_assignments_original_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_published_assignments_original_user_idx" ON "public"."dynamic_schedule_published_assignments" USING "btree" ("original_user_id");
 
 
 
+-- הגדרת האינדקס "dynamic_schedule_publications_job_month_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_schedule_publications_job_month_idx" ON "public"."dynamic_schedule_publications" USING "btree" ("job_type_id", "year", "month");
 
 
 
+-- הגדרת האינדקס "dynamic_schedule_published_assignments_publication_date_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_schedule_published_assignments_publication_date_idx" ON "public"."dynamic_schedule_published_assignments" USING "btree" ("publication_id", "shift_date");
 
 
 
+-- הגדרת האינדקס "dynamic_schedule_reminder_deliveries_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_schedule_reminder_deliveries_user_idx" ON "public"."dynamic_schedule_reminder_deliveries" USING "btree" ("user_id", "created_at" DESC);
 
 
 
+-- הגדרת האינדקס "dynamic_schedule_shadow_assignments_draft_slot_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_schedule_shadow_assignments_draft_slot_idx" ON "public"."dynamic_schedule_shadow_assignments" USING "btree" ("draft_id", "slot_id");
 
 
 
+-- הגדרת האינדקס "dynamic_schedule_shadow_assignments_draft_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_schedule_shadow_assignments_draft_user_idx" ON "public"."dynamic_schedule_shadow_assignments" USING "btree" ("draft_id", "user_id");
 
 
 
+-- הגדרת האינדקס "dynamic_shadow_assignments_original_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_shadow_assignments_original_user_idx" ON "public"."dynamic_schedule_shadow_assignments" USING "btree" ("original_user_id");
 
 
 
+-- הגדרת האינדקס "dynamic_shift_exchange_requests_participants_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_shift_exchange_requests_participants_idx" ON "public"."dynamic_shift_exchange_requests" USING "btree" ("requester_user_id", "counterparty_user_id", "status");
 
 
 
+-- הגדרת האינדקס "dynamic_shift_exchange_requests_publication_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "dynamic_shift_exchange_requests_publication_idx" ON "public"."dynamic_shift_exchange_requests" USING "btree" ("publication_id", "status", "created_at" DESC);
 
 
 
+-- הגדרת האינדקס "holidays_date_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "holidays_date_idx" ON "public"."holidays" USING "btree" ("holiday_date");
 
 
 
+-- הגדרת האינדקס "holidays_schedule_type_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "holidays_schedule_type_idx" ON "public"."holidays" USING "btree" ("schedule_type");
 
 
 
+-- הגדרת האינדקס "idx_notifications_expires" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "idx_notifications_expires" ON "public"."notifications" USING "btree" ("expires_at");
 
 
 
+-- הגדרת האינדקס "idx_permission_profile_permissions_key" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "idx_permission_profile_permissions_key" ON "public"."permission_profile_permissions" USING "btree" ("permission_key");
 
 
 
+-- הגדרת האינדקס "idx_user_permission_job_type_scopes_job" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "idx_user_permission_job_type_scopes_job" ON "public"."user_permission_job_type_scopes" USING "btree" ("job_type_id");
 
 
 
+-- הגדרת האינדקס "job_type_dashboard_context_rules_target_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "job_type_dashboard_context_rules_target_idx" ON "public"."job_type_dashboard_context_rules" USING "btree" ("target_job_type_id") WHERE ("enabled" = true);
 
 
 
+-- הגדרת האינדקס "job_type_managers_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "job_type_managers_user_idx" ON "public"."job_type_managers" USING "btree" ("user_id");
 
 
 
+-- הגדרת האינדקס "job_type_memberships_one_primary_per_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE UNIQUE INDEX "job_type_memberships_one_primary_per_user_idx" ON "public"."job_type_memberships" USING "btree" ("user_id") WHERE ("is_primary" = true);
 
 
 
+-- הגדרת האינדקס "job_type_permission_settings_key_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "job_type_permission_settings_key_idx" ON "public"."job_type_permission_settings" USING "btree" ("permission_key");
 
 
 
+-- הגדרת האינדקס "monthly_schedule_archive_status_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "monthly_schedule_archive_status_idx" ON "public"."monthly_schedule_archive_runs" USING "btree" ("status", "created_at" DESC);
 
 
 
+-- הגדרת האינדקס "morning_driver_availability_entries_lookup_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "morning_driver_availability_entries_lookup_idx" ON "public"."morning_driver_availability_entries" USING "btree" ("period_id", "user_id", "shift_id");
 
 
 
+-- הגדרת האינדקס "morning_driver_availability_periods_status_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "morning_driver_availability_periods_status_idx" ON "public"."morning_driver_availability_periods" USING "btree" ("status", "year" DESC, "month" DESC);
 
 
 
+-- הגדרת האינדקס "morning_driver_availability_shifts_period_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "morning_driver_availability_shifts_period_idx" ON "public"."morning_driver_availability_shifts" USING "btree" ("period_id", "shift_date", "sort_order");
 
 
 
+-- הגדרת האינדקס "morning_driver_availability_submissions_period_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "morning_driver_availability_submissions_period_idx" ON "public"."morning_driver_availability_submissions" USING "btree" ("period_id", "status");
 
 
 
+-- הגדרת האינדקס "morning_driver_schedule_assignments_period_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "morning_driver_schedule_assignments_period_idx" ON "public"."morning_driver_schedule_assignments" USING "btree" ("schedule_period_id");
 
 
 
+-- הגדרת האינדקס "morning_driver_schedule_assignments_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "morning_driver_schedule_assignments_user_idx" ON "public"."morning_driver_schedule_assignments" USING "btree" ("assigned_user_id");
 
 
 
+-- הגדרת האינדקס "profiles_active_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "profiles_active_idx" ON "public"."profiles" USING "btree" ("is_active");
 
 
 
+-- הגדרת האינדקס "profiles_email_unique_lower_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE UNIQUE INDEX "profiles_email_unique_lower_idx" ON "public"."profiles" USING "btree" ("lower"("email"));
 
 
 
+-- הגדרת האינדקס "profiles_role_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "profiles_role_idx" ON "public"."profiles" USING "btree" ("role");
 
 
 
+-- הגדרת האינדקס "push_subscriptions_active_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "push_subscriptions_active_user_idx" ON "public"."push_subscriptions" USING "btree" ("user_id", "is_active");
 
 
 
+-- הגדרת האינדקס "push_subscriptions_user_id_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "push_subscriptions_user_id_idx" ON "public"."push_subscriptions" USING "btree" ("user_id");
 
 
 
+-- הגדרת האינדקס "schedule_assignment_history_changed_by_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_assignment_history_changed_by_idx" ON "public"."schedule_assignment_history" USING "btree" ("changed_by");
 
 
 
+-- הגדרת האינדקס "schedule_assignment_history_created_at_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_assignment_history_created_at_idx" ON "public"."schedule_assignment_history" USING "btree" ("created_at" DESC);
 
 
 
+-- הגדרת האינדקס "schedule_assignment_history_shift_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_assignment_history_shift_idx" ON "public"."schedule_assignment_history" USING "btree" ("shift_id");
 
 
 
+-- הגדרת האינדקס "schedule_import_name_aliases_unique_name_type" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE UNIQUE INDEX "schedule_import_name_aliases_unique_name_type" ON "public"."schedule_import_name_aliases" USING "btree" ("normalized_source_name", "user_type");
 
 
 
+-- הגדרת האינדקס "schedule_import_name_aliases_user_id_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_import_name_aliases_user_id_index" ON "public"."schedule_import_name_aliases" USING "btree" ("user_id");
 
 
 
+-- הגדרת האינדקס "schedule_import_runs_imported_by_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_import_runs_imported_by_index" ON "public"."schedule_import_runs" USING "btree" ("imported_by", "created_at" DESC);
 
 
 
+-- הגדרת האינדקס "schedule_import_runs_period_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_import_runs_period_index" ON "public"."schedule_import_runs" USING "btree" ("year", "month", "created_at" DESC);
 
 
 
+-- הגדרת האינדקס "schedule_import_runs_status_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_import_runs_status_index" ON "public"."schedule_import_runs" USING "btree" ("status", "created_at" DESC);
 
 
 
+-- הגדרת האינדקס "schedule_periods_availability_period_unique" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE UNIQUE INDEX "schedule_periods_availability_period_unique" ON "public"."schedule_periods" USING "btree" ("availability_period_id") WHERE ("availability_period_id" IS NOT NULL);
 
 
 
+-- הגדרת האינדקס "schedule_periods_date_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_periods_date_idx" ON "public"."schedule_periods" USING "btree" ("year" DESC, "month" DESC);
 
 
 
+-- הגדרת האינדקס "schedule_periods_status_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_periods_status_idx" ON "public"."schedule_periods" USING "btree" ("status");
 
 
 
+-- הגדרת האינדקס "schedule_shifts_assigned_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_shifts_assigned_user_idx" ON "public"."schedule_shifts" USING "btree" ("assigned_user_id");
 
 
 
+-- הגדרת האינדקס "schedule_shifts_assigned_user_starts_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_shifts_assigned_user_starts_idx" ON "public"."schedule_shifts" USING "btree" ("assigned_user_id", "starts_at");
 
 
 
+-- הגדרת האינדקס "schedule_shifts_availability_slot_unique" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE UNIQUE INDEX "schedule_shifts_availability_slot_unique" ON "public"."schedule_shifts" USING "btree" ("availability_shift_slot_id") WHERE ("availability_shift_slot_id" IS NOT NULL);
 
 
 
+-- הגדרת האינדקס "schedule_shifts_date_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_shifts_date_idx" ON "public"."schedule_shifts" USING "btree" ("shift_date");
 
 
 
+-- הגדרת האינדקס "schedule_shifts_import_run_id_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_shifts_import_run_id_index" ON "public"."schedule_shifts" USING "btree" ("import_run_id");
 
 
 
+-- הגדרת האינדקס "schedule_shifts_period_date_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_shifts_period_date_idx" ON "public"."schedule_shifts" USING "btree" ("period_id", "shift_date", "starts_at");
 
 
 
+-- הגדרת האינדקס "schedule_shifts_period_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "schedule_shifts_period_idx" ON "public"."schedule_shifts" USING "btree" ("period_id");
 
 
 
+-- הגדרת האינדקס "scheduled_reminder_deliveries_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "scheduled_reminder_deliveries_user_idx" ON "public"."scheduled_reminder_deliveries" USING "btree" ("user_id", "created_at" DESC);
 
 
 
+-- הגדרת האינדקס "shift_reminder_deliveries_user_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "shift_reminder_deliveries_user_idx" ON "public"."shift_reminder_deliveries" USING "btree" ("user_id");
 
 
 
+-- הגדרת האינדקס "shift_swap_requests_counterparty_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "shift_swap_requests_counterparty_idx" ON "public"."shift_swap_requests" USING "btree" ("counterparty_user_id", "status", "created_at" DESC);
 
 
 
+-- הגדרת האינדקס "shift_swap_requests_counterparty_shift_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "shift_swap_requests_counterparty_shift_idx" ON "public"."shift_swap_requests" USING "btree" ("counterparty_shift_id") WHERE ("counterparty_shift_id" IS NOT NULL);
 
 
 
+-- הגדרת האינדקס "shift_swap_requests_requester_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "shift_swap_requests_requester_idx" ON "public"."shift_swap_requests" USING "btree" ("requester_user_id", "created_at" DESC);
 
 
 
+-- הגדרת האינדקס "shift_swap_requests_requester_shift_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "shift_swap_requests_requester_shift_idx" ON "public"."shift_swap_requests" USING "btree" ("requester_shift_id");
 
 
 
+-- הגדרת האינדקס "shift_swap_requests_status_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "shift_swap_requests_status_idx" ON "public"."shift_swap_requests" USING "btree" ("status", "created_at" DESC);
 
 
 
+-- הגדרת האינדקס "user_dashboard_widgets_user_sort_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "user_dashboard_widgets_user_sort_idx" ON "public"."user_dashboard_widgets" USING "btree" ("user_id", "sort_order");
 
 
 
+-- הגדרת האינדקס "user_job_type_permissions_job_type_idx" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "user_job_type_permissions_job_type_idx" ON "public"."user_job_type_permissions" USING "btree" ("job_type_id", "user_id");
 
 
 
+-- הגדרת האינדקס "user_permissions_permission_key_index" עבור העמודות והתנאים המפורטים בפקודה.
 CREATE INDEX "user_permissions_permission_key_index" ON "public"."user_permissions" USING "btree" ("permission_key");
 
 
@@ -40530,1089 +41221,1310 @@ CREATE OR REPLACE TRIGGER "z_sync_open_dynamic_availability_after_role_version_c
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."admin_development_sessions"
     ADD CONSTRAINT "admin_development_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."attendance_sessions"
     ADD CONSTRAINT "attendance_sessions_assignment_id_fkey" FOREIGN KEY ("assignment_id") REFERENCES "public"."dynamic_schedule_published_assignments"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."attendance_sessions"
     ADD CONSTRAINT "attendance_sessions_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."attendance_sessions"
     ADD CONSTRAINT "attendance_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."audit_logs"
     ADD CONSTRAINT "audit_logs_actor_user_id_fkey" FOREIGN KEY ("actor_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."audit_logs"
     ADD CONSTRAINT "audit_logs_target_user_id_fkey" FOREIGN KEY ("target_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."audit_logs"
     ADD CONSTRAINT "audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_periods"
     ADD CONSTRAINT "availability_periods_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_periods"
     ADD CONSTRAINT "availability_periods_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_shift_slots"
     ADD CONSTRAINT "availability_shift_slots_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."availability_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_submissions"
     ADD CONSTRAINT "availability_submissions_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."availability_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."availability_submissions"
     ADD CONSTRAINT "availability_submissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."client_app_sessions"
     ADD CONSTRAINT "client_app_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_attachments"
     ADD CONSTRAINT "daily_report_attachments_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "public"."daily_reports"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_attachments"
     ADD CONSTRAINT "daily_report_attachments_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_customers"
     ADD CONSTRAINT "daily_report_customers_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_items"
     ADD CONSTRAINT "daily_report_items_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "public"."daily_report_customers"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_items"
     ADD CONSTRAINT "daily_report_items_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "public"."daily_reports"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_items"
     ADD CONSTRAINT "daily_report_items_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."daily_report_subjects"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_subjects"
     ADD CONSTRAINT "daily_report_subjects_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_report_subjects"
     ADD CONSTRAINT "daily_report_subjects_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_reports"
     ADD CONSTRAINT "daily_reports_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."daily_reports"
     ADD CONSTRAINT "daily_reports_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dispatcher_availability"
     ADD CONSTRAINT "dispatcher_availability_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."availability_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dispatcher_availability"
     ADD CONSTRAINT "dispatcher_availability_shift_slot_id_fkey" FOREIGN KEY ("shift_slot_id") REFERENCES "public"."availability_shift_slots"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dispatcher_availability"
     ADD CONSTRAINT "dispatcher_availability_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_days"
     ADD CONSTRAINT "driver_availability_days_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."driver_availability_periods"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_entries"
     ADD CONSTRAINT "driver_availability_entries_day_id_fkey" FOREIGN KEY ("day_id") REFERENCES "public"."driver_availability_days"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_entries"
     ADD CONSTRAINT "driver_availability_entries_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."driver_availability_periods"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_entries"
     ADD CONSTRAINT "driver_availability_entries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_periods"
     ADD CONSTRAINT "driver_availability_periods_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_periods"
     ADD CONSTRAINT "driver_availability_periods_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_submissions"
     ADD CONSTRAINT "driver_availability_submissions_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."driver_availability_periods"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_availability_submissions"
     ADD CONSTRAINT "driver_availability_submissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_assignment_history"
     ADD CONSTRAINT "driver_schedule_assignment_history_changed_by_fkey" FOREIGN KEY ("changed_by") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_assignment_history"
     ADD CONSTRAINT "driver_schedule_assignment_history_new_user_id_fkey" FOREIGN KEY ("new_user_id") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_assignment_history"
     ADD CONSTRAINT "driver_schedule_assignment_history_previous_user_id_fkey" FOREIGN KEY ("previous_user_id") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_assignment_history"
     ADD CONSTRAINT "driver_schedule_assignment_history_schedule_day_id_fkey" FOREIGN KEY ("schedule_day_id") REFERENCES "public"."driver_schedule_days"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_days"
     ADD CONSTRAINT "driver_schedule_days_assigned_user_id_fkey" FOREIGN KEY ("assigned_user_id") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_days"
     ADD CONSTRAINT "driver_schedule_days_import_run_id_fkey" FOREIGN KEY ("import_run_id") REFERENCES "public"."schedule_import_runs"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_days"
     ADD CONSTRAINT "driver_schedule_days_original_user_id_fkey" FOREIGN KEY ("original_user_id") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_days"
     ADD CONSTRAINT "driver_schedule_days_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."driver_schedule_periods"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_periods"
     ADD CONSTRAINT "driver_schedule_periods_availability_period_id_fkey" FOREIGN KEY ("availability_period_id") REFERENCES "public"."driver_availability_periods"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_periods"
     ADD CONSTRAINT "driver_schedule_periods_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_periods"
     ADD CONSTRAINT "driver_schedule_periods_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_swaps"
     ADD CONSTRAINT "driver_schedule_swaps_first_schedule_day_id_fkey" FOREIGN KEY ("first_schedule_day_id") REFERENCES "public"."driver_schedule_days"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_swaps"
     ADD CONSTRAINT "driver_schedule_swaps_first_user_id_fkey" FOREIGN KEY ("first_user_id") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_swaps"
     ADD CONSTRAINT "driver_schedule_swaps_initiated_by_fkey" FOREIGN KEY ("initiated_by") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_swaps"
     ADD CONSTRAINT "driver_schedule_swaps_second_schedule_day_id_fkey" FOREIGN KEY ("second_schedule_day_id") REFERENCES "public"."driver_schedule_days"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."driver_schedule_swaps"
     ADD CONSTRAINT "driver_schedule_swaps_second_user_id_fkey" FOREIGN KEY ("second_user_id") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_entries"
     ADD CONSTRAINT "dynamic_availability_entries_slot_id_fkey" FOREIGN KEY ("slot_id") REFERENCES "public"."dynamic_availability_slots"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_entries"
     ADD CONSTRAINT "dynamic_availability_entries_submission_id_fkey" FOREIGN KEY ("submission_id") REFERENCES "public"."dynamic_availability_submissions"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_periods"
     ADD CONSTRAINT "dynamic_availability_periods_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_periods"
     ADD CONSTRAINT "dynamic_availability_periods_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_periods"
     ADD CONSTRAINT "dynamic_availability_periods_schedule_group_id_fkey" FOREIGN KEY ("schedule_group_id") REFERENCES "public"."schedule_groups"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_slots"
     ADD CONSTRAINT "dynamic_availability_slots_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."dynamic_availability_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_slots"
     ADD CONSTRAINT "dynamic_availability_slots_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."schedule_group_shift_templates"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_submissions"
     ADD CONSTRAINT "dynamic_availability_submissions_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."dynamic_availability_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_availability_submissions"
     ADD CONSTRAINT "dynamic_availability_submissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_cutover_settings"
     ADD CONSTRAINT "dynamic_cutover_settings_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id");
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_assignments"
     ADD CONSTRAINT "dynamic_historical_assignments_assigned_user_id_fkey" FOREIGN KEY ("assigned_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_assignments"
     ADD CONSTRAINT "dynamic_historical_assignments_historical_period_id_fkey" FOREIGN KEY ("historical_period_id") REFERENCES "public"."dynamic_historical_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_assignments"
     ADD CONSTRAINT "dynamic_historical_assignments_original_user_id_fkey" FOREIGN KEY ("original_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_availability"
     ADD CONSTRAINT "dynamic_historical_availability_historical_period_id_fkey" FOREIGN KEY ("historical_period_id") REFERENCES "public"."dynamic_historical_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_availability"
     ADD CONSTRAINT "dynamic_historical_availability_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_periods"
     ADD CONSTRAINT "dynamic_historical_periods_imported_batch_id_fkey" FOREIGN KEY ("imported_batch_id") REFERENCES "public"."dynamic_legacy_import_batches"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_historical_periods"
     ADD CONSTRAINT "dynamic_historical_periods_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_job_type_rotation_state"
     ADD CONSTRAINT "dynamic_job_type_rotation_state_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_job_type_rotation_state"
     ADD CONSTRAINT "dynamic_job_type_rotation_state_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_legacy_import_batches"
     ADD CONSTRAINT "dynamic_legacy_import_batches_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_legacy_import_batches"
     ADD CONSTRAINT "dynamic_legacy_import_batches_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_draft_slot_overrides"
     ADD CONSTRAINT "dynamic_schedule_draft_slot_overrides_draft_id_fkey" FOREIGN KEY ("draft_id") REFERENCES "public"."dynamic_schedule_shadow_drafts"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_draft_slot_overrides"
     ADD CONSTRAINT "dynamic_schedule_draft_slot_overrides_slot_id_fkey" FOREIGN KEY ("slot_id") REFERENCES "public"."dynamic_availability_slots"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_draft_slot_overrides"
     ADD CONSTRAINT "dynamic_schedule_draft_slot_overrides_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_publications"
     ADD CONSTRAINT "dynamic_schedule_publications_availability_period_id_fkey" FOREIGN KEY ("availability_period_id") REFERENCES "public"."dynamic_availability_periods"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_publications"
     ADD CONSTRAINT "dynamic_schedule_publications_draft_id_fkey" FOREIGN KEY ("draft_id") REFERENCES "public"."dynamic_schedule_shadow_drafts"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_publications"
     ADD CONSTRAINT "dynamic_schedule_publications_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_publications"
     ADD CONSTRAINT "dynamic_schedule_publications_published_by_fkey" FOREIGN KEY ("published_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_assignments"
     ADD CONSTRAINT "dynamic_schedule_published_assignment_source_assignment_id_fkey" FOREIGN KEY ("source_assignment_id") REFERENCES "public"."dynamic_schedule_shadow_assignments"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_assignments"
     ADD CONSTRAINT "dynamic_schedule_published_assignments_engine_user_id_fkey" FOREIGN KEY ("engine_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_assignments"
     ADD CONSTRAINT "dynamic_schedule_published_assignments_original_user_id_fkey" FOREIGN KEY ("original_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_assignments"
     ADD CONSTRAINT "dynamic_schedule_published_assignments_publication_id_fkey" FOREIGN KEY ("publication_id") REFERENCES "public"."dynamic_schedule_publications"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_assignments"
     ADD CONSTRAINT "dynamic_schedule_published_assignments_slot_id_fkey" FOREIGN KEY ("slot_id") REFERENCES "public"."dynamic_availability_slots"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_assignments"
     ADD CONSTRAINT "dynamic_schedule_published_assignments_user_edited_by_fkey" FOREIGN KEY ("user_edited_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_assignments"
     ADD CONSTRAINT "dynamic_schedule_published_assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_unassigned"
     ADD CONSTRAINT "dynamic_schedule_published_unassigned_original_user_id_fkey" FOREIGN KEY ("original_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_unassigned"
     ADD CONSTRAINT "dynamic_schedule_published_unassigned_publication_id_fkey" FOREIGN KEY ("publication_id") REFERENCES "public"."dynamic_schedule_publications"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_published_unassigned"
     ADD CONSTRAINT "dynamic_schedule_published_unassigned_slot_id_fkey" FOREIGN KEY ("slot_id") REFERENCES "public"."dynamic_availability_slots"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_reminder_deliveries"
     ADD CONSTRAINT "dynamic_schedule_reminder_deliveries_assignment_id_fkey" FOREIGN KEY ("assignment_id") REFERENCES "public"."dynamic_schedule_published_assignments"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_reminder_deliveries"
     ADD CONSTRAINT "dynamic_schedule_reminder_deliveries_notification_id_fkey" FOREIGN KEY ("notification_id") REFERENCES "public"."notifications"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_reminder_deliveries"
     ADD CONSTRAINT "dynamic_schedule_reminder_deliveries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_assignments"
     ADD CONSTRAINT "dynamic_schedule_shadow_assignments_draft_id_fkey" FOREIGN KEY ("draft_id") REFERENCES "public"."dynamic_schedule_shadow_drafts"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_assignments"
     ADD CONSTRAINT "dynamic_schedule_shadow_assignments_engine_user_id_fkey" FOREIGN KEY ("engine_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_assignments"
     ADD CONSTRAINT "dynamic_schedule_shadow_assignments_manager_edited_by_fkey" FOREIGN KEY ("manager_edited_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_assignments"
     ADD CONSTRAINT "dynamic_schedule_shadow_assignments_original_user_id_fkey" FOREIGN KEY ("original_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_assignments"
     ADD CONSTRAINT "dynamic_schedule_shadow_assignments_slot_id_fkey" FOREIGN KEY ("slot_id") REFERENCES "public"."dynamic_availability_slots"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_assignments"
     ADD CONSTRAINT "dynamic_schedule_shadow_assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_drafts"
     ADD CONSTRAINT "dynamic_schedule_shadow_drafts_availability_period_id_fkey" FOREIGN KEY ("availability_period_id") REFERENCES "public"."dynamic_availability_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_drafts"
     ADD CONSTRAINT "dynamic_schedule_shadow_drafts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_drafts"
     ADD CONSTRAINT "dynamic_schedule_shadow_drafts_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_targets"
     ADD CONSTRAINT "dynamic_schedule_shadow_targets_draft_id_fkey" FOREIGN KEY ("draft_id") REFERENCES "public"."dynamic_schedule_shadow_drafts"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_schedule_shadow_targets"
     ADD CONSTRAINT "dynamic_schedule_shadow_targets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_shift_exchange_requests"
     ADD CONSTRAINT "dynamic_shift_exchange_requests_counterparty_assignment_id_fkey" FOREIGN KEY ("counterparty_assignment_id") REFERENCES "public"."dynamic_schedule_published_assignments"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_shift_exchange_requests"
     ADD CONSTRAINT "dynamic_shift_exchange_requests_counterparty_user_id_fkey" FOREIGN KEY ("counterparty_user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_shift_exchange_requests"
     ADD CONSTRAINT "dynamic_shift_exchange_requests_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_shift_exchange_requests"
     ADD CONSTRAINT "dynamic_shift_exchange_requests_manager_user_id_fkey" FOREIGN KEY ("manager_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_shift_exchange_requests"
     ADD CONSTRAINT "dynamic_shift_exchange_requests_publication_id_fkey" FOREIGN KEY ("publication_id") REFERENCES "public"."dynamic_schedule_publications"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_shift_exchange_requests"
     ADD CONSTRAINT "dynamic_shift_exchange_requests_requester_assignment_id_fkey" FOREIGN KEY ("requester_assignment_id") REFERENCES "public"."dynamic_schedule_published_assignments"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."dynamic_shift_exchange_requests"
     ADD CONSTRAINT "dynamic_shift_exchange_requests_requester_user_id_fkey" FOREIGN KEY ("requester_user_id") REFERENCES "public"."profiles"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."gvk_legacy_migration_runs"
     ADD CONSTRAINT "gvk_legacy_migration_runs_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."gvk_legacy_migration_runs"
     ADD CONSTRAINT "gvk_legacy_migration_runs_dispatcher_job_type_id_fkey" FOREIGN KEY ("dispatcher_job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."gvk_legacy_migration_runs"
     ADD CONSTRAINT "gvk_legacy_migration_runs_morning_driver_job_type_id_fkey" FOREIGN KEY ("morning_driver_job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."gvk_legacy_migration_runs"
     ADD CONSTRAINT "gvk_legacy_migration_runs_on_call_job_type_id_fkey" FOREIGN KEY ("on_call_job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_ai_suggestions"
     ADD CONSTRAINT "job_type_ai_suggestions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_ai_suggestions"
     ADD CONSTRAINT "job_type_ai_suggestions_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_ai_suggestions"
     ADD CONSTRAINT "job_type_ai_suggestions_reviewed_by_fkey" FOREIGN KEY ("reviewed_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_capabilities"
     ADD CONSTRAINT "job_type_capabilities_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_configuration_versions"
     ADD CONSTRAINT "job_type_configuration_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_configuration_versions"
     ADD CONSTRAINT "job_type_configuration_versions_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_dashboard_context_rules"
     ADD CONSTRAINT "job_type_dashboard_context_rules_source_job_type_id_fkey" FOREIGN KEY ("source_job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_dashboard_context_rules"
     ADD CONSTRAINT "job_type_dashboard_context_rules_target_job_type_id_fkey" FOREIGN KEY ("target_job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_default_permissions"
     ADD CONSTRAINT "job_type_default_permissions_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_managers"
     ADD CONSTRAINT "job_type_managers_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_managers"
     ADD CONSTRAINT "job_type_managers_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_managers"
     ADD CONSTRAINT "job_type_managers_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_materialized_day_rules"
     ADD CONSTRAINT "job_type_materialized_day_rules_materialization_id_fkey" FOREIGN KEY ("materialization_id") REFERENCES "public"."job_type_schedule_materializations"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_materialized_pay_components"
     ADD CONSTRAINT "job_type_materialized_pay_components_shift_template_id_fkey" FOREIGN KEY ("shift_template_id") REFERENCES "public"."job_type_materialized_shift_templates"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_materialized_shift_templates"
     ADD CONSTRAINT "job_type_materialized_shift_templates_materialization_id_fkey" FOREIGN KEY ("materialization_id") REFERENCES "public"."job_type_schedule_materializations"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_memberships"
     ADD CONSTRAINT "job_type_memberships_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_memberships"
     ADD CONSTRAINT "job_type_memberships_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_permission_settings"
     ADD CONSTRAINT "job_type_permission_settings_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_schedule_materializations"
     ADD CONSTRAINT "job_type_schedule_materializations_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_shift_eligibility"
     ADD CONSTRAINT "job_type_shift_eligibility_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_type_shift_eligibility"
     ADD CONSTRAINT "job_type_shift_eligibility_shift_template_id_fkey" FOREIGN KEY ("shift_template_id") REFERENCES "public"."schedule_group_shift_templates"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."job_types"
     ADD CONSTRAINT "job_types_schedule_group_id_fkey" FOREIGN KEY ("schedule_group_id") REFERENCES "public"."schedule_groups"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_entries"
     ADD CONSTRAINT "morning_driver_availability_entries_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."morning_driver_availability_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_entries"
     ADD CONSTRAINT "morning_driver_availability_entries_shift_id_fkey" FOREIGN KEY ("shift_id") REFERENCES "public"."morning_driver_availability_shifts"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_entries"
     ADD CONSTRAINT "morning_driver_availability_entries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_periods"
     ADD CONSTRAINT "morning_driver_availability_periods_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_periods"
     ADD CONSTRAINT "morning_driver_availability_periods_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_shifts"
     ADD CONSTRAINT "morning_driver_availability_shifts_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."morning_driver_availability_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_submissions"
     ADD CONSTRAINT "morning_driver_availability_submissions_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."morning_driver_availability_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_availability_submissions"
     ADD CONSTRAINT "morning_driver_availability_submissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_assignments"
     ADD CONSTRAINT "morning_driver_schedule_assignments_assigned_user_id_fkey" FOREIGN KEY ("assigned_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_assignments"
     ADD CONSTRAINT "morning_driver_schedule_assignments_availability_shift_id_fkey" FOREIGN KEY ("availability_shift_id") REFERENCES "public"."morning_driver_availability_shifts"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_assignments"
     ADD CONSTRAINT "morning_driver_schedule_assignments_schedule_period_id_fkey" FOREIGN KEY ("schedule_period_id") REFERENCES "public"."morning_driver_schedule_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_periods"
     ADD CONSTRAINT "morning_driver_schedule_periods_availability_period_id_fkey" FOREIGN KEY ("availability_period_id") REFERENCES "public"."morning_driver_availability_periods"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_periods"
     ADD CONSTRAINT "morning_driver_schedule_periods_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."morning_driver_schedule_periods"
     ADD CONSTRAINT "morning_driver_schedule_periods_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."notification_preferences"
     ADD CONSTRAINT "notification_preferences_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."notification_recipients"
     ADD CONSTRAINT "notification_recipients_notification_id_fkey" FOREIGN KEY ("notification_id") REFERENCES "public"."notifications"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."notification_recipients"
     ADD CONSTRAINT "notification_recipients_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."notifications"
     ADD CONSTRAINT "notifications_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."permission_profile_permissions"
     ADD CONSTRAINT "permission_profile_permissions_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."permission_profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."push_delivery_log"
     ADD CONSTRAINT "push_delivery_log_recipient_id_fkey" FOREIGN KEY ("recipient_id") REFERENCES "public"."notification_recipients"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."push_subscriptions"
     ADD CONSTRAINT "push_subscriptions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."role_default_permissions"
     ADD CONSTRAINT "role_default_permissions_permission_key_fkey" FOREIGN KEY ("permission_key") REFERENCES "public"."permissions"("permission_key") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_assignment_history"
     ADD CONSTRAINT "schedule_assignment_history_changed_by_fkey" FOREIGN KEY ("changed_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_assignment_history"
     ADD CONSTRAINT "schedule_assignment_history_new_user_id_fkey" FOREIGN KEY ("new_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_assignment_history"
     ADD CONSTRAINT "schedule_assignment_history_previous_user_id_fkey" FOREIGN KEY ("previous_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_assignment_history"
     ADD CONSTRAINT "schedule_assignment_history_shift_id_fkey" FOREIGN KEY ("shift_id") REFERENCES "public"."schedule_shifts"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_group_day_rules"
     ADD CONSTRAINT "schedule_group_day_rules_schedule_group_id_fkey" FOREIGN KEY ("schedule_group_id") REFERENCES "public"."schedule_groups"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_group_shift_templates"
     ADD CONSTRAINT "schedule_group_shift_templates_schedule_group_id_fkey" FOREIGN KEY ("schedule_group_id") REFERENCES "public"."schedule_groups"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_group_versions"
     ADD CONSTRAINT "schedule_group_versions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_group_versions"
     ADD CONSTRAINT "schedule_group_versions_schedule_group_id_fkey" FOREIGN KEY ("schedule_group_id") REFERENCES "public"."schedule_groups"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_import_name_aliases"
     ADD CONSTRAINT "schedule_import_name_aliases_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_import_name_aliases"
     ADD CONSTRAINT "schedule_import_name_aliases_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_import_name_aliases"
     ADD CONSTRAINT "schedule_import_name_aliases_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_import_runs"
     ADD CONSTRAINT "schedule_import_runs_driver_schedule_period_id_fkey" FOREIGN KEY ("driver_schedule_period_id") REFERENCES "public"."driver_schedule_periods"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_import_runs"
     ADD CONSTRAINT "schedule_import_runs_imported_by_fkey" FOREIGN KEY ("imported_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_import_runs"
     ADD CONSTRAINT "schedule_import_runs_schedule_period_id_fkey" FOREIGN KEY ("schedule_period_id") REFERENCES "public"."schedule_periods"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_periods"
     ADD CONSTRAINT "schedule_periods_approved_by_fkey" FOREIGN KEY ("approved_by") REFERENCES "public"."profiles"("id") ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_periods"
     ADD CONSTRAINT "schedule_periods_availability_period_id_fkey" FOREIGN KEY ("availability_period_id") REFERENCES "public"."availability_periods"("id") ON UPDATE CASCADE ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_periods"
     ADD CONSTRAINT "schedule_periods_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_shift_pay_segments"
     ADD CONSTRAINT "schedule_shift_pay_segments_shift_template_id_fkey" FOREIGN KEY ("shift_template_id") REFERENCES "public"."schedule_group_shift_templates"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_shifts"
     ADD CONSTRAINT "schedule_shifts_assigned_user_id_fkey" FOREIGN KEY ("assigned_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_shifts"
     ADD CONSTRAINT "schedule_shifts_availability_shift_slot_id_fkey" FOREIGN KEY ("availability_shift_slot_id") REFERENCES "public"."availability_shift_slots"("id") ON UPDATE CASCADE ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_shifts"
     ADD CONSTRAINT "schedule_shifts_import_run_id_fkey" FOREIGN KEY ("import_run_id") REFERENCES "public"."schedule_import_runs"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."schedule_shifts"
     ADD CONSTRAINT "schedule_shifts_period_id_fkey" FOREIGN KEY ("period_id") REFERENCES "public"."schedule_periods"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."scheduled_reminder_deliveries"
     ADD CONSTRAINT "scheduled_reminder_deliveries_notification_id_fkey" FOREIGN KEY ("notification_id") REFERENCES "public"."notifications"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."scheduled_reminder_deliveries"
     ADD CONSTRAINT "scheduled_reminder_deliveries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_reminder_deliveries"
     ADD CONSTRAINT "shift_reminder_deliveries_notification_id_fkey" FOREIGN KEY ("notification_id") REFERENCES "public"."notifications"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_reminder_deliveries"
     ADD CONSTRAINT "shift_reminder_deliveries_shift_id_fkey" FOREIGN KEY ("shift_id") REFERENCES "public"."schedule_shifts"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_reminder_deliveries"
     ADD CONSTRAINT "shift_reminder_deliveries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_swap_requests"
     ADD CONSTRAINT "shift_swap_requests_counterparty_shift_id_fkey" FOREIGN KEY ("counterparty_shift_id") REFERENCES "public"."schedule_shifts"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_swap_requests"
     ADD CONSTRAINT "shift_swap_requests_counterparty_user_id_fkey" FOREIGN KEY ("counterparty_user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_swap_requests"
     ADD CONSTRAINT "shift_swap_requests_manager_user_id_fkey" FOREIGN KEY ("manager_user_id") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_swap_requests"
     ADD CONSTRAINT "shift_swap_requests_requester_shift_id_fkey" FOREIGN KEY ("requester_shift_id") REFERENCES "public"."schedule_shifts"("id") ON DELETE RESTRICT;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."shift_swap_requests"
     ADD CONSTRAINT "shift_swap_requests_requester_user_id_fkey" FOREIGN KEY ("requester_user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_dashboard_widgets"
     ADD CONSTRAINT "user_dashboard_widgets_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_dashboard_widgets"
     ADD CONSTRAINT "user_dashboard_widgets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_job_type_permissions"
     ADD CONSTRAINT "user_job_type_permissions_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_job_type_permissions"
     ADD CONSTRAINT "user_job_type_permissions_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_job_type_permissions"
     ADD CONSTRAINT "user_job_type_permissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permission_job_type_scopes"
     ADD CONSTRAINT "user_permission_job_type_scopes_job_type_id_fkey" FOREIGN KEY ("job_type_id") REFERENCES "public"."job_types"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permission_job_type_scopes"
     ADD CONSTRAINT "user_permission_job_type_scopes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permission_policies"
     ADD CONSTRAINT "user_permission_policies_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."permission_profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permission_policies"
     ADD CONSTRAINT "user_permission_policies_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permission_policies"
     ADD CONSTRAINT "user_permission_policies_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permissions"
     ADD CONSTRAINT "user_permissions_granted_by_fkey" FOREIGN KEY ("granted_by") REFERENCES "public"."profiles"("id") ON DELETE SET NULL;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permissions"
     ADD CONSTRAINT "user_permissions_permission_key_fkey" FOREIGN KEY ("permission_key") REFERENCES "public"."permissions"("permission_key") ON DELETE CASCADE;
 
 
 
+-- עדכון מבנה או הגדרות הטבלה ONLY.
 ALTER TABLE ONLY "public"."user_permissions"
     ADD CONSTRAINT "user_permissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
 
 
+-- הגדרת מדיניות RLS: "Admins can delete holidays" ON "public"."holidays" FOR DELETE TO "authenticated" USING (( SELECT "p. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Admins can delete holidays" ON "public"."holidays" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Admins can delete profiles" ON "public"."profiles" FOR DELETE TO "authenticated" USING (( SELECT "p. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Admins can delete profiles" ON "public"."profiles" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Admins can delete schedule periods" ON "public"."schedule_periods" FOR DELETE TO "authenticated" US. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Admins can delete schedule periods" ON "public"."schedule_periods" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Admins can delete schedule shifts" ON "public"."schedule_shifts" FOR DELETE TO "authenticated" USIN. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Admins can delete schedule shifts" ON "public"."schedule_shifts" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Admins can insert profiles" ON "public"."profiles" FOR INSERT TO "authenticated" WITH CHECK (( SELE. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Admins can insert profiles" ON "public"."profiles" FOR INSERT TO "authenticated" WITH CHECK (( SELECT "public"."is_admin"() AS "is_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Admins can read role defaults" ON "public"."role_default_permissions" FOR SELECT TO "authenticated". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Admins can read role defaults" ON "public"."role_default_permissions" FOR SELECT TO "authenticated" USING ("public"."is_current_user_admin"());
 
 
 
+-- הגדרת מדיניות RLS: "Admins can update profiles" ON "public"."profiles" FOR UPDATE TO "authenticated" USING (( SELECT "p. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Admins can update profiles" ON "public"."profiles" FOR UPDATE TO "authenticated" USING (( SELECT "public"."is_admin"() AS "is_admin")) WITH CHECK (( SELECT "public"."is_admin"() AS "is_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Authenticated users can read permissions" ON "public"."permissions" FOR SELECT TO "authenticated" U. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Authenticated users can read permissions" ON "public"."permissions" FOR SELECT TO "authenticated" USING (true);
 
 
 
+-- הגדרת מדיניות RLS: "Authenticated users can view active profiles" ON "public"."profiles" FOR SELECT TO "authenticated" . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Authenticated users can view active profiles" ON "public"."profiles" FOR SELECT TO "authenticated" USING ((("is_active" = true) OR ("id" = ( SELECT "auth"."uid"() AS "uid")) OR ( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin")));
 
 
 
+-- הגדרת מדיניות RLS: "Authenticated users can view assignment history" ON "public"."schedule_assignment_history" FOR SELE. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Authenticated users can view assignment history" ON "public"."schedule_assignment_history" FOR SELECT TO "authenticated" USING (true);
 
 
 
+-- הגדרת מדיניות RLS: "Authenticated users can view holidays" ON "public"."holidays" FOR SELECT TO "authenticated" USING (. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Authenticated users can view holidays" ON "public"."holidays" FOR SELECT TO "authenticated" USING (true);
 
 
 
+-- הגדרת מדיניות RLS: "Authenticated users can view schedule periods" ON "public"."schedule_periods" FOR SELECT TO "authen. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Authenticated users can view schedule periods" ON "public"."schedule_periods" FOR SELECT TO "authenticated" USING (true);
 
 
 
+-- הגדרת מדיניות RLS: "Authenticated users can view schedule shifts" ON "public"."schedule_shifts" FOR SELECT TO "authenti. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Authenticated users can view schedule shifts" ON "public"."schedule_shifts" FOR SELECT TO "authenticated" USING (true);
 
 
 
+-- הגדרת מדיניות RLS: "Authorized users can view driver assignment history" ON "public"."driver_schedule_assignment_histor. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Authorized users can view driver assignment history" ON "public"."driver_schedule_assignment_history" FOR SELECT TO "authenticated" USING ((('driver_schedule.view_team'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) OR ('driver_schedule.edit'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Authorized users can view driver availability days" ON "public"."driver_availability_days" FOR SELE. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Authorized users can view driver availability days" ON "public"."driver_availability_days" FOR SELECT TO "authenticated" USING ((('driver_availability.view'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) OR ('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Authorized users can view driver availability periods" ON "public"."driver_availability_periods" FO. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Authorized users can view driver availability periods" ON "public"."driver_availability_periods" FOR SELECT TO "authenticated" USING ((('driver_availability.view'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) OR ('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Authorized users can view driver schedule periods" ON "public"."driver_schedule_periods" FOR SELECT. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Authorized users can view driver schedule periods" ON "public"."driver_schedule_periods" FOR SELECT TO "authenticated" USING ((('driver_schedule.view'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) OR ('driver_schedule.view_team'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) OR ('driver_schedule.edit'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Availability managers manage calendar days" ON "public"."calendar_special_days" TO "authenticated" . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Availability managers manage calendar days" ON "public"."calendar_special_days" TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."user_permissions" "permission"
   WHERE (("permission"."user_id" = "auth"."uid"()) AND ("permission"."permission_key" = 'availability.manage'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
@@ -41621,6 +42533,7 @@ CREATE POLICY "Availability managers manage calendar days" ON "public"."calendar
 
 
 
+-- הגדרת מדיניות RLS: "Availability managers manage periods" ON "public"."availability_periods" TO "authenticated" USING (. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Availability managers manage periods" ON "public"."availability_periods" TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."user_permissions" "up"
   WHERE (("up"."user_id" = "auth"."uid"()) AND ("up"."permission_key" = 'availability.manage'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
@@ -41629,6 +42542,7 @@ CREATE POLICY "Availability managers manage periods" ON "public"."availability_p
 
 
 
+-- הגדרת מדיניות RLS: "Availability managers manage slots" ON "public"."availability_shift_slots" TO "authenticated" USING. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Availability managers manage slots" ON "public"."availability_shift_slots" TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."user_permissions" "up"
   WHERE (("up"."user_id" = "auth"."uid"()) AND ("up"."permission_key" = 'availability.manage'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
@@ -41637,6 +42551,7 @@ CREATE POLICY "Availability managers manage slots" ON "public"."availability_shi
 
 
 
+-- הגדרת מדיניות RLS: "Availability periods are visible" ON "public"."availability_periods" FOR SELECT TO "authenticated" . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Availability periods are visible" ON "public"."availability_periods" FOR SELECT TO "authenticated" USING (((EXISTS ( SELECT 1
    FROM "public"."user_permissions" "up"
   WHERE (("up"."user_id" = "auth"."uid"()) AND ("up"."permission_key" = 'availability.view'::"text")))) OR (EXISTS ( SELECT 1
@@ -41645,469 +42560,596 @@ CREATE POLICY "Availability periods are visible" ON "public"."availability_perio
 
 
 
+-- הגדרת מדיניות RLS: "Availability slots are visible" ON "public"."availability_shift_slots" FOR SELECT TO "authenticated. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Availability slots are visible" ON "public"."availability_shift_slots" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."user_permissions" "up"
   WHERE (("up"."user_id" = "auth"."uid"()) AND ("up"."permission_key" = ANY (ARRAY['availability.view'::"text", 'availability.manage'::"text"]))))));
 
 
 
+-- הגדרת מדיניות RLS: "Availability users read calendar days" ON "public"."calendar_special_days" FOR SELECT TO "authentic. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Availability users read calendar days" ON "public"."calendar_special_days" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."user_permissions" "permission"
   WHERE (("permission"."user_id" = "auth"."uid"()) AND ("permission"."permission_key" = ANY (ARRAY['availability.view'::"text", 'availability.manage'::"text"]))))));
 
 
 
+-- הגדרת מדיניות RLS: "Editors can manage driver schedule days" ON "public"."driver_schedule_days" TO "authenticated" USIN. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Editors can manage driver schedule days" ON "public"."driver_schedule_days" TO "authenticated" USING (('driver_schedule.edit'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))) WITH CHECK (('driver_schedule.edit'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))));
 
 
 
+-- הגדרת מדיניות RLS: "Editors can manage driver schedule periods" ON "public"."driver_schedule_periods" TO "authenticated. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Editors can manage driver schedule periods" ON "public"."driver_schedule_periods" TO "authenticated" USING (('driver_schedule.edit'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))) WITH CHECK (('driver_schedule.edit'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can create assignment history" ON "public"."schedule_assignment_history" FOR INSERT TO "au. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can create assignment history" ON "public"."schedule_assignment_history" FOR INSERT TO "authenticated" WITH CHECK (( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can create driver availability periods" ON "public"."driver_availability_periods" FOR INSE. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can create driver availability periods" ON "public"."driver_availability_periods" FOR INSERT TO "authenticated" WITH CHECK ((('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) AND ("created_by" = "auth"."uid"())));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can create holidays" ON "public"."holidays" FOR INSERT TO "authenticated" WITH CHECK (( SE. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can create holidays" ON "public"."holidays" FOR INSERT TO "authenticated" WITH CHECK (( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can create schedule periods" ON "public"."schedule_periods" FOR INSERT TO "authenticated" . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can create schedule periods" ON "public"."schedule_periods" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin") AND ("created_by" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can create schedule shifts" ON "public"."schedule_shifts" FOR INSERT TO "authenticated" WI. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can create schedule shifts" ON "public"."schedule_shifts" FOR INSERT TO "authenticated" WITH CHECK (( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can delete driver availability periods" ON "public"."driver_availability_periods" FOR DELE. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can delete driver availability periods" ON "public"."driver_availability_periods" FOR DELETE TO "authenticated" USING (('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can manage driver availability days" ON "public"."driver_availability_days" TO "authentica. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can manage driver availability days" ON "public"."driver_availability_days" TO "authenticated" USING (('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))) WITH CHECK (('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can update driver availability periods" ON "public"."driver_availability_periods" FOR UPDA. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can update driver availability periods" ON "public"."driver_availability_periods" FOR UPDATE TO "authenticated" USING (('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))) WITH CHECK (('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can update holidays" ON "public"."holidays" FOR UPDATE TO "authenticated" USING (( SELECT . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can update holidays" ON "public"."holidays" FOR UPDATE TO "authenticated" USING (( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin")) WITH CHECK (( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can update schedule periods" ON "public"."schedule_periods" FOR UPDATE TO "authenticated" . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can update schedule periods" ON "public"."schedule_periods" FOR UPDATE TO "authenticated" USING (( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin")) WITH CHECK (( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can update schedule shifts" ON "public"."schedule_shifts" FOR UPDATE TO "authenticated" US. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can update schedule shifts" ON "public"."schedule_shifts" FOR UPDATE TO "authenticated" USING (( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin")) WITH CHECK (( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Managers can view audit logs" ON "public"."audit_logs" FOR SELECT TO "authenticated" USING (( SELEC. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers can view audit logs" ON "public"."audit_logs" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_manager_or_admin"() AS "is_manager_or_admin"));
 
 
 
+-- הגדרת מדיניות RLS: "Managers read all availability" ON "public"."dispatcher_availability" FOR SELECT TO "authenticated". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers read all availability" ON "public"."dispatcher_availability" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."user_permissions" "up"
   WHERE (("up"."user_id" = "auth"."uid"()) AND ("up"."permission_key" = 'availability.manage'::"text")))));
 
 
 
+-- הגדרת מדיניות RLS: "Managers read all submissions" ON "public"."availability_submissions" FOR SELECT TO "authenticated". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Managers read all submissions" ON "public"."availability_submissions" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."user_permissions" "up"
   WHERE (("up"."user_id" = "auth"."uid"()) AND ("up"."permission_key" = 'availability.manage'::"text")))));
 
 
 
+-- הגדרת מדיניות RLS: "Notification creators can view own notifications" ON "public"."notifications" FOR SELECT TO "authen. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Notification creators can view own notifications" ON "public"."notifications" FOR SELECT TO "authenticated" USING (("created_by" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Notification managers can create notifications" ON "public"."notifications" FOR INSERT TO "authenti. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Notification managers can create notifications" ON "public"."notifications" FOR INSERT TO "authenticated" WITH CHECK ((("created_by" = "auth"."uid"()) AND "public"."current_user_has_permission"('notifications.manage'::"text")));
 
 
 
+-- הגדרת מדיניות RLS: "Notification managers can create recipients" ON "public"."notification_recipients" FOR INSERT TO "a. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Notification managers can create recipients" ON "public"."notification_recipients" FOR INSERT TO "authenticated" WITH CHECK (("public"."current_user_has_permission"('notifications.manage'::"text") AND "public"."current_user_created_notification"("notification_id")));
 
 
 
+-- הגדרת מדיניות RLS: "Notification managers can delete own notifications" ON "public"."notifications" FOR DELETE TO "auth. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Notification managers can delete own notifications" ON "public"."notifications" FOR DELETE TO "authenticated" USING ((("created_by" = "auth"."uid"()) AND (EXISTS ( SELECT 1
    FROM "public"."user_permissions" "up"
   WHERE (("up"."user_id" = "auth"."uid"()) AND ("up"."permission_key" = 'notifications.manage'::"text"))))));
 
 
 
+-- הגדרת מדיניות RLS: "Users can create own driver availability submissions" ON "public"."driver_availability_submissions". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can create own driver availability submissions" ON "public"."driver_availability_submissions" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = "auth"."uid"()) AND ('driver_availability.view'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Users can delete own driver availability entries" ON "public"."driver_availability_entries" FOR DEL. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can delete own driver availability entries" ON "public"."driver_availability_entries" FOR DELETE TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR ('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Users can delete own push subscriptions" ON "public"."push_subscriptions" FOR DELETE TO "authentica. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can delete own push subscriptions" ON "public"."push_subscriptions" FOR DELETE TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users can insert own driver availability entries" ON "public"."driver_availability_entries" FOR INS. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can insert own driver availability entries" ON "public"."driver_availability_entries" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = "auth"."uid"()) AND ('driver_availability.view'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Users can insert own notification preferences" ON "public"."notification_preferences" FOR INSERT TO. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can insert own notification preferences" ON "public"."notification_preferences" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users can insert own push subscriptions" ON "public"."push_subscriptions" FOR INSERT TO "authentica. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can insert own push subscriptions" ON "public"."push_subscriptions" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users can read own permissions" ON "public"."user_permissions" FOR SELECT TO "authenticated" USING . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can read own permissions" ON "public"."user_permissions" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."is_current_user_admin"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users can update own driver availability entries" ON "public"."driver_availability_entries" FOR UPD. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can update own driver availability entries" ON "public"."driver_availability_entries" FOR UPDATE TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR ('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))))) WITH CHECK ((("user_id" = "auth"."uid"()) OR ('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Users can update own driver availability submissions" ON "public"."driver_availability_submissions". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can update own driver availability submissions" ON "public"."driver_availability_submissions" FOR UPDATE TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR ('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))))) WITH CHECK ((("user_id" = "auth"."uid"()) OR ('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Users can update own notification preferences" ON "public"."notification_preferences" FOR UPDATE TO. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can update own notification preferences" ON "public"."notification_preferences" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users can update own notification recipients" ON "public"."notification_recipients" FOR UPDATE TO ". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can update own notification recipients" ON "public"."notification_recipients" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users can update own push subscriptions" ON "public"."push_subscriptions" FOR UPDATE TO "authentica. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can update own push subscriptions" ON "public"."push_subscriptions" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users can view own driver availability entries" ON "public"."driver_availability_entries" FOR SELEC. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can view own driver availability entries" ON "public"."driver_availability_entries" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR ('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Users can view own driver availability submissions" ON "public"."driver_availability_submissions" F. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can view own driver availability submissions" ON "public"."driver_availability_submissions" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR ('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Users can view own notification preferences" ON "public"."notification_preferences" FOR SELECT TO ". תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can view own notification preferences" ON "public"."notification_preferences" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users can view own notification recipients" ON "public"."notification_recipients" FOR SELECT TO "au. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can view own notification recipients" ON "public"."notification_recipients" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users can view own push subscriptions" ON "public"."push_subscriptions" FOR SELECT TO "authenticate. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can view own push subscriptions" ON "public"."push_subscriptions" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users can view permitted driver schedule days" ON "public"."driver_schedule_days" FOR SELECT TO "au. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can view permitted driver schedule days" ON "public"."driver_schedule_days" FOR SELECT TO "authenticated" USING ((("assigned_user_id" = "auth"."uid"()) OR ('driver_schedule.view_team'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) OR ('driver_schedule.edit'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Users can view related driver swaps" ON "public"."driver_schedule_swaps" FOR SELECT TO "authenticat. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can view related driver swaps" ON "public"."driver_schedule_swaps" FOR SELECT TO "authenticated" USING ((("first_user_id" = "auth"."uid"()) OR ("second_user_id" = "auth"."uid"()) OR ('driver_schedule.view_team'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) OR ('driver_schedule.edit'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))));
 
 
 
+-- הגדרת מדיניות RLS: "Users can view their notifications" ON "public"."notifications" FOR SELECT TO "authenticated" USING. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users can view their notifications" ON "public"."notifications" FOR SELECT TO "authenticated" USING ((("expires_at" > "now"()) AND (EXISTS ( SELECT 1
    FROM "public"."notification_recipients" "nr"
   WHERE (("nr"."notification_id" = "notifications"."id") AND ("nr"."user_id" = "auth"."uid"()))))));
 
 
 
+-- הגדרת מדיניות RLS: "Users create own availability" ON "public"."dispatcher_availability" FOR INSERT TO "authenticated" . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users create own availability" ON "public"."dispatcher_availability" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = "auth"."uid"()) AND (EXISTS ( SELECT 1
    FROM "public"."availability_periods" "period"
   WHERE (("period"."id" = "dispatcher_availability"."period_id") AND ("period"."status" = 'open'::"text") AND (("period"."submission_deadline" IS NULL) OR ("period"."submission_deadline" > "now"())))))));
 
 
 
+-- הגדרת מדיניות RLS: "Users create own submission" ON "public"."availability_submissions" FOR INSERT TO "authenticated" W. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users create own submission" ON "public"."availability_submissions" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = "auth"."uid"()) AND (EXISTS ( SELECT 1
    FROM "public"."availability_periods" "period"
   WHERE (("period"."id" = "availability_submissions"."period_id") AND ("period"."status" = 'open'::"text"))))));
 
 
 
+-- הגדרת מדיניות RLS: "Users delete own availability" ON "public"."dispatcher_availability" FOR DELETE TO "authenticated" . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users delete own availability" ON "public"."dispatcher_availability" FOR DELETE TO "authenticated" USING ((("user_id" = "auth"."uid"()) AND (EXISTS ( SELECT 1
    FROM "public"."availability_periods" "period"
   WHERE (("period"."id" = "dispatcher_availability"."period_id") AND ("period"."status" = 'open'::"text") AND (("period"."submission_deadline" IS NULL) OR ("period"."submission_deadline" > "now"())))))));
 
 
 
+-- הגדרת מדיניות RLS: "Users read own availability" ON "public"."dispatcher_availability" FOR SELECT TO "authenticated" US. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users read own availability" ON "public"."dispatcher_availability" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users read own submission" ON "public"."availability_submissions" FOR SELECT TO "authenticated" USI. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users read own submission" ON "public"."availability_submissions" FOR SELECT TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
+-- הגדרת מדיניות RLS: "Users update own availability" ON "public"."dispatcher_availability" FOR UPDATE TO "authenticated" . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users update own availability" ON "public"."dispatcher_availability" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK ((("user_id" = "auth"."uid"()) AND (EXISTS ( SELECT 1
    FROM "public"."availability_periods" "period"
   WHERE (("period"."id" = "dispatcher_availability"."period_id") AND ("period"."status" = 'open'::"text") AND (("period"."submission_deadline" IS NULL) OR ("period"."submission_deadline" > "now"())))))));
 
 
 
+-- הגדרת מדיניות RLS: "Users update own submission" ON "public"."availability_submissions" FOR UPDATE TO "authenticated" U. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users update own submission" ON "public"."availability_submissions" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK ((("user_id" = "auth"."uid"()) AND (EXISTS ( SELECT 1
    FROM "public"."availability_periods" "period"
   WHERE (("period"."id" = "availability_submissions"."period_id") AND ("period"."status" = 'open'::"text"))))));
 
 
 
+-- הגדרת מדיניות RLS: "Users with audit view can read audit logs" ON "public"."audit_logs" FOR SELECT TO "authenticated" U. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "Users with audit view can read audit logs" ON "public"."audit_logs" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."user_permissions" "up"
   WHERE (("up"."user_id" = "auth"."uid"()) AND ("up"."permission_key" = 'audit.view'::"text")))));
 
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."admin_development_sessions".
 ALTER TABLE "public"."admin_development_sessions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."attendance_sessions".
 ALTER TABLE "public"."attendance_sessions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."audit_logs".
 ALTER TABLE "public"."audit_logs" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."availability_periods".
 ALTER TABLE "public"."availability_periods" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."availability_shift_slots".
 ALTER TABLE "public"."availability_shift_slots" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."availability_submissions".
 ALTER TABLE "public"."availability_submissions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."calendar_special_days".
 ALTER TABLE "public"."calendar_special_days" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."client_app_sessions".
 ALTER TABLE "public"."client_app_sessions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."daily_report_attachments".
 ALTER TABLE "public"."daily_report_attachments" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."daily_report_customers".
 ALTER TABLE "public"."daily_report_customers" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."daily_report_items".
 ALTER TABLE "public"."daily_report_items" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."daily_report_subjects".
 ALTER TABLE "public"."daily_report_subjects" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."daily_reports".
 ALTER TABLE "public"."daily_reports" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dispatcher_availability".
 ALTER TABLE "public"."dispatcher_availability" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_availability_days".
 ALTER TABLE "public"."driver_availability_days" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_availability_entries".
 ALTER TABLE "public"."driver_availability_entries" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_availability_periods".
 ALTER TABLE "public"."driver_availability_periods" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_availability_submissions".
 ALTER TABLE "public"."driver_availability_submissions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_schedule_assignment_history".
 ALTER TABLE "public"."driver_schedule_assignment_history" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_schedule_days".
 ALTER TABLE "public"."driver_schedule_days" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_schedule_periods".
 ALTER TABLE "public"."driver_schedule_periods" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."driver_schedule_swaps".
 ALTER TABLE "public"."driver_schedule_swaps" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_availability_entries".
 ALTER TABLE "public"."dynamic_availability_entries" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_availability_periods".
 ALTER TABLE "public"."dynamic_availability_periods" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_availability_slots".
 ALTER TABLE "public"."dynamic_availability_slots" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_availability_submissions".
 ALTER TABLE "public"."dynamic_availability_submissions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_cutover_settings".
 ALTER TABLE "public"."dynamic_cutover_settings" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_job_type_rotation_state".
 ALTER TABLE "public"."dynamic_job_type_rotation_state" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_draft_slot_overrides".
 ALTER TABLE "public"."dynamic_schedule_draft_slot_overrides" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_publications".
 ALTER TABLE "public"."dynamic_schedule_publications" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_published_assignments".
 ALTER TABLE "public"."dynamic_schedule_published_assignments" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_published_unassigned".
 ALTER TABLE "public"."dynamic_schedule_published_unassigned" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_reminder_deliveries".
 ALTER TABLE "public"."dynamic_schedule_reminder_deliveries" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_shadow_assignments".
 ALTER TABLE "public"."dynamic_schedule_shadow_assignments" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_shadow_drafts".
 ALTER TABLE "public"."dynamic_schedule_shadow_drafts" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_schedule_shadow_targets".
 ALTER TABLE "public"."dynamic_schedule_shadow_targets" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."dynamic_shift_exchange_requests".
 ALTER TABLE "public"."dynamic_shift_exchange_requests" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."gvk_legacy_migration_runs".
 ALTER TABLE "public"."gvk_legacy_migration_runs" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."holidays".
 ALTER TABLE "public"."holidays" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_ai_suggestions".
 ALTER TABLE "public"."job_type_ai_suggestions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_capabilities".
 ALTER TABLE "public"."job_type_capabilities" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_configuration_versions".
 ALTER TABLE "public"."job_type_configuration_versions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_dashboard_context_rules".
 ALTER TABLE "public"."job_type_dashboard_context_rules" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_default_permissions".
 ALTER TABLE "public"."job_type_default_permissions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_materialized_day_rules".
 ALTER TABLE "public"."job_type_materialized_day_rules" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_materialized_pay_components".
 ALTER TABLE "public"."job_type_materialized_pay_components" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_materialized_shift_templates".
 ALTER TABLE "public"."job_type_materialized_shift_templates" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_memberships".
 ALTER TABLE "public"."job_type_memberships" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_schedule_materializations".
 ALTER TABLE "public"."job_type_schedule_materializations" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_type_shift_eligibility".
 ALTER TABLE "public"."job_type_shift_eligibility" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."job_types".
 ALTER TABLE "public"."job_types" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."monthly_schedule_archive_runs".
 ALTER TABLE "public"."monthly_schedule_archive_runs" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_availability_entries".
 ALTER TABLE "public"."morning_driver_availability_entries" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_availability_periods".
 ALTER TABLE "public"."morning_driver_availability_periods" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_availability_shifts".
 ALTER TABLE "public"."morning_driver_availability_shifts" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_availability_submissions".
 ALTER TABLE "public"."morning_driver_availability_submissions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_schedule_assignments".
 ALTER TABLE "public"."morning_driver_schedule_assignments" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."morning_driver_schedule_periods".
 ALTER TABLE "public"."morning_driver_schedule_periods" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."notification_preferences".
 ALTER TABLE "public"."notification_preferences" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."notification_recipients".
 ALTER TABLE "public"."notification_recipients" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."notifications".
 ALTER TABLE "public"."notifications" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."permissions".
 ALTER TABLE "public"."permissions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."profiles".
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
 
+-- הגדרת מדיניות RLS: "profiles_select_own_or_admin" ON "public"."profiles" FOR SELECT TO "authenticated" USING ((("id" = . תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "profiles_select_own_or_admin" ON "public"."profiles" FOR SELECT TO "authenticated" USING ((("id" = ( SELECT "auth"."uid"() AS "uid")) OR "private"."current_user_is_admin"()));
 
 
 
+-- הגדרת מדיניות RLS: "profiles_update_admin" ON "public"."profiles" FOR UPDATE TO "authenticated" USING ("private"."curre. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "profiles_update_admin" ON "public"."profiles" FOR UPDATE TO "authenticated" USING ("private"."current_user_is_admin"()) WITH CHECK ("private"."current_user_is_admin"());
 
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."push_delivery_log".
 ALTER TABLE "public"."push_delivery_log" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."push_subscriptions".
 ALTER TABLE "public"."push_subscriptions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."role_default_permissions".
 ALTER TABLE "public"."role_default_permissions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_assignment_history".
 ALTER TABLE "public"."schedule_assignment_history" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_group_day_rules".
 ALTER TABLE "public"."schedule_group_day_rules" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_group_shift_templates".
 ALTER TABLE "public"."schedule_group_shift_templates" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_group_versions".
 ALTER TABLE "public"."schedule_group_versions" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_groups".
 ALTER TABLE "public"."schedule_groups" ENABLE ROW LEVEL SECURITY;
 
 
+-- הגדרת מדיניות RLS: "schedule_import_aliases_admin_delete" ON "public"."schedule_import_name_aliases" FOR DELETE TO "aut. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "schedule_import_aliases_admin_delete" ON "public"."schedule_import_name_aliases" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_active" = true) AND ("profiles"."role" = ANY (ARRAY['admin'::"public"."user_role", 'manager'::"public"."user_role"]))))));
 
 
 
+-- הגדרת מדיניות RLS: "schedule_import_aliases_admin_insert" ON "public"."schedule_import_name_aliases" FOR INSERT TO "aut. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "schedule_import_aliases_admin_insert" ON "public"."schedule_import_name_aliases" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_active" = true) AND ("profiles"."role" = ANY (ARRAY['admin'::"public"."user_role", 'manager'::"public"."user_role"]))))));
 
 
 
+-- הגדרת מדיניות RLS: "schedule_import_aliases_admin_select" ON "public"."schedule_import_name_aliases" FOR SELECT TO "aut. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "schedule_import_aliases_admin_select" ON "public"."schedule_import_name_aliases" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_active" = true) AND ("profiles"."role" = ANY (ARRAY['admin'::"public"."user_role", 'manager'::"public"."user_role"]))))));
 
 
 
+-- הגדרת מדיניות RLS: "schedule_import_aliases_admin_update" ON "public"."schedule_import_name_aliases" FOR UPDATE TO "aut. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "schedule_import_aliases_admin_update" ON "public"."schedule_import_name_aliases" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_active" = true) AND ("profiles"."role" = ANY (ARRAY['admin'::"public"."user_role", 'manager'::"public"."user_role"])))))) WITH CHECK ((EXISTS ( SELECT 1
@@ -42116,24 +43158,29 @@ CREATE POLICY "schedule_import_aliases_admin_update" ON "public"."schedule_impor
 
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_import_name_aliases".
 ALTER TABLE "public"."schedule_import_name_aliases" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_import_runs".
 ALTER TABLE "public"."schedule_import_runs" ENABLE ROW LEVEL SECURITY;
 
 
+-- הגדרת מדיניות RLS: "schedule_import_runs_manager_insert" ON "public"."schedule_import_runs" FOR INSERT TO "authenticate. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "schedule_import_runs_manager_insert" ON "public"."schedule_import_runs" FOR INSERT TO "authenticated" WITH CHECK ((("imported_by" = "auth"."uid"()) AND (EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_active" = true) AND (('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) OR ('users.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))))))));
 
 
 
+-- הגדרת מדיניות RLS: "schedule_import_runs_manager_select" ON "public"."schedule_import_runs" FOR SELECT TO "authenticate. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "schedule_import_runs_manager_select" ON "public"."schedule_import_runs" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_active" = true) AND (('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) OR ('users.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))))))));
 
 
 
+-- הגדרת מדיניות RLS: "schedule_import_runs_manager_update" ON "public"."schedule_import_runs" FOR UPDATE TO "authenticate. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "schedule_import_runs_manager_update" ON "public"."schedule_import_runs" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_active" = true) AND (('driver_availability.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[]))) OR ('users.manage'::"text" = ANY (COALESCE("public"."get_my_permissions"(), ARRAY[]::"text"[])))))))) WITH CHECK ((EXISTS ( SELECT 1
@@ -42142,37 +43189,48 @@ CREATE POLICY "schedule_import_runs_manager_update" ON "public"."schedule_import
 
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_periods".
 ALTER TABLE "public"."schedule_periods" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_shift_pay_segments".
 ALTER TABLE "public"."schedule_shift_pay_segments" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."schedule_shifts".
 ALTER TABLE "public"."schedule_shifts" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."scheduled_reminder_deliveries".
 ALTER TABLE "public"."scheduled_reminder_deliveries" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."scheduling_feature_flags".
 ALTER TABLE "public"."scheduling_feature_flags" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."scheduling_rule_registry".
 ALTER TABLE "public"."scheduling_rule_registry" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."shift_reminder_deliveries".
 ALTER TABLE "public"."shift_reminder_deliveries" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."shift_swap_requests".
 ALTER TABLE "public"."shift_swap_requests" ENABLE ROW LEVEL SECURITY;
 
 
+-- הגדרת מדיניות RLS: "shift_swap_requests_select_relevant" ON "public"."shift_swap_requests" FOR SELECT TO "authenticated. תנאי USING/WITH CHECK להלן קובעים את ההיקף.
 CREATE POLICY "shift_swap_requests_select_relevant" ON "public"."shift_swap_requests" FOR SELECT TO "authenticated" USING ((("requester_user_id" = "auth"."uid"()) OR ("counterparty_user_id" = "auth"."uid"()) OR "public"."current_user_has_permission"('shift_swaps.approve'::"text")));
 
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."user_dashboard_widgets".
 ALTER TABLE "public"."user_dashboard_widgets" ENABLE ROW LEVEL SECURITY;
 
 
+-- עדכון מבנה או הגדרות הטבלה "public"."user_permissions".
 ALTER TABLE "public"."user_permissions" ENABLE ROW LEVEL SECURITY;
 
 
@@ -42191,13 +43249,18 @@ ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT USAGE ON SCHEMA "private" TO "authenticated";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT USAGE ON SCHEMA "public" TO "postgres";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT USAGE ON SCHEMA "public" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
@@ -42370,1646 +43433,2537 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "private"."current_user_is_admin"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "private"."current_user_is_admin"() TO "authenticated";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."add_daily_report_customer"("requested_name" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."add_daily_report_customer"("requested_name" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."add_daily_report_customer"("requested_name" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."add_daily_report_customer"("requested_name" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."add_daily_report_subject"("requested_job_type_id" "uuid", "requested_name" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."add_daily_report_subject"("requested_job_type_id" "uuid", "requested_name" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."add_daily_report_subject"("requested_job_type_id" "uuid", "requested_name" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."add_daily_report_subject"("requested_job_type_id" "uuid", "requested_name" "text") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."analyze_dynamic_schedule_feasibility"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."analyze_dynamic_schedule_feasibility"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."analyze_dynamic_schedule_feasibility"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."apply_default_user_permissions"("target_user_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."apply_default_user_permissions"("target_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."apply_default_user_permissions"("target_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."apply_default_user_permissions"("target_user_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."attendance_distance_m"("lat1" double precision, "lng1" double precision, "lat2" double precision, "lng2" double precision) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."attendance_distance_m"("lat1" double precision, "lng1" double precision, "lat2" double precision, "lng2" double precision) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."attendance_distance_m"("lat1" double precision, "lng1" double precision, "lat2" double precision, "lng2" double precision) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."can_configure_manager_dashboard"("requested_user_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_configure_manager_dashboard"("requested_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_configure_manager_dashboard"("requested_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_configure_manager_dashboard"("requested_user_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."can_delete_daily_report_attachment"("requested_storage_path" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_delete_daily_report_attachment"("requested_storage_path" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_delete_daily_report_attachment"("requested_storage_path" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_delete_daily_report_attachment"("requested_storage_path" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."can_read_daily_report_attachment"("requested_storage_path" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_read_daily_report_attachment"("requested_storage_path" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_read_daily_report_attachment"("requested_storage_path" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_read_daily_report_attachment"("requested_storage_path" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."can_upload_daily_report_attachment"("requested_storage_path" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_upload_daily_report_attachment"("requested_storage_path" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_upload_daily_report_attachment"("requested_storage_path" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."can_upload_daily_report_attachment"("requested_storage_path" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."cancel_dynamic_shift_exchange_request"("requested_request_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."cancel_dynamic_shift_exchange_request"("requested_request_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."cancel_dynamic_shift_exchange_request"("requested_request_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."cancel_dynamic_shift_exchange_request"("requested_request_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."cancel_shift_swap_request"("requested_request_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."cancel_shift_swap_request"("requested_request_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."cancel_shift_swap_request"("requested_request_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."cancel_shift_swap_request"("requested_request_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."clock_my_attendance"("requested_job_type_id" "uuid", "requested_action" "text", "requested_lat" double precision, "requested_lng" double precision, "requested_accuracy_m" numeric) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."clock_my_attendance"("requested_job_type_id" "uuid", "requested_action" "text", "requested_lat" double precision, "requested_lng" double precision, "requested_accuracy_m" numeric) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."clock_my_attendance"("requested_job_type_id" "uuid", "requested_action" "text", "requested_lat" double precision, "requested_lng" double precision, "requested_accuracy_m" numeric) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."close_availability_period"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."close_availability_period"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."close_availability_period"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."close_availability_period"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."close_driver_availability_period"("requested_period_id" "uuid", "requested_force" boolean) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."close_driver_availability_period"("requested_period_id" "uuid", "requested_force" boolean) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."close_driver_availability_period"("requested_period_id" "uuid", "requested_force" boolean) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."close_morning_driver_availability_period"("requested_period_id" "uuid", "requested_force" boolean) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."close_morning_driver_availability_period"("requested_period_id" "uuid", "requested_force" boolean) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."close_morning_driver_availability_period"("requested_period_id" "uuid", "requested_force" boolean) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."close_morning_driver_availability_period"("requested_period_id" "uuid", "requested_force" boolean) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."compare_dynamic_availability_shadow_to_legacy"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."compare_dynamic_availability_shadow_to_legacy"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."compare_dynamic_availability_shadow_to_legacy"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."compare_dynamic_availability_shadow_to_legacy"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."complete_initial_password_change"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."complete_initial_password_change"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."complete_initial_password_change"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."complete_initial_password_change"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_availability_period"("requested_year" integer, "requested_month" integer, "requested_submission_deadline" timestamp with time zone, "requested_title" "text", "requested_instructions" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_availability_period"("requested_year" integer, "requested_month" integer, "requested_submission_deadline" timestamp with time zone, "requested_title" "text", "requested_instructions" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_availability_period"("requested_year" integer, "requested_month" integer, "requested_submission_deadline" timestamp with time zone, "requested_title" "text", "requested_instructions" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_availability_period"("requested_year" integer, "requested_month" integer, "requested_submission_deadline" timestamp with time zone, "requested_title" "text", "requested_instructions" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_driver_availability_period"("requested_year" integer, "requested_month" integer, "requested_title" "text", "requested_instructions" "text", "requested_submission_deadline" timestamp with time zone) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_driver_availability_period"("requested_year" integer, "requested_month" integer, "requested_title" "text", "requested_instructions" "text", "requested_submission_deadline" timestamp with time zone) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_driver_availability_period"("requested_year" integer, "requested_month" integer, "requested_title" "text", "requested_instructions" "text", "requested_submission_deadline" timestamp with time zone) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_driver_schedule_draft"("requested_availability_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_driver_schedule_draft"("requested_availability_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_driver_schedule_draft"("requested_availability_period_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_assignment_change_notification"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_assignment_change_notification"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_assignment_change_notification"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_dynamic_availability_shadow_period"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_availability_shadow_period"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_availability_shadow_period"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_availability_shadow_period"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_exchange_approval_notification"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_exchange_approval_notification"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_exchange_approval_notification"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_dynamic_monthly_rotation_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_monthly_rotation_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_monthly_rotation_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_monthly_rotation_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_dynamic_schedule_publication_notification"("requested_publication_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_schedule_publication_notification"("requested_publication_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_schedule_publication_notification"("requested_publication_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_schedule_publication_notification"("requested_publication_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_schedule_shadow_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_schedule_shadow_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_schedule_shadow_draft"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_dynamic_shift_exchange_request"("requested_swap_type" "text", "requested_requester_assignment_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_assignment_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_shift_exchange_request"("requested_swap_type" "text", "requested_requester_assignment_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_assignment_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_shift_exchange_request"("requested_swap_type" "text", "requested_requester_assignment_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_assignment_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_dynamic_shift_exchange_request"("requested_swap_type" "text", "requested_requester_assignment_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_assignment_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_morning_driver_availability_period"("requested_year" integer, "requested_month" integer, "requested_title" "text", "requested_instructions" "text", "requested_submission_deadline" timestamp with time zone) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_morning_driver_availability_period"("requested_year" integer, "requested_month" integer, "requested_title" "text", "requested_instructions" "text", "requested_submission_deadline" timestamp with time zone) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_morning_driver_availability_period"("requested_year" integer, "requested_month" integer, "requested_title" "text", "requested_instructions" "text", "requested_submission_deadline" timestamp with time zone) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_morning_driver_availability_period"("requested_year" integer, "requested_month" integer, "requested_title" "text", "requested_instructions" "text", "requested_submission_deadline" timestamp with time zone) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_morning_driver_schedule_draft"("requested_availability_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_morning_driver_schedule_draft"("requested_availability_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_morning_driver_schedule_draft"("requested_availability_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_morning_driver_schedule_draft"("requested_availability_period_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_operational_announcement"("requested_user_ids" "uuid"[], "requested_title" "text", "requested_body" "text", "requested_priority" "text", "requested_expires_at" timestamp with time zone) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_operational_announcement"("requested_user_ids" "uuid"[], "requested_title" "text", "requested_body" "text", "requested_priority" "text", "requested_expires_at" timestamp with time zone) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_operational_announcement"("requested_user_ids" "uuid"[], "requested_title" "text", "requested_body" "text", "requested_priority" "text", "requested_expires_at" timestamp with time zone) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_schedule_publication_notification"("requested_schedule_kind" "text", "requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_schedule_publication_notification"("requested_schedule_kind" "text", "requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_schedule_publication_notification"("requested_schedule_kind" "text", "requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_shift_swap_request"("requested_swap_type" "text", "requested_requester_shift_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_shift_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_shift_swap_request"("requested_swap_type" "text", "requested_requester_shift_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_shift_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_shift_swap_request"("requested_swap_type" "text", "requested_requester_shift_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_shift_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_shift_swap_request"("requested_swap_type" "text", "requested_requester_shift_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_counterparty_shift_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."create_shift_swap_workflow_notification"("recipient_user_ids" "uuid"[], "requested_request_id" "uuid", "requested_actor_user_id" "uuid", "requested_event" "text", "requested_title" "text", "requested_body" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_shift_swap_workflow_notification"("recipient_user_ids" "uuid"[], "requested_request_id" "uuid", "requested_actor_user_id" "uuid", "requested_event" "text", "requested_title" "text", "requested_body" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_shift_swap_workflow_notification"("recipient_user_ids" "uuid"[], "requested_request_id" "uuid", "requested_actor_user_id" "uuid", "requested_event" "text", "requested_title" "text", "requested_body" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."create_shift_swap_workflow_notification"("recipient_user_ids" "uuid"[], "requested_request_id" "uuid", "requested_actor_user_id" "uuid", "requested_event" "text", "requested_title" "text", "requested_body" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."current_user_created_notification"("requested_notification_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."current_user_created_notification"("requested_notification_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."current_user_created_notification"("requested_notification_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."current_user_created_notification"("requested_notification_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."current_user_has_permission"("requested_permission" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."current_user_has_permission"("requested_permission" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."current_user_has_permission"("requested_permission" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."current_user_has_permission"("requested_permission" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."current_user_role"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."current_user_role"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."current_user_role"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."current_user_role"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."decorate_daily_report_notification"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."decorate_daily_report_notification"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."decorate_daily_report_notification"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."delete_availability_period"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_availability_period"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_availability_period"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_availability_period"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."delete_driver_availability_period"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_driver_availability_period"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_driver_availability_period"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."delete_dynamic_job_type"("requested_job_type_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_dynamic_job_type"("requested_job_type_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_dynamic_job_type"("requested_job_type_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_dynamic_job_type"("requested_job_type_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."delete_morning_driver_availability_period"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_morning_driver_availability_period"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_morning_driver_availability_period"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."delete_morning_driver_availability_period"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_schedule_published_assignments" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_assignment_ends_at"("a" "public"."dynamic_schedule_published_assignments") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_assignment_ends_at"("a" "public"."dynamic_schedule_published_assignments") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_assignment_ends_at"("a" "public"."dynamic_schedule_published_assignments") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_assignment_starts_at"("a" "public"."dynamic_schedule_published_assignments") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_assignment_starts_at"("a" "public"."dynamic_schedule_published_assignments") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_assignment_starts_at"("a" "public"."dynamic_schedule_published_assignments") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_copy_rotation_original_to_publication"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_copy_rotation_original_to_publication"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_copy_rotation_original_to_publication"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."dynamic_job_type_live_snapshot"("requested_job_type_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_job_type_live_snapshot"("requested_job_type_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_job_type_live_snapshot"("requested_job_type_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_job_type_live_snapshot"("requested_job_type_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_minutes_after"("base_time" time without time zone, "target_time" time without time zone) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_minutes_after"("base_time" time without time zone, "target_time" time without time zone) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_minutes_after"("base_time" time without time zone, "target_time" time without time zone) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."dynamic_refresh_draft_metrics"("requested_draft_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_refresh_draft_metrics"("requested_draft_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_refresh_draft_metrics"("requested_draft_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_refresh_draft_metrics"("requested_draft_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."dynamic_resolve_assignment_local_interval"("requested_shift_date" "date", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_work_mode" "text", "requested_scheduling_config" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_resolve_assignment_local_interval"("requested_shift_date" "date", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_work_mode" "text", "requested_scheduling_config" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_resolve_assignment_local_interval"("requested_shift_date" "date", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_work_mode" "text", "requested_scheduling_config" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_resolve_assignment_local_interval"("requested_shift_date" "date", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_work_mode" "text", "requested_scheduling_config" "jsonb") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_shadow_assignment_engine_user"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_shadow_assignment_engine_user"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_shadow_assignment_engine_user"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_shadow_candidate_allowed"("requested_draft_id" "uuid", "requested_user_id" "uuid", "requested_slot_id" "uuid", "requested_max_shifts_per_day" integer, "requested_no_consecutive" boolean, "requested_min_rest_minutes" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_shadow_candidate_allowed"("requested_draft_id" "uuid", "requested_user_id" "uuid", "requested_slot_id" "uuid", "requested_max_shifts_per_day" integer, "requested_no_consecutive" boolean, "requested_min_rest_minutes" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_shadow_candidate_allowed"("requested_draft_id" "uuid", "requested_user_id" "uuid", "requested_slot_id" "uuid", "requested_max_shifts_per_day" integer, "requested_no_consecutive" boolean, "requested_min_rest_minutes" integer) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_shadow_candidate_block_reason"("requested_draft_id" "uuid", "requested_user_id" "uuid", "requested_slot_id" "uuid", "requested_max_shifts_per_day" integer, "requested_no_consecutive" boolean, "requested_min_rest_minutes" integer, "requested_max_hard" boolean) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_shadow_candidate_block_reason"("requested_draft_id" "uuid", "requested_user_id" "uuid", "requested_slot_id" "uuid", "requested_max_shifts_per_day" integer, "requested_no_consecutive" boolean, "requested_min_rest_minutes" integer, "requested_max_hard" boolean) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_shadow_candidate_block_reason"("requested_draft_id" "uuid", "requested_user_id" "uuid", "requested_slot_id" "uuid", "requested_max_shifts_per_day" integer, "requested_no_consecutive" boolean, "requested_min_rest_minutes" integer, "requested_max_hard" boolean) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_time_minutes"("value_time" time without time zone) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_time_minutes"("value_time" time without time zone) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_time_minutes"("value_time" time without time zone) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_user_has_overlap"("requested_publication_id" "uuid", "requested_user_id" "uuid", "requested_assignment_id" "uuid", "ignored_assignment_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_user_has_overlap"("requested_publication_id" "uuid", "requested_user_id" "uuid", "requested_assignment_id" "uuid", "ignored_assignment_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."dynamic_user_has_overlap"("requested_publication_id" "uuid", "requested_user_id" "uuid", "requested_assignment_id" "uuid", "ignored_assignment_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."enforce_dynamic_availability_open_deadline"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."enforce_dynamic_availability_open_deadline"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."enforce_dynamic_availability_open_deadline"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."execute_schedule_excel_import"("requested_file_name" "text", "requested_file_size_bytes" bigint, "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_warnings" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."execute_schedule_excel_import"("requested_file_name" "text", "requested_file_size_bytes" bigint, "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_warnings" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."execute_schedule_excel_import"("requested_file_name" "text", "requested_file_size_bytes" bigint, "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_warnings" "jsonb") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."execute_schedule_excel_import"("requested_file_name" "text", "requested_file_size_bytes" bigint, "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_morning_driver_shifts" "jsonb", "requested_warnings" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."execute_schedule_excel_import"("requested_file_name" "text", "requested_file_size_bytes" bigint, "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_morning_driver_shifts" "jsonb", "requested_warnings" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."execute_schedule_excel_import"("requested_file_name" "text", "requested_file_size_bytes" bigint, "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_morning_driver_shifts" "jsonb", "requested_warnings" "jsonb") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_announcement_recipient_catalog"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_announcement_recipient_catalog"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_announcement_recipient_catalog"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_archive_periods"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_archive_periods"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_archive_periods"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_audit_logs"("requested_limit" integer, "requested_offset" integer, "requested_action" "text", "requested_actor_user_id" "uuid", "requested_target_user_id" "uuid", "requested_search_term" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_audit_logs"("requested_limit" integer, "requested_offset" integer, "requested_action" "text", "requested_actor_user_id" "uuid", "requested_target_user_id" "uuid", "requested_search_term" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_audit_logs"("requested_limit" integer, "requested_offset" integer, "requested_action" "text", "requested_actor_user_id" "uuid", "requested_target_user_id" "uuid", "requested_search_term" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_audit_logs"("requested_limit" integer, "requested_offset" integer, "requested_action" "text", "requested_actor_user_id" "uuid", "requested_target_user_id" "uuid", "requested_search_term" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_availability_assignment_candidates"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_availability_assignment_candidates"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_availability_assignment_candidates"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_availability_assignment_candidates"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_availability_period_matrix"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_availability_period_matrix"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_availability_period_matrix"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_availability_period_matrix"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_availability_period_submissions"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_availability_period_submissions"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_availability_period_submissions"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_availability_period_submissions"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_calendar_holidays"("requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_calendar_holidays"("requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_calendar_holidays"("requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_client_version_admin_overview"("requested_current_version" "text", "requested_current_build_id" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_client_version_admin_overview"("requested_current_version" "text", "requested_current_build_id" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_client_version_admin_overview"("requested_current_version" "text", "requested_current_build_id" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_client_version_admin_overview"("requested_current_version" "text", "requested_current_build_id" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_current_schedule"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_current_schedule"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_current_schedule"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_current_schedule_edit_options"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_current_schedule_edit_options"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_current_schedule_edit_options"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_daily_report_admin_options"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_daily_report_admin_options"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_daily_report_admin_options"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_daily_report_admin_options"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_daily_report_attachment_download"("requested_attachment_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_daily_report_attachment_download"("requested_attachment_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_daily_report_attachment_download"("requested_attachment_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_daily_report_attachment_download"("requested_attachment_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_daily_report_notification_detail"("requested_report_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_daily_report_notification_detail"("requested_report_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_daily_report_notification_detail"("requested_report_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_daily_report_notification_detail"("requested_report_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dispatcher_availability_statistics"("requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dispatcher_availability_statistics"("requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dispatcher_availability_statistics"("requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dispatcher_schedule_by_month"("requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dispatcher_schedule_by_month"("requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dispatcher_schedule_by_month"("requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dispatcher_schedule_by_month"("requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_driver_availability_management"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_driver_availability_management"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_driver_availability_management"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_driver_availability_periods"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_driver_availability_periods"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_driver_availability_periods"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_driver_schedule_draft"("requested_schedule_period_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_driver_schedule_draft"("requested_schedule_period_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_driver_schedule_draft"("requested_schedule_period_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_archive_periods"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_archive_periods"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_archive_periods"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_archive_periods"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_attendance_statistics"("requested_job_type_id" "uuid", "requested_years" integer[], "requested_months" integer[], "requested_user_ids" "uuid"[]) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_attendance_statistics"("requested_job_type_id" "uuid", "requested_years" integer[], "requested_months" integer[], "requested_user_ids" "uuid"[]) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_attendance_statistics"("requested_job_type_id" "uuid", "requested_years" integer[], "requested_months" integer[], "requested_user_ids" "uuid"[]) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_availability_shadow_summary"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_availability_shadow_summary"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_availability_shadow_summary"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_availability_shadow_summary"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_availability_shadow_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_availability_shadow_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_availability_shadow_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_availability_shadow_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_cutover_state"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_cutover_state"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_cutover_state"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_historical_slot_editor"("requested_historical_period_id" "uuid", "requested_work_date" "date", "requested_shift_code" "text", "requested_start_time" "text", "requested_end_time" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_historical_slot_editor"("requested_historical_period_id" "uuid", "requested_work_date" "date", "requested_shift_code" "text", "requested_start_time" "text", "requested_end_time" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_historical_slot_editor"("requested_historical_period_id" "uuid", "requested_work_date" "date", "requested_shift_code" "text", "requested_start_time" "text", "requested_end_time" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_historical_slot_editor"("requested_historical_period_id" "uuid", "requested_work_date" "date", "requested_shift_code" "text", "requested_start_time" "text", "requested_end_time" "text") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_active_features"("requested_job_type_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_active_features"("requested_job_type_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_active_features"("requested_job_type_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_job_type_effective_config"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_effective_config"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_effective_config"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_effective_config"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_job_type_materialization"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_materialization"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_materialization"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_materialization"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_membership_admin"("requested_job_type_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_membership_admin"("requested_job_type_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_membership_admin"("requested_job_type_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_permission_editor"("requested_job_type_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_permission_editor"("requested_job_type_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_permission_editor"("requested_job_type_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_job_type_rotation_workspace"("requested_job_type_id" "uuid", "requested_start_date" "date", "requested_days" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_rotation_workspace"("requested_job_type_id" "uuid", "requested_start_date" "date", "requested_days" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_rotation_workspace"("requested_job_type_id" "uuid", "requested_start_date" "date", "requested_days" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_rotation_workspace"("requested_job_type_id" "uuid", "requested_start_date" "date", "requested_days" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_job_type_statistics"("requested_job_type_id" "uuid", "requested_years" integer[], "requested_months" integer[], "requested_user_ids" "uuid"[]) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_statistics"("requested_job_type_id" "uuid", "requested_years" integer[], "requested_months" integer[], "requested_user_ids" "uuid"[]) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_statistics"("requested_job_type_id" "uuid", "requested_years" integer[], "requested_months" integer[], "requested_user_ids" "uuid"[]) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_job_type_statistics"("requested_job_type_id" "uuid", "requested_years" integer[], "requested_months" integer[], "requested_user_ids" "uuid"[]) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_period_workflow"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_period_workflow"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_period_workflow"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_period_workflow"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_pilot_qa_report"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_pilot_qa_report"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_pilot_qa_report"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_pilot_qa_report"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_published_schedule_editor"("requested_publication_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_published_schedule_editor"("requested_publication_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_published_schedule_editor"("requested_publication_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_published_schedule_editor"("requested_publication_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_role_workspace"("requested_job_type_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_role_workspace"("requested_job_type_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_role_workspace"("requested_job_type_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_schedule_calendar_workspace"("requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_calendar_workspace"("requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_calendar_workspace"("requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_calendar_workspace"("requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_schedule_draft_editor"("requested_draft_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_draft_editor"("requested_draft_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_draft_editor"("requested_draft_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_draft_editor"("requested_draft_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_schedule_export_workspace"("requested_year" integer, "requested_month" integer, "requested_job_type_ids" "uuid"[]) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_export_workspace"("requested_year" integer, "requested_month" integer, "requested_job_type_ids" "uuid"[]) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_export_workspace"("requested_year" integer, "requested_month" integer, "requested_job_type_ids" "uuid"[]) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_export_workspace"("requested_year" integer, "requested_month" integer, "requested_job_type_ids" "uuid"[]) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_schedule_group_snapshot"("requested_group_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_group_snapshot"("requested_group_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_group_snapshot"("requested_group_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_group_snapshot"("requested_group_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_shadow_diagnostics"("requested_draft_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_shadow_diagnostics"("requested_draft_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_shadow_diagnostics"("requested_draft_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_shadow_draft"("requested_draft_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_shadow_draft"("requested_draft_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_shadow_draft"("requested_draft_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_schedule_shadow_validation"("requested_draft_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_shadow_validation"("requested_draft_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_shadow_validation"("requested_draft_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_schedule_shadow_validation"("requested_draft_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_scheduling_admin"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_scheduling_admin"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_scheduling_admin"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_scheduling_admin"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_shift_exchange_requests"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_shift_exchange_requests"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_shift_exchange_requests"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_shift_exchange_requests"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_shifts_management_workspace"("requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_shifts_management_workspace"("requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_shifts_management_workspace"("requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_shifts_management_workspace"("requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_dynamic_statistics_job_types"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_statistics_job_types"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_statistics_job_types"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_statistics_job_types"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_user_assignment_editor"("target_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_user_assignment_editor"("target_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_dynamic_user_assignment_editor"("target_user_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_inherited_dynamic_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_inherited_dynamic_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_inherited_dynamic_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_legacy_freeze_readiness"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_legacy_freeze_readiness"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_legacy_freeze_readiness"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_legacy_freeze_readiness"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_archive_summary"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_archive_summary"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_archive_summary"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_morning_driver_availability_management"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_availability_management"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_availability_management"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_availability_management"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_morning_driver_availability_periods"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_availability_periods"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_availability_periods"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_availability_periods"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_morning_driver_schedule"("requested_schedule_period_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_schedule"("requested_schedule_period_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_schedule"("requested_schedule_period_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_schedule"("requested_schedule_period_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_schedule_by_month"("requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_schedule_by_month"("requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_schedule_by_month"("requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_statistics"("requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_statistics"("requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_morning_driver_statistics"("requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_attendance_workspace"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_attendance_workspace"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_attendance_workspace"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_daily_report_workspace"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_daily_report_workspace"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_daily_report_workspace"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_daily_report_workspace"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_dashboard"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dashboard"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dashboard"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_dashboard_widget_settings"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dashboard_widget_settings"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dashboard_widget_settings"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dashboard_widget_settings"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_development_mode"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_development_mode"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_development_mode"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_development_mode"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_driver_availability"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_driver_availability"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_driver_availability"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_dynamic_availability_periods"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_availability_periods"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_availability_periods"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_availability_periods"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_dynamic_availability_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_availability_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_availability_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_availability_workspace"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_dynamic_runtime_context"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_runtime_context"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_runtime_context"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_runtime_context"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_dynamic_schedule_periods"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_schedule_periods"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_schedule_periods"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_schedule_periods"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_dynamic_schedule_workspace"("requested_publication_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_schedule_workspace"("requested_publication_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_schedule_workspace"("requested_publication_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_schedule_workspace"("requested_publication_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_dynamic_self_edit_workspace"("requested_publication_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_self_edit_workspace"("requested_publication_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_self_edit_workspace"("requested_publication_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_self_edit_workspace"("requested_publication_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_dynamic_shift_exchange_options"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_shift_exchange_options"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_shift_exchange_options"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_dynamic_shift_exchange_options"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_manager_dashboard_widgets"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_manager_dashboard_widgets"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_manager_dashboard_widgets"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_manager_dashboard_widgets"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_morning_driver_availability"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_morning_driver_availability"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_morning_driver_availability"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_morning_driver_availability"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_morning_driver_dashboard"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_morning_driver_dashboard"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_morning_driver_dashboard"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_morning_driver_dashboard"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_open_availability"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_open_availability"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_open_availability"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_open_availability"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_pending_operational_push_notifications"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_pending_operational_push_notifications"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_pending_operational_push_notifications"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_pending_operational_push_notifications"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_my_permissions"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_permissions"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_permissions"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_my_permissions"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_payroll_statistics"("requested_years" integer[], "requested_months" integer[]) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_payroll_statistics"("requested_years" integer[], "requested_months" integer[]) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_payroll_statistics"("requested_years" integer[], "requested_months" integer[]) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_payroll_statistics"("requested_years" integer[], "requested_months" integer[]) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_permission_admin_catalog"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_permission_admin_catalog"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_permission_admin_catalog"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_schedule_draft_edit_context"("requested_schedule_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_schedule_draft_edit_context"("requested_schedule_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_schedule_draft_edit_context"("requested_schedule_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_schedule_import_users"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_schedule_import_users"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_schedule_import_users"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_shift_swap_create_options"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_shift_swap_create_options"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_shift_swap_create_options"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_shift_swap_create_options"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_shift_swap_requests"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_shift_swap_requests"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_shift_swap_requests"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_shift_swap_requests"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_shift_time_distribution_statistics"("requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_shift_time_distribution_statistics"("requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_shift_time_distribution_statistics"("requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_statistics_dashboard"("requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_statistics_dashboard"("requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_statistics_dashboard"("requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_statistics_people"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_statistics_people"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_statistics_people"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_dynamic_job_type_permission_editor"("target_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_dynamic_job_type_permission_editor"("target_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_dynamic_job_type_permission_editor"("target_user_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_dynamic_permission_summary"("target_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_dynamic_permission_summary"("target_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_dynamic_permission_summary"("target_user_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_permission_policy"("target_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_permission_policy"("target_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_permission_policy"("target_user_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."get_user_permissions"("target_user_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_permissions"("target_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_permissions"("target_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."get_user_permissions"("target_user_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."guard_development_mode_production_write"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."guard_development_mode_production_write"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."guard_development_mode_production_write"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."handle_new_auth_user"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."handle_new_auth_user"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."handle_new_auth_user"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."handle_profile_audit_update"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."handle_profile_audit_update"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."handle_profile_audit_update"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."handle_profile_permissions_created"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."handle_profile_permissions_created"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."handle_profile_permissions_created"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."has_dynamic_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."has_dynamic_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."has_dynamic_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."has_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."has_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."has_job_type_permission"("requested_permission_key" "text", "requested_job_type_id" "uuid", "requested_user_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."import_dynamic_legacy_history"("requested_job_type_id" "uuid", "requested_source_kind" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."import_dynamic_legacy_history"("requested_job_type_id" "uuid", "requested_source_kind" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."import_dynamic_legacy_history"("requested_job_type_id" "uuid", "requested_source_kind" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."import_dynamic_legacy_history"("requested_job_type_id" "uuid", "requested_source_kind" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."import_morning_driver_schedule_assignments"("requested_import_run_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_morning_driver_shifts" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."import_morning_driver_schedule_assignments"("requested_import_run_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_morning_driver_shifts" "jsonb") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."initialize_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."initialize_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."initialize_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."initialize_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."is_admin"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_admin"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_admin"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_admin"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."is_current_user_admin"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_current_user_admin"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_current_user_admin"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_current_user_admin"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."is_manager_or_admin"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_manager_or_admin"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_manager_or_admin"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_manager_or_admin"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."is_my_development_mode"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_my_development_mode"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_my_development_mode"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."is_my_development_mode"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."mark_my_operational_push_dispatched"("requested_notification_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."mark_my_operational_push_dispatched"("requested_notification_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."mark_my_operational_push_dispatched"("requested_notification_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."mark_my_operational_push_dispatched"("requested_notification_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."materialize_dynamic_availability_period_slots"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."materialize_dynamic_availability_period_slots"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."materialize_dynamic_availability_period_slots"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."materialize_dynamic_availability_period_slots"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."materialize_dynamic_job_type_snapshot"("requested_job_type_id" "uuid", "requested_effective_month" "date", "requested_snapshot" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."materialize_dynamic_job_type_snapshot"("requested_job_type_id" "uuid", "requested_effective_month" "date", "requested_snapshot" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."materialize_dynamic_job_type_snapshot"("requested_job_type_id" "uuid", "requested_effective_month" "date", "requested_snapshot" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."materialize_dynamic_job_type_snapshot"("requested_job_type_id" "uuid", "requested_effective_month" "date", "requested_snapshot" "jsonb") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."normalize_schedule_import_name"("requested_name" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."normalize_schedule_import_name"("requested_name" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."normalize_schedule_import_name"("requested_name" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."open_availability_period"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."open_availability_period"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."open_availability_period"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."open_availability_period"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."open_driver_availability_period"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."open_driver_availability_period"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."open_driver_availability_period"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."open_morning_driver_availability_period"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."open_morning_driver_availability_period"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."open_morning_driver_availability_period"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."open_morning_driver_availability_period"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."prepare_my_daily_report_upload"("requested_job_type_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."prepare_my_daily_report_upload"("requested_job_type_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."prepare_my_daily_report_upload"("requested_job_type_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."prepare_my_daily_report_upload"("requested_job_type_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."preview_dynamic_legacy_import"("requested_job_type_id" "uuid", "requested_source_kind" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_dynamic_legacy_import"("requested_job_type_id" "uuid", "requested_source_kind" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_dynamic_legacy_import"("requested_job_type_id" "uuid", "requested_source_kind" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_dynamic_legacy_import"("requested_job_type_id" "uuid", "requested_source_kind" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."preview_dynamic_schedule_group"("requested_group_id" "uuid", "requested_year" integer, "requested_month" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_dynamic_schedule_group"("requested_group_id" "uuid", "requested_year" integer, "requested_month" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_dynamic_schedule_group"("requested_group_id" "uuid", "requested_year" integer, "requested_month" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_dynamic_schedule_group"("requested_group_id" "uuid", "requested_year" integer, "requested_month" integer) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."preview_gvk_legacy_migration"("requested_mappings" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_gvk_legacy_migration"("requested_mappings" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_gvk_legacy_migration"("requested_mappings" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_gvk_legacy_migration"("requested_mappings" "jsonb") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."preview_schedule_excel_import"("requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_schedule_excel_import"("requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_schedule_excel_import"("requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_schedule_excel_import"("requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_morning_driver_shifts" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_schedule_excel_import"("requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_morning_driver_shifts" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."preview_schedule_excel_import"("requested_year" integer, "requested_month" integer, "requested_period_type" "text", "requested_import_strategy" "text", "requested_dispatcher_shifts" "jsonb", "requested_driver_duties" "jsonb", "requested_morning_driver_shifts" "jsonb") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."publish_driver_schedule"("requested_schedule_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."publish_driver_schedule"("requested_schedule_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."publish_driver_schedule"("requested_schedule_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."publish_dynamic_schedule_draft"("requested_draft_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."publish_dynamic_schedule_draft"("requested_draft_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."publish_dynamic_schedule_draft"("requested_draft_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."publish_dynamic_schedule_draft"("requested_draft_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."publish_morning_driver_schedule"("requested_schedule_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."publish_morning_driver_schedule"("requested_schedule_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."publish_morning_driver_schedule"("requested_schedule_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."publish_morning_driver_schedule"("requested_schedule_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."publish_schedule_period"("requested_schedule_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."publish_schedule_period"("requested_schedule_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."publish_schedule_period"("requested_schedule_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."rebuild_availability_period_slots"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."rebuild_availability_period_slots"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."rebuild_availability_period_slots"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."rebuild_availability_period_slots"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."record_driver_schedule_assignment_change"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."record_driver_schedule_assignment_change"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."record_driver_schedule_assignment_change"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."record_schedule_assignment_change"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."record_schedule_assignment_change"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."record_schedule_assignment_change"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."record_user_login"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."record_user_login"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."record_user_login"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."record_user_login"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."register_my_daily_report_attachment"("requested_report_id" "uuid", "requested_storage_path" "text", "requested_file_name" "text", "requested_mime_type" "text", "requested_file_size" bigint) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."register_my_daily_report_attachment"("requested_report_id" "uuid", "requested_storage_path" "text", "requested_file_name" "text", "requested_mime_type" "text", "requested_file_size" bigint) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."register_my_daily_report_attachment"("requested_report_id" "uuid", "requested_storage_path" "text", "requested_file_name" "text", "requested_mime_type" "text", "requested_file_size" bigint) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."register_my_daily_report_attachment"("requested_report_id" "uuid", "requested_storage_path" "text", "requested_file_name" "text", "requested_mime_type" "text", "requested_file_size" bigint) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."register_push_subscription"("requested_endpoint" "text", "requested_p256dh_key" "text", "requested_auth_key" "text", "requested_user_agent" "text", "requested_device_name" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."register_push_subscription"("requested_endpoint" "text", "requested_p256dh_key" "text", "requested_auth_key" "text", "requested_user_agent" "text", "requested_device_name" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."register_push_subscription"("requested_endpoint" "text", "requested_p256dh_key" "text", "requested_auth_key" "text", "requested_user_agent" "text", "requested_device_name" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."register_push_subscription"("requested_endpoint" "text", "requested_p256dh_key" "text", "requested_auth_key" "text", "requested_user_agent" "text", "requested_device_name" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."remove_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_assignment_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."remove_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_assignment_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."remove_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_assignment_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."remove_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_assignment_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_availability_period"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_availability_period"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_availability_period"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."reopen_driver_availability_period"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_driver_availability_period"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_driver_availability_period"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_morning_driver_availability_period"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_morning_driver_availability_period"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_morning_driver_availability_period"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."reopen_morning_driver_availability_submission"("requested_period_id" "uuid", "requested_user_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_morning_driver_availability_submission"("requested_period_id" "uuid", "requested_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_morning_driver_availability_submission"("requested_period_id" "uuid", "requested_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."reopen_morning_driver_availability_submission"("requested_period_id" "uuid", "requested_user_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."report_my_client_version"("requested_client_id" "text", "requested_app_version" "text", "requested_build_id" "text", "requested_is_pwa" boolean, "requested_platform" "text", "requested_user_agent" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."report_my_client_version"("requested_client_id" "text", "requested_app_version" "text", "requested_build_id" "text", "requested_is_pwa" boolean, "requested_platform" "text", "requested_user_agent" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."report_my_client_version"("requested_client_id" "text", "requested_app_version" "text", "requested_build_id" "text", "requested_is_pwa" boolean, "requested_platform" "text", "requested_user_agent" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."report_my_client_version"("requested_client_id" "text", "requested_app_version" "text", "requested_build_id" "text", "requested_is_pwa" boolean, "requested_platform" "text", "requested_user_agent" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."resolve_dynamic_shift_display_name"("requested_job_type_id" "uuid", "requested_shift_date" "date", "requested_shift_code" "text", "requested_shift_name" "text", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_fallback" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."resolve_dynamic_shift_display_name"("requested_job_type_id" "uuid", "requested_shift_date" "date", "requested_shift_code" "text", "requested_shift_name" "text", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_fallback" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."resolve_dynamic_shift_display_name"("requested_job_type_id" "uuid", "requested_shift_date" "date", "requested_shift_code" "text", "requested_shift_name" "text", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_fallback" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."resolve_dynamic_shift_display_name"("requested_job_type_id" "uuid", "requested_shift_date" "date", "requested_shift_code" "text", "requested_shift_name" "text", "requested_start_time" time without time zone, "requested_end_time" time without time zone, "requested_fallback" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."respond_to_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."respond_to_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."respond_to_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."respond_to_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."respond_to_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."respond_to_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."respond_to_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."respond_to_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."review_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."review_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."review_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."review_dynamic_shift_exchange_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."review_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."review_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."review_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."review_shift_swap_request"("requested_request_id" "uuid", "requested_approve" boolean, "requested_rejection_reason" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."run_gvk_legacy_migration"("requested_mappings" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."run_gvk_legacy_migration"("requested_mappings" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."run_gvk_legacy_migration"("requested_mappings" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."run_gvk_legacy_migration"("requested_mappings" "jsonb") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_dynamic_availability_shadow_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_user_id" "uuid", "requested_payload" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_availability_shadow_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_user_id" "uuid", "requested_payload" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_availability_shadow_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_user_id" "uuid", "requested_payload" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_availability_shadow_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_user_id" "uuid", "requested_payload" "jsonb") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid", "requested_target_job_type_ids" "uuid"[]) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid", "requested_target_job_type_ids" "uuid"[]) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid", "requested_target_job_type_ids" "uuid"[]) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_dashboard_context_policy"("requested_job_type_id" "uuid", "requested_target_job_type_ids" "uuid"[]) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_dynamic_job_type"("requested_payload" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type"("requested_payload" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type"("requested_payload" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type"("requested_payload" "jsonb") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type_member_employment_scope"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_employment_scope" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type_member_employment_scope"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_employment_scope" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type_member_employment_scope"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_employment_scope" "text") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type_membership"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_is_member" boolean, "requested_employment_scope" "text", "requested_part_time_definition" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type_membership"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_is_member" boolean, "requested_employment_scope" "text", "requested_part_time_definition" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type_membership"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_is_member" boolean, "requested_employment_scope" "text", "requested_part_time_definition" "jsonb") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type_permission_policy"("requested_job_type_id" "uuid", "requested_member_permission_keys" "text"[], "requested_manager_permission_keys" "text"[]) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type_permission_policy"("requested_job_type_id" "uuid", "requested_member_permission_keys" "text"[], "requested_manager_permission_keys" "text"[]) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_job_type_permission_policy"("requested_job_type_id" "uuid", "requested_member_permission_keys" "text"[], "requested_manager_permission_keys" "text"[]) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_dynamic_schedule_group"("requested_payload" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_schedule_group"("requested_payload" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_schedule_group"("requested_payload" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_schedule_group"("requested_payload" "jsonb") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_user_assignments"("target_user_id" "uuid", "requested_assignments" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_user_assignments"("target_user_id" "uuid", "requested_assignments" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_dynamic_user_assignments"("target_user_id" "uuid", "requested_assignments" "jsonb") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_my_dashboard_widget_settings"("requested_widgets" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_dashboard_widget_settings"("requested_widgets" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_dashboard_widget_settings"("requested_widgets" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_dashboard_widget_settings"("requested_widgets" "jsonb") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_my_driver_availability"("requested_period_id" "uuid", "requested_entries" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_driver_availability"("requested_period_id" "uuid", "requested_entries" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_driver_availability"("requested_period_id" "uuid", "requested_entries" "jsonb") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_my_dynamic_availability_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_payload" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_dynamic_availability_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_payload" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_dynamic_availability_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_payload" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_dynamic_availability_submission"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_payload" "jsonb") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_my_morning_driver_availability"("requested_period_id" "uuid", "requested_entries" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_morning_driver_availability"("requested_period_id" "uuid", "requested_entries" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_morning_driver_availability"("requested_period_id" "uuid", "requested_entries" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_morning_driver_availability"("requested_period_id" "uuid", "requested_entries" "jsonb") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_my_shift_availability"("requested_shift_slot_id" "uuid", "requested_availability_status" "text", "requested_note" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_shift_availability"("requested_shift_slot_id" "uuid", "requested_availability_status" "text", "requested_note" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_shift_availability"("requested_shift_slot_id" "uuid", "requested_availability_status" "text", "requested_note" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_my_shift_availability"("requested_shift_slot_id" "uuid", "requested_availability_status" "text", "requested_note" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_schedule_draft"("requested_availability_period_id" "uuid", "requested_assignments" "jsonb", "requested_confirm_warnings" boolean) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_schedule_draft"("requested_availability_period_id" "uuid", "requested_assignments" "jsonb", "requested_confirm_warnings" boolean) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_schedule_draft"("requested_availability_period_id" "uuid", "requested_assignments" "jsonb", "requested_confirm_warnings" boolean) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."save_schedule_import_name_alias"("requested_source_name" "text", "requested_user_id" "uuid", "requested_user_type" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_schedule_import_name_alias"("requested_source_name" "text", "requested_user_id" "uuid", "requested_user_type" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_schedule_import_name_alias"("requested_source_name" "text", "requested_user_id" "uuid", "requested_user_type" "text") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_user_dynamic_job_type_permissions"("target_user_id" "uuid", "requested_permissions" "jsonb") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_user_dynamic_job_type_permissions"("target_user_id" "uuid", "requested_permissions" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_user_dynamic_job_type_permissions"("target_user_id" "uuid", "requested_permissions" "jsonb") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_user_permission_policy"("target_user_id" "uuid", "requested_profile_code" "text", "requested_scope_mode" "text", "requested_job_type_ids" "uuid"[]) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_user_permission_policy"("target_user_id" "uuid", "requested_profile_code" "text", "requested_scope_mode" "text", "requested_job_type_ids" "uuid"[]) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."save_user_permission_policy"("target_user_id" "uuid", "requested_profile_code" "text", "requested_scope_mode" "text", "requested_job_type_ids" "uuid"[]) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_cutover_state"("p_enabled" boolean) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_cutover_state"("p_enabled" boolean) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_cutover_state"("p_enabled" boolean) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."set_dynamic_historical_assignment"("requested_historical_period_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_reason" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_historical_assignment"("requested_historical_period_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_reason" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_historical_assignment"("requested_historical_period_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_reason" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_historical_assignment"("requested_historical_period_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_reason" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."set_dynamic_job_type_active"("requested_job_type_id" "uuid", "requested_is_active" boolean) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_job_type_active"("requested_job_type_id" "uuid", "requested_is_active" boolean) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_job_type_active"("requested_job_type_id" "uuid", "requested_is_active" boolean) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_job_type_active"("requested_job_type_id" "uuid", "requested_is_active" boolean) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_job_type_manager"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_is_manager" boolean) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_job_type_manager"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_is_manager" boolean) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_job_type_manager"("requested_job_type_id" "uuid", "requested_user_id" "uuid", "requested_is_manager" boolean) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."set_dynamic_period_status"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_action" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_period_status"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_action" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_period_status"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_action" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_period_status"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_action" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."set_dynamic_period_submission_deadline"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_deadline" timestamp with time zone) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_period_submission_deadline"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_deadline" timestamp with time zone) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_period_submission_deadline"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_deadline" timestamp with time zone) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_period_submission_deadline"("requested_job_type_id" "uuid", "requested_year" integer, "requested_month" integer, "requested_deadline" timestamp with time zone) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."set_dynamic_published_schedule_assignment"("requested_publication_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_reason" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_published_schedule_assignment"("requested_publication_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_reason" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_published_schedule_assignment"("requested_publication_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_reason" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_published_schedule_assignment"("requested_publication_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_reason" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."set_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_note" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_note" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_note" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_schedule_draft_assignment"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid", "requested_note" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."set_dynamic_schedule_slot_intentionally_unassigned"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_count" integer, "requested_note" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_schedule_slot_intentionally_unassigned"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_count" integer, "requested_note" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_schedule_slot_intentionally_unassigned"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_count" integer, "requested_note" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_dynamic_schedule_slot_intentionally_unassigned"("requested_draft_id" "uuid", "requested_slot_id" "uuid", "requested_count" integer, "requested_note" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."set_legacy_freeze_state"("p_frozen" boolean) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_legacy_freeze_state"("p_frozen" boolean) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_legacy_freeze_state"("p_frozen" boolean) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_legacy_freeze_state"("p_frozen" boolean) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_morning_driver_assignment_intentionally_unassigned"("requested_assignment_id" "uuid", "requested_is_intentionally_unassigned" boolean) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_morning_driver_assignment_intentionally_unassigned"("requested_assignment_id" "uuid", "requested_is_intentionally_unassigned" boolean) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_morning_driver_assignment_intentionally_unassigned"("requested_assignment_id" "uuid", "requested_is_intentionally_unassigned" boolean) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."set_my_development_mode"("requested_enabled" boolean, "requested_duration_minutes" integer) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_my_development_mode"("requested_enabled" boolean, "requested_duration_minutes" integer) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_my_development_mode"("requested_enabled" boolean, "requested_duration_minutes" integer) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_my_development_mode"("requested_enabled" boolean, "requested_duration_minutes" integer) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_push_updated_at"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_push_updated_at"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_push_updated_at"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."set_user_permissions"("target_user_id" "uuid", "requested_permissions" "text"[]) FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_user_permissions"("target_user_id" "uuid", "requested_permissions" "text"[]) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_user_permissions"("target_user_id" "uuid", "requested_permissions" "text"[]) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."set_user_permissions"("target_user_id" "uuid", "requested_permissions" "text"[]) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_dynamic_scheduling_rule_proposal"("requested_job_type_id" "uuid", "requested_text" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_dynamic_scheduling_rule_proposal"("requested_job_type_id" "uuid", "requested_text" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_dynamic_scheduling_rule_proposal"("requested_job_type_id" "uuid", "requested_text" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."submit_my_availability"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_availability"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_availability"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_availability"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."submit_my_daily_report"("requested_job_type_id" "uuid", "requested_items" "jsonb", "requested_report_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_daily_report"("requested_job_type_id" "uuid", "requested_items" "jsonb", "requested_report_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_daily_report"("requested_job_type_id" "uuid", "requested_items" "jsonb", "requested_report_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_daily_report"("requested_job_type_id" "uuid", "requested_items" "jsonb", "requested_report_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."submit_my_driver_availability"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_driver_availability"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_driver_availability"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."submit_my_morning_driver_availability"("requested_period_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_morning_driver_availability"("requested_period_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_morning_driver_availability"("requested_period_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."submit_my_morning_driver_availability"("requested_period_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."sync_calendar_special_day_to_holidays"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."sync_calendar_special_day_to_holidays"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."sync_calendar_special_day_to_holidays"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."sync_dynamic_job_type_permission_settings"("requested_job_type_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."sync_dynamic_job_type_permission_settings"("requested_job_type_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."sync_dynamic_job_type_permission_settings"("requested_job_type_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."sync_open_dynamic_availability_after_role_version_change"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."sync_open_dynamic_availability_after_role_version_change"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."sync_open_dynamic_availability_after_role_version_change"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."sync_open_dynamic_availability_after_role_version_change"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."track_profile_deactivation"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."track_profile_deactivation"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."track_profile_deactivation"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."transfer_my_driver_duty"("requested_schedule_day_id" "uuid", "requested_new_driver_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."transfer_my_driver_duty"("requested_schedule_day_id" "uuid", "requested_new_driver_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."transfer_my_driver_duty"("requested_schedule_day_id" "uuid", "requested_new_driver_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."transfer_my_morning_driver_assignment"("requested_assignment_id" "uuid", "requested_new_driver_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."transfer_my_morning_driver_assignment"("requested_assignment_id" "uuid", "requested_new_driver_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."transfer_my_morning_driver_assignment"("requested_assignment_id" "uuid", "requested_new_driver_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."trg_sync_dynamic_job_type_permissions"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."trg_sync_dynamic_job_type_permissions"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."trg_sync_dynamic_job_type_permissions"() TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."trigger_materialize_dynamic_job_type_version"() FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."trigger_materialize_dynamic_job_type_version"() TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."trigger_materialize_dynamic_job_type_version"() TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."trigger_materialize_dynamic_job_type_version"() TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_availability_submission_deadline"("requested_category" "text", "requested_period_id" "uuid", "requested_deadline" timestamp with time zone) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_availability_submission_deadline"("requested_category" "text", "requested_period_id" "uuid", "requested_deadline" timestamp with time zone) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_availability_submission_deadline"("requested_category" "text", "requested_period_id" "uuid", "requested_deadline" timestamp with time zone) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."update_current_driver_schedule_day"("requested_schedule_day_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_current_driver_schedule_day"("requested_schedule_day_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_current_driver_schedule_day"("requested_schedule_day_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_current_driver_schedule_day"("requested_schedule_day_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_current_schedule_shift"("requested_shift_id" "uuid", "requested_new_user_id" "uuid", "requested_reason" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_current_schedule_shift"("requested_shift_id" "uuid", "requested_new_user_id" "uuid", "requested_reason" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_current_schedule_shift"("requested_shift_id" "uuid", "requested_new_user_id" "uuid", "requested_reason" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."update_driver_schedule_day"("requested_schedule_day_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_driver_schedule_day"("requested_schedule_day_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_driver_schedule_day"("requested_schedule_day_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."update_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid", "requested_rotation_user_ids" "uuid"[], "requested_anchor_date" "date", "requested_reason" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid", "requested_rotation_user_ids" "uuid"[], "requested_anchor_date" "date", "requested_reason" "text") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid", "requested_rotation_user_ids" "uuid"[], "requested_anchor_date" "date", "requested_reason" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_dynamic_job_type_rotation_state"("requested_job_type_id" "uuid", "requested_rotation_user_ids" "uuid"[], "requested_anchor_date" "date", "requested_reason" "text") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."update_morning_driver_schedule_assignment"("requested_assignment_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_morning_driver_schedule_assignment"("requested_assignment_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_morning_driver_schedule_assignment"("requested_assignment_id" "uuid", "requested_assigned_user_id" "uuid", "requested_is_locked" boolean, "requested_note" "text") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_morning_driver_schedule_shift_time"("requested_assignment_id" "uuid", "requested_start_time" time without time zone, "requested_end_time" time without time zone) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_morning_driver_schedule_shift_time"("requested_assignment_id" "uuid", "requested_start_time" time without time zone, "requested_end_time" time without time zone) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_morning_driver_schedule_shift_time"("requested_assignment_id" "uuid", "requested_start_time" time without time zone, "requested_end_time" time without time zone) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."update_my_dynamic_published_assignment"("requested_publication_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_my_dynamic_published_assignment"("requested_publication_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_my_dynamic_published_assignment"("requested_publication_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_my_dynamic_published_assignment"("requested_publication_id" "uuid", "requested_assignment_id" "uuid", "requested_user_id" "uuid") TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_schedule_draft_shift"("requested_shift_id" "uuid", "requested_new_user_id" "uuid", "requested_intentionally_unassigned" boolean) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_schedule_draft_shift"("requested_shift_id" "uuid", "requested_new_user_id" "uuid", "requested_intentionally_unassigned" boolean) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_schedule_draft_shift"("requested_shift_id" "uuid", "requested_new_user_id" "uuid", "requested_intentionally_unassigned" boolean) TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_user_compensation"("target_user_id" "uuid", "requested_hourly_rate" numeric, "requested_daily_duty_rate" numeric, "requested_morning_shift_rate" numeric) TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_user_compensation"("target_user_id" "uuid", "requested_hourly_rate" numeric, "requested_daily_duty_rate" numeric, "requested_morning_shift_rate" numeric) TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."update_user_compensation"("target_user_id" "uuid", "requested_hourly_rate" numeric, "requested_daily_duty_rate" numeric, "requested_morning_shift_rate" numeric) TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."validate_shift_swap_final_state"("requested_swap_type" "text", "requested_requester_user_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_requester_shift_id" "uuid", "requested_counterparty_shift_id" "uuid") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."validate_shift_swap_final_state"("requested_swap_type" "text", "requested_requester_user_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_requester_shift_id" "uuid", "requested_counterparty_shift_id" "uuid") TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."validate_shift_swap_final_state"("requested_swap_type" "text", "requested_requester_user_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_requester_shift_id" "uuid", "requested_counterparty_shift_id" "uuid") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."validate_shift_swap_final_state"("requested_swap_type" "text", "requested_requester_user_id" "uuid", "requested_counterparty_user_id" "uuid", "requested_requester_shift_id" "uuid", "requested_counterparty_shift_id" "uuid") TO "service_role";
 
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION "public"."write_audit_log"("requested_action" "public"."audit_action_type", "requested_target_user_id" "uuid", "requested_summary" "text", "requested_old_values" "jsonb", "requested_new_values" "jsonb", "requested_metadata" "jsonb") FROM PUBLIC;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."write_audit_log"("requested_action" "public"."audit_action_type", "requested_target_user_id" "uuid", "requested_summary" "text", "requested_old_values" "jsonb", "requested_new_values" "jsonb", "requested_metadata" "jsonb") TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON FUNCTION "public"."write_audit_log"("requested_action" "public"."audit_action_type", "requested_target_user_id" "uuid", "requested_summary" "text", "requested_old_values" "jsonb", "requested_new_values" "jsonb", "requested_metadata" "jsonb") TO "service_role";
 
 
@@ -44035,508 +45989,732 @@ GRANT ALL ON FUNCTION "public"."write_audit_log"("requested_action" "public"."au
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."admin_development_sessions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."attendance_sessions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT SELECT,REFERENCES,TRIGGER,MAINTAIN ON TABLE "public"."audit_logs" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT SELECT,REFERENCES,TRIGGER,MAINTAIN ON TABLE "public"."audit_logs" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."audit_logs" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."availability_periods" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."availability_periods" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."availability_periods" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."availability_shift_slots" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."availability_shift_slots" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."availability_shift_slots" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."availability_submissions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."availability_submissions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."availability_submissions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."calendar_special_days" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."calendar_special_days" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."calendar_special_days" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."client_app_sessions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."daily_report_attachments" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."daily_report_customers" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."daily_report_items" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."daily_report_subjects" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."daily_reports" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dispatcher_availability" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dispatcher_availability" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dispatcher_availability" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_days" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_days" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_days" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_entries" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_entries" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_entries" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_periods" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_periods" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_periods" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_submissions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_submissions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_availability_submissions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_assignment_history" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_assignment_history" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_assignment_history" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_days" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_days" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_days" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_periods" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_periods" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_periods" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_swaps" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_swaps" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."driver_schedule_swaps" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_availability_entries" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_availability_periods" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_availability_slots" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_availability_submissions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_cutover_settings" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_historical_assignments" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_historical_assignments" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_historical_assignments" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_historical_availability" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_historical_availability" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_historical_availability" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_historical_periods" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_historical_periods" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_historical_periods" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_job_type_rotation_state" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_legacy_import_batches" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_legacy_import_batches" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_legacy_import_batches" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_permission_manifest" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_permission_manifest" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_permission_manifest" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_schedule_draft_slot_overrides" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_schedule_publications" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_schedule_published_unassigned" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_schedule_reminder_deliveries" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_schedule_shadow_assignments" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_schedule_shadow_drafts" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_schedule_shadow_targets" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."dynamic_shift_exchange_requests" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."gvk_legacy_migration_runs" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."holidays" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."holidays" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."holidays" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_ai_suggestions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_ai_suggestions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_ai_suggestions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_capabilities" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_capabilities" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_capabilities" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_configuration_versions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_configuration_versions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_configuration_versions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_dashboard_context_rules" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_default_permissions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_default_permissions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_default_permissions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_managers" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_managers" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_managers" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_materialized_day_rules" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_materialized_day_rules" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_materialized_day_rules" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_materialized_pay_components" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_materialized_pay_components" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_materialized_pay_components" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_materialized_shift_templates" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_materialized_shift_templates" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_materialized_shift_templates" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_memberships" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_memberships" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_memberships" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_permission_settings" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_permission_settings" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_permission_settings" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_schedule_materializations" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_schedule_materializations" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_schedule_materializations" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_shift_eligibility" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_shift_eligibility" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_type_shift_eligibility" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_types" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_types" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."job_types" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."monthly_schedule_archive_runs" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."monthly_schedule_archive_runs" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."monthly_schedule_archive_runs" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_entries" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_entries" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_entries" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_periods" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_periods" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_periods" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_shifts" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_shifts" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_shifts" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_submissions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_submissions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_availability_submissions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_schedule_assignments" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."morning_driver_schedule_periods" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."notification_preferences" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."notification_preferences" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."notification_preferences" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."notification_recipients" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."notification_recipients" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."notification_recipients" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."notifications" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."notifications" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."notifications" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."permission_profile_permissions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."permission_profile_permissions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."permission_profile_permissions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."permission_profiles" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."permission_profiles" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."permission_profiles" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."permissions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."permissions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."permissions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."profiles" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."profiles" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."push_delivery_log" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."push_delivery_log" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."push_subscriptions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."push_subscriptions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."push_subscriptions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."role_default_permissions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."role_default_permissions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."role_default_permissions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_assignment_history" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_assignment_history" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_assignment_history" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_group_day_rules" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_group_day_rules" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_group_day_rules" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_group_shift_templates" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_group_shift_templates" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_group_shift_templates" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_group_versions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_group_versions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_group_versions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_groups" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_groups" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_groups" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_import_name_aliases" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_import_name_aliases" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_import_name_aliases" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_import_runs" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_import_runs" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_import_runs" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_periods" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_periods" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_periods" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_shift_pay_segments" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_shift_pay_segments" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_shift_pay_segments" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_shifts" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_shifts" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."schedule_shifts" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."scheduled_reminder_deliveries" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."scheduled_reminder_deliveries" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."scheduled_reminder_deliveries" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."scheduling_feature_flags" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."scheduling_feature_flags" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."scheduling_feature_flags" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."scheduling_rule_registry" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."shift_reminder_deliveries" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."shift_reminder_deliveries" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."shift_reminder_deliveries" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT SELECT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."shift_swap_requests" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."shift_swap_requests" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_dashboard_widgets" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_job_type_permissions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_job_type_permissions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_job_type_permissions" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_permission_job_type_scopes" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_permission_job_type_scopes" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_permission_job_type_scopes" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_permission_policies" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_permission_policies" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_permission_policies" TO "service_role";
 
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_permissions" TO "anon";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_permissions" TO "authenticated";
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 GRANT ALL ON TABLE "public"."user_permissions" TO "service_role";
 
 

@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useDriverScheduleDraft.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור כוננים / שיבוץ / טיוטה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DriverScheduleDraftState, UseDriverScheduleDraftResult, normalizeDriverScheduleDraftError, useDriverScheduleDraft.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useState,
@@ -17,58 +24,79 @@ import type {
   TransferMyDriverDutyResponse,
 } from '../types/driverSchedule';
 
+/**
+ * חוזה הנתונים DriverScheduleDraftState: כוננים / שיבוץ / טיוטה / מצב.
+ */
 interface DriverScheduleDraftState {
+  // data — נתונים.
   data:
     DriverScheduleData | null;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
 
   isCreating: boolean;
 
+  // updatingDayId — מזהה היום.
   updatingDayId:
     string | null;
 
+  // transferringDayId — מזהה היום.
   transferringDayId:
     string | null;
 
+  // error — שגיאה.
   error:
     string | null;
 
+  // lastCreatedResult — תוצאה.
   lastCreatedResult:
     CreateDriverScheduleDraftResponse | null;
 
+  // lastUpdatedDayResult — יום / תוצאה.
   lastUpdatedDayResult:
     UpdateDriverScheduleDayResponse | null;
 
+  // lastTransferredDutyResult — תוצאה.
   lastTransferredDutyResult:
     TransferMyDriverDutyResponse | null;
 
     isPublishing: boolean;
 
+  // lastPublishedResult — פורסם / תוצאה.
   lastPublishedResult:
   PublishDriverScheduleResponse | null;
 }
 
+/**
+ * חוזה הנתונים UseDriverScheduleDraftResult: כוננים / שיבוץ / טיוטה / תוצאה.
+ */
 interface UseDriverScheduleDraftResult {
+  // state — מצב.
   state:
     DriverScheduleDraftState;
 
+  // loadLatestSchedule — שיבוץ.
   loadLatestSchedule:
     () => Promise<DriverScheduleData | null>;
 
+  // loadScheduleById — שיבוץ / מזהה.
   loadScheduleById: (
     schedulePeriodId: string,
   ) => Promise<DriverScheduleData | null>;
 
+  // loadScheduleByMonth — שיבוץ / חודש.
   loadScheduleByMonth: (
     year: number,
     month: number,
   ) => Promise<DriverScheduleData | null>;
 
+  // createDraft — טיוטה.
   createDraft: (
     availabilityPeriodId: string,
   ) => Promise<CreateDriverScheduleDraftResponse>;
 
+  // updateScheduleDay — שיבוץ / יום.
   updateScheduleDay: (
     request:
       UpdateDriverScheduleDayRequest,
@@ -79,18 +107,22 @@ interface UseDriverScheduleDraftResult {
       TransferMyDriverDutyRequest,
   ) => Promise<TransferMyDriverDutyResponse>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 
+  // clearLastUpdatedDayResult — יום / תוצאה.
   clearLastUpdatedDayResult:
     () => void;
 
   reset:
     () => void;
+  // publishSchedule — שיבוץ.
   publishSchedule:
   () => Promise<PublishDriverScheduleResponse>;
 }
 
+// initialState — מצב.
 const initialState:
   DriverScheduleDraftState = {
     data: null,
@@ -121,17 +153,25 @@ const initialState:
 lastPublishedResult: null,
   };
 
+/**
+ * פעולה normalizeDriverScheduleDraftError: נרמול כוננים / שיבוץ / טיוטה / שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeDriverScheduleDraftError(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
+    // normalizedMessage — הודעה.
     const normalizedMessage =
       error.message
         .trim()
         .toLowerCase();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'not authenticated', ).
     if (
       normalizedMessage.includes(
         'not authenticated',
@@ -140,6 +180,7 @@ function normalizeDriverScheduleDraftError(
       return 'לא נמצאה התחברות פעילה. יש להתחבר מחדש.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'user not active', ).
     if (
       normalizedMessage.includes(
         'user not active',
@@ -148,6 +189,7 @@ function normalizeDriverScheduleDraftError(
       return 'המשתמש אינו פעיל.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'not allowed', ).
     if (
       normalizedMessage.includes(
         'not allowed',
@@ -156,6 +198,7 @@ function normalizeDriverScheduleDraftError(
       return 'אין לך הרשאה לצפות או לערוך את לוח הכוננים.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability period id is required', ).
     if (
       normalizedMessage.includes(
         'driver availability period id is required',
@@ -164,6 +207,7 @@ function normalizeDriverScheduleDraftError(
       return 'מזהה חודש אילוצי הכוננים חסר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver schedule period id is required', ).
     if (
       normalizedMessage.includes(
         'driver schedule period id is required',
@@ -172,6 +216,7 @@ function normalizeDriverScheduleDraftError(
       return 'מזהה תקופת לוח הכוננים חסר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver schedule day id is required', ).
     if (
       normalizedMessage.includes(
         'driver schedule day id is required',
@@ -180,6 +225,7 @@ function normalizeDriverScheduleDraftError(
       return 'מזהה יום השיבוץ חסר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability period not found', ).
     if (
       normalizedMessage.includes(
         'driver availability period not found',
@@ -188,6 +234,7 @@ function normalizeDriverScheduleDraftError(
       return 'חודש אילוצי הכוננים לא נמצא.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver schedule day not found', ).
     if (
       normalizedMessage.includes(
         'driver schedule day not found',
@@ -196,6 +243,7 @@ function normalizeDriverScheduleDraftError(
       return 'יום השיבוץ לא נמצא.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver schedule period not found', ).
     if (
       normalizedMessage.includes(
         'driver schedule period not found',
@@ -204,6 +252,7 @@ function normalizeDriverScheduleDraftError(
       return 'תקופת לוח הכוננים לא נמצאה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability period must be closed before scheduling', ).
     if (
       normalizedMessage.includes(
         'driver availability period must be closed before scheduling',
@@ -212,6 +261,7 @@ function normalizeDriverScheduleDraftError(
       return 'יש לסגור את חודש האילוצים לפני יצירת השיבוץ.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'only draft driver schedules can be edited', ).
     if (
       normalizedMessage.includes(
         'only draft driver schedules can be edited',
@@ -220,6 +270,7 @@ function normalizeDriverScheduleDraftError(
       return 'ניתן לערוך רק לוח כוננים שנמצא במצב טיוטה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'selected on-call driver was not found or is inactive', ).
     if (
       normalizedMessage.includes(
         'selected on-call driver was not found or is inactive',
@@ -228,6 +279,7 @@ function normalizeDriverScheduleDraftError(
       return 'הכונן שנבחר לא נמצא או שאינו פעיל.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver cannot be assigned on consecutive days', ).
     if (
       normalizedMessage.includes(
         'driver cannot be assigned on consecutive days',
@@ -236,6 +288,7 @@ function normalizeDriverScheduleDraftError(
       return 'לא ניתן לשבץ את אותו כונן ביומיים רצופים.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver schedule period already exists for this availability period', ) || normalizedMessage.includes( 'driver s.
     if (
       normalizedMessage.includes(
         'driver schedule period already exists for this availability period',
@@ -247,6 +300,7 @@ function normalizeDriverScheduleDraftError(
       return 'כבר קיימת טיוטת לוח כוננים עבור החודש הזה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'no active on-call drivers were found', ).
     if (
       normalizedMessage.includes(
         'no active on-call drivers were found',
@@ -255,6 +309,7 @@ function normalizeDriverScheduleDraftError(
       return 'לא נמצאו כוננים פעילים במערכת.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability period has no days', ).
     if (
       normalizedMessage.includes(
         'driver availability period has no days',
@@ -263,6 +318,7 @@ function normalizeDriverScheduleDraftError(
       return 'לא נמצאו ימים בחודש האילוצים.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver schedule month is invalid', ).
     if (
       normalizedMessage.includes(
         'driver schedule month is invalid',
@@ -271,6 +327,7 @@ function normalizeDriverScheduleDraftError(
       return 'חודש לוח הכוננים אינו תקין.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver schedule year is invalid', ).
     if (
       normalizedMessage.includes(
         'driver schedule year is invalid',
@@ -279,6 +336,7 @@ function normalizeDriverScheduleDraftError(
       return 'שנת לוח הכוננים אינה תקינה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'לא התקבלה תשובה בעת יצירת טיוטת לוח הכוננים', ).
     if (
       normalizedMessage.includes(
         'לא התקבלה תשובה בעת יצירת טיוטת לוח הכוננים',
@@ -287,6 +345,7 @@ function normalizeDriverScheduleDraftError(
       return 'לא התקבלה תשובה תקינה בעת יצירת טיוטת לוח הכוננים.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'לא התקבלה תשובה בעת עדכון יום בלוח הכוננים', ).
     if (
       normalizedMessage.includes(
         'לא התקבלה תשובה בעת עדכון יום בלוח הכוננים',
@@ -294,6 +353,7 @@ function normalizeDriverScheduleDraftError(
     ) {
       return 'לא התקבלה תשובה תקינה בעת עדכון יום בלוח הכוננים.';
     }
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'only published current or next month driver schedules can be edited', ).
     if (
       normalizedMessage.includes(
         'only published current or next month driver schedules can be edited',
@@ -302,6 +362,7 @@ function normalizeDriverScheduleDraftError(
       return 'ניתן לערוך כל כוננות רק בלוח שפורסם של החודש הנוכחי או החודש הבא.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'only current or next month driver schedule can be edited', ).
     if (
       normalizedMessage.includes(
         'only current or next month driver schedule can be edited',
@@ -310,6 +371,7 @@ function normalizeDriverScheduleDraftError(
       return 'ניתן לערוך כל כוננות רק בחודש הנוכחי או בחודש הבא.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'active on-call driver profile not found', ).
     if (
       normalizedMessage.includes(
         'active on-call driver profile not found',
@@ -318,6 +380,7 @@ function normalizeDriverScheduleDraftError(
       return 'לא נמצא פרופיל כונן פעיל עבור המשתמש המחובר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'new on-call driver id is required', ).
     if (
       normalizedMessage.includes(
         'new on-call driver id is required',
@@ -326,6 +389,7 @@ function normalizeDriverScheduleDraftError(
       return 'יש לבחור כונן מחליף.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'new on-call driver must be different', ).
     if (
       normalizedMessage.includes(
         'new on-call driver must be different',
@@ -334,6 +398,7 @@ function normalizeDriverScheduleDraftError(
       return 'יש לבחור כונן אחר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'only published driver schedules can be changed by drivers', ).
     if (
       normalizedMessage.includes(
         'only published driver schedules can be changed by drivers',
@@ -342,6 +407,7 @@ function normalizeDriverScheduleDraftError(
       return 'ניתן להעביר כוננות רק מלוח כוננים שפורסם.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'drivers can change duties only in the current or next month', ) || normalizedMessage.includes( 'drivers can cha.
     if (
       normalizedMessage.includes(
         'drivers can change duties only in the current or next month',
@@ -353,6 +419,7 @@ function normalizeDriverScheduleDraftError(
       return 'ניתן לשנות כוננות רק בחודש הנוכחי או בחודש הבא לאחר פרסום הלוח.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'past driver duties cannot be changed', ).
     if (
       normalizedMessage.includes(
         'past driver duties cannot be changed',
@@ -361,6 +428,7 @@ function normalizeDriverScheduleDraftError(
       return 'לא ניתן לשנות כוננות שכבר הסתיימה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver can transfer only their own duty', ).
     if (
       normalizedMessage.includes(
         'driver can transfer only their own duty',
@@ -369,6 +437,7 @@ function normalizeDriverScheduleDraftError(
       return 'ניתן להעביר רק כוננות שמשובצת כרגע אליך.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'locked driver duty cannot be changed', ).
     if (
       normalizedMessage.includes(
         'locked driver duty cannot be changed',
@@ -377,6 +446,7 @@ function normalizeDriverScheduleDraftError(
       return 'הכוננות נעולה ולא ניתן לשנות אותה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'לא התקבלה תשובה בעת העברת הכוננות', ).
     if (
       normalizedMessage.includes(
         'לא התקבלה תשובה בעת העברת הכוננות',
@@ -384,6 +454,7 @@ function normalizeDriverScheduleDraftError(
     ) {
       return 'לא התקבלה תשובה תקינה בעת העברת הכוננות.';
     }
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'only draft driver schedules can be published', ).
     if (
       normalizedMessage.includes(
         'only draft driver schedules can be published',
@@ -392,6 +463,7 @@ function normalizeDriverScheduleDraftError(
       return 'ניתן לפרסם רק לוח כוננים שנמצא במצב טיוטה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver schedule has no days', ).
     if (
       normalizedMessage.includes(
         'driver schedule has no days',
@@ -400,6 +472,7 @@ function normalizeDriverScheduleDraftError(
       return 'לא קיימים ימים בלוח הכוננים.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'all driver schedule days must be assigned before publishing', ).
     if (
       normalizedMessage.includes(
         'all driver schedule days must be assigned before publishing',
@@ -408,6 +481,7 @@ function normalizeDriverScheduleDraftError(
       return 'יש לשבץ כונן בכל ימי החודש לפני הפרסום.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver schedule contains consecutive-day assignments', ).
     if (
       normalizedMessage.includes(
         'driver schedule contains consecutive-day assignments',
@@ -416,6 +490,7 @@ function normalizeDriverScheduleDraftError(
       return 'לא ניתן לפרסם לוח שמכיל אותו כונן ביומיים רצופים.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'לא התקבלה תשובה בעת פרסום לוח הכוננים', ).
     if (
       normalizedMessage.includes(
         'לא התקבלה תשובה בעת פרסום לוח הכוננים',
@@ -430,8 +505,13 @@ function normalizeDriverScheduleDraftError(
   return 'לא ניתן היה לבצע את הפעולה בלוח הכוננים.';
 }
 
+/**
+ * פעולה useDriverScheduleDraft: חיבור מצב או הקשר עבור כוננים / שיבוץ / טיוטה.
+ * @returns UseDriverScheduleDraftResult — הפלט בהתאם לחתימה.
+ */
 export function useDriverScheduleDraft():
   UseDriverScheduleDraftResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -440,6 +520,7 @@ export function useDriverScheduleDraft():
       initialState,
     );
 
+  // loadLatestSchedule — שיבוץ.
   const loadLatestSchedule =
     useCallback(
       async (): Promise<DriverScheduleData | null> => {
@@ -455,7 +536,9 @@ export function useDriverScheduleDraft():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await driverScheduleService
               .getLatestSchedule();
@@ -476,6 +559,7 @@ export function useDriverScheduleDraft():
 
           return data;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeDriverScheduleDraftError(
               error,
@@ -501,16 +585,20 @@ export function useDriverScheduleDraft():
       },
       [],
     );
+// publishSchedule — שיבוץ.
 const publishSchedule =
   useCallback(
     async (): Promise<PublishDriverScheduleResponse> => {
+      // schedulePeriodId — תקופת שיבוץ.
       const schedulePeriodId =
         state.data
           ?.period
           ?.id ??
         null;
 
+      // עצירת הפעולה עם שגיאה כאשר !schedulePeriodId.
       if (!schedulePeriodId) {
+        // missingPeriodError — תקופה / שגיאה.
         const missingPeriodError =
           new Error(
             'Driver schedule period id is required.',
@@ -530,6 +618,7 @@ const publishSchedule =
         throw missingPeriodError;
       }
 
+    // עצירת הפעולה עם שגיאה כאשר ( state.data ?.statistics ?.unassignedDays ?? 0 ) > 0.
     if (
       (
         state.data
@@ -539,6 +628,7 @@ const publishSchedule =
       ) > 0
     )
  {
+        // unassignedDaysError — ימים / שגיאה.
         const unassignedDaysError =
           new Error(
             'All driver schedule days must be assigned before publishing.',
@@ -571,13 +661,16 @@ const publishSchedule =
         }),
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // result — תוצאה.
         const result =
           await driverScheduleService
             .publishSchedule(
               schedulePeriodId,
             );
 
+        // refreshedData — נתונים.
         const refreshedData =
           await driverScheduleService
             .getScheduleById(
@@ -604,6 +697,7 @@ const publishSchedule =
 
         return result;
       } catch (error) {
+        // normalizedError — שגיאה.
         const normalizedError =
           normalizeDriverScheduleDraftError(
             error,
@@ -631,17 +725,21 @@ const publishSchedule =
       state.data,
     ],
   );
+  // loadScheduleById — שיבוץ / מזהה.
   const loadScheduleById =
     useCallback(
       async (
         schedulePeriodId: string,
       ): Promise<DriverScheduleData | null> => {
+        // normalizedSchedulePeriodId — תקופת שיבוץ.
         const normalizedSchedulePeriodId =
           schedulePeriodId.trim();
 
+        // עצירת הפעולה עם שגיאה כאשר !normalizedSchedulePeriodId.
         if (
           !normalizedSchedulePeriodId
         ) {
+          // missingPeriodError — תקופה / שגיאה.
           const missingPeriodError =
             new Error(
               'Driver schedule period id is required.',
@@ -673,7 +771,9 @@ const publishSchedule =
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await driverScheduleService
               .getScheduleById(
@@ -696,6 +796,7 @@ const publishSchedule =
 
           return data;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeDriverScheduleDraftError(
               error,
@@ -722,6 +823,7 @@ const publishSchedule =
       [],
     );
 
+  // loadScheduleByMonth — שיבוץ / חודש.
   const loadScheduleByMonth =
     useCallback(
       async (
@@ -740,7 +842,9 @@ const publishSchedule =
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await driverScheduleService
               .getScheduleByMonth(
@@ -764,6 +868,7 @@ const publishSchedule =
 
           return data;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeDriverScheduleDraftError(
               error,
@@ -790,17 +895,21 @@ const publishSchedule =
       [],
     );
 
+  // createDraft — טיוטה.
   const createDraft =
     useCallback(
       async (
         availabilityPeriodId: string,
       ): Promise<CreateDriverScheduleDraftResponse> => {
+        // normalizedAvailabilityPeriodId — תקופת אילוצים.
         const normalizedAvailabilityPeriodId =
           availabilityPeriodId.trim();
 
+        // עצירת הפעולה עם שגיאה כאשר !normalizedAvailabilityPeriodId.
         if (
           !normalizedAvailabilityPeriodId
         ) {
+          // missingPeriodError — תקופה / שגיאה.
           const missingPeriodError =
             new Error(
               'Driver availability period id is required.',
@@ -838,13 +947,16 @@ const publishSchedule =
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await driverScheduleService
               .createDraft(
                 normalizedAvailabilityPeriodId,
               );
 
+          // data — נתונים.
           const data =
             await driverScheduleService
               .getScheduleById(
@@ -876,6 +988,7 @@ const publishSchedule =
 
           return result;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeDriverScheduleDraftError(
               error,
@@ -902,26 +1015,32 @@ const publishSchedule =
       [],
     );
 
+  // currentSchedulePeriodId — תקופת שיבוץ הנוכחי.
   const currentSchedulePeriodId =
     state.data?.period?.id ??
     null;
 
+  // currentSchedulePeriodStatus — תקופת שיבוץ הנוכחי.
   const currentSchedulePeriodStatus =
     state.data?.period?.status ??
     null;
 
+  // updateScheduleDay — שיבוץ / יום.
   const updateScheduleDay =
     useCallback(
       async (
         request:
           UpdateDriverScheduleDayRequest,
       ): Promise<UpdateDriverScheduleDayResponse> => {
+        // normalizedScheduleDayId — מזהה היום.
         const normalizedScheduleDayId =
           request.scheduleDayId.trim();
 
+        // עצירת הפעולה עם שגיאה כאשר !normalizedScheduleDayId.
         if (
           !normalizedScheduleDayId
         ) {
+          // missingDayError — יום / שגיאה.
           const missingDayError =
             new Error(
               'Driver schedule day id is required.',
@@ -941,7 +1060,9 @@ const publishSchedule =
           throw missingDayError;
         }
 
+        // עצירת הפעולה עם שגיאה כאשר !currentSchedulePeriodId.
         if (!currentSchedulePeriodId) {
+          // missingPeriodError — תקופה / שגיאה.
           const missingPeriodError =
             new Error(
               'Driver schedule period id is required.',
@@ -976,7 +1097,9 @@ const publishSchedule =
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // updateRequest — נתוני הבקשה.
           const updateRequest = {
             ...request,
 
@@ -984,6 +1107,7 @@ const publishSchedule =
               normalizedScheduleDayId,
           };
 
+          // result — תוצאה.
           const result =
             currentSchedulePeriodStatus ===
               'published'
@@ -996,6 +1120,7 @@ const publishSchedule =
                     updateRequest,
                   );
 
+          // refreshedData — נתונים.
           const refreshedData =
             await driverScheduleService
               .getScheduleById(
@@ -1022,6 +1147,7 @@ const publishSchedule =
 
           return result;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeDriverScheduleDraftError(
               error,
@@ -1058,12 +1184,15 @@ const publishSchedule =
         request:
           TransferMyDriverDutyRequest,
       ): Promise<TransferMyDriverDutyResponse> => {
+        // normalizedScheduleDayId — מזהה היום.
         const normalizedScheduleDayId =
           request.scheduleDayId.trim();
 
+        // עצירת הפעולה עם שגיאה כאשר !normalizedScheduleDayId.
         if (
           !normalizedScheduleDayId
         ) {
+          // missingDayError — יום / שגיאה.
           const missingDayError =
             new Error(
               'Driver schedule day id is required.',
@@ -1083,11 +1212,14 @@ const publishSchedule =
           throw missingDayError;
         }
 
+        // schedulePeriodId — תקופת שיבוץ.
         const schedulePeriodId =
           state.data?.period?.id ??
           null;
 
+        // עצירת הפעולה עם שגיאה כאשר !schedulePeriodId.
         if (!schedulePeriodId) {
+          // missingPeriodError — תקופה / שגיאה.
           const missingPeriodError =
             new Error(
               'Driver schedule period id is required.',
@@ -1122,7 +1254,9 @@ const publishSchedule =
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await driverScheduleService
               .transferMyDuty({
@@ -1135,6 +1269,7 @@ const publishSchedule =
                   request.newDriverId.trim(),
               });
 
+          // refreshedData — נתונים.
           const refreshedData =
             await driverScheduleService
               .getScheduleById(
@@ -1161,6 +1296,7 @@ const publishSchedule =
 
           return result;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeDriverScheduleDraftError(
               error,
@@ -1189,6 +1325,7 @@ const publishSchedule =
       ],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback(
       (): void => {
@@ -1204,6 +1341,7 @@ const publishSchedule =
       [],
     );
 
+  // clearLastUpdatedDayResult — יום / תוצאה.
   const clearLastUpdatedDayResult =
     useCallback(
       (): void => {

@@ -1,9 +1,16 @@
+/*
+ * קובץ: src/styles/morningDriverAvailabilityPersonal.css
+ * מטרה: הגדרת עיצוב ופריסה עבור כונני בוקר.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .my-morning-driver-panel  */
 .my-morning-driver-panel {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-header  */
 .my-morning-driver-header {
   display: flex;
   align-items: flex-start;
@@ -15,16 +22,19 @@
   background: linear-gradient(135deg, #fffbeb, #ffffff);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-header h2  */
 .my-morning-driver-header h2 {
   margin: 5px 0;
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-header p  */
 .my-morning-driver-header p {
   margin: 0;
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-eyebrow  */
 .my-morning-driver-eyebrow {
   color: #b45309;
   font-size: 0.75rem;
@@ -33,12 +43,14 @@
 
 .my-morning-driver-header-actions,
 .my-morning-driver-footer-actions,
+/* כללי עיצוב עבור .my-morning-driver-shift-actions  */
 .my-morning-driver-shift-actions {
   display: flex;
   align-items: center;
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-mark-all  */
 .my-morning-driver-mark-all {
   display: inline-flex;
   min-height: 40px;
@@ -55,11 +67,13 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-mark-all:disabled  */
 .my-morning-driver-mark-all:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-period-info  */
 .my-morning-driver-period-info {
   display: flex;
   align-items: center;
@@ -71,12 +85,14 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-period-info > div  */
 .my-morning-driver-period-info > div {
   display: flex;
   align-items: center;
   gap: 7px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-submission-status  */
 .my-morning-driver-submission-status {
   padding: 5px 9px;
   border-radius: 999px;
@@ -84,16 +100,19 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-submission-status-draft  */
 .my-morning-driver-submission-status-draft {
   background: var(--theme-surface-soft);
   color: var(--theme-text-secondary);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-submission-status-submitted  */
 .my-morning-driver-submission-status-submitted {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-submission-status-reopened  */
 .my-morning-driver-submission-status-reopened {
   background: #fef3c7;
   color: #92400e;
@@ -102,45 +121,53 @@
 .my-morning-driver-instructions,
 .my-morning-driver-inline-error,
 .my-morning-driver-success,
+/* כללי עיצוב עבור .my-morning-driver-locked  */
 .my-morning-driver-locked {
   padding: 12px 14px;
   border-radius: 11px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-instructions  */
 .my-morning-driver-instructions {
   border: 1px solid #bae6fd;
   background: #f0f9ff;
   color: #075985;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-instructions p  */
 .my-morning-driver-instructions p {
   margin: 5px 0 0;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-inline-error  */
 .my-morning-driver-inline-error {
   border: 1px solid #fecaca;
   background: #fef2f2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-success  */
 .my-morning-driver-success {
   border: 1px solid #bbf7d0;
   background: #f0fdf4;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-locked  */
 .my-morning-driver-locked {
   border: 1px solid #fde68a;
   background: #fffbeb;
   color: #92400e;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-summary  */
 .my-morning-driver-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-summary article  */
 .my-morning-driver-summary article {
   display: grid;
   grid-template-columns: auto auto;
@@ -156,25 +183,30 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-summary svg  */
 .my-morning-driver-summary svg {
   grid-area: icon;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-summary strong  */
 .my-morning-driver-summary strong {
   grid-area: value;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-summary span  */
 .my-morning-driver-summary span {
   grid-area: label;
   color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-days  */
 .my-morning-driver-days {
   display: grid;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-day-card  */
 .my-morning-driver-day-card {
   overflow: hidden;
   border: 1px solid #dbe3ef;
@@ -182,6 +214,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-day-card > header  */
 .my-morning-driver-day-card > header {
   display: flex;
   align-items: center;
@@ -192,17 +225,20 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-day-card > header div  */
 .my-morning-driver-day-card > header div {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-day-card > header span  */
 .my-morning-driver-day-card > header span {
   color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-shifts  */
 .my-morning-driver-shifts {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
@@ -210,6 +246,7 @@
   padding: 13px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-shift  */
 .my-morning-driver-shift {
   display: flex;
   flex-direction: column;
@@ -220,20 +257,24 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-shift-available  */
 .my-morning-driver-shift-available {
   border-color: #86efac;
   background: #f0fdf4;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-shift-unavailable  */
 .my-morning-driver-shift-unavailable {
   border-color: #fca5a5;
   background: #fef2f2;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-shift-unmarked  */
 .my-morning-driver-shift-unmarked {
   border-color: var(--theme-border-strong);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-shift-heading  */
 .my-morning-driver-shift-heading {
   display: flex;
   align-items: flex-start;
@@ -241,17 +282,20 @@
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-shift-heading > div  */
 .my-morning-driver-shift-heading > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-shift-heading span  */
 .my-morning-driver-shift-heading span {
   color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-workers-badge  */
 .my-morning-driver-workers-badge {
   padding: 4px 7px;
   border-radius: 999px;
@@ -260,6 +304,7 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-choice  */
 .my-morning-driver-choice {
   display: inline-flex;
   flex: 1;
@@ -275,35 +320,41 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-choice-available.my-morning-driver-choice-active  */
 .my-morning-driver-choice-available.my-morning-driver-choice-active {
   border-color: #16a34a;
   background: #16a34a;
   color: #ffffff;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-choice-unavailable.my-morning-driver-choice-active  */
 .my-morning-driver-choice-unavailable.my-morning-driver-choice-active {
   border-color: #dc2626;
   background: #dc2626;
   color: #ffffff;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-choice:disabled  */
 .my-morning-driver-choice:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-note  */
 .my-morning-driver-note {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-note span  */
 .my-morning-driver-note span {
   color: var(--theme-text-secondary);
   font-size: 0.7rem;
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-note textarea  */
 .my-morning-driver-note textarea {
   width: 100%;
   resize: vertical;
@@ -314,6 +365,7 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-footer  */
 .my-morning-driver-footer {
   position: sticky;
   bottom: 0;
@@ -331,6 +383,7 @@
 }
 
 .my-morning-driver-empty,
+/* כללי עיצוב עבור .my-morning-driver-error  */
 .my-morning-driver-error {
   display: flex;
   min-height: 220px;
@@ -345,21 +398,25 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-error  */
 .my-morning-driver-error {
   border-color: #fecaca;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-spin  */
 .my-morning-driver-spin {
   animation: my-morning-driver-spin 0.9s linear infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes my-morning-driver-spin */
 @keyframes my-morning-driver-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .my-morning-driver-header,
   .my-morning-driver-period-info,
@@ -387,11 +444,13 @@
     grid-template-columns: 1fr;
   }
 }
+/* כללי עיצוב עבור .morning-driver-availability-page-personal  */
 .morning-driver-availability-page-personal {
   max-width: 1500px;
   margin: 0 auto;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-header-main  */
 .my-morning-driver-header-main {
   display: flex;
   min-width: 0;
@@ -400,12 +459,14 @@
   gap: 5px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-header h1  */
 .my-morning-driver-header h1 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: clamp(1.35rem, 2.4vw, 1.9rem);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-header-meta  */
 .my-morning-driver-header-meta {
   display: flex;
   flex-wrap: wrap;
@@ -414,6 +475,7 @@
   margin-top: 6px;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-deadline-chip  */
 .my-morning-driver-deadline-chip {
   display: inline-flex;
   align-items: center;
@@ -427,6 +489,7 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-completion  */
 .my-morning-driver-completion {
   display: flex;
   flex-direction: column;
@@ -437,6 +500,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-completion > div:first-child  */
 .my-morning-driver-completion > div:first-child {
   display: flex;
   align-items: center;
@@ -447,10 +511,12 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-completion > div:first-child strong  */
 .my-morning-driver-completion > div:first-child strong {
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור .my-morning-driver-completion-track  */
 .my-morning-driver-completion-track {
   height: 9px;
   overflow: hidden;
@@ -458,6 +524,7 @@
   background: #e2e8f0;
 }
 
+/* כללי עיצוב עבור .my-morning-driver-completion-track > span  */
 .my-morning-driver-completion-track > span {
   display: block;
   height: 100%;
@@ -467,6 +534,7 @@
 }
 
 
+/* כללי עיצוב עבור .availability-holiday-badge  */
 .availability-holiday-badge {
   display: inline-flex;
   align-items: center;

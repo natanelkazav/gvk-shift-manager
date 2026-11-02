@@ -1,5 +1,15 @@
+/**
+ * קובץ: src/pages/NotFoundPage.tsx
+ * מטרה: הצגת מסך עבור כתובת שאינה תואמת למסלול מוכר ביישום.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NotFoundPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { Link } from 'react-router-dom';
 
+/**
+ * פעולה NotFoundPage: הנתון NotFoundPage בהקשר הפעולה.
+ */
 function NotFoundPage() {
   return (
     <section>

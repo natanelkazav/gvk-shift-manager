@@ -1,12 +1,19 @@
+-- קובץ: supabase/migrations/20260930081500_published_editor_calendar_and_availability.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור פורסם / לוח שנה / אילוצים וזמינות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_published_schedule_editor.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Keep the published-next-month editor at feature parity with the draft editor.
 -- Published slots now expose per-member availability, so the UI can show
 -- preferred / available / avoid / unavailable after publication as well.
 
+-- פונקציית מסד public.get_dynamic_published_schedule_editor: שליפה או חישוב של דינמי / פורסם / שיבוץ.
 create or replace function public.get_dynamic_published_schedule_editor(
   requested_publication_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -14,25 +21,33 @@ declare
   v_actor uuid := auth.uid();
   v_publication public.dynamic_schedule_publications%rowtype;
   v_job public.job_types%rowtype;
+  -- v_current_month — חודש.
   v_current_month date := date_trunc('month', (now() at time zone 'Asia/Jerusalem')::date)::date;
+  -- v_publication_month — חודש.
   v_publication_month date;
   v_editable boolean := false;
   v_reason text := null;
+  -- v_members — חברי התפקיד.
   v_members jsonb := '[]'::jsonb;
   v_slots jsonb := '[]'::jsonb;
 begin
+  -- הסתעפות לפי התנאי v_actor is null then raise exception 'not authenticated'; end if;.
   if v_actor is null then raise exception 'not authenticated'; end if;
 
   select * into v_publication
   from public.dynamic_schedule_publications
   where id=requested_publication_id;
+  -- הסתעפות לפי התנאי v_publication.id is null then raise exception 'publication not found'; end if;.
   if v_publication.id is null then raise exception 'publication not found'; end if;
+  -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('schedule.view_team', v_publication.job_type_id, v_actor) then raise exceptio.
   if not public.has_dynamic_job_type_permission('schedule.view_team', v_publication.job_type_id, v_actor) then raise exception 'not allowed'; end if;
 
   select * into v_job from public.job_types where id=v_publication.job_type_id;
+  -- הסתעפות לפי התנאי v_job.id is null then raise exception 'job type not found'; end if;.
   if v_job.id is null then raise exception 'job type not found'; end if;
 
   v_publication_month := make_date(v_publication.year,v_publication.month,1);
+  -- הסתעפות לפי התנאי v_publication.status <> 'published'.
   if v_publication.status <> 'published' then
     v_reason := 'לוח זה אינו פתוח לעריכה משום שהוא בארכיון.';
   elsif v_publication_month = v_current_month
@@ -108,6 +123,7 @@ begin
     on pu.publication_id=v_publication.id and pu.slot_id=sl.id
   where sl.period_id=v_publication.availability_period_id;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'publicationId',v_publication.id,
     'jobTypeId',v_job.id,
@@ -123,4 +139,5 @@ end;
 $function$;
 
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_published_schedule_editor(uuid) to authenticated;

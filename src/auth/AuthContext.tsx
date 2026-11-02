@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/auth/AuthContext.tsx
+ * מטרה: הגדרת חוזה ההקשר המשמש לשיתוף מצב ההתחברות בין רכיבים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AuthContextValue, AuthProviderProps, getErrorMessage, ensureProfileIsActive, AuthProvider, useAuth.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import type {
   Session,
 } from '@supabase/supabase-js';
@@ -20,6 +27,9 @@ import type {
   UserProfile,
 } from '../types/auth';
 
+/**
+ * חוזה הנתונים AuthContextValue: אימות משתמשים / ערך.
+ */
 interface AuthContextValue
   extends AuthState {
   signIn: (
@@ -28,27 +38,34 @@ interface AuthContextValue
 
   signOut: () => Promise<void>;
 
+  // refreshProfile — פרופיל.
   refreshProfile: () => Promise<void>;
 
+  // refreshPermissions — הרשאות.
   refreshPermissions:
     () => Promise<void>;
 
+  // hasPermission — הרשאות.
   hasPermission: (
     permission: PermissionKey,
   ) => boolean;
 
+  // hasAnyPermission — הרשאות.
   hasAnyPermission: (
     permissions: PermissionKey[],
   ) => boolean;
   
 
+  // hasAllPermissions — הרשאות.
   hasAllPermissions: (
     permissions: PermissionKey[],
   ) => boolean;
 
+  // clearError — שגיאה.
   clearError: () => void;
 }
 
+// initialAuthState — אימות משתמשים / מצב.
 const initialAuthState: AuthState = {
   session: null,
   user: null,
@@ -59,21 +76,33 @@ const initialAuthState: AuthState = {
   error: null,
 };
 
+// INACTIVE_USER_MESSAGE — משתמש / הודעה.
 const INACTIVE_USER_MESSAGE =
   'המשתמש אינו פעיל. יש לפנות למנהל המערכת.';
 
+// AuthContext — אימות משתמשים.
 const AuthContext =
   createContext<
     AuthContextValue | undefined
   >(undefined);
 
+/**
+ * חוזה הנתונים AuthProviderProps: אימות משתמשים / מאפייני הרכיב.
+ */
 interface AuthProviderProps {
+  // children — התוכן המקונן של הרכיב.
   children: ReactNode;
 }
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error.message;
   }
@@ -81,9 +110,15 @@ function getErrorMessage(
   return 'אירעה שגיאה בלתי צפויה.';
 }
 
+/**
+ * פעולה ensureProfileIsActive: הבטחת תנאי מקדים עבור האם הרשומה פעילה.
+ * @param profile — פרופיל.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function ensureProfileIsActive(
   profile: UserProfile,
 ): void {
+  // עצירת הפעולה עם שגיאה כאשר !profile.isActive.
   if (!profile.isActive) {
     throw new Error(
       INACTIVE_USER_MESSAGE,
@@ -91,17 +126,24 @@ function ensureProfileIsActive(
   }
 }
 
+/**
+ * פעולה AuthProvider: אימות משתמשים.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 export function AuthProvider({
   children,
 }: AuthProviderProps) {
+  // מצב מקומי: authState — אימות משתמשים / מצב; setAuthState מעדכנת אותו ומפעילה רינדור לפי React.
   const [authState, setAuthState] =
     useState<AuthState>(
       initialAuthState,
     );
 
+  // handleInactiveUser — משתמש.
   const handleInactiveUser =
     useCallback(
       async (): Promise<void> => {
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await authService.signOut();
         } catch (error) {
@@ -125,14 +167,18 @@ export function AuthProvider({
       [],
     );
 
+  // loadAuthenticatedUserData — משתמש / נתונים.
   const loadAuthenticatedUserData =
     useCallback(
       async (
         session: Session,
       ): Promise<{
+        // profile — פרופיל.
         profile: UserProfile;
+        // permissions — הרשאות.
         permissions: PermissionKey[];
       }> => {
+        // profile — פרופיל.
         const profile =
           await authService.getProfile(
             session.user.id,
@@ -140,6 +186,7 @@ export function AuthProvider({
 
         ensureProfileIsActive(profile);
 
+        // permissions — הרשאות.
         const permissions =
           await permissionsService
             .getMyPermissions();
@@ -152,11 +199,13 @@ export function AuthProvider({
       [],
     );
 
+  // applySession — סשן.
   const applySession = useCallback(
     async (
       session: Session | null,
       showLoading = true,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !session.
       if (!session) {
         setAuthState(
           (currentState) => ({
@@ -186,7 +235,9 @@ export function AuthProvider({
         );
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           profile,
           permissions,
@@ -205,9 +256,11 @@ export function AuthProvider({
           error: null,
         });
       } catch (error) {
+        // errorMessage — הודעת שגיאה.
         const errorMessage =
           getErrorMessage(error);
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר errorMessage === INACTIVE_USER_MESSAGE.
         if (
           errorMessage ===
           INACTIVE_USER_MESSAGE
@@ -233,22 +286,32 @@ export function AuthProvider({
     ],
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [applySession].
   useEffect(() => {
+    // isMounted — הנתון isMounted בהקשר הפעולה.
     let isMounted = true;
 
+    /**
+     * פעולה אסינכרונית initializeAuth: אימות משתמשים.
+     * @returns Promise<void> — הפלט בהתאם לחתימה.
+     */
     const initializeAuth =
       async (): Promise<void> => {
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // session — סשן.
           const session =
             await authService
               .getCurrentSession();
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isMounted.
           if (!isMounted) {
             return;
           }
 
           await applySession(session);
         } catch (error) {
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isMounted.
           if (!isMounted) {
             return;
           }
@@ -275,10 +338,12 @@ export function AuthProvider({
         .onAuthStateChange(
           (event, session) => {
             window.setTimeout(() => {
+              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isMounted.
               if (!isMounted) {
                 return;
               }
 
+              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED'.
               if (
                 event ===
                   'USER_UPDATED' ||
@@ -300,6 +365,7 @@ export function AuthProvider({
                 return;
               }
 
+              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר event === 'SIGNED_OUT'.
               if (
                 event === 'SIGNED_OUT'
               ) {
@@ -351,7 +417,9 @@ export function AuthProvider({
         }),
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // session — סשן.
         const session =
           await authService.signIn({
             email:
@@ -362,6 +430,7 @@ export function AuthProvider({
               credentials.rememberMe,
           });
 
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           profile: loadedProfile,
           permissions,
@@ -370,9 +439,12 @@ export function AuthProvider({
             session,
           );
 
+        // profile — פרופיל.
         let profile = loadedProfile;
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // loginTime — זמן.
           const loginTime =
             await authService
               .recordLogin();
@@ -401,9 +473,11 @@ export function AuthProvider({
           error: null,
         });
       } catch (error) {
+        // errorMessage — הודעת שגיאה.
         const errorMessage =
           getErrorMessage(error);
 
+        // עצירת הפעולה עם שגיאה כאשר errorMessage === INACTIVE_USER_MESSAGE.
         if (
           errorMessage ===
           INACTIVE_USER_MESSAGE
@@ -441,6 +515,7 @@ export function AuthProvider({
         }),
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await authService.signOut();
 
@@ -469,19 +544,24 @@ export function AuthProvider({
     [],
   );
 
+  // refreshProfile — פרופיל.
   const refreshProfile =
     useCallback(
       async (): Promise<void> => {
+        // currentUser — המשתמש הנוכחי.
         const currentUser =
           authState.user;
 
+        // עצירת הפעולה עם שגיאה כאשר !currentUser.
         if (!currentUser) {
           throw new Error(
             'לא נמצאה התחברות פעילה.',
           );
         }
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // profile — פרופיל.
           const profile =
             await authService.getProfile(
               currentUser.id,
@@ -500,9 +580,11 @@ export function AuthProvider({
             }),
           );
         } catch (error) {
+          // errorMessage — הודעת שגיאה.
           const errorMessage =
             getErrorMessage(error);
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר errorMessage === INACTIVE_USER_MESSAGE.
           if (
             errorMessage ===
             INACTIVE_USER_MESSAGE
@@ -528,16 +610,20 @@ export function AuthProvider({
       ],
     );
 
+  // refreshPermissions — הרשאות.
   const refreshPermissions =
     useCallback(
       async (): Promise<void> => {
+        // עצירת הפעולה עם שגיאה כאשר !authState.user.
         if (!authState.user) {
           throw new Error(
             'לא נמצאה התחברות פעילה.',
           );
         }
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // permissions — הרשאות.
           const permissions =
             await permissionsService
               .getMyPermissions();
@@ -551,6 +637,7 @@ export function AuthProvider({
             }),
           );
         } catch (error) {
+          // errorMessage — הודעת שגיאה.
           const errorMessage =
             getErrorMessage(error);
 
@@ -567,6 +654,7 @@ export function AuthProvider({
       [authState.user],
     );
 
+  // hasPermission — הרשאות.
   const hasPermission =
     useCallback(
       (
@@ -578,6 +666,7 @@ export function AuthProvider({
       [authState.permissions],
     );
 
+  // hasAnyPermission — הרשאות.
   const hasAnyPermission =
     useCallback(
       (
@@ -592,6 +681,7 @@ export function AuthProvider({
       [authState.permissions],
     );
 
+  // hasAllPermissions — הרשאות.
   const hasAllPermissions =
     useCallback(
       (
@@ -606,6 +696,7 @@ export function AuthProvider({
       [authState.permissions],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback((): void => {
       setAuthState(
@@ -616,6 +707,7 @@ export function AuthProvider({
       );
     }, []);
 
+  // ערך מחושב contextValue — ערך; נשמר בין רינדורים עד שינוי התלויות.
   const contextValue =
     useMemo<AuthContextValue>(
       () => ({
@@ -651,11 +743,16 @@ export function AuthProvider({
   );
 }
 
+/**
+ * פעולה useAuth: חיבור מצב או הקשר עבור אימות משתמשים.
+ * @returns AuthContextValue — הפלט בהתאם לחתימה.
+ */
 export function useAuth():
   AuthContextValue {
   const context =
     useContext(AuthContext);
 
+  // עצירת הפעולה עם שגיאה כאשר !context.
   if (!context) {
     throw new Error(
       'useAuth must be used inside AuthProvider.',

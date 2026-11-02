@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/ContactsPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור אנשי קשר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: normalizePhone, parseOsherAd, ImportDecision, ImportComparison, NewContactForm, ContactsPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { useEffect, useMemo, useState } from 'react';
 import { Mail, MessageCircle, Pencil, Phone, Plus, Search, Upload, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -7,32 +14,83 @@ import type { ContactImportRow } from '../types/contacts';
 import type { ContactRecord, EmployeeContact } from '../types/contacts';
 import '../styles/contacts.css';
 
+// label — תווית.
 const label={current:'איש הקשר מעודכן',new:'איש קשר חדש!',updated:'איש קשר עודכן',needs_review:'דורש בדיקה'} as const;
+/**
+ * פעולה normalizePhone: נרמול מספר טלפון.
+ * @param value — ערך.
+ */
 function normalizePhone(value:unknown){const raw=String(value??'').replace(/[\u200e\u200f\u202a-\u202e]/g,'').trim();if(!raw)return {phone:null,review:false};let d=raw.replace(/\D/g,'');if(d.startsWith('972'))d=d.slice(3);if(d.length===9&&d.startsWith('5'))d='0'+d;if(d.length===10&&d.startsWith('05'))return {phone:'+972'+d.slice(1),review:false};return {phone:raw,review:true};}
+/**
+ * פעולה parseOsherAd: פענוח קלט עבור הנתון parseOsherAd בהקשר הפעולה.
+ * @param file — קובץ.
+ * @returns ContactImportRow[] — הפלט בהתאם לחתימה.
+ */
 function parseOsherAd(file:ArrayBuffer):ContactImportRow[]{const wb=XLSX.read(file,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const a=XLSX.utils.sheet_to_json<any[]>(ws,{header:1,raw:false,defval:''});const rows:ContactImportRow[]=[];const general=String(a[1]?.[1]??'');const m=general.match(/מנהל אגף טכני\s*-\s*(.*?)\s*-\s*([+\d][\d\- ]+)/);if(m){const p=normalizePhone(m[2]);rows.push({branchName:null,roleName:'מנהל אגף טכני',fullName:m[1].trim(),phone:p.phone,email:null,sourceRow:2,needsReview:p.review});}for(let i=4;i<a.length;i++){const r=a[i];const branch=String(r?.[0]??'').trim();if(!branch)continue;const defs:Array<[number,string,number,number|null]>=[[1,'מנהל סניף',3,2],[4,'סגן מנהל',5,null],[6,'מנהל מחלקת קפואים',7,null],[8,'אחראי משמרת ערב',9,null]];for(const [nameCol,role,phoneCol,emailCol] of defs){const name=String(r[nameCol]??'').trim();if(!name)continue;const p=normalizePhone(r[phoneCol]);rows.push({branchName:branch,roleName:role,fullName:name,phone:p.phone,email:emailCol===null?null:String(r[emailCol]??'').trim()||null,sourceRow:i+1,needsReview:p.review});}}return rows;}
 
+/**
+ * טיפוס ImportDecision: ייבוא.
+ */
 type ImportDecision = 'incoming' | 'existing';
+/**
+ * טיפוס ImportComparison: ייבוא.
+ */
 type ImportComparison = { row:ContactImportRow; existing:ContactRecord|null; kind:'new'|'changed'|'review'|'same'; decision:ImportDecision };
+/**
+ * פעולה importKey: ייבוא ייבוא / מפתח.
+ * @param branch — הנתון branch בהקשר הפעולה.
+ * @param role — הנתון role בהקשר הפעולה.
+ */
 const importKey=(branch:string|null,role:string)=>`${(branch||'').trim()}|${role.trim()}`;
+/**
+ * פעולה equalContact: איש קשר.
+ * @param a — הנתון a בהקשר הפעולה.
+ * @param b — הנתון b בהקשר הפעולה.
+ */
 const equalContact=(a:ContactRecord,b:ContactImportRow)=>a.fullName.trim()===b.fullName.trim()&&(a.phone||'')===(b.phone||'')&&(a.email||'').trim().toLowerCase()===(b.email||'').trim().toLowerCase();
 
+/**
+ * טיפוס NewContactForm: איש קשר.
+ */
 type NewContactForm={clientId:string;newClientName:string;branchName:string;newBranchName:string;roleName:string;fullName:string;phone:string;email:string};
+// NEW_CLIENT — לקוח.
 const NEW_CLIENT='__new_client__'; const NEW_BRANCH='__new_branch__';
+// emptyForm — הנתון emptyForm בהקשר הפעולה.
 const emptyForm:NewContactForm={clientId:'',newClientName:'',branchName:'',newBranchName:'',roleName:'',fullName:'',phone:'',email:''};
 
+/**
+ * פעולה ContactsPage: אנשי קשר.
+ */
 export default function ContactsPage(){
  const {hasPermission}=useAuth();
+ // מצב מקומי: mode — מצב פעולה; setMode מעדכנת אותו ומפעילה רינדור לפי React.
  const [mode,setMode]=useState<'clients'|'employees'|'changes'>('clients');
+ // מצב מקומי: contacts — אנשי קשר; setContacts מעדכנת אותו ומפעילה רינדור לפי React.
  const [contacts,setContacts]=useState<ContactRecord[]>([]); const [employees,setEmployees]=useState<EmployeeContact[]>([]);
+ // מצב מקומי: clients — לקוחות; setClients מעדכנת אותו ומפעילה רינדור לפי React.
  const [clients,setClients]=useState<{id:string;name:string}[]>([]); const [client,setClient]=useState(''); const [branch,setBranch]=useState('');
+ // מצב מקומי: importPreview — ייבוא; setImportPreview מעדכנת אותו ומפעילה רינדור לפי React.
  const [importPreview,setImportPreview]=useState<{fileName:string;rows:ImportComparison[]}|null>(null); const [q,setQ]=useState(''); const [busy,setBusy]=useState(false); const [adding,setAdding]=useState(false); const [editing,setEditing]=useState<ContactRecord|null>(null); const [form,setForm]=useState<NewContactForm>(emptyForm);
+ /**
+  * פעולה אסינכרונית load: טעינת הנתון load בהקשר הפעולה.
+  */
  const load=async()=>{const [c,e,cl]=await Promise.all([contactsService.listContacts(),contactsService.listEmployees(),contactsService.listClients()]);setContacts(c);setEmployees(e);setClients(cl);};
+ // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
  useEffect(()=>{void load();},[]);
+ // תופעת לוואי לאחר רינדור בהתאם לתלויות [client].
  useEffect(()=>{setBranch('');},[client]);
+ // ערך מחושב clientContacts — לקוח / אנשי קשר; נשמר בין רינדורים עד שינוי התלויות.
  const clientContacts=useMemo(()=>client?contacts.filter(x=>x.clientId===client):contacts,[contacts,client]);
+ // ערך מחושב branches — הנתון branches בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
  const branches=useMemo(()=>Array.from(new Set(clientContacts.map(x=>x.branchName).filter((x):x is string=>Boolean(x)))).sort((a,b)=>a.localeCompare(b,'he')),[clientContacts]);
+ // ערך מחושב filtered — הנתון filtered בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
  const filtered=useMemo(()=>clientContacts.filter(x=>(mode!=='changes'||x.changeStatus!=='current')&&(!branch||x.branchName===branch)&&`${x.branchName??''} ${x.fullName} ${x.roleName} ${x.email??''} ${x.phone??''}`.toLocaleLowerCase('he').includes(q.trim().toLocaleLowerCase('he'))),[clientContacts,branch,q,mode]);
+ /**
+  * פעולה אסינכרונית importFile: ייבוא ייבוא / קובץ.
+  * @param f — הנתון f בהקשר הפעולה.
+  */
  const importFile=async(f:File)=>{setBusy(true);try{
+  // rows — שורות.
   const rows=parseOsherAd(await f.arrayBuffer());
   if(!rows.length)throw new Error('לא נמצאו אנשי קשר בקובץ.');
   const osher=clients.find(c=>c.name.trim()==='אושר עד');
@@ -43,19 +101,45 @@ export default function ContactsPage(){
   });
   setImportPreview({fileName:f.name,rows:comparisons});
  }catch(e:any){alert(e?.message??'קריאת הקובץ נכשלה');}finally{setBusy(false);}};
+ /**
+  * פעולה setImportDecision: קביעת קבוצה ייחודית / ייבוא.
+  * @param index — מיקום באוסף.
+  * @param decision — הנתון decision בהקשר הפעולה.
+  */
  const setImportDecision=(index:number,decision:ImportDecision)=>setImportPreview(prev=>prev?{...prev,rows:prev.rows.map((x,i)=>i===index?{...x,decision}:x)}:null);
+ /**
+  * פעולה אסינכרונית confirmImport: ייבוא.
+  */
  const confirmImport=async()=>{if(!importPreview)return;setBusy(true);try{
    // Omitted rows are deliberately not sent to the existing upsert RPC.
    const chosen=importPreview.rows.filter(x=>x.decision==='incoming').map(x=>x.row);
+   // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !chosen.length.
    if(!chosen.length){setImportPreview(null);return;}
+   // result — תוצאה.
    const result=await contactsService.importRows('אושר עד',importPreview.fileName,chosen);
    setImportPreview(null);await load();setMode('changes');setClient('');setBranch('');
    alert(`הייבוא הושלם: ${result.added} חדשים, ${result.updated} עודכנו, ${result.unchanged} ללא שינוי, ${result.needsReview} לבדיקה.`);
  }catch(e:any){alert(e?.message??'שמירת הייבוא נכשלה');}finally{setBusy(false);}};
+ /**
+  * פעולה actions: הנתון actions בהקשר הפעולה.
+  * @param phone — מספר טלפון.
+  * @param email — כתובת דוא״ל.
+  */
  const actions=(phone:string|null,email:string|null)=><span className="contact-actions">{phone&&<><a href={`https://wa.me/${phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer" title="WhatsApp"><MessageCircle size={17}/></a><a href={`tel:${phone}`} title="חיוג"><Phone size={17}/></a></>}{email&&<a href={`mailto:${email}`} title="מייל"><Mail size={17}/></a>}</span>;
+ /**
+  * פעולה openAdd: פתיחת הנתון openAdd בהקשר הפעולה.
+  */
  const openAdd=()=>{const chosen=client||clients[0]?.id||'';setEditing(null);setForm({...emptyForm,clientId:chosen,branchName:branch});setAdding(true);};
+ /**
+  * פעולה openEdit: פתיחת הנתון openEdit בהקשר הפעולה.
+  * @param c — הנתון c בהקשר הפעולה.
+  */
  const openEdit=(c:ContactRecord)=>{setEditing(c);setForm({...emptyForm,clientId:c.clientId,branchName:c.branchName??'',roleName:c.roleName,fullName:c.fullName,phone:c.phone??'',email:c.email??''});setAdding(true);};
+ // ערך מחושב formBranches — הנתון formBranches בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
  const formBranches=useMemo(()=>Array.from(new Set(contacts.filter(c=>c.clientId===form.clientId&&c.branchName).map(c=>c.branchName!))).sort((a,b)=>a.localeCompare(b,'he')),[contacts,form.clientId]);
+ /**
+  * פעולה אסינכרונית saveContact: שמירת איש קשר.
+  */
  const saveContact=async()=>{if(!form.fullName.trim()||!form.roleName.trim()){alert('יש למלא שם ותפקיד.');return;} if(!form.clientId){alert('יש לבחור לקוח.');return;} setBusy(true);try{let clientId=form.clientId;if(clientId===NEW_CLIENT){if(!form.newClientName.trim()){alert('יש להזין שם לקוח חדש.');return;}clientId=await contactsService.createClient(form.newClientName.trim());} const branchName=form.branchName===NEW_BRANCH?form.newBranchName.trim():form.branchName.trim(); if(form.branchName===NEW_BRANCH&&!branchName){alert('יש להזין שם סניף חדש.');return;} const normalized=form.phone.trim()?normalizePhone(form.phone):{phone:null,review:false}; const payload={clientId,branchName:branchName||null,roleName:form.roleName.trim(),fullName:form.fullName.trim(),phone:normalized.phone,email:form.email.trim()||null,needsReview:normalized.review}; if(editing)await contactsService.updateContact({id:editing.id,...payload});else await contactsService.createContact(payload);setAdding(false);setEditing(null);await load();if(clientId!==NEW_CLIENT)setClient(clientId);}catch(e:any){alert(e?.message??'שמירת איש הקשר נכשלה');}finally{setBusy(false);}};
  return <main className="contacts-page" dir="rtl"><header><div><h1>אנשי קשר</h1><p>ספר אנשי הקשר של לקוחות ועובדי המערכת.</p></div><div className="contacts-header-actions">{hasPermission('contacts.edit')&&<button className="contacts-add" onClick={openAdd}><Plus size={17}/>הוספת איש קשר</button>}{hasPermission('contacts.import')&&<label className="contacts-import"><Upload size={17}/>{busy?'מייבא…':'העלאת אושר עד'}<input type="file" accept=".xlsx,.xls" disabled={busy} onChange={e=>e.target.files?.[0]&&void importFile(e.target.files[0])}/></label>}</div></header>
  <div className="contacts-tabs"><button className={mode==='clients'?'active':''} onClick={()=>setMode('clients')}>לקוחות</button><button className={mode==='employees'?'active':''} onClick={()=>setMode('employees')}>עובדים</button><button className={mode==='changes'?'active':''} onClick={()=>setMode('changes')}>חדשים / עודכנו ({contacts.filter(c=>c.changeStatus!=='current').length})</button></div>

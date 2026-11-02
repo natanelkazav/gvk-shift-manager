@@ -1,7 +1,14 @@
+-- קובץ: supabase/migrations/20260828133000_safe_development_mode.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור מצב פיתוח / מצב פעולה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.is_my_development_mode, public.get_my_development_mode, public.set_my_development_mode, public.guard_development_mode_production_write.
+-- - מבני טבלאות: public.admin_development_sessions.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Safe Development Mode (Phase 5.5)
 -- Personal to a system administrator. Production table writes made under the
 -- administrator's authenticated session are blocked at database level.
 
+-- הגדרת מבנה הטבלה public.admin_development_sessions והאילוצים המופיעים בהמשך.
 create table if not exists public.admin_development_sessions (
   user_id uuid primary key references public.profiles(id) on delete cascade,
   enabled boolean not null default false,
@@ -10,13 +17,17 @@ create table if not exists public.admin_development_sessions (
   updated_at timestamptz not null default now()
 );
 
+-- עדכון מבנה או הגדרות הטבלה public.admin_development_sessions.
 alter table public.admin_development_sessions enable row level security;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.admin_development_sessions from anon, authenticated;
 
+-- פונקציית מסד public.is_my_development_mode: בדיקת תנאי עבור מצב פיתוח / מצב פעולה.
 create or replace function public.is_my_development_mode()
 returns boolean
 language sql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
@@ -32,25 +43,33 @@ as $$
   );
 $$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.is_my_development_mode() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.is_my_development_mode() to authenticated;
 
+-- פונקציית מסד public.get_my_development_mode: שליפה או חישוב של מצב פיתוח / מצב פעולה.
 create or replace function public.get_my_development_mode()
 returns table(enabled boolean, enabled_at timestamptz, expires_at timestamptz)
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 begin
+  -- הסתעפות לפי התנאי not exists (select 1 from public.profiles where id = auth.uid() and role = 'admin' and is_active = true).
   if not exists (select 1 from public.profiles where id = auth.uid() and role = 'admin' and is_active = true) then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return query select false, null::timestamptz, null::timestamptz;
     return;
   end if;
 
+  -- עדכון רשומות ב־public.admin_development_sessions בהתאם לקלט ולתנאים להלן.
   update public.admin_development_sessions
   set enabled = false, updated_at = now()
   where user_id = auth.uid() and enabled = true and expires_at is not null and expires_at <= now();
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return query
   select coalesce(s.enabled, false), s.enabled_at, s.expires_at
   from (select auth.uid() as user_id) me
@@ -58,31 +77,40 @@ begin
 end;
 $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_development_mode() to authenticated;
 
+-- פונקציית מסד public.set_my_development_mode: קביעת קבוצה ייחודית / מצב פיתוח / מצב פעולה.
 create or replace function public.set_my_development_mode(
   requested_enabled boolean,
   requested_duration_minutes integer default 60
 )
 returns table(enabled boolean, enabled_at timestamptz, expires_at timestamptz)
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
   resolved_expires_at timestamptz;
 begin
+  -- הסתעפות לפי התנאי not exists (select 1 from public.profiles where id = auth.uid() and role = 'admin' and is_active = true).
   if not exists (select 1 from public.profiles where id = auth.uid() and role = 'admin' and is_active = true) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'development mode is available to system administrators only' using errcode = '42501';
   end if;
 
+  -- הסתעפות לפי התנאי requested_enabled.
   if requested_enabled then
+    -- הסתעפות לפי התנאי requested_duration_minutes is null or requested_duration_minutes < 5 or requested_duration_minutes > 1440.
     if requested_duration_minutes is null or requested_duration_minutes < 5 or requested_duration_minutes > 1440 then
+      -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
       raise exception 'development mode duration must be between 5 and 1440 minutes';
     end if;
     resolved_expires_at := now() + make_interval(mins => requested_duration_minutes);
   end if;
 
+  -- הוספת רשומות ל־public.admin_development_sessions בהתאם לקלט ולתנאים להלן.
   insert into public.admin_development_sessions(user_id, enabled, enabled_at, expires_at, updated_at)
   values (auth.uid(), requested_enabled, case when requested_enabled then now() else null end,
           case when requested_enabled then resolved_expires_at else null end, now())
@@ -92,28 +120,35 @@ begin
         expires_at = excluded.expires_at,
         updated_at = now();
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(action, actor_user_id, entity_type, summary, metadata)
   values ('system_event', auth.uid(), 'development_mode',
           case when requested_enabled then 'מצב פיתוח אישי הופעל' else 'מצב פיתוח אישי כובה' end,
           jsonb_build_object('execution_mode', 'simulation', 'enabled', requested_enabled,
                              'expires_at', resolved_expires_at));
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return query
   select s.enabled, s.enabled_at, s.expires_at
   from public.admin_development_sessions s where s.user_id = auth.uid();
 end;
 $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.set_my_development_mode(boolean, integer) to authenticated;
 
+-- פונקציית מסד public.guard_development_mode_production_write: מצב פיתוח / מצב פעולה.
 create or replace function public.guard_development_mode_production_write()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 begin
+  -- הסתעפות לפי התנאי public.is_my_development_mode().
   if public.is_my_development_mode() then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'SIMULATION_MODE: הפעולה נחסמה. מצב פיתוח פעיל ולא בוצע שינוי בנתוני המערכת.'
       using errcode = 'P0001',
             hint = 'כבה מצב פיתוח בהגדרות כדי לבצע את הפעולה ב-Production.';
@@ -127,9 +162,12 @@ $$;
 -- excluded so they can continue to be used as a simulator.
 do $$
 declare
+  -- table_row — שורה.
   table_row record;
+  -- trigger_name — שם.
   trigger_name text;
 begin
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for table_row in
     select tablename
     from pg_tables

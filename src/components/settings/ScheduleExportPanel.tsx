@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/settings/ScheduleExportPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור שיבוץ / ייצוא.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ExportTarget, getMonthTarget, formatMonthLabel, readStoredLayout, persistLayout, getErrorMessage, getModeLabel, ScheduleExportPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CloudUpload,
   Download,
@@ -30,32 +37,61 @@ import {
   Select,
 } from '../ui';
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר',
 ];
 
+/**
+ * טיפוס ExportTarget: ייצוא / יעד.
+ */
 type ExportTarget = string;
 
+// EXPORT_LAYOUT_STORAGE_KEY — ייצוא / פריסת מסך / מפתח.
 const EXPORT_LAYOUT_STORAGE_KEY = 'gvk.dynamicScheduleExport.layout.v2';
 
+/**
+ * פעולה getMonthTarget: שליפה או חישוב של חודש / יעד.
+ * @param offset — מיקום תחילת התוצאות.
+ * @returns { year: number; month: number } — הפלט בהתאם לחתימה.
+ */
 function getMonthTarget(offset: number): { year: number; month: number } {
   const now = new Date();
+  // date — תאריך.
   const date = new Date(now.getFullYear(), now.getMonth() + offset, 1, 12);
   return { year: date.getFullYear(), month: date.getMonth() + 1 };
 }
 
+/**
+ * פעולה formatMonthLabel: עיצוב ערך לתצוגה עבור חודש / תווית.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatMonthLabel(year: number, month: number): string {
   return `${hebrewMonths[month - 1] ?? month} ${year}`;
 }
 
 
+/**
+ * פעולה readStoredLayout: פריסת מסך.
+ * @param options — אפשרויות בחירה.
+ * @returns ScheduleExcelLayout | null — הפלט בהתאם לחתימה.
+ */
 function readStoredLayout(options: ScheduleFileJobTypeOption[]): ScheduleExcelLayout | null {
+  // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
   try {
     const raw = window.localStorage.getItem(EXPORT_LAYOUT_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<ScheduleExcelLayout>;
+    // validIds — הנתון validIds בהקשר הפעולה; אוסף ערכים ייחודיים.
     const validIds = new Set(options.map((option) => option.id));
+    /**
+     * פעולה clean: הנתון clean בהקשר הפעולה.
+     * @param value — ערך.
+     * @returns string | null — הפלט בהתאם לחתימה.
+     */
     const clean = (value: unknown): string | null =>
       typeof value === 'string' && validIds.has(value) ? value : null;
     return {
@@ -70,7 +106,13 @@ function readStoredLayout(options: ScheduleFileJobTypeOption[]): ScheduleExcelLa
   }
 }
 
+/**
+ * פעולה persistLayout: פריסת מסך.
+ * @param layout — פריסת מסך.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function persistLayout(layout: ScheduleExcelLayout): void {
+  // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
   try {
     window.localStorage.setItem(EXPORT_LAYOUT_STORAGE_KEY, JSON.stringify(layout));
   } catch {
@@ -78,11 +120,21 @@ function persistLayout(layout: ScheduleExcelLayout): void {
   }
 }
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
   return 'אירעה שגיאה ביצירת קובץ האקסל.';
 }
 
+/**
+ * פעולה getModeLabel: שליפה או חישוב של מצב פעולה / תווית.
+ * @param mode — מצב פעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getModeLabel(mode: ScheduleFileJobTypeOption['workMode']): string {
   if (mode === 'shifts') return 'משמרות';
   if (mode === 'on_call_hourly') return 'כוננות שעתית';
@@ -90,12 +142,21 @@ function getModeLabel(mode: ScheduleFileJobTypeOption['workMode']): string {
   return 'מבנה לא מזוהה';
 }
 
+/**
+ * פעולה ScheduleExportPanel: שיבוץ / ייצוא.
+ */
 function ScheduleExportPanel() {
+  // מצב מקומי: target — יעד; setTarget מעדכנת אותו ומפעילה רינדור לפי React.
   const [target, setTarget] = useState<ExportTarget>('0');
+  // מצב מקומי: snapshot — הנתון snapshot בהקשר הפעולה; setSnapshot מעדכנת אותו ומפעילה רינדור לפי React.
   const [snapshot, setSnapshot] = useState<ScheduleExcelLayout | null>(null);
+  // מצב מקומי: isLoadingSnapshot — האם טעינה מתבצעת; setIsLoadingSnapshot מעדכנת אותו ומפעילה רינדור לפי React.
   const [isLoadingSnapshot, setIsLoadingSnapshot] = useState(false);
+  // מצב מקומי: isApprovingSnapshot — הנתון isApprovingSnapshot בהקשר הפעולה; setIsApprovingSnapshot מעדכנת אותו ומפעילה רינדור לפי React.
   const [isApprovingSnapshot, setIsApprovingSnapshot] = useState(false);
+  // מצב מקומי: jobTypes — סוגי תפקידים; setJobTypes מעדכנת אותו ומפעילה רינדור לפי React.
   const [jobTypes, setJobTypes] = useState<ScheduleFileJobTypeOption[]>([]);
+  // מצב מקומי: layout — פריסת מסך; setLayout מעדכנת אותו ומפעילה רינדור לפי React.
   const [layout, setLayout] = useState<ScheduleExcelLayout>({
     morningRowJobTypeId: null,
     eveningRowJobTypeId: null,
@@ -103,29 +164,49 @@ function ScheduleExportPanel() {
     parallelMorningJobTypeId: null,
     dailyJobTypeId: null,
   });
+  // מצב מקומי: isLoadingRoles — האם טעינה מתבצעת; setIsLoadingRoles מעדכנת אותו ומפעילה רינדור לפי React.
   const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+  // מצב מקומי: isSavingLayout — האם שמירה מתבצעת; setIsSavingLayout מעדכנת אותו ומפעילה רינדור לפי React.
   const [isSavingLayout, setIsSavingLayout] = useState(false);
+  // מצב מקומי: hasSavedLayout — פריסת מסך; setHasSavedLayout מעדכנת אותו ומפעילה רינדור לפי React.
   const [hasSavedLayout, setHasSavedLayout] = useState(false);
+  // מצב מקומי: isExporting — הנתון isExporting בהקשר הפעולה; setIsExporting מעדכנת אותו ומפעילה רינדור לפי React.
   const [isExporting, setIsExporting] = useState(false);
+  // מצב מקומי: isSending — הנתון isSending בהקשר הפעולה; setIsSending מעדכנת אותו ומפעילה רינדור לפי React.
   const [isSending, setIsSending] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: successMessage — הודעה; setSuccessMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // ערך מחושב selectedTarget — נבחר / יעד; נשמר בין רינדורים עד שינוי התלויות.
   const selectedTarget = useMemo(() => getMonthTarget(Number(target)), [target]);
+  // isHistorical — נתונים היסטוריים.
   const isHistorical = Number(target) < 0;
+  // effectiveLayout — פריסת מסך.
   const effectiveLayout = isHistorical && snapshot ? snapshot : layout;
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     void (async () => {
       setIsLoadingRoles(true);
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // options — אפשרויות בחירה.
         const options = await dynamicScheduleExportService.getJobTypeOptions();
         if (!active) return;
         setJobTypes(options);
         const saved = await scheduleExportLayoutSettingsService.load();
         if (!active) return;
+        // validIds — הנתון validIds בהקשר הפעולה; אוסף ערכים ייחודיים.
         const validIds = new Set(options.map((option) => option.id));
+        /**
+         * פעולה clean: הנתון clean בהקשר הפעולה.
+         * @param value — ערך.
+         * @returns string | null — הפלט בהתאם לחתימה.
+         */
         const clean = (value: string | null | undefined): string | null =>
           value && validIds.has(value) ? value : null;
         setLayout(saved ? {
@@ -145,7 +226,9 @@ function ScheduleExportPanel() {
     return () => { active = false; };
   }, []);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [selectedTarget.year, selectedTarget.month].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     setSnapshot(null);
     setIsLoadingSnapshot(true);
@@ -156,10 +239,15 @@ function ScheduleExportPanel() {
     return () => { active = false; };
   }, [selectedTarget.year, selectedTarget.month]);
 
+  /**
+   * פעולה אסינכרונית approveHistoricalLayout: אישור נתונים היסטוריים / פריסת מסך.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const approveHistoricalLayout = async (): Promise<void> => {
     if (!isHistorical || snapshot || isLoadingSnapshot) return;
     setIsApprovingSnapshot(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       const approved = await scheduleExportLayoutSettingsService.approveMonthlySnapshot(
         selectedTarget.year, selectedTarget.month, layout,
@@ -170,10 +258,12 @@ function ScheduleExportPanel() {
     finally { setIsApprovingSnapshot(false); }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [isLoadingRoles, jobTypes.length, layout].
   useEffect(() => {
     if (!isLoadingRoles && jobTypes.length > 0) persistLayout(layout);
   }, [isLoadingRoles, jobTypes.length, layout]);
 
+  // ערך מחושב selectOptions — אפשרויות בחירה; נשמר בין רינדורים עד שינוי התלויות.
   const selectOptions = useMemo(() => [
     { value: '', label: 'לא בשימוש' },
     ...jobTypes.map((jobType) => ({
@@ -182,6 +272,7 @@ function ScheduleExportPanel() {
     })),
   ], [jobTypes]);
 
+  // ערך מחושב selectedNames — נבחר; נשמר בין רינדורים עד שינוי התלויות.
   const selectedNames = useMemo(() => {
     const names = new Map(jobTypes.map((jobType) => [jobType.id, jobType.name]));
     return {
@@ -193,10 +284,15 @@ function ScheduleExportPanel() {
     };
   }, [jobTypes, effectiveLayout]);
 
+  /**
+   * פעולה אסינכרונית saveLayout: שמירת פריסת מסך.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const saveLayout = async (): Promise<void> => {
     setIsSavingLayout(true);
     setError(null);
     setSuccessMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await scheduleExportLayoutSettingsService.save(layout);
       setHasSavedLayout(true);
@@ -208,7 +304,12 @@ function ScheduleExportPanel() {
     }
   };
 
+  /**
+   * פעולה resetLayout: איפוס פריסת מסך.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const resetLayout = (): void => {
+    // nextLayout — פריסת מסך.
     const nextLayout = dynamicScheduleExportService.createDefaultLayout(jobTypes);
     setLayout(nextLayout);
     persistLayout(nextLayout);
@@ -216,11 +317,17 @@ function ScheduleExportPanel() {
     setSuccessMessage(null);
   };
 
+  /**
+   * פעולה אסינכרונית handleExport: טיפול באירוע עבור ייצוא.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleExport = async (): Promise<void> => {
     setIsExporting(true);
     setError(null);
     setSuccessMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await dynamicScheduleExportService.exportMonth(
         selectedTarget.year,
         selectedTarget.month,
@@ -234,16 +341,23 @@ function ScheduleExportPanel() {
     }
   };
 
+  /**
+   * פעולה אסינכרונית handleSendToTeams: טיפול באירוע עבור הנתון handleSendToTeams בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSendToTeams = async (): Promise<void> => {
     setIsSending(true);
     setError(null);
     setSuccessMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const { blob, result } = await dynamicScheduleExportService.createMonthFile(
         selectedTarget.year,
         selectedTarget.month,
         effectiveLayout,
       );
+      // response — תוצאת הפעולה.
       const response = await scheduleArchiveService.sendScheduleFile(
         blob,
         result.fileName,
@@ -284,7 +398,9 @@ function ScheduleExportPanel() {
             value={target}
             disabled={isExporting || isSending}
             options={Array.from({ length: 14 }, (_, i) => {
+              // offset — מיקום תחילת התוצאות.
               const offset = i - 12;
+              // date — תאריך.
               const date = getMonthTarget(offset);
               return { value: String(offset), label: `${offset === 0 ? 'החודש הנוכחי — ' : offset === 1 ? 'החודש הבא — ' : ''}${formatMonthLabel(date.year, date.month)}` };
             })}

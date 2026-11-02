@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/availability/DispatcherAvailabilityShiftCard.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור מוקדנים / אילוצים וזמינות / משמרת.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DispatcherAvailabilityShiftCardProps, formatShiftTime, formatDate, DispatcherAvailabilityShiftCard.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   Check,
   Clock3,
@@ -12,16 +19,22 @@ import type {
   DispatcherAvailabilityStatus,
 } from '../../types/dispatcherAvailability';
 
+/**
+ * חוזה הנתונים DispatcherAvailabilityShiftCardProps: מוקדנים / אילוצים וזמינות / משמרת / מאפייני הרכיב.
+ */
 interface DispatcherAvailabilityShiftCardProps {
+  // shift — משמרת.
   shift:
     DispatcherAvailabilityShift;
 
+  // isSaving — האם שמירה מתבצעת.
   isSaving:
     boolean;
 
   isReadOnly:
     boolean;
 
+  // onSelectStatus — סטטוס.
   onSelectStatus: (
     shiftSlotId:
       string,
@@ -33,6 +46,11 @@ interface DispatcherAvailabilityShiftCardProps {
     Promise<void>;
 }
 
+/**
+ * פעולה formatShiftTime: עיצוב ערך לתצוגה עבור משמרת / זמן.
+ * @param timeValue — זמן / ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatShiftTime(
   timeValue:
     string,
@@ -43,15 +61,22 @@ function formatShiftTime(
   );
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param dateValue — תאריך / ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   dateValue:
     string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${dateValue}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -77,25 +102,37 @@ function formatDate(
   );
 }
 
+/**
+ * פעולה DispatcherAvailabilityShiftCard: מוקדנים / אילוצים וזמינות / משמרת.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DispatcherAvailabilityShiftCard({
   shift,
   isSaving,
   isReadOnly,
   onSelectStatus,
 }: DispatcherAvailabilityShiftCardProps) {
+  // isAvailable — הנתון isAvailable בהקשר הפעולה.
   const isAvailable =
     shift.availabilityStatus ===
     'available';
 
+  // isUnavailable — הנתון isUnavailable בהקשר הפעולה.
   const isUnavailable =
     shift.availabilityStatus ===
     'unavailable';
 
+  /**
+   * פעולה אסינכרונית handleSelectStatus: טיפול באירוע עבור סטטוס.
+   * @param status — סטטוס.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSelectStatus =
     async (
       status:
         DispatcherAvailabilityStatus,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isSaving || isReadOnly || shift.availabilityStatus === status.
       if (
         isSaving ||
         isReadOnly ||

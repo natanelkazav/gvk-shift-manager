@@ -1,5 +1,11 @@
+-- קובץ: supabase/migrations/20260915230000_phase10_10_5_monthly_rotation_visibility_management.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סבב כוננויות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_job_type_rotation_workspace, public.initialize_dynamic_job_type_rotation_state, public.update_dynamic_job_type_rotation_state.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
+-- פונקציית מסד public.get_dynamic_job_type_rotation_workspace: שליפה או חישוב של סוג תפקיד.
 create or replace function public.get_dynamic_job_type_rotation_workspace(
   requested_job_type_id uuid,
   requested_start_date date default current_date,
@@ -7,26 +13,33 @@ create or replace function public.get_dynamic_job_type_rotation_workspace(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   v_actor uuid:=auth.uid();
   v_job public.job_types%rowtype;
+  -- v_state — מצב.
   v_state public.dynamic_job_type_rotation_state%rowtype;
   v_days integer:=least(greatest(coalesce(requested_days,35),1),93);
   v_members jsonb:='[]'::jsonb;
   v_preview jsonb:='[]'::jsonb;
 begin
+  -- הסתעפות לפי התנאי v_actor is null then raise exception 'not authenticated'; end if;.
   if v_actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(.
   if not exists(
     select 1 from public.user_permissions up
     where up.user_id=v_actor and up.permission_key='users.manage'
   ) then raise exception 'not allowed'; end if;
 
   select * into v_job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי v_job.id is null then raise exception 'job type not found'; end if;.
   if v_job.id is null then raise exception 'job type not found'; end if;
+  -- הסתעפות לפי התנאי coalesce(v_job.scheduling_strategy,'availability_optimizer') <> 'monthly_rotation_constraints'.
   if coalesce(v_job.scheduling_strategy,'availability_optimizer') <> 'monthly_rotation_constraints' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type is not configured for monthly rotation';
   end if;
 
@@ -49,6 +62,7 @@ begin
   join public.profiles p on p.id=m.user_id
   where m.job_type_id=v_job.id;
 
+  -- הסתעפות לפי התנאי v_state.job_type_id is not null.
   if v_state.job_type_id is not null then
     with days as (
       select d::date work_date,
@@ -88,6 +102,7 @@ begin
     left join public.profiles ap on ap.id=a.user_id;
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'jobTypeId',v_job.id,
     'jobTypeName',v_job.name,
@@ -102,32 +117,42 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.initialize_dynamic_job_type_rotation_state: סוג תפקיד.
 create or replace function public.initialize_dynamic_job_type_rotation_state(
   requested_job_type_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   v_actor uuid:=auth.uid();
   v_job public.job_types%rowtype;
+  -- v_member_count — כמות.
   v_member_count integer;
+  -- v_rotation — סבב כוננויות.
   v_rotation uuid[];
   v_anchor date;
+  -- v_source — מקור.
   v_source text;
   v_history_rows integer:=0;
 begin
+  -- הסתעפות לפי התנאי v_actor is null then raise exception 'not authenticated'; end if;.
   if v_actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=v_actor and up.permission_key='users.manage').
   if not exists(select 1 from public.user_permissions up where up.user_id=v_actor and up.permission_key='users.manage')
     then raise exception 'not allowed'; end if;
 
   select * into v_job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי v_job.id is null then raise exception 'job type not found'; end if;.
   if v_job.id is null then raise exception 'job type not found'; end if;
+  -- הסתעפות לפי התנאי coalesce(v_job.scheduling_strategy,'availability_optimizer') <> 'monthly_rotation_constraints'.
   if coalesce(v_job.scheduling_strategy,'availability_optimizer') <> 'monthly_rotation_constraints'
     then raise exception 'job type is not configured for monthly rotation'; end if;
 
+  -- הסתעפות לפי התנאי exists(select 1 from public.dynamic_job_type_rotation_state where job_type_id=v_job.id).
   if exists(select 1 from public.dynamic_job_type_rotation_state where job_type_id=v_job.id) then
     return public.get_dynamic_job_type_rotation_workspace(v_job.id,current_date,35);
   end if;
@@ -135,6 +160,7 @@ begin
   select count(*)::integer into v_member_count
   from public.job_type_memberships m join public.profiles p on p.id=m.user_id and p.is_active=true
   where m.job_type_id=v_job.id;
+  -- הסתעפות לפי התנאי v_member_count < 2 then raise exception 'monthly rotation requires at least two active role members'; end if;.
   if v_member_count < 2 then raise exception 'monthly rotation requires at least two active role members'; end if;
 
   with hist as (
@@ -163,6 +189,7 @@ begin
   select rotation,anchor_date,'historical_best_window',compared
     into v_rotation,v_anchor,v_source,v_history_rows from scored;
 
+  -- הסתעפות לפי התנאי v_rotation is null or cardinality(v_rotation)<>v_member_count.
   if v_rotation is null or cardinality(v_rotation)<>v_member_count then
     select array_agg(x.user_id order by x.display_name,x.user_id),current_date,'membership_fallback'
     into v_rotation,v_anchor,v_source
@@ -173,6 +200,7 @@ begin
     ) x;
   end if;
 
+  -- הוספת רשומות ל־public.dynamic_job_type_rotation_state בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_job_type_rotation_state(
     job_type_id,rotation_user_ids,anchor_date,source,source_metadata,created_by
   ) values(
@@ -181,6 +209,7 @@ begin
     v_actor
   );
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(action,actor_user_id,entity_type,entity_id,summary,metadata)
   values('system_event',v_actor,'job_type',v_job.id,'סבב חודשי אותחל',
     jsonb_build_object('rotationUserIds',to_jsonb(v_rotation),'anchorDate',v_anchor,'source',v_source));
@@ -189,6 +218,7 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.update_dynamic_job_type_rotation_state: עדכון סוג תפקיד.
 create or replace function public.update_dynamic_job_type_rotation_state(
   requested_job_type_id uuid,
   requested_rotation_user_ids uuid[],
@@ -197,19 +227,26 @@ create or replace function public.update_dynamic_job_type_rotation_state(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   v_actor uuid:=auth.uid();
+  -- v_active_count — פעיל / כמות.
   v_active_count integer;
 begin
+  -- הסתעפות לפי התנאי v_actor is null then raise exception 'not authenticated'; end if;.
   if v_actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=v_actor and up.permission_key='users.manage').
   if not exists(select 1 from public.user_permissions up where up.user_id=v_actor and up.permission_key='users.manage')
     then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי requested_anchor_date is null then raise exception 'anchor date is required'; end if;.
   if requested_anchor_date is null then raise exception 'anchor date is required'; end if;
+  -- הסתעפות לפי התנאי requested_rotation_user_ids is null or cardinality(requested_rotation_user_ids)<2.
   if requested_rotation_user_ids is null or cardinality(requested_rotation_user_ids)<2
     then raise exception 'rotation requires at least two members'; end if;
+  -- הסתעפות לפי התנאי cardinality(requested_rotation_user_ids) <>.
   if cardinality(requested_rotation_user_ids) <>
      (select count(distinct x) from unnest(requested_rotation_user_ids) x)
     then raise exception 'rotation contains duplicate members'; end if;
@@ -220,16 +257,20 @@ begin
   where m.job_type_id=requested_job_type_id
     and m.user_id=any(requested_rotation_user_ids);
 
+  -- הסתעפות לפי התנאי v_active_count<>cardinality(requested_rotation_user_ids).
   if v_active_count<>cardinality(requested_rotation_user_ids) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'rotation contains users who are not active members of this job type';
   end if;
 
+  -- הסתעפות לפי התנאי v_active_count <> (.
   if v_active_count <> (
     select count(*) from public.job_type_memberships m
     join public.profiles p on p.id=m.user_id and p.is_active=true
     where m.job_type_id=requested_job_type_id
   ) then raise exception 'rotation must contain every active role member exactly once'; end if;
 
+  -- הוספת רשומות ל־public.dynamic_job_type_rotation_state בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_job_type_rotation_state(
     job_type_id,rotation_user_ids,anchor_date,source,source_metadata,created_by
   ) values(
@@ -244,6 +285,7 @@ begin
     source_metadata=excluded.source_metadata,
     updated_at=now();
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(action,actor_user_id,entity_type,entity_id,summary,metadata)
   values('system_event',v_actor,'job_type',requested_job_type_id,'סבב חודשי עודכן ידנית',
     jsonb_build_object('rotationUserIds',to_jsonb(requested_rotation_user_ids),
@@ -253,11 +295,17 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_job_type_rotation_workspace(uuid,date,integer) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.initialize_dynamic_job_type_rotation_state(uuid) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.update_dynamic_job_type_rotation_state(uuid,uuid[],date,text) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_job_type_rotation_workspace(uuid,date,integer) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.initialize_dynamic_job_type_rotation_state(uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.update_dynamic_job_type_rotation_state(uuid,uuid[],date,text) to authenticated;
 
 commit;

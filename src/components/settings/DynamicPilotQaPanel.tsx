@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/settings/DynamicPilotQaPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DynamicPilotQaPanel, Metric, QaCheckRow.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { useState } from 'react';
 import {
   AlertTriangle,
@@ -12,26 +19,38 @@ import type {
   DynamicPilotQaReport,
 } from '../../types/dynamicPilotQa';
 
+// sourceLabels — מקור.
 const sourceLabels = {
   dispatcher: 'מוקדנים Legacy',
   on_call: 'כוננים Legacy',
   morning_driver: 'כונני בוקר Legacy',
 } as const;
 
+// statusLabels — סטטוס.
 const statusLabels = {
   pass: 'עבר',
   warn: 'לבדיקה',
   fail: 'נכשל',
 } as const;
 
+/**
+ * פעולה DynamicPilotQaPanel: דינמי.
+ */
 function DynamicPilotQaPanel() {
+  // מצב מקומי: report — דוח; setReport מעדכנת אותו ומפעילה רינדור לפי React.
   const [report, setReport] = useState<DynamicPilotQaReport | null>(null);
+  // מצב מקומי: loading — טעינה; setLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [loading, setLoading] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * פעולה אסינכרונית runReport: דוח.
+   */
   const runReport = async () => {
     setLoading(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       setReport(await dynamicPilotQaService.getReport());
     } catch (reportError) {
@@ -126,10 +145,18 @@ function DynamicPilotQaPanel() {
   );
 }
 
+/**
+ * פעולה Metric: הנתון Metric בהקשר הפעולה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function Metric({ label, value }: { label: string; value: number }) {
   return <div className="dynamic-pilot-qa-metric"><strong>{value}</strong><span>{label}</span></div>;
 }
 
+/**
+ * פעולה QaCheckRow: שורה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function QaCheckRow({ check }: { check: DynamicPilotQaCheck }) {
   const Icon = check.status === 'pass' ? CheckCircle2 : check.status === 'warn' ? AlertTriangle : CircleX;
   return (

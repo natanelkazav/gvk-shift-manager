@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/statistics/views/StatisticsChartsView.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: StatisticsChartsViewProps, getDisplayName, shiftTimeStartMinutes, buildShiftTimeSeries, buildShiftTimeItems, StatisticsChartsView.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import type {
   StatisticsDashboardResponse,
 } from '../../../types/statistics';
@@ -20,10 +27,15 @@ import StatisticsStackedBarChart
 import DispatcherAvailabilityInsights
   from './DispatcherAvailabilityInsights';
 
+/**
+ * חוזה הנתונים StatisticsChartsViewProps: סטטיסטיקה / מאפייני הרכיב.
+ */
 interface StatisticsChartsViewProps {
+  // data — נתונים.
   data:
     StatisticsDashboardResponse;
 
+  // sectionFilter — סינון.
   sectionFilter:
     'all'
     | 'dispatchers'
@@ -31,6 +43,12 @@ interface StatisticsChartsViewProps {
     | 'drivers';
 }
 
+/**
+ * פעולה getDisplayName: שליפה או חישוב של שם תצוגה.
+ * @param displayName — שם תצוגה.
+ * @param scheduleName — שיבוץ / שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDisplayName(
   displayName: string,
   scheduleName:
@@ -43,12 +61,18 @@ function getDisplayName(
   );
 }
 
+/**
+ * פעולה shiftTimeStartMinutes: משמרת / זמן / דקות.
+ * @param shiftTime — משמרת / זמן.
+ * @returns number — הפלט בהתאם לחתימה.
+ */
 function shiftTimeStartMinutes(
   shiftTime: string,
 ): number {
   const start = shiftTime.split('–')[0] ?? shiftTime.split('-')[0] ?? '';
   const [hours, minutes] = start.split(':').map(Number);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !Number.isFinite(hours) || !Number.isFinite(minutes).
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
     return Number.MAX_SAFE_INTEGER;
   }
@@ -56,6 +80,10 @@ function shiftTimeStartMinutes(
   return (hours * 60) + minutes;
 }
 
+/**
+ * פעולה buildShiftTimeSeries: הרכבת משמרת / זמן.
+ * @param rows — שורות.
+ */
 function buildShiftTimeSeries(
   rows: StatisticsDashboardResponse['dispatcherShiftTimeDistribution'],
 ) {
@@ -72,19 +100,29 @@ function buildShiftTimeSeries(
     }));
 }
 
+/**
+ * פעולה buildShiftTimeItems: הרכבת משמרת / זמן / פריטים.
+ * @param rows — שורות.
+ */
 function buildShiftTimeItems(
   rows: StatisticsDashboardResponse['dispatcherShiftTimeDistribution'],
 ) {
+  // items — פריטים; מיפוי לחיפוש לפי מפתח.
   const items = new Map<
     string,
     {
+      // key — מפתח.
       key: string;
+      // label — תווית.
       label: string;
+      // values — ערכים.
       values: Record<string, number>;
     }
   >();
 
+  // עיבוד כל פריט מתוך rows בנפרד.
   for (const row of rows) {
+    // current — הנתון current בהקשר הפעולה.
     const current = items.get(row.userId) ?? {
       key: row.userId,
       label: getDisplayName(row.displayName, row.scheduleName),
@@ -102,16 +140,27 @@ function buildShiftTimeItems(
   );
 }
 
+/**
+ * פעולה StatisticsChartsView: סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function StatisticsChartsView({
   data,
   sectionFilter,
 }: StatisticsChartsViewProps) {
+  /**
+   * פעולה monthLabel: חודש / תווית.
+   * @param year — שנה.
+   * @param month — חודש.
+   * @returns string — הפלט בהתאם לחתימה.
+   */
   const monthLabel = (
     year: number,
     month: number,
   ): string =>
     `${String(month).padStart(2, '0')}/${String(year).slice(-2)}`;
 
+  // dispatcherPremiumTrend — מוקדנים / תעריף מוגדל.
   const dispatcherPremiumTrend =
     data.monthlyStatistics.map(
       (monthRow) => ({
@@ -139,9 +188,11 @@ function StatisticsChartsView({
 
 
 
+  // dispatcherShiftTimeSeries — מוקדנים / משמרת / זמן.
   const dispatcherShiftTimeSeries =
     buildShiftTimeSeries(data.dispatcherShiftTimeDistribution);
 
+  // dispatcherShiftTimeItems — מוקדנים / משמרת / זמן / פריטים.
   const dispatcherShiftTimeItems =
     buildShiftTimeItems(data.dispatcherShiftTimeDistribution);
 

@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/availability/AvailabilityWorkspaceTabs.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AvailabilityWorkspaceTab, AvailabilityWorkspaceTabsProps, AvailabilityTabDefinition, AvailabilityWorkspaceTabs.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarCog,
   CalendarDays,
@@ -5,29 +12,45 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 
+/**
+ * טיפוס AvailabilityWorkspaceTab: אילוצים וזמינות.
+ */
 export type AvailabilityWorkspaceTab =
   | 'my-availability'
   | 'period-management'
   | 'submissions'
   | 'schedule-preparation';
 
+/**
+ * חוזה הנתונים AvailabilityWorkspaceTabsProps: אילוצים וזמינות / מאפייני הרכיב.
+ */
 interface AvailabilityWorkspaceTabsProps {
+  // activeTab — פעיל.
   activeTab:
     AvailabilityWorkspaceTab;
 
+  // canSubmitAvailability — אילוצים וזמינות.
   canSubmitAvailability: boolean;
+  // canManageAvailability — האם פעולת ניהול מותרת.
   canManageAvailability: boolean;
+  // canPrepareSchedule — שיבוץ.
   canPrepareSchedule: boolean;
 
+  // onChange — פונקציית דיווח על שינוי.
   onChange: (
     tab: AvailabilityWorkspaceTab,
   ) => void;
 }
 
+/**
+ * חוזה הנתונים AvailabilityTabDefinition: אילוצים וזמינות.
+ */
 interface AvailabilityTabDefinition {
+  // id — מזהה.
   id:
     AvailabilityWorkspaceTab;
 
+  // label — תווית.
   label: string;
   description: string;
 
@@ -37,6 +60,10 @@ interface AvailabilityTabDefinition {
   isVisible: boolean;
 }
 
+/**
+ * פעולה AvailabilityWorkspaceTabs: אילוצים וזמינות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function AvailabilityWorkspaceTabs({
   activeTab,
   canSubmitAvailability,
@@ -121,6 +148,7 @@ function AvailabilityWorkspaceTabs({
         tab.isVisible,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר visibleTabs.length <= 1.
   if (
     visibleTabs.length <= 1
   ) {
@@ -137,6 +165,7 @@ function AvailabilityWorkspaceTabs({
           const Icon =
             tab.icon;
 
+          // isActive — האם הרשומה פעילה.
           const isActive =
             activeTab ===
             tab.id;

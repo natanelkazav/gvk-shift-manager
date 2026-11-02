@@ -1,24 +1,44 @@
+/**
+ * קובץ: supabase/functions/shift-swap-action/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת shift-swap-action.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ShiftSwapMutationResult, ShiftSwapAction, ShiftSwapActionRequest, createJsonResponse, getRequiredEnvironmentVariable, getAuthorizationHeader, createUserClient, createAdminClient, recordShiftSwapAudit, parseActionRequest ועוד.
+ * - קריאות RPC המופעלות בקובץ: create_shift_swap_request, cancel_shift_swap_request.
+ * - מקורות נתונים הנזכרים בקריאות from: profiles, audit_logs.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   createClient,
   type SupabaseClient,
 } from 'npm:@supabase/supabase-js@2';
 
+/**
+ * חוזה הנתונים ShiftSwapMutationResult: החלפת משמרות.
+ */
 interface ShiftSwapMutationResult {
+  // notificationIds — התראות (אופציונלי).
   notificationIds?: unknown;
   [key: string]: unknown;
 }
 
+/**
+ * טיפוס ShiftSwapAction: החלפת משמרות.
+ */
 type ShiftSwapAction =
   | 'create'
   | 'respond'
   | 'review'
   | 'cancel';
 
+/**
+ * חוזה הנתונים ShiftSwapActionRequest: החלפת משמרות.
+ */
 interface ShiftSwapActionRequest {
   action?: unknown;
   payload?: unknown;
 }
 
+// corsHeaders — הנתון corsHeaders בהקשר הפעולה.
 const corsHeaders = {
   'Access-Control-Allow-Origin':
     '*',
@@ -35,6 +55,12 @@ const corsHeaders = {
     'POST, OPTIONS',
 };
 
+/**
+ * פעולה createJsonResponse: יצירת תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 function createJsonResponse(
   body: unknown,
   status = 200,
@@ -52,14 +78,21 @@ function createJsonResponse(
   );
 }
 
+/**
+ * פעולה getRequiredEnvironmentVariable: שליפה או חישוב של הנתון getRequiredEnvironmentVariable בהקשר הפעולה.
+ * @param name — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getRequiredEnvironmentVariable(
   name: string,
 ): string {
+  // value — ערך.
   const value =
     Deno.env
       .get(name)
       ?.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !value.
   if (!value) {
     throw new Error(
       `Missing required environment variable: ${name}`,
@@ -69,6 +102,11 @@ function getRequiredEnvironmentVariable(
   return value;
 }
 
+/**
+ * פעולה getAuthorizationHeader: שליפה או חישוב של הנתון getAuthorizationHeader בהקשר הפעולה.
+ * @param request — נתוני הבקשה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getAuthorizationHeader(
   request: Request,
 ): string {
@@ -77,6 +115,7 @@ function getAuthorizationHeader(
       .get('Authorization')
       ?.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !authorizationHeader.
   if (!authorizationHeader) {
     throw new Error(
       'לא נמצאה התחברות פעילה.',
@@ -86,6 +125,13 @@ function getAuthorizationHeader(
   return authorizationHeader;
 }
 
+/**
+ * פעולה createUserClient: יצירת לקוח Supabase עם כותרת Authorization של המשתמש וללא שמירת סשן בצד השרת.
+ * @param supabaseUrl — כתובת יעד.
+ * @param supabaseAnonKey — מפתח.
+ * @param authorizationHeader — הנתון authorizationHeader בהקשר הפעולה.
+ * @returns SupabaseClient — הפלט בהתאם לחתימה.
+ */
 function createUserClient(
   supabaseUrl: string,
   supabaseAnonKey: string,
@@ -111,6 +157,12 @@ function createUserClient(
   );
 }
 
+/**
+ * פעולה createAdminClient: יצירת לקוח צד שרת עם service-role key; בדיקות הסמכות של המבקש מטופלות בנפרד.
+ * @param supabaseUrl — כתובת יעד.
+ * @param serviceRoleKey — שירות / מפתח.
+ * @returns SupabaseClient — הפלט בהתאם לחתימה.
+ */
 function createAdminClient(
   supabaseUrl: string,
   serviceRoleKey: string,
@@ -130,6 +182,16 @@ function createAdminClient(
   );
 }
 
+/**
+ * פעולה אסינכרונית recordShiftSwapAudit: החלפת משמרות.
+ * @param adminClient — לקוח.
+ * @param actorUserId — מזהה משתמש.
+ * @param actorEmail — כתובת דוא״ל.
+ * @param action — הנתון action בהקשר הפעולה.
+ * @param payload — הנתון payload בהקשר הפעולה.
+ * @param result — תוצאה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function recordShiftSwapAudit(
   adminClient:
     SupabaseClient,
@@ -144,6 +206,7 @@ async function recordShiftSwapAudit(
   result:
     ShiftSwapMutationResult,
 ): Promise<void> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data:
       actorProfile,
@@ -167,9 +230,11 @@ async function recordShiftSwapAudit(
       ? payload.approve
       : null;
 
+  // auditAction — יומן שינויים.
   let auditAction:
     string;
 
+  // summary — סיכום.
   let summary:
     string;
 
@@ -216,6 +281,7 @@ async function recordShiftSwapAudit(
       'בקשת החלפת משמרת בוטלה';
   }
 
+  // requestId — מזהה הבקשה.
   const requestId =
     typeof result.id ===
       'string'
@@ -227,15 +293,19 @@ async function recordShiftSwapAudit(
             : null
         );
 
+  // targetUserId — מזהה משתמש היעד.
   const targetUserId =
     typeof result.counterpartyUserId ===
       'string'
       ? result.counterpartyUserId
       : null;
 
+  // targetProfile — יעד / פרופיל.
   let targetProfile:
     {
+      // email — כתובת דוא״ל (אופציונלי).
       email?: string | null;
+      // display_name — שם תצוגה (אופציונלי).
       display_name?: string | null;
     } | null =
     null;
@@ -243,6 +313,7 @@ async function recordShiftSwapAudit(
   if (
     targetUserId
   ) {
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
     } =
@@ -263,6 +334,7 @@ async function recordShiftSwapAudit(
       data;
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     error:
       auditLogError,
@@ -345,12 +417,18 @@ async function recordShiftSwapAudit(
   }
 }
 
+/**
+ * פעולה parseActionRequest: פענוח קלט עבור נתוני הבקשה.
+ * @param value — ערך.
+ * @returns { action: ShiftSwapAction; payload: Record<string, unknown>; } — הפלט בהתאם לחתימה.
+ */
 function parseActionRequest(
   value: unknown,
 ): {
   action: ShiftSwapAction;
   payload: Record<string, unknown>;
 } {
+  // עצירת הפעולה עם שגיאה כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !==
       'object' ||
@@ -362,10 +440,12 @@ function parseActionRequest(
     );
   }
 
+  // request — נתוני הבקשה.
   const request =
     value as
       ShiftSwapActionRequest;
 
+  // עצירת הפעולה עם שגיאה כאשר request.action !== 'create' && request.action !== 'respond' && request.action !== 'review' && request.action !== 'cancel'.
   if (
     request.action !==
       'create' &&
@@ -397,9 +477,15 @@ function parseActionRequest(
   };
 }
 
+/**
+ * פעולה getString: שליפה או חישוב של הנתון getString בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function getString(
   value: unknown,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value !== 'string'.
   if (
     typeof value !==
       'string'
@@ -407,6 +493,7 @@ function getString(
     return null;
   }
 
+  // normalizedValue — ערך.
   const normalizedValue =
     value.trim();
 
@@ -414,6 +501,11 @@ function getString(
     null;
 }
 
+/**
+ * פעולה getBoolean: שליפה או חישוב של הנתון getBoolean בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns boolean | null — הפלט בהתאם לחתימה.
+ */
 function getBoolean(
   value: unknown,
 ): boolean | null {
@@ -423,11 +515,20 @@ function getBoolean(
     : null;
 }
 
+/**
+ * פעולה אסינכרונית executeShiftSwapAction: החלפת משמרות.
+ * הפעולה פונה ל־RPC: create_shift_swap_request, cancel_shift_swap_request.
+ * @param userClient — משתמש / לקוח.
+ * @param action — הנתון action בהקשר הפעולה.
+ * @param payload — הנתון payload בהקשר הפעולה.
+ * @returns Promise<ShiftSwapMutationResult> — הפלט בהתאם לחתימה.
+ */
 async function executeShiftSwapAction(
   userClient: SupabaseClient,
   action: ShiftSwapAction,
   payload: Record<string, unknown>,
 ): Promise<ShiftSwapMutationResult> {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר action === 'create'.
   if (
     action ===
       'create'
@@ -437,21 +538,25 @@ async function executeShiftSwapAction(
         payload.swapType,
       );
 
+    // requesterShiftId — מזהה המשמרת.
     const requesterShiftId =
       getString(
         payload.requesterShiftId,
       );
 
+    // counterpartyUserId — מזהה משתמש.
     const counterpartyUserId =
       getString(
         payload.counterpartyUserId,
       );
 
+    // counterpartyShiftId — מזהה המשמרת.
     const counterpartyShiftId =
       getString(
         payload.counterpartyShiftId,
       );
 
+    // עצירת הפעולה עם שגיאה כאשר swapType !== 'one_way' && swapType !== 'two_way'.
     if (
       swapType !==
         'one_way' &&
@@ -463,6 +568,7 @@ async function executeShiftSwapAction(
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !requesterShiftId.
     if (
       !requesterShiftId
     ) {
@@ -471,6 +577,7 @@ async function executeShiftSwapAction(
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !counterpartyUserId.
     if (
       !counterpartyUserId
     ) {
@@ -479,6 +586,7 @@ async function executeShiftSwapAction(
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר swapType === 'two_way' && !counterpartyShiftId.
     if (
       swapType ===
         'two_way' &&
@@ -489,6 +597,7 @@ async function executeShiftSwapAction(
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -508,10 +617,12 @@ async function executeShiftSwapAction(
           },
         );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw error;
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת יצירת בקשת ההחלפה.',
@@ -522,21 +633,25 @@ async function executeShiftSwapAction(
       ShiftSwapMutationResult;
   }
 
+  // requestId — מזהה הבקשה.
   const requestId =
     getString(
       payload.requestId,
     );
 
+  // עצירת הפעולה עם שגיאה כאשר !requestId.
   if (!requestId) {
     throw new Error(
       'לא התקבל מזהה בקשת החלפה.',
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר action === 'cancel'.
   if (
     action ===
       'cancel'
   ) {
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -550,10 +665,12 @@ async function executeShiftSwapAction(
           },
         );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw error;
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !data.
     if (!data) {
       throw new Error(
         'לא התקבלה תשובה בעת ביטול בקשת ההחלפה.',
@@ -569,6 +686,7 @@ async function executeShiftSwapAction(
       payload.approve,
     );
 
+  // עצירת הפעולה עם שגיאה כאשר approve === null.
   if (
     approve ===
       null
@@ -583,12 +701,14 @@ async function executeShiftSwapAction(
       payload.rejectionReason,
     );
 
+  // rpcName — שם.
   const rpcName =
     action ===
       'respond'
       ? 'respond_to_shift_swap_request'
       : 'review_shift_swap_request';
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -606,10 +726,12 @@ async function executeShiftSwapAction(
         },
       );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
     throw error;
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data.
   if (!data) {
     throw new Error(
       action ===
@@ -623,9 +745,15 @@ async function executeShiftSwapAction(
     ShiftSwapMutationResult;
 }
 
+/**
+ * פעולה getNotificationIds: שליפה או חישוב של התראות.
+ * @param result — תוצאה.
+ * @returns string[] — הפלט בהתאם לחתימה.
+ */
 function getNotificationIds(
   result: ShiftSwapMutationResult,
 ): string[] {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !Array.isArray( result.notificationIds, ).
   if (
     !Array.isArray(
       result.notificationIds,
@@ -653,12 +781,21 @@ function getNotificationIds(
     );
 }
 
+/**
+ * פעולה אסינכרונית deliverNotification: התראות.
+ * @param supabaseUrl — כתובת יעד.
+ * @param supabaseAnonKey — מפתח.
+ * @param authorizationHeader — הנתון authorizationHeader בהקשר הפעולה.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function deliverNotification(
   supabaseUrl: string,
   supabaseAnonKey: string,
   authorizationHeader: string,
   notificationId: string,
 ): Promise<void> {
+  // response — תוצאת הפעולה.
   const response =
     await fetch(
       `${supabaseUrl}/functions/v1/send-notification`,
@@ -684,12 +821,14 @@ async function deliverNotification(
       },
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר response.ok.
   if (
     response.ok
   ) {
     return;
   }
 
+  // responseBody — תוצאת הפעולה / תוכן.
   const responseBody =
     await response
       .text()
@@ -712,17 +851,27 @@ async function deliverNotification(
   );
 }
 
+/**
+ * פעולה אסינכרונית deliverWorkflowNotifications: תהליך עבודה / התראות.
+ * @param supabaseUrl — כתובת יעד.
+ * @param supabaseAnonKey — מפתח.
+ * @param authorizationHeader — הנתון authorizationHeader בהקשר הפעולה.
+ * @param result — תוצאה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function deliverWorkflowNotifications(
   supabaseUrl: string,
   supabaseAnonKey: string,
   authorizationHeader: string,
   result: ShiftSwapMutationResult,
 ): Promise<void> {
+  // notificationIds — התראות.
   const notificationIds =
     getNotificationIds(
       result,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר notificationIds.length === 0.
   if (
     notificationIds.length ===
       0
@@ -775,6 +924,7 @@ Deno.serve(
     request:
       Request,
   ): Promise<Response> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method === 'OPTIONS'.
     if (
       request.method ===
         'OPTIONS'
@@ -788,6 +938,7 @@ Deno.serve(
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !==
         'POST'
@@ -801,17 +952,21 @@ Deno.serve(
       );
     }
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         getRequiredEnvironmentVariable(
           'SUPABASE_URL',
         );
 
+      // supabaseAnonKey — מפתח.
       const supabaseAnonKey =
         getRequiredEnvironmentVariable(
           'SUPABASE_ANON_KEY',
         );
 
+      // serviceRoleKey — שירות / מפתח.
       const serviceRoleKey =
         getRequiredEnvironmentVariable(
           'SUPABASE_SERVICE_ROLE_KEY',
@@ -822,6 +977,7 @@ Deno.serve(
           request,
         );
 
+      // userClient — משתמש / לקוח.
       const userClient =
         createUserClient(
           supabaseUrl,
@@ -829,12 +985,14 @@ Deno.serve(
           authorizationHeader,
         );
 
+      // adminClient — לקוח.
       const adminClient =
         createAdminClient(
           supabaseUrl,
           serviceRoleKey,
         );
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           userData,
@@ -844,6 +1002,7 @@ Deno.serve(
         await userClient.auth
           .getUser();
 
+      // עצירת הפעולה עם שגיאה כאשר userError || !userData.user.
       if (
         userError ||
         !userData.user
@@ -853,9 +1012,11 @@ Deno.serve(
         );
       }
 
+      // rawBody — תוכן.
       let rawBody:
         unknown;
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         rawBody =
           await request.json();
@@ -873,6 +1034,7 @@ Deno.serve(
           rawBody,
         );
 
+      // result — תוצאה.
       const result =
         await executeShiftSwapAction(
           userClient,

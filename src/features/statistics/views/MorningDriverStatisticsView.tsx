@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/statistics/views/MorningDriverStatisticsView.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כונני בוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: MorningDriverStatisticsViewProps, nameOf, shiftTimeStartMinutes, buildShiftTimeSeries, buildShiftTimeItems, MorningDriverStatisticsView.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import type {
   MorningDriverMonthlyBreakdownRow,
   MorningDriverStatisticsRow,
@@ -13,28 +20,47 @@ import StatisticsTrendChart
 import StatisticsStackedBarChart
   from '../components/StatisticsStackedBarChart';
 
+/**
+ * חוזה הנתונים MorningDriverStatisticsViewProps: כונני בוקר.
+ */
 interface MorningDriverStatisticsViewProps {
+  // rows — שורות.
   rows: MorningDriverStatisticsRow[];
+  // monthlyRows — שורות.
   monthlyRows: MorningDriverMonthlyBreakdownRow[];
+  // shiftTimeRows — משמרת / זמן / שורות.
   shiftTimeRows: ShiftTimeDistributionRow[];
+  // mode — מצב פעולה.
   mode: 'charts' | 'tables';
 }
 
+// monthNames — חודש.
 const monthNames = [
   'ינו׳', 'פבר׳', 'מרץ', 'אפר׳', 'מאי', 'יוני',
   'יולי', 'אוג׳', 'ספט׳', 'אוק׳', 'נוב׳', 'דצמ׳',
 ];
 
+/**
+ * פעולה nameOf: שם.
+ * @param row — שורה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function nameOf(row: MorningDriverStatisticsRow): string {
   return row.scheduleName?.trim() || row.displayName.trim() || 'ללא שם';
 }
 
+/**
+ * פעולה shiftTimeStartMinutes: משמרת / זמן / דקות.
+ * @param shiftTime — משמרת / זמן.
+ * @returns number — הפלט בהתאם לחתימה.
+ */
 function shiftTimeStartMinutes(
   shiftTime: string,
 ): number {
   const start = shiftTime.split('–')[0] ?? shiftTime.split('-')[0] ?? '';
   const [hours, minutes] = start.split(':').map(Number);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !Number.isFinite(hours) || !Number.isFinite(minutes).
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
     return Number.MAX_SAFE_INTEGER;
   }
@@ -42,6 +68,10 @@ function shiftTimeStartMinutes(
   return (hours * 60) + minutes;
 }
 
+/**
+ * פעולה buildShiftTimeSeries: הרכבת משמרת / זמן.
+ * @param rows — שורות.
+ */
 function buildShiftTimeSeries(
   rows: ShiftTimeDistributionRow[],
 ) {
@@ -56,19 +86,29 @@ function buildShiftTimeSeries(
     }));
 }
 
+/**
+ * פעולה buildShiftTimeItems: הרכבת משמרת / זמן / פריטים.
+ * @param rows — שורות.
+ */
 function buildShiftTimeItems(
   rows: ShiftTimeDistributionRow[],
 ) {
+  // items — פריטים; מיפוי לחיפוש לפי מפתח.
   const items = new Map<
     string,
     {
+      // key — מפתח.
       key: string;
+      // label — תווית.
       label: string;
+      // values — ערכים.
       values: Record<string, number>;
     }
   >();
 
+  // עיבוד כל פריט מתוך rows בנפרד.
   for (const row of rows) {
+    // current — הנתון current בהקשר הפעולה.
     const current = items.get(row.userId) ?? {
       key: row.userId,
       label: row.scheduleName?.trim() || row.displayName.trim() || 'ללא שם',
@@ -86,12 +126,17 @@ function buildShiftTimeItems(
   );
 }
 
+/**
+ * פעולה MorningDriverStatisticsView: כונני בוקר.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function MorningDriverStatisticsView({
   rows,
   monthlyRows,
   shiftTimeRows,
   mode,
 }: MorningDriverStatisticsViewProps) {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר mode === 'tables'.
   if (mode === 'tables') {
     return (
       <section className="statistics-section">
@@ -135,14 +180,18 @@ function MorningDriverStatisticsView({
   }
 
   const monthlyTotals = new Map<string, number>();
+  // עיבוד כל פריט מתוך monthlyRows בנפרד.
   for (const row of monthlyRows) {
+    // key — מפתח.
     const key = `${row.year}-${String(row.month).padStart(2, '0')}`;
     monthlyTotals.set(key, (monthlyTotals.get(key) ?? 0) + row.totalShifts);
   }
 
+  // shiftTimeSeries — משמרת / זמן.
   const shiftTimeSeries =
     buildShiftTimeSeries(shiftTimeRows);
 
+  // shiftTimeItems — משמרת / זמן / פריטים.
   const shiftTimeItems =
     buildShiftTimeItems(shiftTimeRows);
 

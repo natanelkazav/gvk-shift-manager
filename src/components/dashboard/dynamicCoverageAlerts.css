@@ -1,3 +1,8 @@
+/*
+ * קובץ: src/components/dashboard/dynamicCoverageAlerts.css
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
 .dynamic-dashboard-coverage-alert{display:flex;gap:10px;padding:12px;border:1px solid #fda4af;border-radius:12px;background:#fff1f2;color:#881337;margin:12px 0}
 .dynamic-dashboard-coverage-alert>div{display:grid;gap:7px;min-width:0}
 .dynamic-dashboard-coverage-alert strong{font-weight:800}.dynamic-dashboard-coverage-alert span{font-size:.87rem}

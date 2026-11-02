@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/UsersPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור משתמשים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UsersPageSection, UsersPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   BriefcaseBusiness,
   RefreshCw,
@@ -40,6 +47,7 @@ import type {
 } from '../types/users';
 import '../styles/users.css';
 
+// initialFilters — מסננים.
 const initialFilters:
   UsersFiltersState = {
     searchTerm: '',
@@ -47,10 +55,16 @@ const initialFilters:
     status: 'all',
   };
 
+/**
+ * טיפוס UsersPageSection: משתמשים.
+ */
 type UsersPageSection =
   | 'users'
   | 'job-types';
 
+/**
+ * פעולה UsersPage: משתמשים.
+ */
 function UsersPage() {
   const {
     user: authenticatedUser,
@@ -59,26 +73,31 @@ function UsersPage() {
     hasPermission,
   } = useAuth();
 
+  // canManageUsers — האם פעולת ניהול מותרת.
   const canManageUsers =
     hasPermission(
       'users.manage',
     );
 
+  // canManagePayroll — האם פעולת ניהול מותרת.
   const canManagePayroll =
     hasPermission(
       'payroll.manage',
     );
 
+  // canSendUpdateNotifications — התראות.
   const canSendUpdateNotifications =
     hasPermission(
       'notifications.manage',
     );
 
+  // canResetPasswords — הנתון canResetPasswords בהקשר הפעולה.
   const canResetPasswords =
     hasPermission(
       'users.manage',
     );
 
+  // מצב מקומי: activeSection — פעיל; setActiveSection מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     activeSection,
     setActiveSection,
@@ -86,6 +105,7 @@ function UsersPage() {
     'users',
   );
 
+  // מצב מקומי: filters — מסננים; setFilters מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     filters,
     setFilters,
@@ -94,16 +114,19 @@ function UsersPage() {
       initialFilters,
     );
 
+  // מצב מקומי: dynamicJobTypes — סוגי תפקידים; setDynamicJobTypes מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     dynamicJobTypes,
     setDynamicJobTypes,
   ] = useState<DynamicJobType[]>([]);
 
+  // מצב מקומי: dynamicFirstEnabled — דינמי / האם האפשרות מופעלת; setDynamicFirstEnabled מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     dynamicFirstEnabled,
     setDynamicFirstEnabled,
   ] = useState(false);
 
+  // מצב מקומי: selectedUser — נבחר / משתמש; setSelectedUser מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedUser,
     setSelectedUser,
@@ -112,6 +135,7 @@ function UsersPage() {
       null,
     );
 
+  // מצב מקומי: userToDelete — משתמש; setUserToDelete מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     userToDelete,
     setUserToDelete,
@@ -120,16 +144,19 @@ function UsersPage() {
       null,
     );
 
+  // מצב מקומי: isEditModalOpen — הנתון isEditModalOpen בהקשר הפעולה; setIsEditModalOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isEditModalOpen,
     setIsEditModalOpen,
   ] = useState(false);
 
+  // מצב מקומי: isCreateModalOpen — הנתון isCreateModalOpen בהקשר הפעולה; setIsCreateModalOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isCreateModalOpen,
     setIsCreateModalOpen,
   ] = useState(false);
 
+  // מצב מקומי: isDeleteModalOpen — הנתון isDeleteModalOpen בהקשר הפעולה; setIsDeleteModalOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isDeleteModalOpen,
     setIsDeleteModalOpen,
@@ -169,11 +196,14 @@ function UsersPage() {
     filters,
   });
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [activeSection].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר activeSection !== 'users'.
     if (activeSection !== 'users') {
       return;
     }
 
+    // isCancelled — הנתון isCancelled בהקשר הפעולה.
     let isCancelled = false;
 
     void Promise.all([
@@ -195,6 +225,7 @@ function UsersPage() {
     };
   }, [activeSection]);
 
+  // isSelectedUserSaving — נבחר / משתמש / שמירה.
   const isSelectedUserSaving =
     Boolean(
       selectedUser &&
@@ -211,6 +242,7 @@ function UsersPage() {
         ),
     );
 
+  // isDeletingSelectedUser — נבחר / משתמש.
   const isDeletingSelectedUser =
     Boolean(
       userToDelete &&
@@ -218,8 +250,13 @@ function UsersPage() {
           userToDelete.id,
     );
 
+  /**
+   * פעולה openCreateModal: פתיחת הנתון openCreateModal בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const openCreateModal =
     (): void => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canManageUsers.
       if (!canManageUsers) {
         return;
       }
@@ -228,8 +265,13 @@ function UsersPage() {
       setIsCreateModalOpen(true);
     };
 
+  /**
+   * פעולה closeCreateModal: סגירת הנתון closeCreateModal בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const closeCreateModal =
     (): void => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCreatingUser || userPermissionsState .isSaving.
       if (
         isCreatingUser ||
         userPermissionsState
@@ -241,9 +283,15 @@ function UsersPage() {
       setIsCreateModalOpen(false);
     };
 
+  /**
+   * פעולה openEditModal: פתיחת הנתון openEditModal בהקשר הפעולה.
+   * @param profile — פרופיל.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const openEditModal = (
     profile: UserProfile,
   ): void => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canManageUsers.
     if (!canManageUsers) {
       return;
     }
@@ -264,8 +312,13 @@ function UsersPage() {
     });
   };
 
+  /**
+   * פעולה closeEditModal: סגירת הנתון closeEditModal בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const closeEditModal =
     (): void => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isSelectedUserSaving.
       if (isSelectedUserSaving) {
         return;
       }
@@ -275,13 +328,20 @@ function UsersPage() {
       resetUserPermissionsState();
     };
 
+  /**
+   * פעולה openDeleteModal: פתיחת הנתון openDeleteModal בהקשר הפעולה.
+   * @param profile — פרופיל.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const openDeleteModal = (
     profile: UserProfile,
   ): void => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canManageUsers.
     if (!canManageUsers) {
       return;
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר profile.id === authenticatedUser?.id.
     if (
       profile.id ===
       authenticatedUser?.id
@@ -294,8 +354,13 @@ function UsersPage() {
     setIsDeleteModalOpen(true);
   };
 
+  /**
+   * פעולה closeDeleteModal: סגירת הנתון closeDeleteModal בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const closeDeleteModal =
     (): void => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isDeletingSelectedUser.
       if (isDeletingSelectedUser) {
         return;
       }
@@ -304,6 +369,13 @@ function UsersPage() {
       setUserToDelete(null);
     };
 
+  /**
+   * פעולה אסינכרונית handleCreateUser: טיפול באירוע עבור משתמש.
+   * @param input — קלט.
+   * @param permissions — הרשאות.
+   * @param assignments — הקצאות.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleCreateUser =
     async (
       input: CreateUserInput,
@@ -312,15 +384,18 @@ function UsersPage() {
       assignments:
         DynamicUserAssignmentSelection[],
     ): Promise<void> => {
+      // עצירת הפעולה עם שגיאה כאשר !canManageUsers.
       if (!canManageUsers) {
         throw new Error(
           'אין לך הרשאה ליצור משתמשים.',
         );
       }
 
+      // createdUser — משתמש.
       const createdUser =
         await createUser(input);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await saveUserPermissions(
           createdUser.id,
@@ -346,6 +421,15 @@ function UsersPage() {
       resetUserPermissionsState();
     };
 
+  /**
+   * פעולה אסינכרונית handleSaveUser: טיפול באירוע עבור משתמש.
+   * @param userId — מזהה משתמש.
+   * @param input — קלט.
+   * @param permissions — הרשאות.
+   * @param dynamicJobTypePermissions — סוג תפקיד.
+   * @param assignments — הקצאות.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSaveUser =
     async (
       userId: string,
@@ -358,6 +442,7 @@ function UsersPage() {
       assignments:
         DynamicUserAssignmentSelection[],
     ): Promise<void> => {
+      // עצירת הפעולה עם שגיאה כאשר !canManageUsers.
       if (!canManageUsers) {
         throw new Error(
           'אין לך הרשאה לערוך משתמשים.',
@@ -389,11 +474,18 @@ function UsersPage() {
       resetUserPermissionsState();
     };
 
+  /**
+   * פעולה אסינכרונית handleDeleteUser: טיפול באירוע עבור משתמש.
+   * @param userId — מזהה משתמש.
+   * @param reason — הנתון reason בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleDeleteUser =
     async (
       userId: string,
       reason: string | null,
     ): Promise<void> => {
+      // עצירת הפעולה עם שגיאה כאשר !canManageUsers.
       if (!canManageUsers) {
         throw new Error(
           'אין לך הרשאה למחוק משתמשים.',
@@ -409,8 +501,13 @@ function UsersPage() {
       setUserToDelete(null);
     };
 
+  /**
+   * פעולה אסינכרונית handleRetryPermissions: טיפול באירוע עבור הרשאות.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleRetryPermissions =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedUser.
       if (!selectedUser) {
         return;
       }
@@ -420,10 +517,16 @@ function UsersPage() {
       );
     };
 
+  /**
+   * פעולה אסינכרונית handleToggleActiveStatus: טיפול באירוע עבור פעיל / סטטוס.
+   * @param profile — פרופיל.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleToggleActiveStatus =
     async (
       profile: UserProfile,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canManageUsers.
       if (!canManageUsers) {
         return;
       }
@@ -434,11 +537,17 @@ function UsersPage() {
     };
 
 
+  /**
+   * פעולה אסינכרונית handleResetPassword: טיפול באירוע עבור סיסמה.
+   * @param profile — פרופיל.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleResetPassword =
     async (
       profile:
         UserProfile,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canResetPasswords || resettingPasswordUserId.
       if (
         !canResetPasswords ||
         resettingPasswordUserId
@@ -452,6 +561,7 @@ function UsersPage() {
           `הקישור יישלח לכתובת ${profile.email}.`,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }

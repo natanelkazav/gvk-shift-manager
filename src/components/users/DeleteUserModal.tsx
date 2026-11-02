@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/DeleteUserModal.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור משתמש.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DeleteUserModalProps, DeleteUserModal.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
   LoaderCircle,
@@ -18,12 +25,19 @@ import type {
   UserProfile,
 } from '../../types/auth';
 
+/**
+ * חוזה הנתונים DeleteUserModalProps: משתמש / מאפייני הרכיב.
+ */
 interface DeleteUserModalProps {
+  // user — משתמש.
   user: UserProfile | null;
+  // isOpen — האם המצב פתוח.
   isOpen: boolean;
   isDeleting: boolean;
+  // currentUserId — המשתמש הנוכחי הנוכחי.
   currentUserId: string | null;
 
+  // onClose — פונקציית סגירת התצוגה.
   onClose: () => void;
 
   onDelete: (
@@ -32,8 +46,13 @@ interface DeleteUserModalProps {
   ) => Promise<void>;
 }
 
+// CONFIRMATION_TEXT — הנתון CONFIRMATION_TEXT בהקשר הפעולה.
 const CONFIRMATION_TEXT = 'מחיקה';
 
+/**
+ * פעולה DeleteUserModal: מחיקת משתמש.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DeleteUserModal({
   user,
   isOpen,
@@ -42,16 +61,19 @@ function DeleteUserModal({
   onClose,
   onDelete,
 }: DeleteUserModalProps) {
+  // מצב מקומי: confirmationValue — ערך; setConfirmationValue מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     confirmationValue,
     setConfirmationValue,
   ] = useState('');
 
+  // מצב מקומי: deletionReason — הנתון deletionReason בהקשר הפעולה; setDeletionReason מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     deletionReason,
     setDeletionReason,
   ] = useState('');
 
+  // מצב מקומי: formError — שגיאה; setFormError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     formError,
     setFormError,
@@ -59,7 +81,9 @@ function DeleteUserModal({
     null,
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isOpen, user, ].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
     if (!isOpen) {
       return;
     }
@@ -72,11 +96,18 @@ function DeleteUserModal({
     user,
   ]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isOpen, isDeleting, onClose, ].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
     if (!isOpen) {
       return;
     }
 
+    /**
+     * פעולה handleKeyDown: טיפול באירוע עבור מפתח.
+     * @param event — אירוע.
+     * @returns void — הפלט בהתאם לחתימה.
+     */
     const handleKeyDown = (
       event: KeyboardEvent,
     ): void => {
@@ -113,12 +144,14 @@ function DeleteUserModal({
     onClose,
   ]);
 
+  // isCurrentUser — המשתמש הנוכחי.
   const isCurrentUser =
     Boolean(
       user &&
         user.id === currentUserId,
     );
 
+  // ערך מחושב isConfirmationValid — הנתון isConfirmationValid בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const isConfirmationValid =
     useMemo(
       () =>
@@ -127,6 +160,7 @@ function DeleteUserModal({
       [confirmationValue],
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen || !user.
   if (
     !isOpen ||
     !user
@@ -134,16 +168,23 @@ function DeleteUserModal({
     return null;
   }
 
+  /**
+   * פעולה validateForm: בדיקת תקינות של הנתון validateForm בהקשר הפעולה.
+   * @returns string | null — הפלט בהתאם לחתימה.
+   */
   const validateForm =
     (): string | null => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCurrentUser.
       if (isCurrentUser) {
         return 'לא ניתן למחוק את המשתמש המחובר כעת.';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isConfirmationValid.
       if (!isConfirmationValid) {
         return `יש להקליד את המילה "${CONFIRMATION_TEXT}" כדי לאשר את המחיקה.`;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר deletionReason.trim().length > 500.
       if (
         deletionReason.trim().length >
         500
@@ -154,15 +195,22 @@ function DeleteUserModal({
       return null;
     };
 
+  /**
+   * פעולה אסינכרונית handleSubmit: טיפול באירוע עבור הנתון handleSubmit בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSubmit = async (
     event:
       FormEvent<HTMLFormElement>,
   ): Promise<void> => {
     event.preventDefault();
 
+    // validationError — אימות נתונים / שגיאה.
     const validationError =
       validateForm();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר validationError.
     if (validationError) {
       setFormError(
         validationError,
@@ -173,6 +221,7 @@ function DeleteUserModal({
 
     setFormError(null);
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await onDelete(
         user.id,
@@ -188,6 +237,10 @@ function DeleteUserModal({
     }
   };
 
+  /**
+   * פעולה handleBackdropClick: טיפול באירוע עבור הנתון handleBackdropClick בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleBackdropClick =
     (): void => {
       if (!isDeleting) {

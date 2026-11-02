@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/availability/AvailabilitySubmissionsPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AvailabilitySubmissionsPanelProps, formatDate, AvailabilitySubmissionsPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   BarChart3,
   CircleDashed,
@@ -22,25 +29,42 @@ import type {
   AvailabilityTrackingStatus,
 } from '../../types/availabilitySubmissions';
 
+/**
+ * חוזה הנתונים AvailabilitySubmissionsPanelProps: אילוצים וזמינות / מאפייני הרכיב.
+ */
 interface AvailabilitySubmissionsPanelProps {
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
   isClosing: boolean;
   canClose: boolean;
+  // error — שגיאה.
   error: string | null;
 
+  // data — נתונים.
   data: {
+    // period — תקופה.
     period: {
+      // id — מזהה.
       id: string;
+      // year — שנה.
       year: number;
+      // month — חודש.
       month: number;
+      // title — כותרת.
       title: string | null;
+      // status — סטטוס.
       status: string;
+      // submissionDeadline — מועד אחרון להגשת אילוצים.
       submissionDeadline: string | null;
     };
 
+    // summary — סיכום.
     summary: {
+      // totalDispatchers — סך הכול.
       totalDispatchers: number;
+      // submittedDispatchers — הוגש.
       submittedDispatchers: number;
+      // draftDispatchers — טיוטה.
       draftDispatchers: number;
       notStartedDispatchers: number;
     };
@@ -50,15 +74,23 @@ interface AvailabilitySubmissionsPanelProps {
   } | null;
 
   onRefresh: () => Promise<void>;
+  // onOpenMatrix — מטריצת נתונים.
   onOpenMatrix: () => Promise<void>;
+  // onClosePeriod — פונקציית סגירת התצוגה.
   onClosePeriod: () => Promise<void>;
+  // onReopenPeriod — תקופה (אופציונלי).
   onReopenPeriod?: () => Promise<void>;
+  // onDeletePeriod — תקופה (אופציונלי).
   onDeletePeriod?: () => Promise<void>;
+  // onPrepareSchedule — שיבוץ (אופציונלי).
   onPrepareSchedule?: () => Promise<void>;
+  // onGoToSchedule — שיבוץ (אופציונלי).
   onGoToSchedule?: () => void;
+  // onClose — פונקציית סגירת התצוגה.
   onClose: () => void;
 }
 
+// statusLabels — סטטוס.
 const statusLabels: Record<
   AvailabilityTrackingStatus,
   string
@@ -68,15 +100,23 @@ const statusLabels: Record<
   not_started: 'לא התחיל',
 };
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return 'לא הוגדר';
   }
 
+  // date — תאריך.
   const date = new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -94,6 +134,10 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה AvailabilitySubmissionsPanel: אילוצים וזמינות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function AvailabilitySubmissionsPanel({
   isLoading,
   isClosing,
@@ -109,6 +153,7 @@ function AvailabilitySubmissionsPanel({
   onGoToSchedule,
   onClose,
 }: AvailabilitySubmissionsPanelProps) {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading.
   if (isLoading) {
     return (
       <section className="availability-submissions-panel">
@@ -127,6 +172,7 @@ function AvailabilitySubmissionsPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error.
   if (error) {
     return (
       <section className="availability-submissions-panel">
@@ -172,6 +218,7 @@ function AvailabilitySubmissionsPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
   if (!data) {
     return null;
   }

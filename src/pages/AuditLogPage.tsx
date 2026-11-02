@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/AuditLogPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור יומן שינויים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: formatDate, auditMemberTargetName, AuditDetails, AuditLogPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { auditActorName, auditAssignmentChange, auditChanges, auditFieldLabel, auditIsTechnical, auditReadableSummary, auditValue } from '../utils/auditPresentation';
 import { auditCategories, auditActionCategory, auditActionLabel, effectiveAuditAction } from '../utils/auditCatalog';
 import {
@@ -23,6 +30,7 @@ import type {
 } from '../types/audit';
 import '../styles/audit.css';
 
+// initialFilters — מסננים.
 const initialFilters:
   AuditLogFilters = {
     searchTerm: '',
@@ -34,11 +42,18 @@ const initialFilters:
   };
 
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param dateValue — תאריך / ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   dateValue: string,
 ): string {
+  // date — תאריך.
   const date = new Date(dateValue);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN(date.getTime()).
   if (
     Number.isNaN(date.getTime())
   ) {
@@ -54,11 +69,17 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה auditMemberTargetName: יומן שינויים / יעד / שם.
+ * @param entry — רשומה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function auditMemberTargetName(entry: AuditLogEntry): string {
   if (entry.targetDisplayName) return entry.targetDisplayName;
   const rawContext = entry.metadata?.audit_context;
   if (rawContext && typeof rawContext === 'object' && !Array.isArray(rawContext)) {
     const context = rawContext as Record<string, unknown>;
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof context.member_name === 'string' && context.member_name.trim().
     if (typeof context.member_name === 'string' && context.member_name.trim()) {
       return context.member_name;
     }
@@ -66,10 +87,18 @@ function auditMemberTargetName(entry: AuditLogEntry): string {
   return 'ללא יעד';
 }
 
+/**
+ * פעולה AuditDetails: יומן שינויים.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function AuditDetails({ entry }: { entry: AuditLogEntry }) {
+  // assignment — הקצאה.
   const assignment = auditAssignmentChange(entry);
+  // jobConfiguration — תצורה.
   const jobConfiguration = /^dynamic_job_type\.(created|updated)$/.test(entry.action);
+  // shiftStructure — משמרת.
   const shiftStructure = entry.action === 'schedule_group.configuration.updated';
+  // membership — שיוך לתפקיד.
   const membership = entry.action === 'dynamic_job_type.member.saved' || entry.action === 'dynamic_job_type.member.removed';
   const changes = auditChanges(entry).filter(change =>
     !auditIsTechnical(change.key, change.after ?? change.before) &&
@@ -79,6 +108,7 @@ function AuditDetails({ entry }: { entry: AuditLogEntry }) {
   const snapshot = entry.metadata?.audit_context;
   const context = snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot) ? snapshot as Record<string, unknown> : {};
   const contextNames = new Set(['previous_employee_name','new_employee_name','old_user_id_name','new_user_id_name','user_id_name','userId_name','job_type_name','shift_name','member_name','member_user_id','previous_employment_scope','new_employment_scope']);
+  // assignmentDetailsShown — הקצאה; אוסף ערכים ייחודיים.
   const assignmentDetailsShown = new Set(['shift_date', 'shift_code', 'shiftCode', 'job_type_name', 'job_type_id', 'jobTypeId', 'shift_name','member_name','member_user_id','previous_employment_scope','new_employment_scope']);
   const details = [...Object.entries(context), ...Object.entries(entry.metadata ?? {}).filter(([key]) => key !== 'audit_context' && !(key in context))]
     .filter(([key,value]) => !contextNames.has(key) && !auditIsTechnical(key,value) && !(assignment && assignmentDetailsShown.has(key)) && !(membership && (key === 'employmentScope' || key === 'employment_scope')) && !(jobConfiguration && ['is_future','effective_month','job_type_name','previous_job_type_name'].includes(key)) &&
@@ -88,16 +118,24 @@ function AuditDetails({ entry }: { entry: AuditLogEntry }) {
     ...Object.entries(entry.oldValues ?? {}).filter(([key,value]) => auditIsTechnical(key,value)).map(([key,value]) => [`קודם: ${key}`,value] as [string,unknown]),
     ...Object.entries(entry.newValues ?? {}).filter(([key,value]) => auditIsTechnical(key,value)).map(([key,value]) => [`חדש: ${key}`,value] as [string,unknown]),
   ];
+  // jobName — שם.
   const jobName = typeof context.job_type_name === 'string' ? context.job_type_name : null;
+  // scheduleGroupName — שיבוץ / קבוצה / שם.
   const scheduleGroupName = typeof entry.metadata?.schedule_group_name === 'string'
     ? entry.metadata.schedule_group_name : null;
+  // shiftName — משמרת / שם.
   const shiftName = typeof context.shift_name === 'string' ? context.shift_name : typeof entry.metadata?.shift_code === 'string' ? auditValue(entry.metadata.shift_code) : null;
+  // shiftDate — תאריך המשמרת.
   const shiftDate = typeof entry.metadata?.shift_date === 'string' ? auditValue(entry.metadata.shift_date) : null;
   const oldScope = entry.oldValues?.employment_scope;
   const newScope = entry.newValues?.employment_scope;
+  // membershipBefore — שיוך לתפקיד.
   const membershipBefore = entry.oldValues?.is_member === false ? 'לא משויך/ת' : entry.oldValues?.is_member === true ? auditValue(oldScope ?? 'משויך/ת') : 'לא נשמר';
+  // membershipAfter — שיוך לתפקיד.
   const membershipAfter = entry.newValues?.is_member === false ? 'הוסר/ה מהתפקיד' : entry.newValues?.is_member === true ? auditValue(newScope ?? 'משויך/ת') : 'לא נשמר';
+  // effectiveMonth — חודש.
   const effectiveMonth = entry.metadata?.effective_month;
+  // isFuture — הנתון isFuture בהקשר הפעולה.
   const isFuture = entry.metadata?.is_future === true;
   return <div className="audit-readable-details" dir="rtl">
     {jobConfiguration && <section className="audit-readable-card audit-job-context-card">
@@ -157,7 +195,11 @@ function AuditDetails({ entry }: { entry: AuditLogEntry }) {
   </div>;
 }
 
+/**
+ * פעולה AuditLogPage: יומן שינויים.
+ */
 function AuditLogPage() {
+  // מצב מקומי: filters — מסננים; setFilters מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     filters,
     setFilters,
@@ -165,6 +207,7 @@ function AuditLogPage() {
     initialFilters,
   );
 
+  // מצב מקומי: expandedEntryId — רשומה / מזהה; setExpandedEntryId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     expandedEntryId,
     setExpandedEntryId,
@@ -178,6 +221,11 @@ function AuditLogPage() {
     loadAuditLogs,
   } = useAuditLogs(filters);
 
+  /**
+   * פעולה toggleEntry: החלפת בחירה עבור רשומה.
+   * @param entry — רשומה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const toggleEntry = (
     entry: AuditLogEntry,
   ): void => {
@@ -414,6 +462,7 @@ function AuditLogPage() {
             <tbody>
               {filteredEntries.map(
                 (entry) => {
+                  // isExpanded — הנתון isExpanded בהקשר הפעולה.
                   const isExpanded =
                     expandedEntryId ===
                     entry.id;

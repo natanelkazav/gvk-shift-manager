@@ -1,26 +1,39 @@
+-- קובץ: supabase/migrations/20260824150000_filter_statistics_and_draft_by_role.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סינון / סטטיסטיקה / טיוטה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_statistics_people, public.get_schedule_draft_edit_context, public.update_schedule_draft_shift.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Keep statistical populations and dispatcher scheduling candidates role-based.
 -- This is intentional: permissions control access, while role defines which
 -- workforce population a profile belongs to for these screens.
 
+-- פונקציית מסד public.get_statistics_people: שליפה או חישוב של סטטיסטיקה.
 create or replace function public.get_statistics_people()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
+  -- הסתעפות לפי התנאי not (.
   if not (
     'statistics.view' = any(current_permissions)
     or 'users.manage' = any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -53,26 +66,35 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.get_schedule_draft_edit_context: שליפה או חישוב של שיבוץ / טיוטה.
 create or replace function public.get_schedule_draft_edit_context(
   requested_schedule_period_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_period — יעד / תקופה.
   target_period public.schedule_periods%rowtype;
+  -- current_permissions — הרשאות.
   current_permissions text[];
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
 
+  -- הסתעפות לפי התנאי not ('schedule.edit' = any(current_permissions)).
   if not ('schedule.edit' = any(current_permissions)) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -81,17 +103,22 @@ begin
   from public.schedule_periods period
   where period.id = requested_schedule_period_id;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'schedule period not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period.status not in (.
   if target_period.status not in (
     'draft'::public.schedule_period_status,
     'scheduling'::public.schedule_period_status
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'schedule period is not editable as draft';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'periodId', target_period.id,
 
@@ -163,6 +190,7 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.update_schedule_draft_shift: עדכון שיבוץ / טיוטה / משמרת.
 create or replace function public.update_schedule_draft_shift(
   requested_shift_id uuid,
   requested_new_user_id uuid default null,
@@ -170,22 +198,32 @@ create or replace function public.update_schedule_draft_shift(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- target_shift — יעד / משמרת.
   target_shift public.schedule_shifts%rowtype;
+  -- target_period — יעד / תקופה.
   target_period public.schedule_periods%rowtype;
+  -- selected_name — נבחר / שם.
   selected_name text;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
+  -- הסתעפות לפי התנאי not ('schedule.edit' = any(current_permissions)).
   if not ('schedule.edit' = any(current_permissions)) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -195,7 +233,9 @@ begin
   where shift.id = requested_shift_id
   for update;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'schedule shift not found';
   end if;
 
@@ -205,14 +245,18 @@ begin
   where period.id = target_shift.period_id
   for update;
 
+  -- הסתעפות לפי התנאי target_period.status not in (.
   if target_period.status not in (
     'draft'::public.schedule_period_status,
     'scheduling'::public.schedule_period_status
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'only draft schedules can be edited with this action';
   end if;
 
+  -- הסתעפות לפי התנאי requested_intentionally_unassigned.
   if requested_intentionally_unassigned then
+    -- עדכון רשומות ב־public.schedule_shifts בהתאם לקלט ולתנאים להלן.
     update public.schedule_shifts
     set
       assigned_user_id = null,
@@ -223,6 +267,7 @@ begin
       updated_at = now()
     where id = target_shift.id;
 
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'shiftId', target_shift.id,
       'assignedUserId', null,
@@ -231,7 +276,9 @@ begin
     );
   end if;
 
+  -- הסתעפות לפי התנאי requested_new_user_id is null.
   if requested_new_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'new user id is required';
   end if;
 
@@ -242,10 +289,13 @@ begin
     and profile.is_active = true
     and profile.role::text = 'dispatcher';
 
+  -- הסתעפות לפי התנאי selected_name is null.
   if selected_name is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'selected dispatcher is missing, inactive, or is not a dispatcher';
   end if;
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
     from public.schedule_shifts other_shift
@@ -255,9 +305,11 @@ begin
       and other_shift.starts_at < target_shift.ends_at
       and other_shift.ends_at > target_shift.starts_at
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'the selected dispatcher has an overlapping shift';
   end if;
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
     from public.schedule_shifts other_shift
@@ -269,9 +321,11 @@ begin
         or other_shift.starts_at = target_shift.ends_at
       )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'the selected dispatcher has a consecutive shift';
   end if;
 
+  -- עדכון רשומות ב־public.schedule_shifts בהתאם לקלט ולתנאים להלן.
   update public.schedule_shifts
   set
     assigned_user_id = requested_new_user_id,
@@ -282,6 +336,7 @@ begin
     updated_at = now()
   where id = target_shift.id;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'shiftId', target_shift.id,
     'assignedUserId', requested_new_user_id,

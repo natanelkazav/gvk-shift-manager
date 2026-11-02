@@ -1,3 +1,11 @@
+/**
+ * קובץ: src/features/notifications/types/notificationTypes.ts
+ * מטרה: הגדרת טיפוסים וחוזי נתונים עבור התראות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NotificationType, NotificationPriority.
+ * - תיאור מבנה הקלט והפלט לבדיקת טיפוסים בזמן פיתוח.
+ */
+// NotificationType — התראות.
 export const NotificationType = {
   TEST:
     'test',
@@ -21,6 +29,9 @@ export const NotificationType = {
     'chat',
 } as const;
 
+/**
+ * טיפוס NotificationType: התראות.
+ */
 export type NotificationType =
   (
     typeof NotificationType
@@ -28,6 +39,7 @@ export type NotificationType =
     keyof typeof NotificationType
   ];
 
+// NotificationPriority — התראות.
 export const NotificationPriority = {
   LOW:
     'low',
@@ -42,6 +54,9 @@ export const NotificationPriority = {
     'urgent',
 } as const;
 
+/**
+ * טיפוס NotificationPriority: התראות.
+ */
 export type NotificationPriority =
   (
     typeof NotificationPriority

@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useMorningDriverAvailability.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור כונני בוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: MorningDriverAvailabilityState, getErrorMessage, useMorningDriverAvailability.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useEffect,
@@ -16,16 +23,27 @@ import type {
   SubmitMorningDriverAvailabilityResponse,
 } from '../types/morningDriverAvailability';
 
+/**
+ * חוזה הנתונים MorningDriverAvailabilityState: כונני בוקר.
+ */
 interface MorningDriverAvailabilityState {
+  // data — נתונים.
   data: MorningDriverAvailabilityPersonalData | null;
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
+  // isSaving — האם שמירה מתבצעת.
   isSaving: boolean;
+  // isSubmitting — האם הגשה מתבצעת.
   isSubmitting: boolean;
+  // error — שגיאה.
   error: string | null;
+  // lastSaveResult — תוצאה.
   lastSaveResult: SaveMorningDriverAvailabilityResponse | null;
+  // lastSubmitResult — תוצאה.
   lastSubmitResult: SubmitMorningDriverAvailabilityResponse | null;
 }
 
+// initialState — מצב.
 const initialState: MorningDriverAvailabilityState = {
   data: null,
   isLoading: true,
@@ -36,25 +54,36 @@ const initialState: MorningDriverAvailabilityState = {
   lastSubmitResult: null,
 };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
+    // normalized — הנתון normalized בהקשר הפעולה.
     const normalized =
       error.message.toLowerCase();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes('not allowed').
     if (normalized.includes('not allowed')) {
       return 'אין לך הרשאה להגיש אילוצי כונני בוקר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes('already submitted').
     if (normalized.includes('already submitted')) {
       return 'האילוצים כבר הוגשו ולא ניתן לשנות אותם.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes('period is not open').
     if (normalized.includes('period is not open')) {
       return 'חודש האילוצים אינו פתוח לעריכה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes( 'all morning driver shifts must be answered', ).
     if (
       normalized.includes(
         'all morning driver shifts must be answered',
@@ -69,7 +98,11 @@ function getErrorMessage(
   return 'לא ניתן היה לבצע את הפעולה באילוצי כונני הבוקר.';
 }
 
+/**
+ * פעולה useMorningDriverAvailability: חיבור מצב או הקשר עבור כונני בוקר.
+ */
 export function useMorningDriverAvailability() {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -78,6 +111,7 @@ export function useMorningDriverAvailability() {
       initialState,
     );
 
+  // מצב מקומי: dirtyShiftIds — מזהה המשמרת; setDirtyShiftIds מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     dirtyShiftIds,
     setDirtyShiftIds,
@@ -86,6 +120,7 @@ export function useMorningDriverAvailability() {
       () => new Set(),
     );
 
+  // loadAvailability — אילוצים וזמינות.
   const loadAvailability =
     useCallback(
       async (): Promise<void> => {
@@ -97,7 +132,9 @@ export function useMorningDriverAvailability() {
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await morningDriverAvailabilityService
               .getMyAvailability();
@@ -129,6 +166,7 @@ export function useMorningDriverAvailability() {
       [],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [loadAvailability].
   useEffect(
     () => {
       void loadAvailability();
@@ -136,18 +174,22 @@ export function useMorningDriverAvailability() {
     [loadAvailability],
   );
 
+  // updateShift — משמרת.
   const updateShift =
     useCallback(
       (
         shiftId: string,
         patch: {
+          // availabilityStatus — מצב הזמינות (אופציונלי).
           availabilityStatus?:
             MorningDriverAvailabilityStatus;
+          // note — הערה (אופציונלי).
           note?: string;
         },
       ): void => {
         setState(
           (currentState) => {
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentState.data || currentState.data .submission .status === 'submitted'.
             if (
               !currentState.data ||
               currentState.data
@@ -184,6 +226,7 @@ export function useMorningDriverAvailability() {
 
         setDirtyShiftIds(
           (currentIds) => {
+            // nextIds — הנתון nextIds בהקשר הפעולה; אוסף ערכים ייחודיים.
             const nextIds =
               new Set(
                 currentIds,
@@ -205,6 +248,7 @@ export function useMorningDriverAvailability() {
       (): void => {
         setState(
           (currentState) => {
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentState.data || currentState.data .submission .status === 'submitted'.
             if (
               !currentState.data ||
               currentState.data
@@ -215,6 +259,7 @@ export function useMorningDriverAvailability() {
               return currentState;
             }
 
+            // shiftIds — מזהה המשמרת.
             const shiftIds =
               currentState.data
                 .shifts
@@ -254,15 +299,18 @@ export function useMorningDriverAvailability() {
       [],
     );
 
+  // saveAvailability — אילוצים וזמינות.
   const saveAvailability =
     useCallback(
       async (): Promise<SaveMorningDriverAvailabilityResponse | null> => {
+        // עצירת הפעולה עם שגיאה כאשר !state.data.
         if (!state.data) {
           throw new Error(
             'לא נמצא חודש אילוצים פתוח.',
           );
         }
 
+        // entries — רשומות.
         const entries =
           state.data
             .shifts
@@ -287,6 +335,7 @@ export function useMorningDriverAvailability() {
               }),
             );
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר entries.length === 0.
         if (
           entries.length === 0
         ) {
@@ -302,7 +351,9 @@ export function useMorningDriverAvailability() {
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await morningDriverAvailabilityService
               .saveMyAvailability({
@@ -311,6 +362,7 @@ export function useMorningDriverAvailability() {
                 entries,
               });
 
+          // refreshedData — נתונים.
           const refreshedData =
             await morningDriverAvailabilityService
               .getMyAvailability(
@@ -353,18 +405,22 @@ export function useMorningDriverAvailability() {
       ],
     );
 
+  // submitAvailability — אילוצים וזמינות.
   const submitAvailability =
     useCallback(
       async (): Promise<SubmitMorningDriverAvailabilityResponse> => {
+        // עצירת הפעולה עם שגיאה כאשר !state.data.
         if (!state.data) {
           throw new Error(
             'לא נמצא חודש אילוצים פתוח.',
           );
         }
 
+        // עצירת הפעולה עם שגיאה כאשר dirtyShiftIds.size > 0.
         if (
           dirtyShiftIds.size > 0
         ) {
+          // error — שגיאה.
           const error =
             new Error(
               'יש לשמור את השינויים לפני הגשת האילוצים.',
@@ -381,6 +437,7 @@ export function useMorningDriverAvailability() {
           throw error;
         }
 
+        // unmarkedCount — מספר הפריטים שטרם סומנו.
         const unmarkedCount =
           state.data
             .shifts
@@ -391,9 +448,11 @@ export function useMorningDriverAvailability() {
             )
             .length;
 
+        // עצירת הפעולה עם שגיאה כאשר unmarkedCount > 0.
         if (
           unmarkedCount > 0
         ) {
+          // error — שגיאה.
           const error =
             new Error(
               `נותרו ${unmarkedCount} משמרות שטרם סומנו.`,
@@ -419,7 +478,9 @@ export function useMorningDriverAvailability() {
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await morningDriverAvailabilityService
               .submitMyAvailability(
@@ -428,6 +489,7 @@ export function useMorningDriverAvailability() {
 
           setState(
             (currentState) => {
+              // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentState.data.
               if (
                 !currentState.data
               ) {
@@ -479,9 +541,11 @@ export function useMorningDriverAvailability() {
       ],
     );
 
+  // ערך מחושב statistics — סטטיסטיקה; נשמר בין רינדורים עד שינוי התלויות.
   const statistics =
     useMemo(
       () => {
+        // shifts — משמרות.
         const shifts =
           state.data?.shifts ??
           [];
@@ -500,6 +564,7 @@ export function useMorningDriverAvailability() {
               'unavailable',
           ).length;
 
+        // total — סך הכול.
         const total =
           shifts.length;
 

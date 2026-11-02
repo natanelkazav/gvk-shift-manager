@@ -1,14 +1,21 @@
+-- קובץ: supabase/migrations/20260918173000_make_attendance_clock_visibility_diagnostic.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור נוכחות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_attendance_workspace.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- attendance.clock is a member permission and must be enabled by default when
 -- attendance is enabled. Preserve explicit/manual choices, but repair settings
 -- that still originate from the manifest defaults.
+-- עדכון רשומות ב־public.dynamic_permission_manifest בהתאם לקלט ולתנאים להלן.
 update public.dynamic_permission_manifest
 set default_enabled = true
 where feature_key = 'attendance'
   and permission_key = 'attendance.clock'
   and audience = 'member';
 
+-- עדכון רשומות ב־public.job_type_permission_settings בהתאם לקלט ולתנאים להלן.
 update public.job_type_permission_settings s
 set enabled = true,
     updated_at = now()
@@ -26,11 +33,14 @@ where s.permission_key = 'attendance.clock'
 -- Do not hide an enabled attendance module just because its permission is off.
 -- Returning canClock makes permission problems visible in the UI while the
 -- clock action itself remains protected by clock_my_attendance().
+-- פונקציית מסד public.get_my_attendance_workspace: שליפה או חישוב של נוכחות.
 create or replace function public.get_my_attendance_workspace()
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare uid uuid:=auth.uid(); now_local timestamp:=now() at time zone 'Asia/Jerusalem';
 begin
+ -- הסתעפות לפי התנאי uid is null then raise exception 'not authenticated'; end if;.
  if uid is null then raise exception 'not authenticated'; end if;
+ -- הרכבת תוצאת הפעולה והחזרתה לקורא.
  return jsonb_build_object('roles',coalesce((
    select jsonb_agg(jsonb_build_object(
      'jobTypeId',jt.id,'jobTypeName',jt.name,
@@ -53,6 +63,7 @@ begin
  ),'[]'::jsonb));
 end; $$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_attendance_workspace() to authenticated;
 
 commit;

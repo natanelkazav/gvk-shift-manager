@@ -1,32 +1,50 @@
+-- קובץ: supabase/migrations/20260824160500_add_morning_driver_dashboard.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור כונני בוקר.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_morning_driver_dashboard.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- =========================================================
 -- Morning driver dashboard
 -- Adds a dedicated personal dashboard payload for users with
 -- role = morning_driver without changing the existing dashboard RPC.
 -- =========================================================
 
+-- פונקציית מסד public.get_my_morning_driver_dashboard: שליפה או חישוב של כונני בוקר.
 create or replace function public.get_my_morning_driver_dashboard()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
   current_local_timestamp timestamp;
+  -- current_local_date — תאריך.
   current_local_date date;
+  -- current_year — שנה.
   current_year integer;
+  -- current_month — חודש.
   current_month integer;
+  -- current_shift_json — משמרת.
   current_shift_json jsonb := null;
+  -- next_shift_json — משמרת.
   next_shift_json jsonb := null;
+  -- total_assignments — סך הכול / הקצאות.
   total_assignments integer := 0;
+  -- completed_assignments — הקצאות.
   completed_assignments integer := 0;
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile
@@ -34,9 +52,11 @@ begin
       and profile.is_active = true
       and profile.role = 'morning_driver'::public.user_role
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'morning driver profile not found';
   end if;
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'dashboard.view' = any(
       coalesce(
@@ -45,6 +65,7 @@ begin
       )
     )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -237,6 +258,7 @@ begin
     and period.year = current_year
     and period.month = current_month;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'currentShift', current_shift_json,
     'nextShift', next_shift_json,
@@ -262,5 +284,7 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_morning_driver_dashboard() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_morning_driver_dashboard() to authenticated;

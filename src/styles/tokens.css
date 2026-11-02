@@ -1,3 +1,9 @@
+/*
+ * קובץ: src/styles/tokens.css
+ * מטרה: הגדרת משתני העיצוב המשותפים של צבעים, מידות ומראה היישום.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור :root  */
 :root {
   /* Brand */
   --color-primary-50: #eff6ff;
@@ -75,6 +81,7 @@
 }
 /* Semantic theme tokens. Light remains the product default. */
 :root,
+/* כללי עיצוב עבור :root[data-theme='light']  */
 :root[data-theme='light'] {
   --theme-page: #f1f5f9;
   --theme-surface: #ffffff;
@@ -88,6 +95,7 @@
   --theme-text-muted: #64748b;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark']  */
 :root[data-theme='dark'] {
   --theme-page: #0b1220;
   --theme-surface: #111827;
@@ -118,6 +126,7 @@
 
 /* Compatibility aliases for legacy screens that still use the old semantic names. */
 :root,
+/* כללי עיצוב עבור :root[data-theme='light']  */
 :root[data-theme='light'] {
   --color-background: var(--theme-page);
   --color-background-subtle: var(--theme-surface-muted);
@@ -129,6 +138,7 @@
   --color-primary-soft: #bfdbfe;
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark']  */
 :root[data-theme='dark'] {
   --color-background: var(--theme-page);
   --color-background-subtle: var(--theme-surface-muted);

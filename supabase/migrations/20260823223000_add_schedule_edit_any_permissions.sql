@@ -1,6 +1,12 @@
+-- קובץ: supabase/migrations/20260823223000_add_schedule_edit_any_permissions.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור שיבוץ / הרשאות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.update_current_driver_schedule_day, public.update_morning_driver_schedule_assignment.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Dedicated permissions for exceptional current-month schedule corrections.
 -- These permissions are intentionally separate from the normal schedule edit permissions.
 
+-- הוספת רשומות ל־public.permissions בהתאם לקלט ולתנאים להלן.
 insert into public.permissions (
   permission_key,
   display_name,
@@ -26,6 +32,7 @@ do update set
   description = excluded.description,
   sort_order = excluded.sort_order;
 
+-- פונקציית מסד public.update_current_driver_schedule_day: עדכון כוננים / שיבוץ / יום.
 create or replace function public.update_current_driver_schedule_day(
   requested_schedule_day_id uuid,
   requested_assigned_user_id uuid default null::uuid,
@@ -34,40 +41,62 @@ create or replace function public.update_current_driver_schedule_day(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- target_day — יעד / יום.
   target_day public.driver_schedule_days%rowtype;
+  -- target_period — יעד / תקופה.
   target_period public.driver_schedule_periods%rowtype;
+  -- selected_driver — נבחר / כוננים.
   selected_driver public.profiles%rowtype;
+  -- linked_availability_day_id — מזהה היום.
   linked_availability_day_id uuid;
+  -- selected_availability_status — מצב הזמינות.
   selected_availability_status text;
+  -- previous_assignment_date — הקצאה / תאריך.
   previous_assignment_date date;
+  -- next_assignment_date — הקצאה / תאריך.
   next_assignment_date date;
+  -- previous_gap_days — ימים.
   previous_gap_days integer;
+  -- next_gap_days — ימים.
   next_gap_days integer;
+  -- current_date_in_israel — תאריך.
   current_date_in_israel date;
+  -- current_year — שנה.
   current_year integer;
+  -- current_month — חודש.
   current_month integer;
+  -- normalized_note — הערה.
   normalized_note text;
+  -- warning_messages — הודעות.
   warning_messages text[] := array[]::text[];
+  -- final_note — הערה.
   final_note text;
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles
     where id = current_user_id
       and is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
@@ -77,14 +106,18 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'driver_schedule.edit_any' =
       any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_schedule_day_id is null.
   if requested_schedule_day_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'driver schedule day id is required';
   end if;
 
@@ -101,7 +134,9 @@ begin
   where id = requested_schedule_day_id
   for update;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'driver schedule day not found';
   end if;
 
@@ -111,21 +146,27 @@ begin
   where id = target_day.period_id
   for update;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'driver schedule period not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period.status <>.
   if target_period.status <>
     'published'::public.driver_schedule_period_status
   then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'only published current driver schedules can be edited';
   end if;
 
+  -- הסתעפות לפי התנאי (.
   if (
     target_period.year <> current_year
     or target_period.month <> current_month
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'only current month driver schedule can be edited';
   end if;
@@ -133,7 +174,9 @@ begin
   normalized_note :=
     nullif(trim(coalesce(requested_note, '')), '');
 
+  -- הסתעפות לפי התנאי requested_assigned_user_id is null.
   if requested_assigned_user_id is null then
+    -- עדכון רשומות ב־public.driver_schedule_days בהתאם לקלט ולתנאים להלן.
     update public.driver_schedule_days
     set
       assigned_user_id = null,
@@ -145,6 +188,7 @@ begin
     returning *
     into target_day;
 
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'scheduleDayId', target_day.id,
       'periodId', target_day.period_id,
@@ -166,11 +210,14 @@ begin
     and role = 'on_call'::public.user_role
     and is_active = true;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'selected on-call driver was not found or is inactive';
   end if;
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
     from public.driver_schedule_days adjacent_day
@@ -205,10 +252,12 @@ begin
       requested_assigned_user_id
     and schedule_day.duty_date > target_day.duty_date;
 
+  -- הסתעפות לפי התנאי previous_assignment_date is not null.
   if previous_assignment_date is not null then
     previous_gap_days :=
       target_day.duty_date - previous_assignment_date;
 
+    -- הסתעפות לפי התנאי previous_gap_days between 2 and 4.
     if previous_gap_days between 2 and 4 then
       warning_messages :=
         array_append(
@@ -221,10 +270,12 @@ begin
     end if;
   end if;
 
+  -- הסתעפות לפי התנאי next_assignment_date is not null.
   if next_assignment_date is not null then
     next_gap_days :=
       next_assignment_date - target_day.duty_date;
 
+    -- הסתעפות לפי התנאי next_gap_days between 2 and 4.
     if next_gap_days between 2 and 4 then
       warning_messages :=
         array_append(
@@ -237,6 +288,7 @@ begin
     end if;
   end if;
 
+  -- הסתעפות לפי התנאי target_period.availability_period_id is not null.
   if target_period.availability_period_id is not null then
     select availability_day.id
     into linked_availability_day_id
@@ -247,6 +299,7 @@ begin
         target_day.duty_date
     limit 1;
 
+    -- הסתעפות לפי התנאי linked_availability_day_id is not null.
     if linked_availability_day_id is not null then
       select availability_entry.availability_status
       into selected_availability_status
@@ -259,6 +312,7 @@ begin
           requested_assigned_user_id
       limit 1;
 
+      -- הסתעפות לפי התנאי selected_availability_status = 'unavailable'.
       if selected_availability_status = 'unavailable' then
         warning_messages :=
           array_append(
@@ -288,6 +342,7 @@ begin
       end
     );
 
+  -- עדכון רשומות ב־public.driver_schedule_days בהתאם לקלט ולתנאים להלן.
   update public.driver_schedule_days
   set
     assigned_user_id = requested_assigned_user_id,
@@ -299,6 +354,7 @@ begin
   returning *
   into target_day;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'scheduleDayId', target_day.id,
     'periodId', target_day.period_id,
@@ -319,6 +375,7 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.update_morning_driver_schedule_assignment: עדכון כונני בוקר.
 create or replace function public.update_morning_driver_schedule_assignment(
   requested_assignment_id uuid,
   requested_assigned_user_id uuid default null::uuid,
@@ -327,34 +384,50 @@ create or replace function public.update_morning_driver_schedule_assignment(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- target_assignment — יעד / הקצאה.
   target_assignment public.morning_driver_schedule_assignments%rowtype;
+  -- target_period — יעד / תקופה.
   target_period public.morning_driver_schedule_periods%rowtype;
+  -- target_shift — יעד / משמרת.
   target_shift public.morning_driver_availability_shifts%rowtype;
+  -- selected_driver — נבחר / כוננים.
   selected_driver public.profiles%rowtype;
+  -- current_date_in_israel — תאריך.
   current_date_in_israel date;
+  -- current_year — שנה.
   current_year integer;
+  -- current_month — חודש.
   current_month integer;
+  -- warning_messages — הודעות.
   warning_messages text[] := array[]::text[];
+  -- normalized_note — הערה.
   normalized_note text;
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile
     where profile.id = current_user_id
       and profile.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
@@ -364,14 +437,18 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'morning_driver_schedule.edit_any' =
       any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_assignment_id is null.
   if requested_assignment_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'morning driver schedule assignment id is required';
   end if;
@@ -389,7 +466,9 @@ begin
   where assignment.id = requested_assignment_id
   for update;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'morning driver schedule assignment not found';
   end if;
@@ -400,20 +479,26 @@ begin
   where period.id = target_assignment.schedule_period_id
   for update;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'morning driver schedule period not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period.status <> 'published'.
   if target_period.status <> 'published' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'only published current morning driver schedules can be edited';
   end if;
 
+  -- הסתעפות לפי התנאי (.
   if (
     target_period.year <> current_year
     or target_period.month <> current_month
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'only current month morning driver schedule can be edited';
   end if;
@@ -424,7 +509,9 @@ begin
   where shift_item.id =
     target_assignment.availability_shift_id;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'morning driver availability shift not found';
   end if;
@@ -432,6 +519,7 @@ begin
   normalized_note :=
     nullif(trim(coalesce(requested_note, '')), '');
 
+  -- הסתעפות לפי התנאי requested_assigned_user_id is not null.
   if requested_assigned_user_id is not null then
     select *
     into selected_driver
@@ -441,11 +529,14 @@ begin
         'morning_driver'::public.user_role
       and profile.is_active = true;
 
+    -- הסתעפות לפי התנאי not found.
     if not found then
+      -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
       raise exception
         'selected morning driver not found or inactive';
     end if;
 
+    -- הסתעפות לפי התנאי exists (.
     if exists (
       select 1
       from public.morning_driver_schedule_assignments duplicate_assignment
@@ -457,10 +548,12 @@ begin
         and duplicate_assignment.assigned_user_id =
           requested_assigned_user_id
     ) then
+      -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
       raise exception
         'driver is already assigned to this shift';
     end if;
 
+    -- הסתעפות לפי התנאי exists (.
     if exists (
       select 1
       from public.morning_driver_schedule_assignments same_day_assignment
@@ -481,6 +574,7 @@ begin
         );
     end if;
 
+    -- הסתעפות לפי התנאי not exists (.
     if not exists (
       select 1
       from public.morning_driver_availability_entries entry
@@ -498,6 +592,7 @@ begin
     end if;
   end if;
 
+  -- עדכון רשומות ב־public.morning_driver_schedule_assignments בהתאם לקלט ולתנאים להלן.
   update public.morning_driver_schedule_assignments
   set
     assigned_user_id = requested_assigned_user_id,
@@ -528,6 +623,7 @@ begin
   returning *
   into target_assignment;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'assignmentId', target_assignment.id,
     'schedulePeriodId', target_assignment.schedule_period_id,

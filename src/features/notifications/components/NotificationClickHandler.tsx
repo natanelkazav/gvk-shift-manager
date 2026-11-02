@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/notifications/components/NotificationClickHandler.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור התראות / פונקציית טיפול.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NotificationClickMessage, getStringValue, NotificationClickHandler.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   useCallback,
   useEffect,
@@ -16,29 +23,43 @@ import {
   useNotificationContext,
 } from '../context/useNotificationContext';
 
+/**
+ * חוזה הנתונים NotificationClickMessage: התראות / הודעה.
+ */
 interface NotificationClickMessage {
   type:
     string;
 
+  // recipientId — מזהה (אופציונלי).
   recipientId?:
     unknown;
 
+  // notificationId — התראות / מזהה (אופציונלי).
   notificationId?:
     unknown;
 
+  // url — כתובת יעד (אופציונלי).
   url?:
     unknown;
 }
 
+// notificationClickMessageType — התראות / הודעה.
 const notificationClickMessageType =
   'GVK_NOTIFICATION_CLICKED';
 
+// recipientQueryParameter — הנתון recipientQueryParameter בהקשר הפעולה.
 const recipientQueryParameter =
   'notificationRecipientId';
 
+/**
+ * פעולה getStringValue: שליפה או חישוב של ערך.
+ * @param value — ערך.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function getStringValue(
   value: unknown,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value !== 'string'.
   if (
     typeof value !==
       'string'
@@ -46,6 +67,7 @@ function getStringValue(
     return null;
   }
 
+  // normalizedValue — ערך.
   const normalizedValue =
     value.trim();
 
@@ -53,6 +75,9 @@ function getStringValue(
     null;
 }
 
+/**
+ * פעולה NotificationClickHandler: התראות / פונקציית טיפול.
+ */
 function NotificationClickHandler() {
   const location =
     useLocation();
@@ -71,21 +96,25 @@ function NotificationClickHandler() {
   } =
     useNotificationContext();
 
+  // getNotificationTarget — התראות / יעד.
   const getNotificationTarget =
     useCallback(
       (
         rawUrl:
           unknown,
       ): string => {
+        // url — כתובת יעד.
         const url =
           getStringValue(
             rawUrl,
           ) ??
           '/notifications';
 
+        // parsedUrl — כתובת יעד.
         let parsedUrl:
           URL;
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           parsedUrl =
             new URL(
@@ -108,6 +137,7 @@ function NotificationClickHandler() {
          * מוקדן רגיל יגיע למסך חילופי
          * המשמרות שלו.
          */
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר pathname === '/shift-swaps' || ( pathname === '/notifications' && parsedUrl.searchParams.get( 'tab', ) === 'requests' ).
         if (
           pathname ===
             '/shift-swaps' ||
@@ -120,6 +150,7 @@ function NotificationClickHandler() {
               'requests'
           )
         ) {
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר hasPermission( 'shift_swaps.approve', ).
           if (
             hasPermission(
               'shift_swaps.approve',
@@ -128,6 +159,7 @@ function NotificationClickHandler() {
             return '/notifications?tab=requests';
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר hasPermission( 'shift_swaps.view', ).
           if (
             hasPermission(
               'shift_swaps.view',
@@ -148,10 +180,12 @@ function NotificationClickHandler() {
          * משתמש שרשאי לצפות באילוצים
          * האישיים שלו יגיע למסך האילוצים.
          */
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר pathname === '/availability'.
         if (
           pathname ===
             '/availability'
         ) {
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר hasPermission( 'availability.manage', ) || hasPermission( 'schedule.edit', ).
           if (
             hasPermission(
               'availability.manage',
@@ -163,6 +197,7 @@ function NotificationClickHandler() {
             return '/shifts?tab=availability';
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר hasPermission( 'availability.view', ).
           if (
             hasPermission(
               'availability.view',
@@ -189,8 +224,10 @@ function NotificationClickHandler() {
    * טיפול במקרה שבו האפליקציה כבר פתוחה
    * וה-Service Worker שולח postMessage.
    */
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ getNotificationTarget, markAsRead, navigate, permissionsLoaded, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !permissionsLoaded || !( 'serviceWorker' in navigator ).
       if (
         !permissionsLoaded ||
         !(
@@ -201,11 +238,17 @@ function NotificationClickHandler() {
         return;
       }
 
+      /**
+       * פעולה handleMessage: טיפול באירוע עבור הודעה.
+       * @param event — אירוע.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleMessage =
         (
           event:
             MessageEvent<unknown>,
         ): void => {
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof event.data !== 'object' || event.data === null.
           if (
             typeof event.data !==
               'object' ||
@@ -215,10 +258,12 @@ function NotificationClickHandler() {
             return;
           }
 
+          // message — הודעה.
           const message =
             event.data as
               NotificationClickMessage;
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר message.type !== notificationClickMessageType.
           if (
             message.type !==
               notificationClickMessageType
@@ -226,6 +271,7 @@ function NotificationClickHandler() {
             return;
           }
 
+          // recipientId — מזהה.
           const recipientId =
             getStringValue(
               message.recipientId,
@@ -278,8 +324,10 @@ function NotificationClickHandler() {
    * אנחנו מחכים לטעינת ההרשאות לפני
    * שמחליטים אם צריך לשנות את היעד.
    */
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ getNotificationTarget, location.hash, location.pathname, location.search, markAsRead, navigate, permissionsLoaded, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !permissionsLoaded.
       if (
         !permissionsLoaded
       ) {
@@ -291,6 +339,7 @@ function NotificationClickHandler() {
           location.search,
         );
 
+      // recipientId — מזהה.
       const recipientId =
         getStringValue(
           searchParameters.get(
@@ -298,6 +347,7 @@ function NotificationClickHandler() {
           ),
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !recipientId.
       if (
         !recipientId
       ) {
@@ -317,6 +367,7 @@ function NotificationClickHandler() {
         originalSearchParameters
           .toString();
 
+      // originalUrl — כתובת יעד.
       const originalUrl =
         `${location.pathname}${
           originalSearch
@@ -324,8 +375,13 @@ function NotificationClickHandler() {
             : ''
         }${location.hash}`;
 
+      /**
+       * פעולה אסינכרונית handleNotificationOpen: טיפול באירוע עבור התראות.
+       * @returns Promise<void> — הפלט בהתאם לחתימה.
+       */
       const handleNotificationOpen =
         async (): Promise<void> => {
+          // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
           try {
             await markAsRead(
               recipientId,

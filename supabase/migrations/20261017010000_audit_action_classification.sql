@@ -1,8 +1,15 @@
+-- קובץ: supabase/migrations/20261017010000_audit_action_classification.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור יומן שינויים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.audit_classify_generic_action.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- RC.44: classify future generic audit entries at the database boundary.
 -- Safe to rerun. Does not modify existing records. Does not alter RLS.
+-- פונקציית מסד public.audit_classify_generic_action: יומן שינויים.
 CREATE OR REPLACE FUNCTION public.audit_classify_generic_action()
 RETURNS trigger LANGUAGE plpgsql SET search_path = '' AS $function$
 BEGIN
+  -- הסתעפות לפי התנאי NEW.action = 'system_event'.
   IF NEW.action = 'system_event' THEN
     NEW.action := CASE NEW.entity_type || '|' || COALESCE(NEW.summary,'')
       WHEN 'activity_tracking_segment|מקטע מעקב פעילות נערך' THEN 'activity.segment.updated'
@@ -45,4 +52,5 @@ CREATE TRIGGER audit_classify_generic_action_before_insert
 BEFORE INSERT ON public.audit_logs FOR EACH ROW
 EXECUTE FUNCTION public.audit_classify_generic_action();
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 REVOKE ALL ON FUNCTION public.audit_classify_generic_action() FROM PUBLIC, anon, authenticated;

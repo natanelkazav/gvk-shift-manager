@@ -1,3 +1,11 @@
+/**
+ * קובץ: supabase/functions/send-notification/services/notificationService.ts
+ * מטרה: מימוש שכבת השירות עבור התראות / שירות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NotificationDeliveryTarget, NotificationDeliveryData, RecordPushDeliveryRequest, parseNotificationRow, parseNotificationRecipientRow, parsePushSubscriptionRow, getNotification, getRecipients, getSubscriptionsByUserIds, loadNotificationDeliveryData ועוד.
+ * - מקורות נתונים הנזכרים בקריאות from: notifications, notification_recipients, push_subscriptions, push_delivery_log.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import type {
   SupabaseClient,
 } from 'npm:@supabase/supabase-js@2';
@@ -9,6 +17,9 @@ import type {
   PushSubscriptionRow,
 } from '../types.ts';
 
+/**
+ * חוזה הנתונים NotificationDeliveryTarget: התראות / יעד.
+ */
 export interface NotificationDeliveryTarget {
   recipient:
     NotificationRecipientRow;
@@ -17,7 +28,11 @@ export interface NotificationDeliveryTarget {
     PushSubscriptionRow[];
 }
 
+/**
+ * חוזה הנתונים NotificationDeliveryData: התראות / נתונים.
+ */
 export interface NotificationDeliveryData {
+  // notification — התראות.
   notification:
     NotificationRow;
 
@@ -25,20 +40,32 @@ export interface NotificationDeliveryData {
     NotificationDeliveryTarget[];
 }
 
+/**
+ * חוזה הנתונים RecordPushDeliveryRequest: התראות Push / נתוני הבקשה.
+ */
 interface RecordPushDeliveryRequest {
+  // recipientId — מזהה.
   recipientId:
     string;
 
+  // subscriptionId — מזהה.
   subscriptionId:
     string;
 
+  // result — תוצאה.
   result:
     PushSendResult;
 }
 
+/**
+ * פעולה parseNotificationRow: פענוח קלט עבור התראות / שורה.
+ * @param value — ערך.
+ * @returns NotificationRow — הפלט בהתאם לחתימה.
+ */
 function parseNotificationRow(
   value: unknown,
 ): NotificationRow {
+  // עצירת הפעולה עם שגיאה כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !==
       'object' ||
@@ -50,10 +77,12 @@ function parseNotificationRow(
     );
   }
 
+  // row — שורה.
   const row =
     value as
       Partial<NotificationRow>;
 
+  // עצירת הפעולה עם שגיאה כאשר typeof row.id !== 'string' || typeof row.type !== 'string' || typeof row.priority !== 'string' || typeof row.source !== 'string' || typeof r.
   if (
     typeof row.id !==
       'string' ||
@@ -128,9 +157,15 @@ function parseNotificationRow(
   };
 }
 
+/**
+ * פעולה parseNotificationRecipientRow: פענוח קלט עבור התראות / שורה.
+ * @param value — ערך.
+ * @returns NotificationRecipientRow — הפלט בהתאם לחתימה.
+ */
 function parseNotificationRecipientRow(
   value: unknown,
 ): NotificationRecipientRow {
+  // עצירת הפעולה עם שגיאה כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !==
       'object' ||
@@ -142,10 +177,12 @@ function parseNotificationRecipientRow(
     );
   }
 
+  // row — שורה.
   const row =
     value as
       Partial<NotificationRecipientRow>;
 
+  // עצירת הפעולה עם שגיאה כאשר typeof row.id !== 'string' || typeof row.notification_id !== 'string' || typeof row.user_id !== 'string' || typeof row.is_read !== 'boolean'.
   if (
     typeof row.id !==
       'string' ||
@@ -198,9 +235,15 @@ function parseNotificationRecipientRow(
   };
 }
 
+/**
+ * פעולה parsePushSubscriptionRow: פענוח קלט עבור התראות Push / שורה.
+ * @param value — ערך.
+ * @returns PushSubscriptionRow — הפלט בהתאם לחתימה.
+ */
 function parsePushSubscriptionRow(
   value: unknown,
 ): PushSubscriptionRow {
+  // עצירת הפעולה עם שגיאה כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !==
       'object' ||
@@ -212,10 +255,12 @@ function parsePushSubscriptionRow(
     );
   }
 
+  // row — שורה.
   const row =
     value as
       Partial<PushSubscriptionRow>;
 
+  // עצירת הפעולה עם שגיאה כאשר typeof row.id !== 'string' || typeof row.user_id !== 'string' || typeof row.endpoint !== 'string' || typeof row.p256dh_key !== 'string' || t.
   if (
     typeof row.id !==
       'string' ||
@@ -268,6 +313,12 @@ function parsePushSubscriptionRow(
   };
 }
 
+/**
+ * פעולה אסינכרונית getNotification: שליפה או חישוב של התראות.
+ * @param adminClient — לקוח.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise<NotificationRow> — הפלט בהתאם לחתימה.
+ */
 async function getNotification(
   adminClient:
     SupabaseClient,
@@ -275,6 +326,7 @@ async function getNotification(
   notificationId:
     string,
 ): Promise<NotificationRow> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -304,12 +356,14 @@ async function getNotification(
       )
       .maybeSingle();
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
     throw error;
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data.
   if (
     !data
   ) {
@@ -318,6 +372,7 @@ async function getNotification(
     );
   }
 
+  // notification — התראות.
   const notification =
     parseNotificationRow(
       data,
@@ -328,6 +383,7 @@ async function getNotification(
       notification.expires_at,
     );
 
+  // עצירת הפעולה עם שגיאה כאשר Number.isNaN( expiresAt.getTime(), ).
   if (
     Number.isNaN(
       expiresAt.getTime(),
@@ -338,6 +394,7 @@ async function getNotification(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר expiresAt.getTime() <= Date.now().
   if (
     expiresAt.getTime() <=
     Date.now()
@@ -350,6 +407,12 @@ async function getNotification(
   return notification;
 }
 
+/**
+ * פעולה אסינכרונית getRecipients: שליפה או חישוב של הנתון getRecipients בהקשר הפעולה.
+ * @param adminClient — לקוח.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise< NotificationRecipientRow[] > — הפלט בהתאם לחתימה.
+ */
 async function getRecipients(
   adminClient:
     SupabaseClient,
@@ -359,6 +422,7 @@ async function getRecipients(
 ): Promise<
   NotificationRecipientRow[]
 > {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -384,6 +448,7 @@ async function getRecipients(
         notificationId,
       );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
@@ -403,6 +468,12 @@ async function getRecipients(
   );
 }
 
+/**
+ * פעולה אסינכרונית getSubscriptionsByUserIds: שליפה או חישוב של מזהה משתמש.
+ * @param adminClient — לקוח.
+ * @param userIds — מזהה משתמש.
+ * @returns Promise< PushSubscriptionRow[] > — הפלט בהתאם לחתימה.
+ */
 async function getSubscriptionsByUserIds(
   adminClient:
     SupabaseClient,
@@ -412,6 +483,7 @@ async function getSubscriptionsByUserIds(
 ): Promise<
   PushSubscriptionRow[]
 > {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר userIds.length === 0.
   if (
     userIds.length ===
     0
@@ -419,6 +491,7 @@ async function getSubscriptionsByUserIds(
     return [];
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -448,6 +521,7 @@ async function getSubscriptionsByUserIds(
         true,
       );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
@@ -467,6 +541,12 @@ async function getSubscriptionsByUserIds(
   );
 }
 
+/**
+ * פעולה אסינכרונית loadNotificationDeliveryData: טעינת התראות / נתונים.
+ * @param adminClient — לקוח.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise<NotificationDeliveryData> — הפלט בהתאם לחתימה.
+ */
 export async function loadNotificationDeliveryData(
   adminClient:
     SupabaseClient,
@@ -474,6 +554,7 @@ export async function loadNotificationDeliveryData(
   notificationId:
     string,
 ): Promise<NotificationDeliveryData> {
+  // notification — התראות.
   const notification =
     await getNotification(
       adminClient,
@@ -486,6 +567,7 @@ export async function loadNotificationDeliveryData(
       notificationId,
     );
 
+  // עצירת הפעולה עם שגיאה כאשר recipients.length === 0.
   if (
     recipients.length ===
     0
@@ -495,6 +577,7 @@ export async function loadNotificationDeliveryData(
     );
   }
 
+  // userIds — מזהה משתמש.
   const userIds =
     Array.from(
       new Set(
@@ -513,12 +596,14 @@ export async function loadNotificationDeliveryData(
       userIds,
     );
 
+  // subscriptionsByUserId — מזהה משתמש; מיפוי לחיפוש לפי מפתח.
   const subscriptionsByUserId =
     new Map<
       string,
       PushSubscriptionRow[]
     >();
 
+  // עיבוד כל פריט מתוך subscriptions בנפרד.
   for (
     const subscription
     of subscriptions
@@ -561,6 +646,12 @@ export async function loadNotificationDeliveryData(
   };
 }
 
+/**
+ * פעולה אסינכרונית markRecipientDelivered: הנתון markRecipientDelivered בהקשר הפעולה.
+ * @param adminClient — לקוח.
+ * @param recipientId — מזהה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 export async function markRecipientDelivered(
   adminClient:
     SupabaseClient,
@@ -568,6 +659,7 @@ export async function markRecipientDelivered(
   recipientId:
     string,
 ): Promise<void> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     error,
   } =
@@ -588,6 +680,7 @@ export async function markRecipientDelivered(
         recipientId,
       );
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
@@ -595,6 +688,12 @@ export async function markRecipientDelivered(
   }
 }
 
+/**
+ * פעולה אסינכרונית updateSubscriptionLastUsed: עדכון הנתון updateSubscriptionLastUsed בהקשר הפעולה.
+ * @param adminClient — לקוח.
+ * @param subscriptionId — מזהה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 export async function updateSubscriptionLastUsed(
   adminClient:
     SupabaseClient,
@@ -602,6 +701,7 @@ export async function updateSubscriptionLastUsed(
   subscriptionId:
     string,
 ): Promise<void> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     error,
   } =
@@ -633,6 +733,12 @@ export async function updateSubscriptionLastUsed(
   }
 }
 
+/**
+ * פעולה אסינכרונית deactivateSubscription: הנתון deactivateSubscription בהקשר הפעולה.
+ * @param adminClient — לקוח.
+ * @param subscriptionId — מזהה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 export async function deactivateSubscription(
   adminClient:
     SupabaseClient,
@@ -640,6 +746,7 @@ export async function deactivateSubscription(
   subscriptionId:
     string,
 ): Promise<void> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     error,
   } =
@@ -670,6 +777,12 @@ export async function deactivateSubscription(
   }
 }
 
+/**
+ * פעולה אסינכרונית recordPushDelivery: התראות Push.
+ * @param adminClient — לקוח.
+ * @param request — נתוני הבקשה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 export async function recordPushDelivery(
   adminClient:
     SupabaseClient,
@@ -677,11 +790,13 @@ export async function recordPushDelivery(
   request:
     RecordPushDeliveryRequest,
 ): Promise<void> {
+  // status — סטטוס.
   const status =
     request.result.success
       ? 'sent'
       : 'failed';
 
+  // response — תוצאת הפעולה.
   const response =
     request.result.success
       ? {
@@ -705,6 +820,7 @@ export async function recordPushDelivery(
               .isExpired,
         };
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     error,
   } =

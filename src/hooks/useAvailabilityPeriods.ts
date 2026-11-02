@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useAvailabilityPeriods.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור תקופות אילוצים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AvailabilityPeriodsState, UseAvailabilityPeriodsResult, getErrorMessage, useAvailabilityPeriods.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useEffect,
@@ -16,96 +23,134 @@ import type {
   RebuildAvailabilityPeriodResult,
 } from '../types/availability';
 
+/**
+ * חוזה הנתונים AvailabilityPeriodsState: תקופות אילוצים.
+ */
 interface AvailabilityPeriodsState {
+  // periods — תקופות.
   periods: AvailabilityPeriod[];
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
   isCreating: boolean;
+  // isImportingSpecialDays — ימים.
   isImportingSpecialDays: boolean;
 
+  // rebuildingPeriodId — מזהה התקופה.
   rebuildingPeriodId: string | null;
+  // openingPeriodId — מזהה התקופה.
   openingPeriodId: string | null;
+  // closingPeriodId — מזהה התקופה.
   closingPeriodId: string | null;
+  // reopeningPeriodId — מזהה התקופה.
   reopeningPeriodId: string | null;
+  // deletingPeriodId — מזהה התקופה.
   deletingPeriodId: string | null;
 
+  // error — שגיאה.
   error: string | null;
 
+  // lastCreatedResult — תוצאה.
   lastCreatedResult:
     CreateAvailabilityPeriodResult | null;
 
+  // lastImportResult — ייבוא / תוצאה.
   lastImportResult:
     ImportSpecialDaysResult | null;
 
+  // lastRebuildResult — תוצאה.
   lastRebuildResult:
     RebuildAvailabilityPeriodResult | null;
 
+  // lastOpenedResult — תוצאה.
   lastOpenedResult:
     OpenAvailabilityPeriodResult | null;
 
+  // lastClosedResult — תוצאה.
   lastClosedResult:
     CloseAvailabilityPeriodResult | null;
 
+  // lastReopenedResult — תוצאה.
   lastReopenedResult:
     ReopenAvailabilityPeriodResult | null;
 
+  // lastDeletedResult — תוצאה.
   lastDeletedResult:
     DeleteAvailabilityPeriodResult | null;
 }
 
+/**
+ * חוזה הנתונים UseAvailabilityPeriodsResult: תקופות אילוצים.
+ */
 interface UseAvailabilityPeriodsResult {
+  // state — מצב.
   state: AvailabilityPeriodsState;
 
+  // loadPeriods — תקופות.
   loadPeriods:
     () => Promise<void>;
 
+  // createPeriod — תקופה.
   createPeriod: (
     input: CreateAvailabilityPeriodInput,
   ) => Promise<CreateAvailabilityPeriodResult>;
 
+  // importSpecialDays — ייבוא / ימים.
   importSpecialDays: (
     year: number,
   ) => Promise<ImportSpecialDaysResult>;
 
+  // rebuildPeriodSlots — תקופה.
   rebuildPeriodSlots: (
     periodId: string,
   ) => Promise<RebuildAvailabilityPeriodResult>;
 
+  // openPeriod — תקופה.
   openPeriod: (
     periodId: string,
   ) => Promise<OpenAvailabilityPeriodResult>;
 
+  // closePeriod — תקופה.
   closePeriod: (
     periodId: string,
   ) => Promise<CloseAvailabilityPeriodResult>;
 
+  // reopenPeriod — תקופה.
   reopenPeriod: (
     periodId: string,
   ) => Promise<ReopenAvailabilityPeriodResult>;
 
+  // deletePeriod — תקופה.
   deletePeriod: (
     periodId: string,
   ) => Promise<DeleteAvailabilityPeriodResult>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 
+  // clearCreatedResult — תוצאה.
   clearCreatedResult:
     () => void;
 
+  // clearImportResult — ייבוא / תוצאה.
   clearImportResult:
     () => void;
 
+  // clearRebuildResult — תוצאה.
   clearRebuildResult:
     () => void;
 
+  // clearClosedResult — תוצאה.
   clearClosedResult:
     () => void;
 
+  // clearDeletedResult — תוצאה.
   clearDeletedResult:
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   AvailabilityPeriodsState = {
     periods: [],
@@ -131,9 +176,15 @@ const initialState:
     lastDeletedResult: null,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error.message;
   }
@@ -141,8 +192,13 @@ function getErrorMessage(
   return 'אירעה שגיאה בלתי צפויה בניהול תקופות האילוצים.';
 }
 
+/**
+ * פעולה useAvailabilityPeriods: חיבור מצב או הקשר עבור תקופות אילוצים.
+ * @returns UseAvailabilityPeriodsResult — הפלט בהתאם לחתימה.
+ */
 export function useAvailabilityPeriods():
   UseAvailabilityPeriodsResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -151,6 +207,7 @@ export function useAvailabilityPeriods():
       initialState,
     );
 
+  // loadPeriods — תקופות.
   const loadPeriods =
     useCallback(
       async (): Promise<void> => {
@@ -162,7 +219,9 @@ export function useAvailabilityPeriods():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // periods — תקופות.
           const periods =
             await availabilityService
               .getAvailabilityPeriods();
@@ -191,10 +250,12 @@ export function useAvailabilityPeriods():
       [],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [loadPeriods].
   useEffect(() => {
     void loadPeriods();
   }, [loadPeriods]);
 
+  // createPeriod — תקופה.
   const createPeriod =
     useCallback(
       async (
@@ -210,13 +271,16 @@ export function useAvailabilityPeriods():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await availabilityService
               .createAvailabilityPeriod(
                 input,
               );
 
+          // periods — תקופות.
           const periods =
             await availabilityService
               .getAvailabilityPeriods();
@@ -235,6 +299,7 @@ export function useAvailabilityPeriods():
 
           return result;
         } catch (error) {
+          // errorMessage — הודעת שגיאה.
           const errorMessage =
             getErrorMessage(error);
 
@@ -252,6 +317,7 @@ export function useAvailabilityPeriods():
       [],
     );
 
+  // importSpecialDays — ייבוא / ימים.
   const importSpecialDays =
     useCallback(
       async (
@@ -267,7 +333,9 @@ export function useAvailabilityPeriods():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await availabilityService
               .importCalendarSpecialDays(
@@ -287,6 +355,7 @@ export function useAvailabilityPeriods():
 
           return result;
         } catch (error) {
+          // errorMessage — הודעת שגיאה.
           const errorMessage =
             getErrorMessage(error);
 
@@ -305,6 +374,7 @@ export function useAvailabilityPeriods():
       [],
     );
 
+  // rebuildPeriodSlots — תקופה.
   const rebuildPeriodSlots =
     useCallback(
       async (
@@ -321,13 +391,16 @@ export function useAvailabilityPeriods():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await availabilityService
               .rebuildAvailabilityPeriodSlots(
                 periodId,
               );
 
+          // periods — תקופות.
           const periods =
             await availabilityService
               .getAvailabilityPeriods();
@@ -346,6 +419,7 @@ export function useAvailabilityPeriods():
 
           return result;
         } catch (error) {
+          // errorMessage — הודעת שגיאה.
           const errorMessage =
             getErrorMessage(error);
 
@@ -364,6 +438,7 @@ export function useAvailabilityPeriods():
       [],
     );
 
+  // openPeriod — תקופה.
   const openPeriod =
     useCallback(
       async (
@@ -380,13 +455,16 @@ export function useAvailabilityPeriods():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await availabilityService
               .openAvailabilityPeriod(
                 periodId,
               );
 
+          // periods — תקופות.
           const periods =
             await availabilityService
               .getAvailabilityPeriods();
@@ -405,6 +483,7 @@ export function useAvailabilityPeriods():
 
           return result;
         } catch (error) {
+          // errorMessage — הודעת שגיאה.
           const errorMessage =
             getErrorMessage(error);
 
@@ -423,6 +502,7 @@ export function useAvailabilityPeriods():
       [],
     );
 
+  // closePeriod — תקופה.
   const closePeriod =
     useCallback(
       async (
@@ -439,13 +519,16 @@ export function useAvailabilityPeriods():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await availabilityService
               .closeAvailabilityPeriod(
                 periodId,
               );
 
+          // periods — תקופות.
           const periods =
             await availabilityService
               .getAvailabilityPeriods();
@@ -464,6 +547,7 @@ export function useAvailabilityPeriods():
 
           return result;
         } catch (error) {
+          // errorMessage — הודעת שגיאה.
           const errorMessage =
             getErrorMessage(error);
 
@@ -482,6 +566,7 @@ export function useAvailabilityPeriods():
       [],
     );
 
+  // reopenPeriod — תקופה.
   const reopenPeriod =
     useCallback(
       async (
@@ -499,13 +584,16 @@ export function useAvailabilityPeriods():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await availabilityService
               .reopenAvailabilityPeriod(
                 periodId,
               );
 
+          // periods — תקופות.
           const periods =
             await availabilityService
               .getAvailabilityPeriods();
@@ -541,14 +629,17 @@ export function useAvailabilityPeriods():
       [],
     );
 
+  // deletePeriod — תקופה.
   const deletePeriod =
     useCallback(
       async (
         periodId: string,
       ): Promise<DeleteAvailabilityPeriodResult> => {
+        // normalizedPeriodId — מזהה התקופה.
         const normalizedPeriodId =
           periodId.trim();
 
+        // עצירת הפעולה עם שגיאה כאשר !normalizedPeriodId.
         if (!normalizedPeriodId) {
           throw new Error(
             'לא התקבל מזהה תקופת אילוצים תקין.',
@@ -566,13 +657,16 @@ export function useAvailabilityPeriods():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await availabilityService
               .deleteAvailabilityPeriod(
                 normalizedPeriodId,
               );
 
+          // periods — תקופות.
           const periods =
             await availabilityService
               .getAvailabilityPeriods();
@@ -591,6 +685,7 @@ export function useAvailabilityPeriods():
 
           return result;
         } catch (error) {
+          // errorMessage — הודעת שגיאה.
           const errorMessage =
             getErrorMessage(error);
 
@@ -609,6 +704,7 @@ export function useAvailabilityPeriods():
       [],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback((): void => {
       setState(
@@ -619,6 +715,7 @@ export function useAvailabilityPeriods():
       );
     }, []);
 
+  // clearCreatedResult — תוצאה.
   const clearCreatedResult =
     useCallback((): void => {
       setState(
@@ -630,6 +727,7 @@ export function useAvailabilityPeriods():
       );
     }, []);
 
+  // clearImportResult — ייבוא / תוצאה.
   const clearImportResult =
     useCallback((): void => {
       setState(
@@ -641,6 +739,7 @@ export function useAvailabilityPeriods():
       );
     }, []);
 
+  // clearRebuildResult — תוצאה.
   const clearRebuildResult =
     useCallback((): void => {
       setState(
@@ -652,6 +751,7 @@ export function useAvailabilityPeriods():
       );
     }, []);
 
+  // clearClosedResult — תוצאה.
   const clearClosedResult =
     useCallback((): void => {
       setState(
@@ -663,6 +763,7 @@ export function useAvailabilityPeriods():
       );
     }, []);
 
+  // clearDeletedResult — תוצאה.
   const clearDeletedResult =
     useCallback((): void => {
       setState(

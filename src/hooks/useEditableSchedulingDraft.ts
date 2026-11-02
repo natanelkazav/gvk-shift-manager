@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useEditableSchedulingDraft.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור טיוטה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: EditableSchedulingDraftState, EditableSchedulingDraftResult, createAssignmentMap, createAssignmentFingerprint, isHolidayShiftType, createDispatcherSummaries, useEditableSchedulingDraft.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useMemo,
@@ -19,58 +26,78 @@ import type {
   SchedulingDraft,
 } from '../types/autoScheduling';
 
+/**
+ * חוזה הנתונים EditableSchedulingDraftState: טיוטה / מצב.
+ */
 interface EditableSchedulingDraftState {
+  // originalDraft — טיוטה.
   originalDraft:
     SchedulingDraft | null;
 
+  // assignmentsByShiftId — מזהה המשמרת.
   assignmentsByShiftId:
     Record<
       string,
       SchedulingAssignment
     >;
 
+  // intentionallyUnassignedShiftIds — מזהה המשמרת.
   intentionallyUnassignedShiftIds:
     string[];
 
   isDirty: boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 }
 
+/**
+ * חוזה הנתונים EditableSchedulingDraftResult: טיוטה / תוצאה.
+ */
 interface EditableSchedulingDraftResult {
+  // state — מצב.
   state:
     EditableSchedulingDraftState;
 
+  // assignments — הקצאות.
   assignments:
     SchedulingAssignment[];
 
+  // dispatcherSummaries — מוקדנים.
   dispatcherSummaries:
     SchedulingDispatcherSummary[];
 
+  // validation — אימות נתונים.
   validation:
     EditableSchedulingValidationResult;
 
+  // intentionallyUnassignedShiftIds — מזהה המשמרת.
   intentionallyUnassignedShiftIds:
     string[];
 
+  // loadDraft — טיוטה.
   loadDraft: (
     draft: SchedulingDraft,
   ) => void;
 
+  // assignDispatcher — מוקדנים.
   assignDispatcher: (
     shiftId: string,
     userId: string,
   ) => void;
 
+  // removeAssignment — הקצאה.
   removeAssignment: (
     shiftId: string,
   ) => void;
 
+  // markShiftIntentionallyUnassigned — משמרת.
   markShiftIntentionallyUnassigned: (
     shiftId: string,
   ) => void;
 
+  // resetShiftAssignment — משמרת / הקצאה.
   resetShiftAssignment: (
     shiftId: string,
   ) => void;
@@ -82,6 +109,7 @@ interface EditableSchedulingDraftResult {
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   EditableSchedulingDraftState = {
     originalDraft: null,
@@ -95,6 +123,11 @@ const initialState:
     error: null,
   };
 
+/**
+ * פעולה createAssignmentMap: יצירת הקצאה / מפת התאמה.
+ * @param assignments — הקצאות.
+ * @returns Record< string, SchedulingAssignment > — הפלט בהתאם לחתימה.
+ */
 function createAssignmentMap(
   assignments:
     SchedulingAssignment[],
@@ -118,6 +151,11 @@ function createAssignmentMap(
   );
 }
 
+/**
+ * פעולה createAssignmentFingerprint: יצירת הקצאה.
+ * @param assignmentsByShiftId — מזהה המשמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function createAssignmentFingerprint(
   assignmentsByShiftId:
     Record<
@@ -163,6 +201,11 @@ function createAssignmentFingerprint(
   );
 }
 
+/**
+ * פעולה isHolidayShiftType: בדיקת תנאי עבור חג / משמרת.
+ * @param scheduleType — סוג יום השיבוץ.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function isHolidayShiftType(
   scheduleType: string,
 ): boolean {
@@ -176,6 +219,12 @@ function isHolidayShiftType(
   );
 }
 
+/**
+ * פעולה createDispatcherSummaries: המרת מצב המוקדנים והמונים לסיכומי טיוטת השיבוץ.
+ * @param data — נתונים.
+ * @param assignments — הקצאות.
+ * @returns SchedulingDispatcherSummary[] — הפלט בהתאם לחתימה.
+ */
 function createDispatcherSummaries(
   data:
     AssignmentCandidatesData,
@@ -183,12 +232,14 @@ function createDispatcherSummaries(
   assignments:
     SchedulingAssignment[],
 ): SchedulingDispatcherSummary[] {
+  // summariesByUserId — מזהה משתמש; מיפוי לחיפוש לפי מפתח.
   const summariesByUserId =
     new Map<
       string,
       SchedulingDispatcherSummary
     >();
 
+  // עיבוד כל פריט מתוך data.shifts בנפרד.
   for (
     const shift
     of data.shifts
@@ -198,6 +249,7 @@ function createDispatcherSummaries(
         userId,
         index,
       ) => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר summariesByUserId.has( userId, ).
         if (
           summariesByUserId.has(
             userId,
@@ -260,10 +312,12 @@ function createDispatcherSummaries(
     );
   }
 
+  // עיבוד כל פריט מתוך assignments בנפרד.
   for (
     const assignment
     of assignments
   ) {
+    // shift — משמרת.
     const shift =
       data.shifts.find(
         (candidateShift) =>
@@ -275,6 +329,7 @@ function createDispatcherSummaries(
       continue;
     }
 
+    // summary — סיכום.
     let summary =
       summariesByUserId.get(
         assignment.userId,
@@ -331,24 +386,28 @@ function createDispatcherSummaries(
     summary.totalShifts +=
       1;
 
+    // startTime — שעת התחלה.
     const startTime =
       shift.startTime.slice(
         0,
         5,
       );
 
+    // endTime — שעת סיום.
     const endTime =
       shift.endTime.slice(
         0,
         5,
       );
 
+    // isFriday — הנתון isFriday בהקשר הפעולה.
     const isFriday =
       shift.weekdayName ===
         'שישי' ||
       shift.scheduleType ===
         'friday';
 
+    // isSaturday — הנתון isSaturday בהקשר הפעולה.
     const isSaturday =
       shift.weekdayName ===
         'שבת' ||
@@ -465,10 +524,16 @@ function createDispatcherSummaries(
   );
 }
 
+/**
+ * פעולה useEditableSchedulingDraft: חיבור מצב או הקשר עבור טיוטה.
+ * @param data — נתונים.
+ * @returns EditableSchedulingDraftResult — הפלט בהתאם לחתימה.
+ */
 export function useEditableSchedulingDraft(
   data:
     AssignmentCandidatesData | null,
 ): EditableSchedulingDraftResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -477,6 +542,7 @@ export function useEditableSchedulingDraft(
       initialState,
     );
 
+  // ערך מחושב assignments — הקצאות; נשמר בין רינדורים עד שינוי התלויות.
   const assignments =
     useMemo(
       () =>
@@ -500,9 +566,11 @@ export function useEditableSchedulingDraft(
       ],
     );
 
+  // ערך מחושב dispatcherSummaries — מוקדנים; נשמר בין רינדורים עד שינוי התלויות.
   const dispatcherSummaries =
     useMemo(
       () => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
         if (!data) {
           return [];
         }
@@ -518,6 +586,7 @@ export function useEditableSchedulingDraft(
       ],
     );
 
+  // ערך מחושב validation — אימות נתונים; נשמר בין רינדורים עד שינוי התלויות.
   const validation =
     useMemo(
       () =>
@@ -533,6 +602,7 @@ export function useEditableSchedulingDraft(
       ],
     );
 
+  // loadDraft — טיוטה.
   const loadDraft =
     useCallback(
       (
@@ -558,18 +628,22 @@ export function useEditableSchedulingDraft(
       [],
     );
 
+// assignDispatcher — מוקדנים.
 const assignDispatcher =
   useCallback(
     (
       shiftId: string,
       userId: string,
     ): void => {
+      // normalizedShiftId — מזהה המשמרת.
       const normalizedShiftId =
         shiftId.trim();
 
+      // normalizedUserId — מזהה משתמש.
       const normalizedUserId =
         userId.trim();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedShiftId || !normalizedUserId.
       if (
         !normalizedShiftId ||
         !normalizedUserId
@@ -581,6 +655,7 @@ const assignDispatcher =
         (
           currentState,
         ): EditableSchedulingDraftState => {
+          // manualAssignment — הקצאה.
           const manualAssignment:
             SchedulingAssignment = {
               shiftId:
@@ -600,6 +675,7 @@ const assignDispatcher =
               ],
             };
 
+          // nextAssignments — הקצאות.
           const nextAssignments:
             Record<
               string,
@@ -612,6 +688,7 @@ const assignDispatcher =
                 manualAssignment,
             };
 
+          // originalAssignments — הקצאות.
           const originalAssignments =
             createAssignmentMap(
               currentState
@@ -657,20 +734,24 @@ const assignDispatcher =
     [],
   );
 
+  // removeAssignment — הקצאה.
   const removeAssignment =
     useCallback(
       (
         shiftId: string,
       ): void => {
+        // normalizedShiftId — מזהה המשמרת.
         const normalizedShiftId =
           shiftId.trim();
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedShiftId.
         if (!normalizedShiftId) {
           return;
         }
 
         setState(
           (currentState) => {
+            // nextAssignments — הקצאות.
             const nextAssignments = {
               ...currentState
                 .assignmentsByShiftId,
@@ -680,6 +761,7 @@ const assignDispatcher =
               normalizedShiftId
             ];
 
+            // originalAssignments — הקצאות.
             const originalAssignments =
               createAssignmentMap(
                 currentState
@@ -724,20 +806,24 @@ const assignDispatcher =
       [],
     );
 
+  // markShiftIntentionallyUnassigned — משמרת.
   const markShiftIntentionallyUnassigned =
     useCallback(
       (
         shiftId: string,
       ): void => {
+        // normalizedShiftId — מזהה המשמרת.
         const normalizedShiftId =
           shiftId.trim();
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedShiftId.
         if (!normalizedShiftId) {
           return;
         }
 
         setState(
           (currentState) => {
+            // nextAssignments — הקצאות.
             const nextAssignments = {
               ...currentState
                 .assignmentsByShiftId,
@@ -747,6 +833,7 @@ const assignDispatcher =
               normalizedShiftId
             ];
 
+            // nextIntentionalIds — הנתון nextIntentionalIds בהקשר הפעולה.
             const nextIntentionalIds =
               Array.from(
                 new Set([
@@ -775,20 +862,24 @@ const assignDispatcher =
       [],
     );
 
+  // resetShiftAssignment — משמרת / הקצאה.
   const resetShiftAssignment =
     useCallback(
       (
         shiftId: string,
       ): void => {
+        // normalizedShiftId — מזהה המשמרת.
         const normalizedShiftId =
           shiftId.trim();
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedShiftId.
         if (!normalizedShiftId) {
           return;
         }
 
         setState(
           (currentState) => {
+            // originalAssignment — הקצאה.
             const originalAssignment =
               currentState
                 .originalDraft
@@ -800,6 +891,7 @@ const assignDispatcher =
                     normalizedShiftId,
                 );
 
+            // nextAssignments — הקצאות.
             const nextAssignments = {
               ...currentState
                 .assignmentsByShiftId,
@@ -824,6 +916,7 @@ const assignDispatcher =
               ];
             }
 
+            // originalAssignments — הקצאות.
             const originalAssignments =
               createAssignmentMap(
                 currentState

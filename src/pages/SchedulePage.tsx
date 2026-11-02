@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/SchedulePage.tsx
+ * מטרה: מימוש מסך המשתמש עבור שיבוץ.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ScheduleDisplayMode, ScheduleMonthSelection, getCurrentMonthSelection, getMonthSelectionFromSearchParams, moveMonth, isSameMonth, normalizeScheduleType, mapHistoricalShift, getScheduleStatusLabel, formatDate ועוד.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   CheckCircle2,
@@ -70,15 +77,24 @@ import type {
 
 import '../styles/schedule.css';
 
+/**
+ * טיפוס ScheduleDisplayMode: שיבוץ / מצב פעולה.
+ */
 type ScheduleDisplayMode =
   | 'calendar'
   | 'list';
 
+/**
+ * חוזה הנתונים ScheduleMonthSelection: שיבוץ / חודש / בחירה.
+ */
 interface ScheduleMonthSelection {
+  // year — שנה.
   year: number;
+  // month — חודש.
   month: number;
 }
 
+// validScheduleTypes — סוג יום השיבוץ; אוסף ערכים ייחודיים.
 const validScheduleTypes =
   new Set<ScheduleShiftType>([
     'weekday',
@@ -90,6 +106,10 @@ const validScheduleTypes =
     'chol_hamoed',
   ]);
 
+/**
+ * פעולה getCurrentMonthSelection: שליפה או חישוב של חודש / בחירה.
+ * @returns ScheduleMonthSelection — הפלט בהתאם לחתימה.
+ */
 function getCurrentMonthSelection():
   ScheduleMonthSelection {
   const now =
@@ -104,22 +124,30 @@ function getCurrentMonthSelection():
   };
 }
 
+/**
+ * פעולה getMonthSelectionFromSearchParams: שליפה או חישוב של חודש / בחירה.
+ * @param searchParams — הנתון searchParams בהקשר הפעולה.
+ * @returns ScheduleMonthSelection — הפלט בהתאם לחתימה.
+ */
 function getMonthSelectionFromSearchParams(
   searchParams: URLSearchParams,
 ): ScheduleMonthSelection {
   const fallback =
     getCurrentMonthSelection();
 
+  // year — שנה.
   const year =
     Number(
       searchParams.get('year'),
     );
 
+  // month — חודש.
   const month =
     Number(
       searchParams.get('month'),
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !Number.isInteger(year) || year < 2020 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12.
   if (
     !Number.isInteger(year) ||
     year < 2020 ||
@@ -137,11 +165,18 @@ function getMonthSelectionFromSearchParams(
   };
 }
 
+/**
+ * פעולה moveMonth: חודש.
+ * @param selection — בחירה.
+ * @param offset — מיקום תחילת התוצאות.
+ * @returns ScheduleMonthSelection — הפלט בהתאם לחתימה.
+ */
 function moveMonth(
   selection:
     ScheduleMonthSelection,
   offset: number,
 ): ScheduleMonthSelection {
+  // date — תאריך.
   const date =
     new Date(
       selection.year,
@@ -162,6 +197,12 @@ function moveMonth(
   };
 }
 
+/**
+ * פעולה isSameMonth: בדיקת תנאי עבור חודש.
+ * @param first — הנתון first בהקשר הפעולה.
+ * @param second — הנתון second בהקשר הפעולה.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function isSameMonth(
   first:
     ScheduleMonthSelection,
@@ -176,6 +217,11 @@ function isSameMonth(
   );
 }
 
+/**
+ * פעולה normalizeScheduleType: מיפוי סוג היום לקטגוריית משמרת שבה משתמש מנוע השיבוץ.
+ * @param value — ערך.
+ * @returns ScheduleShiftType — הפלט בהתאם לחתימה.
+ */
 function normalizeScheduleType(
   value: string,
 ): ScheduleShiftType {
@@ -188,6 +234,11 @@ function normalizeScheduleType(
     : 'weekday';
 }
 
+/**
+ * פעולה mapHistoricalShift: מיפוי מפת התאמה / נתונים היסטוריים / משמרת.
+ * @param shift — משמרת.
+ * @returns ScheduleShift — הפלט בהתאם לחתימה.
+ */
 function mapHistoricalShift(
   shift:
     DispatcherScheduleMonthShift,
@@ -195,16 +246,19 @@ function mapHistoricalShift(
   const now =
     Date.now();
 
+  // startsAt — מועד התחלה.
   const startsAt =
     new Date(
       shift.startsAt,
     ).getTime();
 
+  // endsAt — מועד סיום.
   const endsAt =
     new Date(
       shift.endsAt,
     ).getTime();
 
+  // progressState — מצב.
   const progressState =
     Number.isFinite(
       startsAt,
@@ -296,6 +350,7 @@ function mapHistoricalShift(
   };
 }
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -311,6 +366,7 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+// scheduleStatusLabels — שיבוץ / סטטוס.
 const scheduleStatusLabels = {
   draft: 'טיוטה',
   collecting_availability:
@@ -320,9 +376,15 @@ const scheduleStatusLabels = {
   archived: 'בארכיון',
 } as const;
 
+/**
+ * פעולה getScheduleStatusLabel: שליפה או חישוב של שיבוץ / סטטוס / תווית.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getScheduleStatusLabel(
   status: string,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר status in scheduleStatusLabels.
   if (
     status in
     scheduleStatusLabels
@@ -335,14 +397,21 @@ function getScheduleStatusLabel(
   return status;
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -364,12 +433,19 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -390,9 +466,15 @@ function formatTime(
   ).format(date);
 }
 
+/**
+ * פעולה formatHours: עיצוב ערך לתצוגה עבור שעות.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatHours(
   value: number,
 ): string {
+  // roundedValue — ערך.
   const roundedValue =
     Math.round(
       value * 10,
@@ -401,6 +483,11 @@ function formatHours(
   return `${roundedValue} שעות`;
 }
 
+/**
+ * פעולה getShiftTimeLabel: שליפה או חישוב של משמרת / זמן / תווית.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getShiftTimeLabel(
   shift: ScheduleShift,
 ): string {
@@ -414,9 +501,15 @@ function getShiftTimeLabel(
   );
 }
 
+/**
+ * פעולה getShiftTypeLabel: שליפה או חישוב של משמרת / תווית.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getShiftTypeLabel(
   shift: ScheduleShift,
 ): string {
+  // startTime — שעת התחלה.
   const startTime =
     formatTime(
       shift.startsAt,
@@ -432,6 +525,7 @@ function getShiftTypeLabel(
         : 'לילה יום חול';
 
     case 'friday':
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר startTime === '06:00'.
       if (
         startTime ===
         '06:00'
@@ -439,6 +533,7 @@ function getShiftTypeLabel(
         return 'שישי בוקר';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר startTime === '14:00'.
       if (
         startTime ===
         '14:00'
@@ -449,6 +544,7 @@ function getShiftTypeLabel(
       return 'שישי לילה';
 
     case 'saturday':
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר startTime === '06:00'.
       if (
         startTime ===
         '06:00'
@@ -456,6 +552,7 @@ function getShiftTypeLabel(
         return 'שבת בוקר';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר startTime === '14:00'.
       if (
         startTime ===
         '14:00'
@@ -482,6 +579,11 @@ function getShiftTypeLabel(
   }
 }
 
+/**
+ * פעולה getProgressLabel: שליפה או חישוב של תווית.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getProgressLabel(
   shift: ScheduleShift,
 ): string {
@@ -502,10 +604,16 @@ function getProgressLabel(
   }
 }
 
+/**
+ * פעולה findNextShift: איתור משמרת.
+ * @param shifts — משמרות.
+ * @returns ScheduleShift | null — הפלט בהתאם לחתימה.
+ */
 function findNextShift(
   shifts:
     ScheduleShift[],
 ): ScheduleShift | null {
+  // relevantShifts — משמרות.
   const relevantShifts =
     shifts
       .filter(
@@ -534,21 +642,30 @@ function findNextShift(
   );
 }
 
+/**
+ * פעולה groupShiftsByDate: קיבוץ קבוצה / משמרות / תאריך.
+ * @param shifts — משמרות.
+ * @returns Array<{ date: string; shifts: ScheduleShift[]; }> — הפלט בהתאם לחתימה.
+ */
 function groupShiftsByDate(
   shifts:
     ScheduleShift[],
 ): Array<{
+  // date — תאריך.
   date: string;
 
+  // shifts — משמרות.
   shifts:
     ScheduleShift[];
 }> {
+  // groups — קבוצות; מיפוי לחיפוש לפי מפתח.
   const groups =
     new Map<
       string,
       ScheduleShift[]
     >();
 
+  // עיבוד כל פריט מתוך shifts בנפרד.
   for (
     const shift
     of shifts
@@ -606,6 +723,11 @@ function groupShiftsByDate(
     );
 }
 
+/**
+ * פעולה createShiftsByDateMap: יצירת משמרות / תאריך / מפת התאמה.
+ * @param shifts — משמרות.
+ * @returns Map< string, ScheduleShift[] > — הפלט בהתאם לחתימה.
+ */
 function createShiftsByDateMap(
   shifts:
     ScheduleShift[],
@@ -613,16 +735,19 @@ function createShiftsByDateMap(
   string,
   ScheduleShift[]
 > {
+  // shiftsByDate — משמרות / תאריך; מיפוי לחיפוש לפי מפתח.
   const shiftsByDate =
     new Map<
       string,
       ScheduleShift[]
     >();
 
+  // עיבוד כל פריט מתוך shifts בנפרד.
   for (
     const shift
     of shifts
   ) {
+    // existingShifts — משמרות.
     const existingShifts =
       shiftsByDate.get(
         shift.shiftDate,
@@ -638,6 +763,7 @@ function createShiftsByDateMap(
     );
   }
 
+  // עיבוד כל פריט מתוך shiftsByDate בנפרד.
   for (
     const [
       date,
@@ -667,9 +793,14 @@ function createShiftsByDateMap(
   return shiftsByDate;
 }
 
+/**
+ * פעולה MonthlyProgressCard: הנתון MonthlyProgressCard בהקשר הפעולה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function MonthlyProgressCard({
   statistics,
 }: {
+  // statistics — סטטיסטיקה.
   statistics:
     DispatcherMonthlyStatistics;
 }) {
@@ -757,9 +888,14 @@ function MonthlyProgressCard({
   );
 }
 
+/**
+ * פעולה PersonalStatisticsGrid: סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function PersonalStatisticsGrid({
   statistics,
 }: {
+  // statistics — סטטיסטיקה.
   statistics:
     DispatcherMonthlyStatistics;
 }) {
@@ -896,21 +1032,28 @@ function PersonalStatisticsGrid({
   );
 }
 
+/**
+ * פעולה ScheduleShiftCard: שיבוץ / משמרת.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function ScheduleShiftCard({
   shift,
   showAssignedUser,
   onEdit,
   availabilityLabel,
 }: {
+  // shift — משמרת.
   shift:
     ScheduleShift;
 
+  // showAssignedUser — משתמש.
   showAssignedUser:
     boolean;
 
   onEdit?:
     () => void;
 
+  // availabilityLabel — אילוצים וזמינות / תווית (אופציונלי).
   availabilityLabel?: string | null;
 }) {
   return (
@@ -1049,6 +1192,9 @@ function ScheduleShiftCard({
   );
 }
 
+/**
+ * פעולה SchedulePage: שיבוץ.
+ */
 function SchedulePage() {
   const [
     searchParams,
@@ -1071,6 +1217,7 @@ function SchedulePage() {
   } =
     useSchedule();
 
+  // מצב מקומי: viewMode — מצב פעולה; setViewMode מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     viewMode,
     setViewMode,
@@ -1079,6 +1226,7 @@ function SchedulePage() {
       'personal',
     );
 
+  // מצב מקומי: displayMode — מצב פעולה; setDisplayMode מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     displayMode,
     setDisplayMode,
@@ -1090,6 +1238,7 @@ function SchedulePage() {
     );
 
 
+  // מצב מקומי: selectedMonth — נבחר / חודש; setSelectedMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedMonth,
     setSelectedMonth,
@@ -1101,12 +1250,14 @@ function SchedulePage() {
         ),
     );
 
+  // holidayLabels — חג.
   const holidayLabels =
     useCalendarHolidays(
       selectedMonth.year,
       selectedMonth.month,
     );
 
+  // מצב מקומי: selectedMonthSchedule — נבחר / חודש / שיבוץ; setSelectedMonthSchedule מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedMonthSchedule,
     setSelectedMonthSchedule,
@@ -1115,12 +1266,14 @@ function SchedulePage() {
       null,
     );
 
+  // מצב מקומי: isLoadingSelectedMonth — האם טעינה מתבצעת; setIsLoadingSelectedMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isLoadingSelectedMonth,
     setIsLoadingSelectedMonth,
   ] =
     useState(false);
 
+  // מצב מקומי: selectedMonthError — נבחר / חודש / שגיאה; setSelectedMonthError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedMonthError,
     setSelectedMonthError,
@@ -1129,6 +1282,7 @@ function SchedulePage() {
       null,
     );
 
+  // מצב מקומי: selectedUserId — מזהה משתמש; setSelectedUserId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedUserId,
     setSelectedUserId,
@@ -1137,6 +1291,7 @@ function SchedulePage() {
       string | null
     >(null);
 
+  // מצב מקומי: selectedCalendarDate — נבחר / לוח שנה / תאריך; setSelectedCalendarDate מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedCalendarDate,
     setSelectedCalendarDate,
@@ -1145,6 +1300,7 @@ function SchedulePage() {
       string | null
     >(null);
 
+  // מצב מקומי: editingShift — משמרת; setEditingShift מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     editingShift,
     setEditingShift,
@@ -1153,6 +1309,7 @@ function SchedulePage() {
       ScheduleShift | null
     >(null);
 
+  // מצב מקומי: editDispatchers — הנתון editDispatchers בהקשר הפעולה; setEditDispatchers מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     editDispatchers,
     setEditDispatchers,
@@ -1161,23 +1318,27 @@ function SchedulePage() {
       ScheduleEditDispatcher[]
     >([]);
 
+  // מצב מקומי: draftEditContext — טיוטה; setDraftEditContext מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     draftEditContext,
     setDraftEditContext,
   ] = useState<import('../types/schedule').ScheduleDraftEditContext | null>(null);
 
+  // מצב מקומי: isLoadingEditOptions — האם טעינה מתבצעת; setIsLoadingEditOptions מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isLoadingEditOptions,
     setIsLoadingEditOptions,
   ] =
     useState(false);
 
+  // מצב מקומי: isSavingShiftEdit — האם שמירה מתבצעת; setIsSavingShiftEdit מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isSavingShiftEdit,
     setIsSavingShiftEdit,
   ] =
     useState(false);
 
+  // מצב מקומי: shiftEditError — משמרת / שגיאה; setShiftEditError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     shiftEditError,
     setShiftEditError,
@@ -1186,6 +1347,7 @@ function SchedulePage() {
       string | null
     >(null);
 
+  // מצב מקומי: shiftEditSuccess — משמרת; setShiftEditSuccess מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     shiftEditSuccess,
     setShiftEditSuccess,
@@ -1194,16 +1356,20 @@ function SchedulePage() {
       string | null
     >(null);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ loadCurrentSchedule, ].
   useEffect(() => {
     void loadCurrentSchedule();
   }, [
     loadCurrentSchedule,
   ]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ state.currentSchedule, ].
   useEffect(() => {
+    // currentSchedule — שיבוץ.
     const currentSchedule =
       state.currentSchedule;
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentSchedule.
     if (!currentSchedule) {
       return;
     }
@@ -1229,14 +1395,18 @@ function SchedulePage() {
     state.currentSchedule,
   ]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ searchParams, selectedMonth.month, selectedMonth.year, setSearchParams, ].
   useEffect(
     () => {
+      // nextYear — שנה.
       const nextYear =
         String(selectedMonth.year);
 
+      // nextMonth — חודש.
       const nextMonth =
         String(selectedMonth.month);
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר searchParams.get('year') === nextYear && searchParams.get('month') === nextMonth.
       if (
         searchParams.get('year') ===
           nextYear &&
@@ -1246,6 +1416,7 @@ function SchedulePage() {
         return;
       }
 
+      // nextSearchParams — הנתון nextSearchParams בהקשר הפעולה.
       const nextSearchParams =
         new URLSearchParams(
           searchParams,
@@ -1273,41 +1444,51 @@ function SchedulePage() {
     ],
   );
 
+  // currentSchedule — שיבוץ.
   const currentSchedule =
     state.currentSchedule;
 
+  // currentMonthSelection — חודש / בחירה.
   const currentMonthSelection =
     getCurrentMonthSelection();
 
+  // isViewingCurrentMonth — חודש.
   const isViewingCurrentMonth =
     isSameMonth(
       selectedMonth,
       currentMonthSelection,
     );
 
+  // currentPeriodValue — תקופה / ערך.
   const currentPeriodValue =
     currentMonthSelection.year * 12 +
     currentMonthSelection.month - 1;
 
+  // selectedPeriodValue — נבחר / תקופה / ערך.
   const selectedPeriodValue =
     selectedMonth.year * 12 +
     selectedMonth.month - 1;
 
+  // isViewingCurrentOrNextMonth — חודש.
   const isViewingCurrentOrNextMonth =
     selectedPeriodValue === currentPeriodValue ||
     selectedPeriodValue === currentPeriodValue + 1;
 
+  // activeDisplayedPeriod — פעיל / תקופה.
   const activeDisplayedPeriod =
     isViewingCurrentMonth
       ? currentSchedule?.period ?? null
       : selectedMonthSchedule?.period ?? null;
 
+  // isDraftDisplayedPeriod — טיוטה / תקופה.
   const isDraftDisplayedPeriod =
     activeDisplayedPeriod?.status === 'draft' ||
     activeDisplayedPeriod?.status === 'scheduling';
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isViewingCurrentMonth, selectedMonth.month, selectedMonth.year, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isViewingCurrentMonth.
       if (
         isViewingCurrentMonth
       ) {
@@ -1323,9 +1504,14 @@ function SchedulePage() {
         return;
       }
 
+      // isCancelled — הנתון isCancelled בהקשר הפעולה.
       let isCancelled =
         false;
 
+      /**
+       * פעולה אסינכרונית loadSelectedMonth: טעינת נבחר / חודש.
+       * @returns Promise<void> — הפלט בהתאם לחתימה.
+       */
       const loadSelectedMonth =
         async (): Promise<void> => {
           setIsLoadingSelectedMonth(
@@ -1335,7 +1521,9 @@ function SchedulePage() {
             null,
           );
 
+          // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
           try {
+            // data — נתונים.
             const data =
               await scheduleService
                 .getScheduleByMonth(
@@ -1343,6 +1531,7 @@ function SchedulePage() {
                   selectedMonth.month,
                 );
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
             if (
               isCancelled
             ) {
@@ -1353,6 +1542,7 @@ function SchedulePage() {
               data,
             );
           } catch (error) {
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
             if (
               isCancelled
             ) {
@@ -1393,6 +1583,7 @@ function SchedulePage() {
     ],
   );
 
+// canEditDisplayedSchedule — האם עריכה מותרת.
 const canEditDisplayedSchedule =
   hasPermission(
     'schedule.edit',
@@ -1406,9 +1597,11 @@ const canEditDisplayedSchedule =
     )
   );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ activeDisplayedPeriod, hasPermission, isDraftDisplayedPeriod, ].
   useEffect(() => {
     let cancelled = false;
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !hasPermission('schedule.edit') || !activeDisplayedPeriod || !isDraftDisplayedPeriod.
     if (
       !hasPermission('schedule.edit') ||
       !activeDisplayedPeriod ||
@@ -1418,7 +1611,12 @@ const canEditDisplayedSchedule =
       return;
     }
 
+    /**
+     * פעולה אסינכרונית loadDraftContext: טעינת טיוטה.
+     * @returns Promise<void> — הפלט בהתאם לחתימה.
+     */
     const loadDraftContext = async (): Promise<void> => {
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         const context = await scheduleService.getScheduleDraftEditContext(
           activeDisplayedPeriod.id,
@@ -1451,18 +1649,27 @@ const canEditDisplayedSchedule =
   ]);
 
 
+  /**
+   * פעולה getEditErrorMessage: שליפה או חישוב של הודעת שגיאה.
+   * @param error — שגיאה.
+   * @returns string — הפלט בהתאם לחתימה.
+   */
   const getEditErrorMessage =
     (error: unknown): string => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
       if (
         error instanceof Error
       ) {
+        // message — הודעה.
         const message =
           error.message
             .trim();
 
+        // normalizedMessage — הודעה.
         const normalizedMessage =
           message.toLowerCase();
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'overlapping or consecutive', ).
         if (
           normalizedMessage.includes(
             'overlapping or consecutive',
@@ -1471,6 +1678,7 @@ const canEditDisplayedSchedule =
           return 'לא ניתן לבצע את השינוי: למוקדן שנבחר קיימת משמרת חופפת או משמרת רצופה אסורה.';
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'schedule edit permission required', ).
         if (
           normalizedMessage.includes(
             'schedule edit permission required',
@@ -1479,6 +1687,7 @@ const canEditDisplayedSchedule =
           return 'אין לך הרשאה לערוך את השיבוץ.';
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'only current or next month schedule', ) || normalizedMessage.includes( 'only current month schedule', ).
         if (
           normalizedMessage.includes(
             'only current or next month schedule',
@@ -1490,6 +1699,7 @@ const canEditDisplayedSchedule =
           return 'ניתן לערוך במסך זה רק את שיבוץ החודש הנוכחי או החודש הבא.';
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'only published current or next month schedule', ) || normalizedMessage.includes( 'only published current schedu.
         if (
           normalizedMessage.includes(
             'only published current or next month schedule',
@@ -1507,10 +1717,16 @@ const canEditDisplayedSchedule =
       return 'לא ניתן היה לעדכן את השיבוץ.';
     };
 
+  /**
+   * פעולה אסינכרונית openShiftEditor: פתיחת משמרת.
+   * @param shift — משמרת.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const openShiftEditor =
     async (
       shift: ScheduleShift,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canEditDisplayedSchedule.
       if (
         !canEditDisplayedSchedule
       ) {
@@ -1521,6 +1737,7 @@ const canEditDisplayedSchedule =
       setShiftEditError(null);
       setShiftEditSuccess(null);
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isDraftDisplayedPeriod && editDispatchers.length > 0.
       if (
         isDraftDisplayedPeriod &&
         editDispatchers.length > 0
@@ -1530,7 +1747,9 @@ const canEditDisplayedSchedule =
 
       setIsLoadingEditOptions(true);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // options — אפשרויות בחירה.
         const options =
           await scheduleService
             .getCurrentScheduleEditOptions(shift.id);
@@ -1549,8 +1768,13 @@ const canEditDisplayedSchedule =
       }
     };
 
+  /**
+   * פעולה אסינכרונית refreshDisplayedSchedule: רענון שיבוץ.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const refreshDisplayedSchedule =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isViewingCurrentMonth.
       if (isViewingCurrentMonth) {
         await loadCurrentSchedule();
         return;
@@ -1564,11 +1788,18 @@ const canEditDisplayedSchedule =
       );
     };
 
+  /**
+   * פעולה אסינכרונית saveShiftEdit: שמירת משמרת.
+   * @param newUserId — מזהה העובד לאחר השינוי.
+   * @param reason — הנתון reason בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const saveShiftEdit =
     async (
       newUserId: string,
       reason: string | null,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !editingShift || !canEditDisplayedSchedule.
       if (
         !editingShift ||
         !canEditDisplayedSchedule
@@ -1580,6 +1811,7 @@ const canEditDisplayedSchedule =
       setShiftEditError(null);
       setShiftEditSuccess(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         if (isDraftDisplayedPeriod) {
           await scheduleService.updateScheduleDraftShift({
@@ -1590,6 +1822,7 @@ const canEditDisplayedSchedule =
 
           setShiftEditSuccess('השיבוץ בטיוטה עודכן בהצלחה.');
         } else {
+          // result — תוצאה.
           const result =
             await scheduleService.updateCurrentScheduleShift({
               shiftId: editingShift.id,
@@ -1614,8 +1847,13 @@ const canEditDisplayedSchedule =
       }
     };
 
+  /**
+   * פעולה אסינכרונית markShiftIntentionallyUnassigned: משמרת.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const markShiftIntentionallyUnassigned =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !editingShift || !isDraftDisplayedPeriod || !canEditDisplayedSchedule.
       if (
         !editingShift ||
         !isDraftDisplayedPeriod ||
@@ -1628,6 +1866,7 @@ const canEditDisplayedSchedule =
         'להשאיר את המשמרת ללא מוקדן?\n\nהמשמרת תסומן במפורש כלא מאוישת וניתן יהיה לפרסם את הלוח.',
       );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
@@ -1635,6 +1874,7 @@ const canEditDisplayedSchedule =
       setIsSavingShiftEdit(true);
       setShiftEditError(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await scheduleService.updateScheduleDraftShift({
           shiftId: editingShift.id,
@@ -1653,8 +1893,14 @@ const canEditDisplayedSchedule =
       }
     };
 
+  /**
+   * פעולה getDraftCandidateLabel: שליפה או חישוב של טיוטה / תווית.
+   * @param shift — משמרת.
+   * @returns string | null — הפלט בהתאם לחתימה.
+   */
   const getDraftCandidateLabel =
     (shift: ScheduleShift): string | null => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isDraftDisplayedPeriod || !draftEditContext.
       if (!isDraftDisplayedPeriod || !draftEditContext) {
         return null;
       }
@@ -1663,14 +1909,17 @@ const canEditDisplayedSchedule =
         (item) => item.scheduleShiftId === shift.id,
       );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !context.
       if (!context) {
         return null;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר context.availableCount === 0.
       if (context.availableCount === 0) {
         return 'אין מוקדנים שסימנו זמינות למשמרת זו';
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר context.availableCount === 1.
       if (context.availableCount === 1) {
         return 'מוקדן זמין יחיד';
       }
@@ -1678,7 +1927,12 @@ const canEditDisplayedSchedule =
       return `${context.availableCount} מוקדנים סימנו זמינות`;
     };
 
+  /**
+   * פעולה getEditingCandidateHint: שליפה או חישוב של הנתון getEditingCandidateHint בהקשר הפעולה.
+   * @returns string | null — הפלט בהתאם לחתימה.
+   */
   const getEditingCandidateHint = (): string | null => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !editingShift || !draftEditContext.
     if (!editingShift || !draftEditContext) {
       return null;
     }
@@ -1687,6 +1941,7 @@ const canEditDisplayedSchedule =
       (item) => item.scheduleShiftId === editingShift.id,
     );
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !context.
     if (!context) {
       return null;
     }
@@ -1694,8 +1949,13 @@ const canEditDisplayedSchedule =
     return `${context.availableCount} מתוך ${context.totalDispatchers} מוקדנים סימנו זמינות בעצמם למשמרת. הרשימה מסמנת גם מי אינו זמין ומי הושלם אוטומטית עקב אי־הגשה.`;
   };
 
+  /**
+   * פעולה getEditingDispatchers: שליפה או חישוב של הנתון getEditingDispatchers בהקשר הפעולה.
+   * @returns ScheduleEditDispatcher[] — הפלט בהתאם לחתימה.
+   */
   const getEditingDispatchers =
     (): ScheduleEditDispatcher[] => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !editingShift || !isDraftDisplayedPeriod || !draftEditContext.
       if (
         !editingShift ||
         !isDraftDisplayedPeriod ||
@@ -1711,6 +1971,7 @@ const canEditDisplayedSchedule =
             editingShift.id,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !context.
       if (!context) {
         return editDispatchers;
       }
@@ -1731,24 +1992,29 @@ const canEditDisplayedSchedule =
     };
 
 
+  // isDispatcher — מוקדנים.
   const isDispatcher =
     profile?.role ===
     'dispatcher';
 
+  // pageTitle — כותרת.
   const pageTitle =
     isDispatcher
       ? 'השיבוצים שלי'
       : 'שיבוץ מוקדנים';
 
+  // ערך מחושב selectedDispatcherStatistics — נבחר / מוקדנים / סטטיסטיקה; נשמר בין רינדורים עד שינוי התלויות.
   const selectedDispatcherStatistics =
     useMemo(
       () => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentSchedule.
         if (
           !currentSchedule
         ) {
           return null;
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentSchedule .access .canViewTeamSchedule.
         if (
           !currentSchedule
             .access
@@ -1760,6 +2026,7 @@ const canEditDisplayedSchedule =
             : null;
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר viewMode === 'team'.
         if (
           viewMode ===
           'team'
@@ -1787,18 +2054,22 @@ const canEditDisplayedSchedule =
       ],
     );
 
+  // ערך מחושב rawDisplayedShifts — משמרות; נשמר בין רינדורים עד שינוי התלויות.
   const rawDisplayedShifts =
     useMemo(
       () => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentSchedule.
         if (
           !currentSchedule
         ) {
           return [];
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isViewingCurrentMonth.
         if (
           !isViewingCurrentMonth
         ) {
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedMonthSchedule ?.period.
           if (
             !selectedMonthSchedule
               ?.period
@@ -1806,6 +2077,7 @@ const canEditDisplayedSchedule =
             return [];
           }
 
+          // monthShifts — חודש / משמרות.
           const monthShifts =
             selectedMonthSchedule
               .shifts
@@ -1813,11 +2085,13 @@ const canEditDisplayedSchedule =
                 mapHistoricalShift,
               );
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentSchedule .access .canViewTeamSchedule.
           if (
             !currentSchedule
               .access
               .canViewTeamSchedule
           ) {
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !user.
             if (!user) {
               return [];
             }
@@ -1832,6 +2106,7 @@ const canEditDisplayedSchedule =
               );
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר viewMode === 'team'.
           if (
             viewMode ===
             'team'
@@ -1839,6 +2114,7 @@ const canEditDisplayedSchedule =
             return monthShifts;
           }
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedUserId.
           if (!selectedUserId) {
             return [];
           }
@@ -1853,6 +2129,7 @@ const canEditDisplayedSchedule =
             );
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentSchedule .access .canViewTeamSchedule.
         if (
           !currentSchedule
             .access
@@ -1862,6 +2139,7 @@ const canEditDisplayedSchedule =
             .visibleShifts;
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר viewMode === 'team'.
         if (
           viewMode ===
           'team'
@@ -1870,6 +2148,7 @@ const canEditDisplayedSchedule =
             .shifts;
         }
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedUserId.
         if (!selectedUserId) {
           return [];
         }
@@ -1897,6 +2176,7 @@ const canEditDisplayedSchedule =
   // Empty/unassigned shifts are operational management information.
   // Users without schedule editing permission should only see actual
   // published assignments, never red "unassigned" placeholders.
+  // ערך מחושב displayedShifts — משמרות; נשמר בין רינדורים עד שינוי התלויות.
   const displayedShifts =
     useMemo(
       () =>
@@ -1911,6 +2191,7 @@ const canEditDisplayedSchedule =
       ],
     );
 
+  // ערך מחושב groupedShifts — משמרות; נשמר בין רינדורים עד שינוי התלויות.
   const groupedShifts =
     useMemo(
       () =>
@@ -1922,6 +2203,7 @@ const canEditDisplayedSchedule =
       ],
     );
 
+  // ערך מחושב shiftsByDate — משמרות / תאריך; נשמר בין רינדורים עד שינוי התלויות.
   const shiftsByDate =
     useMemo(
       () =>
@@ -1933,9 +2215,11 @@ const canEditDisplayedSchedule =
       ],
     );
 
+  // ערך מחושב selectedCalendarDateShifts — נבחר / לוח שנה / תאריך / משמרות; נשמר בין רינדורים עד שינוי התלויות.
   const selectedCalendarDateShifts =
     useMemo(
       () => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedCalendarDate.
         if (
           !selectedCalendarDate
         ) {
@@ -1954,6 +2238,7 @@ const canEditDisplayedSchedule =
       ],
     );
 
+  // ערך מחושב nextShift — משמרת; נשמר בין רינדורים עד שינוי התלויות.
   const nextShift =
     useMemo(
       () =>
@@ -1965,14 +2250,21 @@ const canEditDisplayedSchedule =
       ],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ selectedCalendarDate, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedCalendarDate.
       if (
         !selectedCalendarDate
       ) {
         return;
       }
 
+      /**
+       * פעולה handleKeyDown: טיפול באירוע עבור מפתח.
+       * @param event — אירוע.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleKeyDown =
         (
           event:
@@ -2005,12 +2297,18 @@ const canEditDisplayedSchedule =
     ],
   );
 
+  /**
+   * פעולה אסינכרונית handlePublishSchedule: טיפול באירוע עבור שיבוץ.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handlePublishSchedule =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !displayedPeriod.
       if (!displayedPeriod) {
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !hasPermission( 'schedule.edit', ).
       if (
         !hasPermission(
           'schedule.edit',
@@ -2019,6 +2317,7 @@ const canEditDisplayedSchedule =
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר displayedPeriod.status === 'published'.
       if (
         displayedPeriod.status ===
         'published'
@@ -2032,12 +2331,14 @@ const canEditDisplayedSchedule =
           'לאחר הפרסום המוקדנים יוכלו לראות את המשמרות והנתונים האישיים שלהם.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
       clearError();
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await publishSchedulePeriod(
           displayedPeriod.id,
@@ -2046,6 +2347,7 @@ const canEditDisplayedSchedule =
         if (
           !isViewingCurrentMonth
         ) {
+          // refreshedMonth — חודש.
           const refreshedMonth =
             await scheduleService
               .getScheduleByMonth(
@@ -2065,6 +2367,7 @@ const canEditDisplayedSchedule =
       }
     };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר state .isLoadingCurrentSchedule.
   if (
     state
       .isLoadingCurrentSchedule
@@ -2091,6 +2394,7 @@ const canEditDisplayedSchedule =
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר state.error && !currentSchedule.
   if (
     state.error &&
     !currentSchedule
@@ -2133,6 +2437,7 @@ const canEditDisplayedSchedule =
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentSchedule || !currentSchedule.period.
   if (
     !currentSchedule ||
     !currentSchedule.period
@@ -2180,11 +2485,13 @@ const canEditDisplayedSchedule =
     );
   }
 
+  // selectedMonthTitle — נבחר / חודש / כותרת.
   const selectedMonthTitle =
     `${hebrewMonths[
       selectedMonth.month - 1
     ]} ${selectedMonth.year}`;
 
+  // periodTitle — תקופה / כותרת.
   const periodTitle =
     !isViewingCurrentMonth
       ? selectedMonthTitle
@@ -2201,8 +2508,10 @@ const canEditDisplayedSchedule =
             .year
         }`;
 
+  // displayedPeriod — תקופה.
   const displayedPeriod = activeDisplayedPeriod;
 
+  // isPersonalUserBlocked — משתמש.
   const isPersonalUserBlocked =
     !currentSchedule
       .access
@@ -2212,6 +2521,7 @@ const canEditDisplayedSchedule =
       .status !==
       'published';
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isPersonalUserBlocked.
   if (
     isPersonalUserBlocked
   ) {
@@ -2261,6 +2571,7 @@ const canEditDisplayedSchedule =
     );
   }
 
+// canPublishSchedule — שיבוץ.
 const canPublishSchedule =
   hasPermission(
     'schedule.edit',
@@ -2871,11 +3182,13 @@ const canPublishSchedule =
               getDayClassName={(
                 context,
               ) => {
+                // dayShifts — יום / משמרות.
                 const dayShifts =
                   shiftsByDate.get(
                     context.date,
                   ) ?? [];
 
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dayShifts.length === 0.
                 if (
                   dayShifts.length ===
                   0
@@ -2928,11 +3241,13 @@ const canPublishSchedule =
               renderDayContent={(
                 context,
               ) => {
+                // dayShifts — יום / משמרות.
                 const dayShifts =
                   shiftsByDate.get(
                     context.date,
                   ) ?? [];
 
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dayShifts.length === 0.
                 if (
                   dayShifts.length ===
                   0
@@ -3016,11 +3331,13 @@ const canPublishSchedule =
               onDayClick={(
                 context,
               ) => {
+                // dayShifts — יום / משמרות.
                 const dayShifts =
                   shiftsByDate.get(
                     context.date,
                   ) ?? [];
 
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dayShifts.length === 0.
                 if (
                   dayShifts.length ===
                   0

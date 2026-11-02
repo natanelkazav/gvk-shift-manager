@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/UserPermissionsTab.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור משתמש / הרשאות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UserPermissionsTabProps, normalizeSearchValue, UserPermissionsTab.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CheckCheck,
   ChevronDown,
@@ -20,17 +27,30 @@ import {
 } from '../../constants/permissions';
 import { Button } from '../ui';
 
+/**
+ * חוזה הנתונים UserPermissionsTabProps: משתמש / הרשאות / מאפייני הרכיב.
+ */
 interface UserPermissionsTabProps {
+  // selectedPermissions — נבחר / הרשאות.
   selectedPermissions:
     PermissionKey[];
+  // isDisabled — האם האפשרות מושבתת (אופציונלי).
   isDisabled?: boolean;
+  // onChange — פונקציית דיווח על שינוי.
   onChange: (
     permissions: PermissionKey[],
   ) => void;
+  // allowedPermissionKeys — מפתחות ההרשאות (אופציונלי).
   allowedPermissionKeys?: PermissionKey[];
+  // title — כותרת (אופציונלי).
   title?: string;
 }
 
+/**
+ * פעולה normalizeSearchValue: נרמול ערך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeSearchValue(
   value: string,
 ): string {
@@ -39,6 +59,10 @@ function normalizeSearchValue(
     .toLocaleLowerCase('he');
 }
 
+/**
+ * פעולה UserPermissionsTab: משתמש / הרשאות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function UserPermissionsTab({
   selectedPermissions,
   isDisabled = false,
@@ -46,11 +70,13 @@ function UserPermissionsTab({
   allowedPermissionKeys,
   title = 'הרשאות משתמש',
 }: UserPermissionsTabProps) {
+  // מצב מקומי: searchTerm — הנתון searchTerm בהקשר הפעולה; setSearchTerm מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     searchTerm,
     setSearchTerm,
   ] = useState('');
 
+  // מצב מקומי: openGroups — קבוצות; setOpenGroups מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     openGroups,
     setOpenGroups,
@@ -58,6 +84,7 @@ function UserPermissionsTab({
     () => new Set(),
   );
 
+  // ערך מחושב selectedPermissionSet — נבחר / הרשאות / קבוצה ייחודית; נשמר בין רינדורים עד שינוי התלויות.
   const selectedPermissionSet =
     useMemo(
       () =>
@@ -67,33 +94,40 @@ function UserPermissionsTab({
       [selectedPermissions],
     );
 
+  // ערך מחושב visiblePermissionKeys — מפתחות ההרשאות; נשמר בין רינדורים עד שינוי התלויות.
   const visiblePermissionKeys = useMemo(
     () => allowedPermissionKeys ?? allPermissionKeys,
     [allowedPermissionKeys],
   );
+  // ערך מחושב visiblePermissionKeySet — מפתח ההרשאה; נשמר בין רינדורים עד שינוי התלויות.
   const visiblePermissionKeySet = useMemo(
     () => new Set<PermissionKey>(visiblePermissionKeys),
     [visiblePermissionKeys],
   );
 
+  // normalizedSearchTerm — הנתון normalizedSearchTerm בהקשר הפעולה.
   const normalizedSearchTerm =
     normalizeSearchValue(
       searchTerm,
     );
 
+  // ערך מחושב filteredGroups — קבוצות; נשמר בין רינדורים עד שינוי התלויות.
   const filteredGroups =
     useMemo<PermissionGroup[]>(
       () => {
+        // visibleGroups — קבוצות.
         const visibleGroups = permissionGroups
           .map((group) => ({ ...group, permissions: group.permissions.filter((permission) => visiblePermissionKeySet.has(permission.key)) }))
           .filter((group) => group.permissions.length > 0);
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedSearchTerm.
         if (!normalizedSearchTerm) {
           return visibleGroups;
         }
 
         return visibleGroups
           .map((group) => {
+            // groupMatches — קבוצה.
             const groupMatches =
               normalizeSearchValue(
                 `${group.title} ${group.description}`,
@@ -101,10 +135,12 @@ function UserPermissionsTab({
                 normalizedSearchTerm,
               );
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר groupMatches.
             if (groupMatches) {
               return group;
             }
 
+            // matchingPermissions — הרשאות.
             const matchingPermissions =
               group.permissions.filter(
                 (permission) =>
@@ -115,6 +151,7 @@ function UserPermissionsTab({
                   ),
               );
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר matchingPermissions.length === 0.
             if (
               matchingPermissions.length ===
               0
@@ -138,14 +175,22 @@ function UserPermissionsTab({
       [normalizedSearchTerm, visiblePermissionKeySet],
     );
 
+  /**
+   * פעולה handlePermissionChange: טיפול באירוע עבור פונקציית דיווח על שינוי.
+   * @param permission — הרשאות.
+   * @param isSelected — נבחר.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handlePermissionChange = (
     permission: PermissionKey,
     isSelected: boolean,
   ): void => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isDisabled.
     if (isDisabled) {
       return;
     }
 
+    // nextPermissionSet — הרשאות / קבוצה ייחודית; אוסף ערכים ייחודיים.
     const nextPermissionSet =
       new Set(
         selectedPermissions,
@@ -161,23 +206,36 @@ function UserPermissionsTab({
       );
     }
 
+    // hiddenSelected — נבחר.
     const hiddenSelected = selectedPermissions.filter((permission) => !visiblePermissionKeySet.has(permission));
+    // nextVisible — הנתון nextVisible בהקשר הפעולה.
     const nextVisible = visiblePermissionKeys.filter((permission) => nextPermissionSet.has(permission));
     onChange(Array.from(new Set([...hiddenSelected, ...nextVisible])));
   };
 
+  /**
+   * פעולה handleSelectAll: טיפול באירוע עבור הנתון handleSelectAll בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleSelectAll =
     (): void => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isDisabled.
       if (isDisabled) {
         return;
       }
 
+      // hiddenSelected — נבחר.
       const hiddenSelected = selectedPermissions.filter((permission) => !visiblePermissionKeySet.has(permission));
       onChange(Array.from(new Set([...hiddenSelected, ...visiblePermissionKeys])));
     };
 
+  /**
+   * פעולה handleClearAll: טיפול באירוע עבור הנתון handleClearAll בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleClearAll =
     (): void => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isDisabled.
       if (isDisabled) {
         return;
       }
@@ -185,13 +243,20 @@ function UserPermissionsTab({
       onChange(selectedPermissions.filter((permission) => !visiblePermissionKeySet.has(permission)));
     };
 
+  /**
+   * פעולה handleSelectGroup: טיפול באירוע עבור קבוצה.
+   * @param group — קבוצה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleSelectGroup = (
     group: PermissionGroup,
   ): void => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isDisabled.
     if (isDisabled) {
       return;
     }
 
+    // nextPermissionSet — הרשאות / קבוצה ייחודית; אוסף ערכים ייחודיים.
     const nextPermissionSet =
       new Set(
         selectedPermissions,
@@ -205,18 +270,27 @@ function UserPermissionsTab({
       },
     );
 
+    // hiddenSelected — נבחר.
     const hiddenSelected = selectedPermissions.filter((permission) => !visiblePermissionKeySet.has(permission));
+    // nextVisible — הנתון nextVisible בהקשר הפעולה.
     const nextVisible = visiblePermissionKeys.filter((permission) => nextPermissionSet.has(permission));
     onChange(Array.from(new Set([...hiddenSelected, ...nextVisible])));
   };
 
+  /**
+   * פעולה handleClearGroup: טיפול באירוע עבור קבוצה.
+   * @param group — קבוצה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleClearGroup = (
     group: PermissionGroup,
   ): void => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isDisabled.
     if (isDisabled) {
       return;
     }
 
+    // groupPermissionSet — קבוצה / הרשאות / קבוצה ייחודית; אוסף ערכים ייחודיים.
     const groupPermissionSet =
       new Set(
         group.permissions.map(
@@ -235,6 +309,7 @@ function UserPermissionsTab({
     );
   };
 
+  // selectedVisibleCount — נבחר / כמות.
   const selectedVisibleCount = visiblePermissionKeys.filter((permission) => selectedPermissionSet.has(permission)).length;
 
   return (
@@ -353,6 +428,7 @@ function UserPermissionsTab({
         <div className="user-permissions-groups">
           {filteredGroups.map(
             (group) => {
+              // selectedGroupCount — נבחר / קבוצה / כמות.
               const selectedGroupCount =
                 group.permissions.filter(
                   (permission) =>
@@ -361,10 +437,12 @@ function UserPermissionsTab({
                     ),
                 ).length;
 
+              // isEntireGroupSelected — קבוצה / נבחר.
               const isEntireGroupSelected =
                 selectedGroupCount ===
                 group.permissions.length;
 
+              // isOpen — האם המצב פתוח.
               const isOpen =
                 Boolean(
                   normalizedSearchTerm,
@@ -373,10 +451,15 @@ function UserPermissionsTab({
                   group.id,
                 );
 
+              /**
+               * פעולה toggleGroup: החלפת בחירה עבור קבוצה.
+               * @returns void — הפלט בהתאם לחתימה.
+               */
               const toggleGroup =
                 (): void => {
                   setOpenGroups(
                     (currentGroups) => {
+                      // nextGroups — קבוצות; אוסף ערכים ייחודיים.
                       const nextGroups =
                         new Set(
                           currentGroups,
@@ -488,6 +571,7 @@ function UserPermissionsTab({
                     <div className="user-permissions-list">
                       {group.permissions.map(
                         (permission) => {
+                          // isSelected — נבחר.
                           const isSelected =
                             selectedPermissionSet.has(
                               permission.key,

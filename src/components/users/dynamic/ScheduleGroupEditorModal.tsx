@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/dynamic/ScheduleGroupEditorModal.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור שיבוץ / קבוצה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ScheduleGroupEditorModalProps, ScheduleGroupEditorModal.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   Clock3,
   Eye,
@@ -24,13 +31,20 @@ import type {
 } from '../../../types/dynamicScheduling';
 import { Button, Input, Modal, Textarea } from '../../ui';
 
+/**
+ * חוזה הנתונים ScheduleGroupEditorModalProps: שיבוץ / קבוצה / מאפייני הרכיב.
+ */
 interface ScheduleGroupEditorModalProps {
+  // group — קבוצה.
   group: DynamicScheduleGroup;
+  // isOpen — האם המצב פתוח.
   isOpen: boolean;
+  // onClose — פונקציית סגירת התצוגה.
   onClose: () => void;
   onSaved: () => Promise<void>;
 }
 
+// dayKinds — יום.
 const dayKinds: DynamicDayKind[] = [
   'weekday',
   'friday',
@@ -41,6 +55,7 @@ const dayKinds: DynamicDayKind[] = [
   'chol_hamoed',
 ];
 
+// dayKindLabels — יום.
 const dayKindLabels: Record<DynamicDayKind, string> = {
   weekday: 'א׳–ה׳',
   friday: 'שישי',
@@ -52,14 +67,26 @@ const dayKindLabels: Record<DynamicDayKind, string> = {
   custom: 'מותאם אישית',
 };
 
+// behaviorLabels — הנתון behaviorLabels בהקשר הפעולה.
 const behaviorLabels: Record<DynamicDayRule['behavior'], string> = {
   own_templates: 'מבנה משמרות עצמאי',
   inherit: 'כמו סוג יום אחר',
   no_work: 'אין עבודה',
 };
 
+/**
+ * פעולה normalizeTime: נרמול זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const normalizeTime = (value: string): string => value.slice(0, 5);
 
+/**
+ * פעולה makeRule: כלל.
+ * @param dayKind — יום.
+ * @param current — הנתון current בהקשר הפעולה.
+ * @returns DynamicDayRule — הפלט בהתאם לחתימה.
+ */
 const makeRule = (
   dayKind: DynamicDayKind,
   current?: DynamicDayRule,
@@ -70,6 +97,12 @@ const makeRule = (
   metadata: {},
 });
 
+/**
+ * פעולה makeTemplate: תבנית.
+ * @param dayKind — יום.
+ * @param index — מיקום באוסף.
+ * @returns SaveDynamicShiftTemplateInput — הפלט בהתאם לחתימה.
+ */
 const makeTemplate = (
   dayKind: DynamicDayKind,
   index: number,
@@ -89,6 +122,11 @@ const makeTemplate = (
   paySegments: [],
 });
 
+/**
+ * פעולה toForm: המרה עבור הנתון toForm בהקשר הפעולה.
+ * @param group — קבוצה.
+ * @returns SaveDynamicScheduleGroupInput — הפלט בהתאם לחתימה.
+ */
 const toForm = (
   group: DynamicScheduleGroup,
 ): SaveDynamicScheduleGroupInput => ({
@@ -124,34 +162,57 @@ const toForm = (
     )),
 });
 
+/**
+ * פעולה ScheduleGroupEditorModal: שיבוץ / קבוצה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function ScheduleGroupEditorModal({
   group,
   isOpen,
   onClose,
   onSaved,
 }: ScheduleGroupEditorModalProps) {
+  // מצב מקומי: form — הנתון form בהקשר הפעולה; setForm מעדכנת אותו ומפעילה רינדור לפי React.
   const [form, setForm] = useState<SaveDynamicScheduleGroupInput>(() => toForm(group));
+  // מצב מקומי: isSaving — האם שמירה מתבצעת; setIsSaving מעדכנת אותו ומפעילה רינדור לפי React.
   const [isSaving, setIsSaving] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: preview — הנתון preview בהקשר הפעולה; setPreview מעדכנת אותו ומפעילה רינדור לפי React.
   const [preview, setPreview] = useState<DynamicSchedulePreview | null>(null);
+  // מצב מקומי: isPreviewLoading — טעינה; setIsPreviewLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  // מצב מקומי: previewYear — שנה; setPreviewYear מעדכנת אותו ומפעילה רינדור לפי React.
   const [previewYear, setPreviewYear] = useState(new Date().getFullYear());
+  // מצב מקומי: previewMonth — חודש; setPreviewMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [previewMonth, setPreviewMonth] = useState(new Date().getMonth() + 1);
 
+  // ערך מחושב templatesByDay — תבניות / יום; נשמר בין רינדורים עד שינוי התלויות.
   const templatesByDay = useMemo(() => {
+    // result — תוצאה; מיפוי לחיפוש לפי מפתח.
     const result = new Map<DynamicDayKind, SaveDynamicShiftTemplateInput[]>();
+    // עיבוד כל פריט מתוך dayKinds בנפרד.
     for (const dayKind of dayKinds) result.set(dayKind, []);
+    // עיבוד כל פריט מתוך form.shiftTemplates בנפרד.
     for (const template of form.shiftTemplates) {
+      // current — הנתון current בהקשר הפעולה.
       const current = result.get(template.dayKind) ?? [];
       current.push(template);
       result.set(template.dayKind, current);
     }
+    // עיבוד כל פריט מתוך result.values() בנפרד.
     for (const templates of result.values()) {
       templates.sort((a, b) => a.sortOrder - b.sortOrder);
     }
     return result;
   }, [form.shiftTemplates]);
 
+  /**
+   * פעולה updateRule: עדכון כלל.
+   * @param dayKind — יום.
+   * @param patch — הנתון patch בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const updateRule = (
     dayKind: DynamicDayKind,
     patch: Partial<DynamicDayRule>,
@@ -173,6 +234,12 @@ function ScheduleGroupEditorModal({
     }));
   };
 
+  /**
+   * פעולה updateTemplate: עדכון תבנית.
+   * @param code — הנתון code בהקשר הפעולה.
+   * @param patch — הנתון patch בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const updateTemplate = (
     code: string,
     patch: Partial<SaveDynamicShiftTemplateInput>,
@@ -185,6 +252,11 @@ function ScheduleGroupEditorModal({
     }));
   };
 
+  /**
+   * פעולה removeTemplate: הסרת תבנית.
+   * @param code — הנתון code בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const removeTemplate = (code: string): void => {
     setForm((current) => ({
       ...current,
@@ -192,6 +264,11 @@ function ScheduleGroupEditorModal({
     }));
   };
 
+  /**
+   * פעולה addTemplate: הוספת תבנית.
+   * @param dayKind — יום.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const addTemplate = (dayKind: DynamicDayKind): void => {
     setForm((current) => ({
       ...current,
@@ -202,11 +279,19 @@ function ScheduleGroupEditorModal({
     }));
   };
 
+  /**
+   * פעולה updatePaySegment: עדכון הנתון updatePaySegment בהקשר הפעולה.
+   * @param templateCode — תבנית.
+   * @param segmentIndex — מיקום באוסף.
+   * @param patch — הנתון patch בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const updatePaySegment = (
     templateCode: string,
     segmentIndex: number,
     patch: Partial<DynamicPaySegment>,
   ): void => {
+    // template — תבנית.
     const template = form.shiftTemplates.find((item) => item.code === templateCode);
     if (!template) return;
 
@@ -216,7 +301,13 @@ function ScheduleGroupEditorModal({
     updateTemplate(templateCode, { paySegments });
   };
 
+  /**
+   * פעולה addPaySegment: הוספת הנתון addPaySegment בהקשר הפעולה.
+   * @param templateCode — תבנית.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const addPaySegment = (templateCode: string): void => {
+    // template — תבנית.
     const template = form.shiftTemplates.find((item) => item.code === templateCode);
     if (!template) return;
 
@@ -234,10 +325,17 @@ function ScheduleGroupEditorModal({
     });
   };
 
+  /**
+   * פעולה removePaySegment: הסרת הנתון removePaySegment בהקשר הפעולה.
+   * @param templateCode — תבנית.
+   * @param segmentIndex — מיקום באוסף.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const removePaySegment = (
     templateCode: string,
     segmentIndex: number,
   ): void => {
+    // template — תבנית.
     const template = form.shiftTemplates.find((item) => item.code === templateCode);
     if (!template) return;
     updateTemplate(templateCode, {
@@ -245,16 +343,22 @@ function ScheduleGroupEditorModal({
     });
   };
 
+  /**
+   * פעולה validate: בדיקת תקינות של הנתון validate בהקשר הפעולה.
+   * @returns string | null — הפלט בהתאם לחתימה.
+   */
   const validate = (): string | null => {
     if (!form.name.trim()) return 'יש להזין שם למערך השיבוץ.';
 
     const seenCodes = new Set<string>();
+    // עיבוד כל פריט מתוך form.shiftTemplates בנפרד.
     for (const template of form.shiftTemplates) {
       if (!template.code.trim()) return 'לכל משמרת חייב להיות קוד פנימי.';
       if (seenCodes.has(template.code)) return `קוד המשמרת ${template.code} מופיע יותר מפעם אחת.`;
       seenCodes.add(template.code);
       if (!template.name.trim()) return 'לכל משמרת חייב להיות שם.';
       if (template.startTime === template.endTime) return `שעת ההתחלה והסיום של ${template.name} זהות.`;
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר template.minWorkers < 0 || template.targetWorkers < template.minWorkers || template.maxWorkers < template.targetWorkers.
       if (
         template.minWorkers < 0 ||
         template.targetWorkers < template.minWorkers ||
@@ -262,7 +366,9 @@ function ScheduleGroupEditorModal({
       ) {
         return `דרישות כוח האדם של ${template.name} אינן תקינות.`;
       }
+      // עיבוד כל פריט מתוך template.paySegments בנפרד.
       for (const segment of template.paySegments) {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר segment.startTime === segment.endTime || segment.multiplier <= 0.
         if (segment.startTime === segment.endTime || segment.multiplier <= 0) {
           return `מקטע השכר במשמרת ${template.name} אינו תקין.`;
         }
@@ -272,9 +378,16 @@ function ScheduleGroupEditorModal({
     return null;
   };
 
+  /**
+   * פעולה אסינכרונית submit: הגשת הנתון submit בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
+    // validationError — אימות נתונים / שגיאה.
     const validationError = validate();
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר validationError.
     if (validationError) {
       setError(validationError);
       return;
@@ -282,6 +395,7 @@ function ScheduleGroupEditorModal({
 
     setIsSaving(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.saveScheduleGroup({
         ...form,
@@ -298,10 +412,16 @@ function ScheduleGroupEditorModal({
     }
   };
 
+  /**
+   * פעולה אסינכרונית runPreview: הנתון runPreview בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const runPreview = async (): Promise<void> => {
     setIsPreviewLoading(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await dynamicSchedulingService.previewScheduleGroup(
         group.id,
         previewYear,
@@ -358,6 +478,7 @@ function ScheduleGroupEditorModal({
 
           <div className="dynamic-day-rules-grid">
             {dayKinds.map((dayKind) => {
+              // rule — כלל.
               const rule = form.dayRules.find((item) => item.dayKind === dayKind) ?? makeRule(dayKind);
               return (
                 <article className="dynamic-day-rule-card" key={dayKind}>
@@ -394,8 +515,10 @@ function ScheduleGroupEditorModal({
           </div>
 
           {dayKinds.map((dayKind) => {
+            // rule — כלל.
             const rule = form.dayRules.find((item) => item.dayKind === dayKind);
             if (rule?.behavior !== 'own_templates') return null;
+            // templates — תבניות.
             const templates = templatesByDay.get(dayKind) ?? [];
 
             return (

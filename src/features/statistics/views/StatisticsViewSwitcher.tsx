@@ -1,32 +1,54 @@
+/**
+ * קובץ: src/features/statistics/views/StatisticsViewSwitcher.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: StatisticsDisplayMode, StatisticsViewSwitcherProps, StatisticsViewSwitcher.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   BarChart3,
   LayoutDashboard,
   Table2,
 } from 'lucide-react';
 
+/**
+ * טיפוס StatisticsDisplayMode: סטטיסטיקה / מצב פעולה.
+ */
 export type StatisticsDisplayMode =
   | 'dashboard'
   | 'charts'
   | 'tables';
 
+/**
+ * חוזה הנתונים StatisticsViewSwitcherProps: סטטיסטיקה / מאפייני הרכיב.
+ */
 interface StatisticsViewSwitcherProps {
+  // value — ערך.
   value:
     StatisticsDisplayMode;
 
+  // onChange — פונקציית דיווח על שינוי.
   onChange: (
     value:
       StatisticsDisplayMode,
   ) => void;
 }
 
+/**
+ * פעולה StatisticsViewSwitcher: סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function StatisticsViewSwitcher({
   value,
   onChange,
 }: StatisticsViewSwitcherProps) {
+  // options — אפשרויות בחירה.
   const options: Array<{
+    // value — ערך.
     value:
       StatisticsDisplayMode;
 
+    // label — תווית.
     label: string;
 
     icon:
@@ -77,6 +99,7 @@ function StatisticsViewSwitcher({
           const Icon =
             option.icon;
 
+          // isActive — האם הרשומה פעילה.
           const isActive =
             value ===
             option.value;

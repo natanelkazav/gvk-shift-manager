@@ -1,3 +1,11 @@
+/**
+ * קובץ: supabase/functions/send-notification/utils/responses.ts
+ * מטרה: בניית תגובות HTTP וכותרות CORS משותפות לפעולות השרת.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: createJsonResponse.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
+// corsHeaders — הנתון corsHeaders בהקשר הפעולה.
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
 
@@ -12,6 +20,12 @@ export const corsHeaders = {
     'POST, OPTIONS',
 };
 
+/**
+ * פעולה createJsonResponse: יצירת תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 export function createJsonResponse(
   body: Record<string, unknown>,
   status = 200,

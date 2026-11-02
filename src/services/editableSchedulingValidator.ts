@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/services/editableSchedulingValidator.ts
+ * מטרה: זיהוי שיבוצים חסרים, זמינות חסרה, חפיפות ורצפים בטיוטה הניתנת לעריכה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: EditableSchedulingValidationIssueType, EditableSchedulingValidationSeverity, EditableSchedulingValidationIssue, EditableSchedulingShiftValidation, EditableSchedulingValidationResult, ParsedShiftInterval, normalizeTime, parseTimeParts, createDateAtTime, createShiftInterval ועוד.
+ * - ריכוז פעולות העיבוד והחישוב בהתאם לפונקציות להלן.
+ */
 import type {
   AssignmentCandidateShift,
   AssignmentCandidatesData,
@@ -7,6 +14,9 @@ import type {
   SchedulingAssignment,
 } from '../types/autoScheduling';
 
+/**
+ * טיפוס EditableSchedulingValidationIssueType: אימות נתונים.
+ */
 export type EditableSchedulingValidationIssueType =
   | 'unassigned_shift'
   | 'dispatcher_unavailable'
@@ -16,11 +26,18 @@ export type EditableSchedulingValidationIssueType =
   | 'unknown_shift'
   | 'unknown_dispatcher';
 
+/**
+ * טיפוס EditableSchedulingValidationSeverity: אימות נתונים.
+ */
 export type EditableSchedulingValidationSeverity =
   | 'error'
   | 'warning';
 
+/**
+ * חוזה הנתונים EditableSchedulingValidationIssue: אימות נתונים.
+ */
 export interface EditableSchedulingValidationIssue {
+  // id — מזהה.
   id: string;
 
   type:
@@ -29,62 +46,93 @@ export interface EditableSchedulingValidationIssue {
   severity:
     EditableSchedulingValidationSeverity;
 
+  // shiftId — מזהה המשמרת.
   shiftId: string;
 
+  // relatedShiftId — מזהה המשמרת.
   relatedShiftId:
     string | null;
 
+  // userId — מזהה משתמש.
   userId:
     string | null;
 
+  // message — הודעה.
   message: string;
 }
 
+/**
+ * חוזה הנתונים EditableSchedulingShiftValidation: משמרת / אימות נתונים.
+ */
 export interface EditableSchedulingShiftValidation {
+  // shiftId — מזהה המשמרת.
   shiftId: string;
 
   issues:
     EditableSchedulingValidationIssue[];
 
+  // hasErrors — שגיאות.
   hasErrors: boolean;
   hasWarnings: boolean;
 }
 
+/**
+ * חוזה הנתונים EditableSchedulingValidationResult: אימות נתונים / תוצאה.
+ */
 export interface EditableSchedulingValidationResult {
   issues:
     EditableSchedulingValidationIssue[];
 
+  // shiftValidations — משמרת.
   shiftValidations:
     Record<
       string,
       EditableSchedulingShiftValidation
     >;
 
+  // errorCount — שגיאה / כמות.
   errorCount: number;
+  // warningCount — כמות.
   warningCount: number;
 
+  // unassignedShiftCount — משמרת / כמות.
   unassignedShiftCount: number;
+  // unavailableAssignmentCount — הקצאה / כמות.
   unavailableAssignmentCount: number;
+  // overlapCount — כמות.
   overlapCount: number;
+  // consecutiveShiftCount — משמרת / כמות.
   consecutiveShiftCount: number;
 
   isValid: boolean;
 }
 
+/**
+ * חוזה הנתונים ParsedShiftInterval: משמרת / מרווח זמן.
+ */
 interface ParsedShiftInterval {
+  // shift — משמרת.
   shift:
     AssignmentCandidateShift;
 
+  // assignment — הקצאה.
   assignment:
     SchedulingAssignment;
 
+  // startsAt — מועד התחלה.
   startsAt:
     Date;
 
+  // endsAt — מועד סיום.
   endsAt:
     Date;
 }
 
+/**
+ * פעולה normalizeTime: נרמול זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeTime(
   value: string,
 ): string {
@@ -93,12 +141,20 @@ function normalizeTime(
     .slice(0, 5);
 }
 
+/**
+ * פעולה parseTimeParts: פענוח קלט עבור זמן.
+ * @param value — ערך.
+ * @returns { hours: number; minutes: number; } | null — הפלט בהתאם לחתימה.
+ */
 function parseTimeParts(
   value: string,
 ): {
+  // hours — שעות.
   hours: number;
+  // minutes — דקות.
   minutes: number;
 } | null {
+  // normalizedValue — ערך.
   const normalizedValue =
     normalizeTime(value);
 
@@ -107,16 +163,20 @@ function parseTimeParts(
       /^(\d{1,2}):(\d{2})$/,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !match.
   if (!match) {
     return null;
   }
 
+  // hours — שעות.
   const hours =
     Number(match[1]);
 
+  // minutes — דקות.
   const minutes =
     Number(match[2]);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59.
   if (
     !Number.isInteger(hours) ||
     !Number.isInteger(minutes) ||
@@ -134,19 +194,28 @@ function parseTimeParts(
   };
 }
 
+/**
+ * פעולה createDateAtTime: יצירת תאריך / זמן.
+ * @param dateValue — תאריך / ערך.
+ * @param timeValue — זמן / ערך.
+ * @returns Date | null — הפלט בהתאם לחתימה.
+ */
 function createDateAtTime(
   dateValue: string,
   timeValue: string,
 ): Date | null {
+  // timeParts — זמן.
   const timeParts =
     parseTimeParts(
       timeValue,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !timeParts.
   if (!timeParts) {
     return null;
   }
 
+  // dateMatch — תאריך.
   const dateMatch =
     dateValue
       .trim()
@@ -154,19 +223,24 @@ function createDateAtTime(
         /^(\d{4})-(\d{2})-(\d{2})$/,
       );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !dateMatch.
   if (!dateMatch) {
     return null;
   }
 
+  // year — שנה.
   const year =
     Number(dateMatch[1]);
 
+  // month — חודש.
   const month =
     Number(dateMatch[2]);
 
+  // day — יום.
   const day =
     Number(dateMatch[3]);
 
+  // date — תאריך.
   const date =
     new Date(
       year,
@@ -178,6 +252,7 @@ function createDateAtTime(
       0,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -186,6 +261,7 @@ function createDateAtTime(
     return null;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day.
   if (
     date.getFullYear() !== year ||
     date.getMonth() !==
@@ -198,6 +274,12 @@ function createDateAtTime(
   return date;
 }
 
+/**
+ * פעולה createShiftInterval: יצירת משמרת / מרווח זמן.
+ * @param shift — משמרת.
+ * @param assignment — הקצאה.
+ * @returns ParsedShiftInterval | null — הפלט בהתאם לחתימה.
+ */
 function createShiftInterval(
   shift:
     AssignmentCandidateShift,
@@ -205,18 +287,21 @@ function createShiftInterval(
   assignment:
     SchedulingAssignment,
 ): ParsedShiftInterval | null {
+  // startsAt — מועד התחלה.
   const startsAt =
     createDateAtTime(
       shift.date,
       shift.startTime,
     );
 
+  // endsAt — מועד סיום.
   const endsAt =
     createDateAtTime(
       shift.date,
       shift.endTime,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !startsAt || !endsAt.
   if (
     !startsAt ||
     !endsAt
@@ -224,6 +309,7 @@ function createShiftInterval(
     return null;
   }
 
+  // adjustedEndsAt — מועד סיום.
   const adjustedEndsAt =
     new Date(
       endsAt.getTime(),
@@ -239,6 +325,7 @@ function createShiftInterval(
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר adjustedEndsAt.getTime() <= startsAt.getTime().
   if (
     adjustedEndsAt.getTime() <=
     startsAt.getTime()
@@ -255,6 +342,14 @@ function createShiftInterval(
   };
 }
 
+/**
+ * פעולה createIssueId: יצירת מזהה.
+ * @param type — הנתון type בהקשר הפעולה.
+ * @param shiftId — מזהה המשמרת.
+ * @param relatedShiftId — מזהה המשמרת.
+ * @param userId — מזהה משתמש.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function createIssueId(
   type:
     EditableSchedulingValidationIssueType,
@@ -275,6 +370,16 @@ function createIssueId(
   ].join(':');
 }
 
+/**
+ * פעולה createIssue: יצירת הנתון createIssue בהקשר הפעולה.
+ * @param type — הנתון type בהקשר הפעולה.
+ * @param severity — הנתון severity בהקשר הפעולה.
+ * @param shiftId — מזהה המשמרת.
+ * @param message — הודעה.
+ * @param userId — מזהה משתמש.
+ * @param relatedShiftId — מזהה המשמרת.
+ * @returns EditableSchedulingValidationIssue — הפלט בהתאם לחתימה.
+ */
 function createIssue(
   type:
     EditableSchedulingValidationIssueType,
@@ -310,6 +415,11 @@ function createIssue(
   };
 }
 
+/**
+ * פעולה formatShiftLabel: עיצוב ערך לתצוגה עבור משמרת / תווית.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatShiftLabel(
   shift:
     AssignmentCandidateShift,
@@ -325,6 +435,11 @@ function formatShiftLabel(
   );
 }
 
+/**
+ * פעולה createEmptyShiftValidation: יצירת משמרת / אימות נתונים.
+ * @param shiftId — מזהה המשמרת.
+ * @returns EditableSchedulingShiftValidation — הפלט בהתאם לחתימה.
+ */
 function createEmptyShiftValidation(
   shiftId: string,
 ): EditableSchedulingShiftValidation {
@@ -336,6 +451,12 @@ function createEmptyShiftValidation(
   };
 }
 
+/**
+ * פעולה addIssueToShiftValidation: הוספת משמרת / אימות נתונים.
+ * @param shiftValidations — משמרת.
+ * @param issue — הנתון issue בהקשר הפעולה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function addIssueToShiftValidation(
   shiftValidations:
     Record<
@@ -359,11 +480,13 @@ function addIssueToShiftValidation(
       );
   }
 
+  // validation — אימות נתונים.
   const validation =
     shiftValidations[
       issue.shiftId
     ];
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר validation.issues.some( (existingIssue) => existingIssue.id === issue.id, ).
   if (
     validation.issues.some(
       (existingIssue) =>
@@ -395,17 +518,25 @@ function addIssueToShiftValidation(
   }
 }
 
+/**
+ * פעולה createKnownDispatcherIds: יצירת מוקדנים.
+ * @param data — נתונים.
+ * @returns Set<string> — הפלט בהתאם לחתימה.
+ */
 function createKnownDispatcherIds(
   data:
     AssignmentCandidatesData,
 ): Set<string> {
+  // userIds — מזהה משתמש; אוסף ערכים ייחודיים.
   const userIds =
     new Set<string>();
 
+  // עיבוד כל פריט מתוך data.shifts בנפרד.
   for (
     const shift
     of data.shifts
   ) {
+    // עיבוד כל פריט מתוך shift.availableUserIds בנפרד.
     for (
       const userId
       of shift.availableUserIds
@@ -417,6 +548,13 @@ function createKnownDispatcherIds(
   return userIds;
 }
 
+/**
+ * פעולה validateUnassignedShifts: בדיקת תקינות של משמרות.
+ * @param data — נתונים.
+ * @param assignmentsByShiftId — מזהה המשמרת.
+ * @param intentionallyUnassignedShiftIds — מזהה המשמרת.
+ * @returns EditableSchedulingValidationIssue[] — הפלט בהתאם לחתימה.
+ */
 function validateUnassignedShifts(
   data:
     AssignmentCandidatesData,
@@ -434,6 +572,7 @@ function validateUnassignedShifts(
     EditableSchedulingValidationIssue[] =
     [];
 
+  // עיבוד כל פריט מתוך data.shifts בנפרד.
   for (
     const shift
     of data.shifts
@@ -464,6 +603,12 @@ function validateUnassignedShifts(
   return issues;
 }
 
+/**
+ * פעולה validateAssignments: בדיקת תקינות של הקצאות.
+ * @param data — נתונים.
+ * @param assignments — הקצאות.
+ * @returns { issues: EditableSchedulingValidationIssue[]; intervalsByUserId: Map< string, ParsedShiftInterval[] >; } — הפלט בהתאם לחתימה.
+ */
 function validateAssignments(
   data:
     AssignmentCandidatesData,
@@ -474,6 +619,7 @@ function validateAssignments(
   issues:
     EditableSchedulingValidationIssue[];
 
+  // intervalsByUserId — מזהה משתמש.
   intervalsByUserId:
     Map<
       string,
@@ -484,6 +630,7 @@ function validateAssignments(
     EditableSchedulingValidationIssue[] =
     [];
 
+  // shiftsById — משמרות / מזהה; מיפוי לחיפוש לפי מפתח.
   const shiftsById =
     new Map(
       data.shifts.map(
@@ -494,21 +641,25 @@ function validateAssignments(
       ),
     );
 
+  // knownDispatcherIds — מוקדנים.
   const knownDispatcherIds =
     createKnownDispatcherIds(
       data,
     );
 
+  // intervalsByUserId — מזהה משתמש; מיפוי לחיפוש לפי מפתח.
   const intervalsByUserId =
     new Map<
       string,
       ParsedShiftInterval[]
     >();
 
+  // עיבוד כל פריט מתוך assignments בנפרד.
   for (
     const assignment
     of assignments
   ) {
+    // shift — משמרת.
     const shift =
       shiftsById.get(
         assignment.shiftId,
@@ -562,6 +713,7 @@ function validateAssignments(
       );
     }
 
+    // interval — מרווח זמן.
     const interval =
       createShiftInterval(
         shift,
@@ -584,6 +736,7 @@ function validateAssignments(
       continue;
     }
 
+    // userIntervals — משתמש.
     const userIntervals =
       intervalsByUserId.get(
         assignment.userId,
@@ -605,6 +758,11 @@ function validateAssignments(
   };
 }
 
+/**
+ * פעולה validateUserShiftSequence: בדיקת תקינות של משתמש / משמרת.
+ * @param intervalsByUserId — מזהה משתמש.
+ * @returns EditableSchedulingValidationIssue[] — הפלט בהתאם לחתימה.
+ */
 function validateUserShiftSequence(
   intervalsByUserId:
     Map<
@@ -616,6 +774,7 @@ function validateUserShiftSequence(
     EditableSchedulingValidationIssue[] =
     [];
 
+  // עיבוד כל פריט מתוך intervalsByUserId בנפרד.
   for (
     const [
       userId,
@@ -644,21 +803,25 @@ function validateUserShiftSequence(
       sortedIntervals.length;
       index += 1
     ) {
+      // previousInterval — מרווח זמן.
       const previousInterval =
         sortedIntervals[
           index - 1
         ];
 
+      // currentInterval — מרווח זמן.
       const currentInterval =
         sortedIntervals[
           index
         ];
 
+      // previousEnd — הנתון previousEnd בהקשר הפעולה.
       const previousEnd =
         previousInterval
           .endsAt
           .getTime();
 
+      // currentStart — הנתון currentStart בהקשר הפעולה.
       const currentStart =
         currentInterval
           .startsAt
@@ -668,12 +831,14 @@ function validateUserShiftSequence(
         currentStart <
         previousEnd
       ) {
+        // firstMessage — הודעה.
         const firstMessage =
           `השיבוץ חופף למשמרת ` +
           `${formatShiftLabel(
             currentInterval.shift,
           )}.`;
 
+        // secondMessage — הודעה.
         const secondMessage =
           `השיבוץ חופף למשמרת ` +
           `${formatShiftLabel(
@@ -713,6 +878,7 @@ function validateUserShiftSequence(
         currentStart ===
         previousEnd
       ) {
+        // firstMessage — הודעה.
         const firstMessage =
           `המשמרת מסתיימת בדיוק כאשר ` +
           `המשמרת ${formatShiftLabel(
@@ -720,6 +886,7 @@ function validateUserShiftSequence(
           )} מתחילה. ` +
           'אסור לשבץ אותו מוקדן למשמרות רצופות.';
 
+        // secondMessage — הודעה.
         const secondMessage =
           `המשמרת מתחילה בדיוק כאשר ` +
           `המשמרת ${formatShiftLabel(
@@ -759,6 +926,13 @@ function validateUserShiftSequence(
   return issues;
 }
 
+/**
+ * פעולה validateEditableSchedulingDraft: בדיקת תקינות של טיוטה.
+ * @param data — נתונים.
+ * @param assignments — הקצאות.
+ * @param intentionallyUnassignedShiftIds — מזהה המשמרת.
+ * @returns EditableSchedulingValidationResult — הפלט בהתאם לחתימה.
+ */
 export function validateEditableSchedulingDraft(
   data:
     AssignmentCandidatesData | null,
@@ -769,6 +943,7 @@ export function validateEditableSchedulingDraft(
   intentionallyUnassignedShiftIds:
     string[] = [],
 ): EditableSchedulingValidationResult {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
   if (!data) {
     return {
       issues: [],
@@ -787,12 +962,14 @@ export function validateEditableSchedulingDraft(
     };
   }
 
+  // assignmentsByShiftId — מזהה המשמרת; מיפוי לחיפוש לפי מפתח.
   const assignmentsByShiftId =
     new Map<
       string,
       SchedulingAssignment
     >();
 
+  // עיבוד כל פריט מתוך assignments בנפרד.
   for (
     const assignment
     of assignments
@@ -812,6 +989,7 @@ export function validateEditableSchedulingDraft(
       ),
     );
 
+  // assignmentValidation — הקצאה / אימות נתונים.
   const assignmentValidation =
     validateAssignments(
       data,
@@ -824,12 +1002,14 @@ export function validateEditableSchedulingDraft(
         .intervalsByUserId,
     );
 
+  // issueMap — מפת התאמה; מיפוי לחיפוש לפי מפתח.
   const issueMap =
     new Map<
       string,
       EditableSchedulingValidationIssue
     >();
 
+  // עיבוד כל פריט מתוך [ ...unassignedIssues, ...assignmentValidation .issues, ...sequenceIssues, ] בנפרד.
   for (
     const issue
     of [
@@ -850,12 +1030,14 @@ export function validateEditableSchedulingDraft(
       issueMap.values(),
     );
 
+  // shiftValidations — משמרת.
   const shiftValidations:
     Record<
       string,
       EditableSchedulingShiftValidation
     > = {};
 
+  // עיבוד כל פריט מתוך data.shifts בנפרד.
   for (
     const shift
     of data.shifts
@@ -868,6 +1050,7 @@ export function validateEditableSchedulingDraft(
       );
   }
 
+  // עיבוד כל פריט מתוך issues בנפרד.
   for (
     const issue
     of issues
@@ -878,6 +1061,7 @@ export function validateEditableSchedulingDraft(
     );
   }
 
+  // errorCount — שגיאה / כמות.
   const errorCount =
     issues.filter(
       (issue) =>
@@ -885,6 +1069,7 @@ export function validateEditableSchedulingDraft(
         'error',
     ).length;
 
+  // warningCount — כמות.
   const warningCount =
     issues.filter(
       (issue) =>
@@ -892,6 +1077,7 @@ export function validateEditableSchedulingDraft(
         'warning',
     ).length;
 
+  // unassignedShiftCount — משמרת / כמות.
   const unassignedShiftCount =
     issues.filter(
       (issue) =>
@@ -899,6 +1085,7 @@ export function validateEditableSchedulingDraft(
         'unassigned_shift',
     ).length;
 
+  // unavailableAssignmentCount — הקצאה / כמות.
   const unavailableAssignmentCount =
     issues.filter(
       (issue) =>
@@ -906,6 +1093,7 @@ export function validateEditableSchedulingDraft(
         'dispatcher_unavailable',
     ).length;
 
+  // overlapCount — כמות.
   const overlapCount =
     issues.filter(
       (issue) =>
@@ -913,6 +1101,7 @@ export function validateEditableSchedulingDraft(
         'overlapping_shifts',
     ).length;
 
+  // consecutiveShiftCount — משמרת / כמות.
   const consecutiveShiftCount =
     issues.filter(
       (issue) =>

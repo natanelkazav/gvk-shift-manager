@@ -1,18 +1,30 @@
+-- קובץ: supabase/migrations/20260905143000_fix_dynamic_exchange_next_month_options.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / חודש / אפשרויות בחירה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_dynamic_shift_exchange_options.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
+-- פונקציית מסד public.get_my_dynamic_shift_exchange_options: שליפה או חישוב של החלפת משמרות.
 create or replace function public.get_my_dynamic_shift_exchange_options()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   local_now timestamp := now() at time zone 'Asia/Jerusalem';
+  -- current_month — חודש.
   current_month date := date_trunc('month', local_now::date)::date;
+  -- next_month — חודש.
   next_month date := (date_trunc('month', local_now::date) + interval '1 month')::date;
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
 
   with eligible_publications as (
@@ -66,7 +78,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_shift_exchange_options() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_shift_exchange_options() to authenticated;
 
 commit;

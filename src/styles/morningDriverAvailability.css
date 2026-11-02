@@ -1,9 +1,16 @@
+/*
+ * קובץ: src/styles/morningDriverAvailability.css
+ * מטרה: הגדרת עיצוב ופריסה עבור כונני בוקר.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .morning-driver-availability-page  */
 .morning-driver-availability-page {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .morning-driver-page-header  */
 .morning-driver-page-header {
   display: flex;
   align-items: flex-start;
@@ -21,6 +28,7 @@
     );
 }
 
+/* כללי עיצוב עבור .morning-driver-page-eyebrow  */
 .morning-driver-page-eyebrow {
   display: inline-flex;
   align-items: center;
@@ -30,12 +38,14 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .morning-driver-page-header h1  */
 .morning-driver-page-header h1 {
   margin: 8px 0 5px;
   color: var(--theme-text-strong);
   font-size: 1.55rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-page-header p  */
 .morning-driver-page-header p {
   margin: 0;
   color: var(--theme-text-muted);
@@ -44,6 +54,7 @@
 
 .morning-driver-page-actions,
 .morning-driver-period-actions,
+/* כללי עיצוב עבור .morning-driver-dialog-actions  */
 .morning-driver-dialog-actions {
   display: flex;
   align-items: center;
@@ -53,6 +64,7 @@
 .morning-driver-primary-button,
 .morning-driver-secondary-button,
 .morning-driver-open-button,
+/* כללי עיצוב עבור .morning-driver-delete-button  */
 .morning-driver-delete-button {
   display: inline-flex;
   min-height: 40px;
@@ -68,22 +80,26 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .morning-driver-primary-button  */
 .morning-driver-primary-button {
   background: #0284c7;
   color: #ffffff;
 }
 
+/* כללי עיצוב עבור .morning-driver-secondary-button  */
 .morning-driver-secondary-button {
   border: 1px solid var(--theme-border-strong);
   background: var(--theme-surface);
   color: var(--theme-text);
 }
 
+/* כללי עיצוב עבור .morning-driver-open-button  */
 .morning-driver-open-button {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .morning-driver-delete-button  */
 .morning-driver-delete-button {
   background: #fee2e2;
   color: #b91c1c;
@@ -92,11 +108,13 @@
 .morning-driver-primary-button:disabled,
 .morning-driver-secondary-button:disabled,
 .morning-driver-open-button:disabled,
+/* כללי עיצוב עבור .morning-driver-delete-button:disabled  */
 .morning-driver-delete-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
+/* כללי עיצוב עבור .morning-driver-rules-card  */
 .morning-driver-rules-card {
   display: flex;
   align-items: center;
@@ -107,6 +125,7 @@
   background: #fffbeb;
 }
 
+/* כללי עיצוב עבור .morning-driver-rules-icon  */
 .morning-driver-rules-icon {
   display: inline-flex;
   width: 43px;
@@ -119,17 +138,20 @@
   color: #b45309;
 }
 
+/* כללי עיצוב עבור .morning-driver-rules-card > div:last-child  */
 .morning-driver-rules-card > div:last-child {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .morning-driver-rules-card strong  */
 .morning-driver-rules-card strong {
   color: #78350f;
   font-size: 0.8rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-rules-card span  */
 .morning-driver-rules-card span {
   color: #92400e;
   font-size: 0.72rem;
@@ -137,6 +159,7 @@
 }
 
 .morning-driver-error,
+/* כללי עיצוב עבור .morning-driver-success  */
 .morning-driver-success {
   display: flex;
   align-items: center;
@@ -147,12 +170,14 @@
   font-size: 0.76rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-error  */
 .morning-driver-error {
   border: 1px solid #fecaca;
   background: #fef2f2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .morning-driver-error button  */
 .morning-driver-error button {
   border: 0;
   background: transparent;
@@ -161,12 +186,14 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .morning-driver-success  */
 .morning-driver-success {
   border: 1px solid #bbf7d0;
   background: #f0fdf4;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-grid  */
 .morning-driver-period-grid {
   display: grid;
   grid-template-columns:
@@ -177,6 +204,7 @@
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-card  */
 .morning-driver-period-card {
   display: flex;
   flex-direction: column;
@@ -190,6 +218,7 @@
     rgba(15, 23, 42, 0.06);
 }
 
+/* כללי עיצוב עבור .morning-driver-period-header  */
 .morning-driver-period-header {
   display: flex;
   align-items: flex-start;
@@ -197,23 +226,27 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-header > div  */
 .morning-driver-period-header > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-header span  */
 .morning-driver-period-header span {
   color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-header h2  */
 .morning-driver-period-header h2 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 1.05rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-status-badge  */
 .morning-driver-status-badge {
   display: inline-flex;
   padding: 5px 8px;
@@ -222,32 +255,38 @@
   font-weight: 900;
 }
 
+/* כללי עיצוב עבור .morning-driver-status-draft  */
 .morning-driver-status-draft {
   background: var(--theme-surface-soft);
   color: var(--theme-text-secondary);
 }
 
+/* כללי עיצוב עבור .morning-driver-status-open  */
 .morning-driver-status-open {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .morning-driver-status-closed  */
 .morning-driver-status-closed {
   background: #fef3c7;
   color: #92400e;
 }
 
+/* כללי עיצוב עבור .morning-driver-status-archived  */
 .morning-driver-status-archived {
   background: #e0e7ff;
   color: #3730a3;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-title  */
 .morning-driver-period-title {
   margin: 0;
   color: var(--theme-text-secondary);
   font-size: 0.76rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-stat-grid  */
 .morning-driver-period-stat-grid {
   display: grid;
   grid-template-columns:
@@ -255,6 +294,7 @@
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-stat-grid > div  */
 .morning-driver-period-stat-grid > div {
   display: grid;
   grid-template-columns:
@@ -267,15 +307,18 @@
   color: var(--theme-text-secondary);
 }
 
+/* כללי עיצוב עבור .morning-driver-period-stat-grid span  */
 .morning-driver-period-stat-grid span {
   font-size: 0.65rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-stat-grid strong  */
 .morning-driver-period-stat-grid strong {
   color: var(--theme-text-strong);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-details  */
 .morning-driver-period-details {
   display: flex;
   flex-direction: column;
@@ -283,6 +326,7 @@
   margin: 0;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-details > div  */
 .morning-driver-period-details > div {
   display: flex;
   justify-content: space-between;
@@ -291,11 +335,13 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-details dt  */
 .morning-driver-period-details dt {
   color: var(--theme-text-muted);
   font-size: 0.65rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-details dd  */
 .morning-driver-period-details dd {
   margin: 0;
   color: var(--theme-text);
@@ -303,6 +349,7 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-instructions  */
 .morning-driver-period-instructions {
   padding: 10px;
   border-radius: 10px;
@@ -312,12 +359,14 @@
   line-height: 1.55;
 }
 
+/* כללי עיצוב עבור .morning-driver-period-actions  */
 .morning-driver-period-actions {
   justify-content: flex-end;
   padding-top: 12px;
   border-top: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .morning-driver-empty-state  */
 .morning-driver-empty-state {
   display: flex;
   min-height: 230px;
@@ -333,16 +382,19 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .morning-driver-empty-state strong  */
 .morning-driver-empty-state strong {
   color: var(--theme-text);
 }
 
+/* כללי עיצוב עבור .morning-driver-empty-state span  */
 .morning-driver-empty-state span {
   max-width: 460px;
   font-size: 0.74rem;
   line-height: 1.55;
 }
 
+/* כללי עיצוב עבור .morning-driver-dialog-backdrop  */
 .morning-driver-dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -356,6 +408,7 @@
   backdrop-filter: blur(3px);
 }
 
+/* כללי עיצוב עבור .morning-driver-dialog  */
 .morning-driver-dialog {
   width: min(100%, 620px);
   max-height: calc(100vh - 36px);
@@ -368,6 +421,7 @@
     rgba(15, 23, 42, 0.28);
 }
 
+/* כללי עיצוב עבור .morning-driver-dialog-header  */
 .morning-driver-dialog-header {
   display: flex;
   align-items: flex-start;
@@ -377,18 +431,21 @@
   border-bottom: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .morning-driver-dialog-header h2  */
 .morning-driver-dialog-header h2 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-dialog-header p  */
 .morning-driver-dialog-header p {
   margin: 5px 0 0;
   color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-dialog-header button  */
 .morning-driver-dialog-header button {
   display: inline-flex;
   width: 35px;
@@ -402,6 +459,7 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .morning-driver-create-form  */
 .morning-driver-create-form {
   display: flex;
   flex-direction: column;
@@ -409,12 +467,14 @@
   padding: 18px;
 }
 
+/* כללי עיצוב עבור .morning-driver-create-form label  */
 .morning-driver-create-form label {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .morning-driver-create-form label > span  */
 .morning-driver-create-form label > span {
   color: var(--theme-text-secondary);
   font-size: 0.68rem;
@@ -423,6 +483,7 @@
 
 .morning-driver-create-form input,
 .morning-driver-create-form select,
+/* כללי עיצוב עבור .morning-driver-create-form textarea  */
 .morning-driver-create-form textarea {
   width: 100%;
   min-height: 42px;
@@ -434,17 +495,20 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .morning-driver-create-form textarea  */
 .morning-driver-create-form textarea {
   resize: vertical;
 }
 
 .morning-driver-create-form input:focus,
 .morning-driver-create-form select:focus,
+/* כללי עיצוב עבור .morning-driver-create-form textarea:focus  */
 .morning-driver-create-form textarea:focus {
   outline: 3px solid #bae6fd;
   border-color: #38bdf8;
 }
 
+/* כללי עיצוב עבור .morning-driver-form-grid  */
 .morning-driver-form-grid {
   display: grid;
   grid-template-columns:
@@ -452,6 +516,7 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .morning-driver-form-error  */
 .morning-driver-form-error {
   padding: 10px 12px;
   border: 1px solid #fecaca;
@@ -461,6 +526,7 @@
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-created-shifts-preview  */
 .morning-driver-created-shifts-preview {
   display: flex;
   flex-direction: column;
@@ -473,24 +539,28 @@
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .morning-driver-dialog-actions  */
 .morning-driver-dialog-actions {
   justify-content: flex-end;
   padding-top: 14px;
   border-top: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .morning-driver-spin  */
 .morning-driver-spin {
   animation:
     morning-driver-spin
     0.9s linear infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes morning-driver-spin */
 @keyframes morning-driver-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 700px) */
 @media (max-width: 700px) {
   .morning-driver-page-header {
     align-items: stretch;

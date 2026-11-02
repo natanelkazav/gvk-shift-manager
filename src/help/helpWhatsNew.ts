@@ -1,12 +1,26 @@
+/**
+ * קובץ: src/help/helpWhatsNew.ts
+ * מטרה: מימוש עזרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: HelpWhatsNewItem.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import type { PermissionKey } from '../types/auth';
 
+/**
+ * חוזה הנתונים HelpWhatsNewItem: עזרה / פריט.
+ */
 export interface HelpWhatsNewItem {
+  // id — מזהה.
   id: string;
+  // title — כותרת.
   title: string;
   description: string;
+  // requiredAnyPermissions — הרשאות (אופציונלי).
   requiredAnyPermissions?: readonly PermissionKey[];
 }
 
+// helpWhatsNewItems — עזרה / פריטים.
 export const helpWhatsNewItems: readonly HelpWhatsNewItem[] = [
   {
     id: 'audit-action-categories-2026-10',

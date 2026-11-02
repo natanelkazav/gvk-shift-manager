@@ -1,55 +1,98 @@
+/**
+ * קובץ: src/services/notificationPreferencesService.ts
+ * מטרה: טעינה ושמירה של העדפות ההתראות האישיות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NotificationPreferences, UpdateNotificationPreferencesRequest, NotificationPreferencesRow, mapNotificationPreferences, parseNotificationPreferencesRow, validateReminderMinutes, normalizeReminderTime, getAuthenticatedUserId, NotificationPreferencesService.
+ * - מקורות נתונים הנזכרים בקריאות from: notification_preferences.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import {
   supabase,
 } from '../lib/supabase';
 
+/**
+ * חוזה הנתונים NotificationPreferences: התראות.
+ */
 export interface NotificationPreferences {
+  // userId — מזהה משתמש.
   userId: string;
 
+  // pushEnabled — התראות Push / האם האפשרות מופעלת.
   pushEnabled: boolean;
 
+  // shiftRemindersEnabled — משמרת / תזכורות / האם האפשרות מופעלת.
   shiftRemindersEnabled: boolean;
 
+  // shiftReminderMinutesBefore — משמרת / תזכורות / דקות.
   shiftReminderMinutesBefore: number;
 
+  // driverDutyRemindersEnabled — כוננים / תזכורות / האם האפשרות מופעלת.
   driverDutyRemindersEnabled: boolean;
 
+  // driverDutyReminderTime — כוננים / תזכורות / זמן.
   driverDutyReminderTime: string;
 
+  // createdAt — מועד יצירה.
   createdAt: string;
 
+  // updatedAt — מועד עדכון.
   updatedAt: string;
 }
 
+/**
+ * חוזה הנתונים UpdateNotificationPreferencesRequest: התראות / נתוני הבקשה.
+ */
 export interface UpdateNotificationPreferencesRequest {
+  // pushEnabled — התראות Push / האם האפשרות מופעלת.
   pushEnabled: boolean;
 
+  // shiftRemindersEnabled — משמרת / תזכורות / האם האפשרות מופעלת.
   shiftRemindersEnabled: boolean;
 
+  // shiftReminderMinutesBefore — משמרת / תזכורות / דקות.
   shiftReminderMinutesBefore: number;
 
+  // driverDutyRemindersEnabled — כוננים / תזכורות / האם האפשרות מופעלת.
   driverDutyRemindersEnabled: boolean;
 
+  // driverDutyReminderTime — כוננים / תזכורות / זמן.
   driverDutyReminderTime: string;
 }
 
+/**
+ * חוזה הנתונים NotificationPreferencesRow: התראות / שורה.
+ */
 interface NotificationPreferencesRow {
+  // user_id — מזהה משתמש.
   user_id: string;
 
+  // push_enabled — התראות Push / האם האפשרות מופעלת.
   push_enabled: boolean;
 
+  // shift_reminders_enabled — משמרת / תזכורות / האם האפשרות מופעלת.
   shift_reminders_enabled: boolean;
 
+  // shift_reminder_minutes_before — משמרת / תזכורות / דקות.
   shift_reminder_minutes_before: number;
 
+  // driver_duty_reminders_enabled — כוננים / תזכורות / האם האפשרות מופעלת.
   driver_duty_reminders_enabled: boolean;
 
+  // driver_duty_reminder_time — כוננים / תזכורות / זמן.
   driver_duty_reminder_time: string;
 
+  // created_at — מועד יצירה.
   created_at: string;
 
+  // updated_at — מועד עדכון.
   updated_at: string;
 }
 
+/**
+ * פעולה mapNotificationPreferences: מיפוי מפת התאמה / התראות.
+ * @param row — שורה.
+ * @returns NotificationPreferences — הפלט בהתאם לחתימה.
+ */
 function mapNotificationPreferences(
   row:
     NotificationPreferencesRow,
@@ -85,9 +128,15 @@ function mapNotificationPreferences(
   };
 }
 
+/**
+ * פעולה parseNotificationPreferencesRow: פענוח קלט עבור התראות / שורה.
+ * @param value — ערך.
+ * @returns NotificationPreferencesRow — הפלט בהתאם לחתימה.
+ */
 function parseNotificationPreferencesRow(
   value: unknown,
 ): NotificationPreferencesRow {
+  // עצירת הפעולה עם שגיאה כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !==
       'object' ||
@@ -99,10 +148,12 @@ function parseNotificationPreferencesRow(
     );
   }
 
+  // row — שורה.
   const row =
     value as
       Partial<NotificationPreferencesRow>;
 
+  // עצירת הפעולה עם שגיאה כאשר typeof row.user_id !== 'string' || typeof row.push_enabled !== 'boolean' || typeof row.shift_reminders_enabled !== 'boolean' || typeof row.s.
   if (
     typeof row.user_id !==
       'string' ||
@@ -153,9 +204,15 @@ function parseNotificationPreferencesRow(
   };
 }
 
+/**
+ * פעולה validateReminderMinutes: בדיקת תקינות של תזכורות / דקות.
+ * @param value — ערך.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function validateReminderMinutes(
   value: number,
 ): void {
+  // עצירת הפעולה עם שגיאה כאשר !Number.isInteger( value, ) || value < 0 || value > 1440.
   if (
     !Number.isInteger(
       value,
@@ -169,12 +226,19 @@ function validateReminderMinutes(
   }
 }
 
+/**
+ * פעולה normalizeReminderTime: נרמול תזכורות / זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeReminderTime(
   value: string,
 ): string {
+  // normalizedValue — ערך.
   const normalizedValue =
     value.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !/^([01]\d|2[0-3]):[0-5]\d$/.test( normalizedValue, ).
   if (
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(
       normalizedValue,
@@ -188,8 +252,13 @@ function normalizeReminderTime(
   return normalizedValue;
 }
 
+/**
+ * פעולה אסינכרונית getAuthenticatedUserId: אימות המשתמש באמצעות auth.getUser ושליפת מזהה המשתמש מהתשובה.
+ * @returns Promise<string> — הפלט בהתאם לחתימה.
+ */
 async function getAuthenticatedUserId():
   Promise<string> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -197,10 +266,12 @@ async function getAuthenticatedUserId():
     await supabase.auth
       .getUser();
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
     throw error;
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data.user.
   if (!data.user) {
     throw new Error(
       'לא נמצא משתמש מחובר.',
@@ -210,6 +281,7 @@ async function getAuthenticatedUserId():
   return data.user.id;
 }
 
+// preferenceSelectColumns — הנתון preferenceSelectColumns בהקשר הפעולה.
 const preferenceSelectColumns = [
   'user_id',
   'push_enabled',
@@ -223,12 +295,21 @@ const preferenceSelectColumns = [
   ',',
 );
 
+/**
+ * איגוד פעולות התראות / שירות במחלקה NotificationPreferencesService.
+ */
 class NotificationPreferencesService {
+  /**
+   * פעולה אסינכרונית getMyPreferences: שליפה או חישוב של הנתון getMyPreferences בהקשר הפעולה.
+   * @returns Promise<NotificationPreferences> — הפלט בהתאם לחתימה.
+   */
   async getMyPreferences():
     Promise<NotificationPreferences> {
+    // userId — מזהה משתמש.
     const userId =
       await getAuthenticatedUserId();
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -246,10 +327,12 @@ class NotificationPreferencesService {
         )
         .maybeSingle();
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw error;
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר data.
     if (data) {
       return mapNotificationPreferences(
         parseNotificationPreferencesRow(
@@ -258,6 +341,7 @@ class NotificationPreferencesService {
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data:
         createdData,
@@ -293,6 +377,7 @@ class NotificationPreferencesService {
         )
         .single();
 
+    // עצירת הפעולה עם שגיאה כאשר createError.
     if (createError) {
       throw createError;
     }
@@ -304,6 +389,11 @@ class NotificationPreferencesService {
     );
   }
 
+  /**
+   * פעולה אסינכרונית updateMyPreferences: עדכון הנתון updateMyPreferences בהקשר הפעולה.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<NotificationPreferences> — הפלט בהתאם לחתימה.
+   */
   async updateMyPreferences(
     request:
       UpdateNotificationPreferencesRequest,
@@ -313,14 +403,17 @@ class NotificationPreferencesService {
         .shiftReminderMinutesBefore,
     );
 
+    // normalizedDutyReminderTime — תזכורות / זמן.
     const normalizedDutyReminderTime =
       normalizeReminderTime(
         request.driverDutyReminderTime,
       );
 
+    // userId — מזהה משתמש.
     const userId =
       await getAuthenticatedUserId();
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -362,6 +455,7 @@ class NotificationPreferencesService {
         )
         .single();
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw error;
     }
@@ -374,5 +468,6 @@ class NotificationPreferencesService {
   }
 }
 
+// notificationPreferencesService — התראות / שירות.
 export const notificationPreferencesService =
   new NotificationPreferencesService();

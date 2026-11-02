@@ -1,21 +1,48 @@
+/**
+ * קובץ: src/features/statistics/components/StatisticsGroupedBarChart.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: GroupedBarSeries, GroupedBarItem, StatisticsGroupedBarChartProps, StatisticsGroupedBarChart.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
+/**
+ * חוזה הנתונים GroupedBarSeries: הנתון GroupedBarSeries בהקשר הפעולה.
+ */
 interface GroupedBarSeries {
+  // key — מפתח.
   key: string;
+  // label — תווית.
   label: string;
 }
 
+/**
+ * חוזה הנתונים GroupedBarItem: פריט.
+ */
 interface GroupedBarItem {
+  // label — תווית.
   label: string;
+  // values — ערכים.
   values: Record<string, number>;
 }
 
+/**
+ * חוזה הנתונים StatisticsGroupedBarChartProps: סטטיסטיקה / מאפייני הרכיב.
+ */
 interface StatisticsGroupedBarChartProps {
+  // title — כותרת.
   title: string;
   description?: string;
   series: GroupedBarSeries[];
+  // items — פריטים.
   items: GroupedBarItem[];
+  // emptyMessage — הודעה (אופציונלי).
   emptyMessage?: string;
 }
 
+/**
+ * פעולה StatisticsGroupedBarChart: סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function StatisticsGroupedBarChart({
   title,
   description,
@@ -23,6 +50,7 @@ function StatisticsGroupedBarChart({
   items,
   emptyMessage = 'אין נתונים להצגה.',
 }: StatisticsGroupedBarChartProps) {
+  // maximumValue — ערך.
   const maximumValue =
     Math.max(
       0,
@@ -69,6 +97,7 @@ function StatisticsGroupedBarChart({
               >
                 <div className="statistics-grouped-bar-values">
                   {series.map((entry, index) => {
+                    // value — ערך.
                     const value =
                       item.values[entry.key] ?? 0;
 

@@ -1,24 +1,51 @@
+/**
+ * קובץ: src/features/statistics/components/StatisticsMultiSelect.tsx
+ * מטרה: רכיב בחירה מרובה למסנני סטטיסטיקה, כולל תצוגת בחירת הכול ושינוי מצב הכללת הנתונים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: StatisticsMultiSelectOption, StatisticsMultiSelectProps, StatisticsMultiSelect.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   ChevronDown,
 } from 'lucide-react';
 
+/**
+ * חוזה הנתונים StatisticsMultiSelectOption: סטטיסטיקה.
+ */
 interface StatisticsMultiSelectOption {
+  // value — ערך.
   value: string | number;
+  // label — תווית.
   label: string;
   muted?: boolean;
 }
 
+/**
+ * חוזה הנתונים StatisticsMultiSelectProps: סטטיסטיקה / מאפייני הרכיב.
+ */
 interface StatisticsMultiSelectProps {
+  // label — תווית.
   label: string;
+  // allLabel — תווית.
   allLabel: string;
+  // selectedValues — הערכים שנבחרו.
   selectedValues: Array<string | number>;
+  // options — אפשרויות בחירה.
   options: StatisticsMultiSelectOption[];
+  // disabled — האם האפשרות מושבתת (אופציונלי).
   disabled?: boolean;
+  // onChange — פונקציית דיווח על שינוי.
   onChange: (values: Array<string | number>) => void;
+  // inclusionMode — מצב הכללת הנתונים (אופציונלי).
   inclusionMode?: 'active' | 'all';
+  // onInclusionModeChange — מצב הכללת הנתונים (אופציונלי).
   onInclusionModeChange?: (mode: 'active' | 'all') => void;
 }
 
+/**
+ * פעולה StatisticsMultiSelect: סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function StatisticsMultiSelect({
   label,
   allLabel,
@@ -29,9 +56,11 @@ function StatisticsMultiSelect({
   inclusionMode,
   onInclusionModeChange,
 }: StatisticsMultiSelectProps) {
+  // allSelected — האם נבחרה האפשרות הכוללת.
   const allSelected =
     selectedValues.length === 0;
 
+  // summary — סיכום.
   const summary =
     allSelected
       ? allLabel
@@ -44,9 +73,15 @@ function StatisticsMultiSelect({
           String(selectedValues[0])
         : `${selectedValues.length} נבחרו`;
 
+  /**
+   * פעולה toggleValue: החלפת בחירה עבור ערך.
+   * @param value — ערך.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const toggleValue = (
     value: string | number,
   ): void => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר selectedValues.includes( value, ).
     if (
       selectedValues.includes(
         value,
@@ -61,6 +96,7 @@ function StatisticsMultiSelect({
       return;
     }
 
+    // nextValues — קבוצת הערכים לאחר השינוי.
     const nextValues = [
       ...selectedValues,
       value,
@@ -132,6 +168,7 @@ function StatisticsMultiSelect({
           </label>
 
           {options.map((option, index) => {
+            // startsInactiveGroup — קבוצה.
             const startsInactiveGroup =
               option.muted &&
               (index === 0 || !options[index - 1]?.muted);

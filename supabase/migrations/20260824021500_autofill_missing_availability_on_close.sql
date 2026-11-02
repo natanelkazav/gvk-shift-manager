@@ -1,7 +1,13 @@
+-- קובץ: supabase/migrations/20260824021500_autofill_missing_availability_on_close.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור פונקציית סגירת התצוגה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.close_availability_period, public.close_driver_availability_period, public.close_morning_driver_availability_period.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Auto-complete unmarked availability as available when a manager closes a period.
 -- Existing answers are preserved.
 -- Users who did not submit remain draft/reopened for tracking purposes.
 
+-- פונקציית מסד public.close_availability_period: סגירת תקופת אילוצים.
 create or replace function public.close_availability_period(
   requested_period_id uuid
 )
@@ -13,28 +19,43 @@ returns table(
   submitted_dispatchers integer
 )
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_actor_email — כתובת דוא״ל.
   current_actor_email text;
+  -- current_actor_display_name — שם תצוגה הנוכחי.
   current_actor_display_name text;
+  -- target_period_title — יעד / תקופה / כותרת.
   target_period_title text;
+  -- target_period_year — יעד / תקופה / שנה.
   target_period_year integer;
+  -- target_period_month — יעד / תקופה / חודש.
   target_period_month integer;
+  -- target_period_status — יעד / תקופה / סטטוס.
   target_period_status text;
+  -- calculated_total_dispatchers — סך הכול.
   calculated_total_dispatchers integer;
+  -- calculated_submitted_dispatchers — הוגש.
   calculated_submitted_dispatchers integer;
+  -- target_closed_at — יעד.
   target_closed_at timestamptz;
+  -- auto_completed_entries — רשומות.
   auto_completed_entries integer := 0;
+  -- auto_completed_users — משתמשים.
   auto_completed_users integer := 0;
   auto_note constant text :=
     'סומן כזמין אוטומטית עקב אי־הגשה עד מועד סגירת התקופה.';
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'User is not authenticated';
   end if;
 
@@ -48,20 +69,26 @@ begin
   where profile.id = current_user_id
     and profile.is_active = true;
 
+  -- הסתעפות לפי התנאי current_actor_email is null.
   if current_actor_email is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Authenticated user is not active';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions permission
     where permission.user_id = current_user_id
       and permission.permission_key = 'availability.manage'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'User is not allowed to manage availability periods';
   end if;
 
+  -- הסתעפות לפי התנאי requested_period_id is null.
   if requested_period_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Availability period id is required';
   end if;
 
@@ -79,11 +106,15 @@ begin
   where period.id = requested_period_id
   for update;
 
+  -- הסתעפות לפי התנאי target_period_year is null.
   if target_period_year is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Availability period was not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period_status <> 'open'.
   if target_period_status <> 'open' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Only open availability periods can be closed';
   end if;
 
@@ -103,7 +134,9 @@ begin
     and profile.role::text = 'dispatcher'
     and profile.is_active = true;
 
+  -- הסתעפות לפי התנאי calculated_total_dispatchers = 0.
   if calculated_total_dispatchers = 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'No active dispatchers were found';
   end if;
 
@@ -119,6 +152,7 @@ begin
     and profile.is_active = true
     and coalesce(submission.status, 'draft') <> 'submitted';
 
+  -- הוספת רשומות ל־public.availability_submissions בהתאם לקלט ולתנאים להלן.
   insert into public.availability_submissions (
     period_id,
     user_id,
@@ -144,6 +178,7 @@ begin
         and existing_submission.user_id = profile.id
     );
 
+  -- הוספת רשומות ל־public.dispatcher_availability בהתאם לקלט ולתנאים להלן.
   insert into public.dispatcher_availability (
     period_id,
     shift_slot_id,
@@ -182,6 +217,7 @@ begin
 
   get diagnostics auto_completed_entries = row_count;
 
+  -- עדכון רשומות ב־public.availability_submissions בהתאם לקלט ולתנאים להלן.
   update public.availability_submissions submission
   set
     available_count = (
@@ -206,6 +242,7 @@ begin
   where submission.period_id = requested_period_id
     and submission.status <> 'submitted';
 
+  -- עדכון רשומות ב־public.availability_periods בהתאם לקלט ולתנאים להלן.
   update public.availability_periods period
   set
     status = 'closed',
@@ -214,6 +251,7 @@ begin
     updated_at = target_closed_at
   where period.id = requested_period_id;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs (
     action,
     actor_user_id,
@@ -266,6 +304,7 @@ begin
     )
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return query
   select
     requested_period_id,
@@ -277,40 +316,55 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.close_driver_availability_period: סגירת תקופת אילוצים.
 create or replace function public.close_driver_availability_period(
   requested_period_id uuid,
   requested_force boolean default false
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- target_period — יעד / תקופה.
   target_period public.driver_availability_periods%rowtype;
+  -- total_drivers_count — סך הכול / כמות.
   total_drivers_count integer := 0;
+  -- submitted_drivers_count — הוגש / כמות.
   submitted_drivers_count integer := 0;
+  -- missing_drivers_count — כמות.
   missing_drivers_count integer := 0;
+  -- auto_completed_entries — רשומות.
   auto_completed_entries integer := 0;
+  -- auto_completed_users — משתמשים.
   auto_completed_users integer := 0;
+  -- closed_at_value — ערך.
   closed_at_value timestamptz := now();
   auto_note constant text :=
     'סומן כזמין אוטומטית עקב אי־הגשה עד מועד סגירת התקופה.';
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles
     where id = current_user_id
       and is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
@@ -320,14 +374,18 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'driver_availability.manage' =
       any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_period_id is null.
   if requested_period_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'driver availability period id is required';
   end if;
 
@@ -337,7 +395,9 @@ begin
   where id = requested_period_id
   for update;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'driver availability period not found';
   end if;
 
@@ -363,7 +423,9 @@ begin
       0
     );
 
+  -- הסתעפות לפי התנאי target_period.status = 'closed'.
   if target_period.status = 'closed' then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'periodId', target_period.id,
       'year', target_period.year,
@@ -380,7 +442,9 @@ begin
     );
   end if;
 
+  -- הסתעפות לפי התנאי target_period.status <> 'open'.
   if target_period.status <> 'open' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'only open driver availability periods can be closed';
   end if;
@@ -395,6 +459,7 @@ begin
     and profile.is_active = true
     and coalesce(submission.status, 'draft') <> 'submitted';
 
+  -- הוספת רשומות ל־public.driver_availability_submissions בהתאם לקלט ולתנאים להלן.
   insert into public.driver_availability_submissions (
     period_id,
     user_id,
@@ -420,6 +485,7 @@ begin
         and existing_submission.user_id = profile.id
     );
 
+  -- הוספת רשומות ל־public.driver_availability_entries בהתאם לקלט ולתנאים להלן.
   insert into public.driver_availability_entries (
     period_id,
     day_id,
@@ -456,6 +522,7 @@ begin
 
   get diagnostics auto_completed_entries = row_count;
 
+  -- עדכון רשומות ב־public.driver_availability_submissions בהתאם לקלט ולתנאים להלן.
   update public.driver_availability_submissions submission
   set
     available_count = (
@@ -480,6 +547,7 @@ begin
   where submission.period_id = target_period.id
     and submission.status <> 'submitted';
 
+  -- עדכון רשומות ב־public.driver_availability_periods בהתאם לקלט ולתנאים להלן.
   update public.driver_availability_periods
   set
     status = 'closed',
@@ -490,6 +558,7 @@ begin
   returning *
   into target_period;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'periodId', target_period.id,
     'year', target_period.year,
@@ -508,31 +577,43 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.close_morning_driver_availability_period: סגירת תקופת אילוצים.
 create or replace function public.close_morning_driver_availability_period(
   requested_period_id uuid,
   requested_force boolean default false
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- target_period — יעד / תקופה.
   target_period public.morning_driver_availability_periods%rowtype;
+  -- total_drivers — סך הכול.
   total_drivers integer := 0;
+  -- submitted_drivers — הוגש.
   submitted_drivers integer := 0;
   missing_drivers integer := 0;
+  -- auto_completed_entries — רשומות.
   auto_completed_entries integer := 0;
+  -- auto_completed_users — משתמשים.
   auto_completed_users integer := 0;
+  -- closed_at_value — ערך.
   closed_at_value timestamptz := now();
   auto_note constant text :=
     'סומן כזמין אוטומטית עקב אי־הגשה עד מועד סגירת התקופה.';
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -542,14 +623,18 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'morning_driver_availability.manage' =
       any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_period_id is null.
   if requested_period_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'period id is required';
   end if;
 
@@ -559,7 +644,9 @@ begin
   where period.id = requested_period_id
   for update;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'morning driver availability period not found';
   end if;
@@ -588,7 +675,9 @@ begin
       0
     );
 
+  -- הסתעפות לפי התנאי target_period.status = 'closed'.
   if target_period.status = 'closed' then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'periodId', target_period.id,
       'year', target_period.year,
@@ -605,7 +694,9 @@ begin
     );
   end if;
 
+  -- הסתעפות לפי התנאי target_period.status <> 'open'.
   if target_period.status <> 'open' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'only open periods can be closed';
   end if;
 
@@ -620,6 +711,7 @@ begin
     and profile.is_active = true
     and coalesce(submission.status, 'draft') <> 'submitted';
 
+  -- הוספת רשומות ל־public.morning_driver_availability_submissions בהתאם לקלט ולתנאים להלן.
   insert into public.morning_driver_availability_submissions (
     period_id,
     user_id,
@@ -640,6 +732,7 @@ begin
         and existing_submission.user_id = profile.id
     );
 
+  -- הוספת רשומות ל־public.morning_driver_availability_entries בהתאם לקלט ולתנאים להלן.
   insert into public.morning_driver_availability_entries (
     period_id,
     shift_id,
@@ -677,6 +770,7 @@ begin
 
   get diagnostics auto_completed_entries = row_count;
 
+  -- עדכון רשומות ב־public.morning_driver_availability_submissions בהתאם לקלט ולתנאים להלן.
   update public.morning_driver_availability_submissions submission
   set
     last_saved_at = coalesce(
@@ -687,6 +781,7 @@ begin
   where submission.period_id = target_period.id
     and submission.status <> 'submitted';
 
+  -- עדכון רשומות ב־public.morning_driver_availability_periods בהתאם לקלט ולתנאים להלן.
   update public.morning_driver_availability_periods
   set
     status = 'closed',
@@ -697,6 +792,7 @@ begin
   returning *
   into target_period;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'periodId', target_period.id,
     'year', target_period.year,

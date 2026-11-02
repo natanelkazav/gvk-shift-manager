@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/AvailabilityPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: formatDate, formatDateOnly, AvailabilityPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarPlus,
   CheckCircle2,
@@ -63,6 +70,7 @@ import type {
 
 import '../styles/availability.css';
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -78,6 +86,7 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+// statusLabels — סטטוס.
 const statusLabels: Record<
   AvailabilityPeriodStatus,
   string
@@ -88,6 +97,7 @@ const statusLabels: Record<
   archived: 'בארכיון',
 };
 
+// specialDayTypeLabels — יום.
 const specialDayTypeLabels: Record<
   SpecialDayScheduleType,
   string
@@ -98,15 +108,23 @@ const specialDayTypeLabels: Record<
   chol_hamoed: 'חול המועד',
 };
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return 'לא הוגדר';
   }
 
+  // date — תאריך.
   const date = new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN(date.getTime()).
   if (Number.isNaN(date.getTime())) {
     return 'תאריך לא תקין';
   }
@@ -120,13 +138,20 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה formatDateOnly: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDateOnly(
   value: string,
 ): string {
+  // date — תאריך.
   const date = new Date(
     `${value}T12:00:00`,
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN(date.getTime()).
   if (Number.isNaN(date.getTime())) {
     return value;
   }
@@ -139,6 +164,9 @@ function formatDateOnly(
   ).format(date);
 }
 
+/**
+ * פעולה AvailabilityPage: אילוצים וזמינות.
+ */
 function AvailabilityPage() {
 const {
   profile,
@@ -151,16 +179,19 @@ const [
   useSearchParams();
   const navigate =
   useNavigate();
+// canSubmitAvailability — אילוצים וזמינות.
 const canSubmitAvailability =
   hasPermission(
     'availability.view',
   );
 
+// canManageAvailability — האם פעולת ניהול מותרת.
 const canManageAvailability =
   hasPermission(
     'availability.manage',
   );
 
+// canPrepareSchedule — שיבוץ.
 const canPrepareSchedule =
   hasPermission(
     'schedule.edit',
@@ -170,6 +201,7 @@ const requestedTab =
     'tab',
   );
 
+// requestedPeriodId — מזהה התקופה.
 const requestedPeriodId =
   searchParams.get(
     'periodId',
@@ -178,10 +210,12 @@ const requestedPeriodId =
   searchParams.get(
     'returnTo',
   );
+// isDispatcher — מוקדנים.
 const isDispatcher =
   profile?.role ===
   'dispatcher';
 
+// pageTitle — כותרת.
 const pageTitle =
   isDispatcher
     ? 'האילוצים שלי'
@@ -192,15 +226,21 @@ const pageDescription =
     ? 'סימון והגשת האילוצים האישיים שלי.'
     : 'פתיחת חודשים להגשת אילוצים וניהול תקופות הזמינות.';
 
+/**
+ * פעולה getInitialWorkspaceTab: שליפה או חישוב של הנתון getInitialWorkspaceTab בהקשר הפעולה.
+ * @returns AvailabilityWorkspaceTab — הפלט בהתאם לחתימה.
+ */
 const getInitialWorkspaceTab =
   (): AvailabilityWorkspaceTab => {
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canSubmitAvailability.
     if (
       canSubmitAvailability
     ) {
       return 'my-availability';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canManageAvailability.
     if (
       canManageAvailability
     ) {
@@ -210,6 +250,7 @@ const getInitialWorkspaceTab =
     return 'schedule-preparation';
   };
 
+// מצב מקומי: activeWorkspaceTab — פעיל; setActiveWorkspaceTab מעדכנת אותו ומפעילה רינדור לפי React.
 const [
   activeWorkspaceTab,
   setActiveWorkspaceTab,
@@ -219,16 +260,19 @@ const [
   );
   const now = new Date();
 
+  // defaultNextMonth — חודש.
   const defaultNextMonth =
     now.getMonth() === 11
       ? 1
       : now.getMonth() + 2;
 
+  // defaultYear — שנה.
   const defaultYear =
     now.getMonth() === 11
       ? now.getFullYear() + 1
       : now.getFullYear();
 
+  // מצב מקומי: selectedMonth — נבחר / חודש; setSelectedMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedMonth,
     setSelectedMonth,
@@ -236,6 +280,7 @@ const [
     defaultNextMonth,
   );
 
+  // מצב מקומי: selectedYear — נבחר / שנה; setSelectedYear מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedYear,
     setSelectedYear,
@@ -243,6 +288,7 @@ const [
     defaultYear,
   );
 
+  // מצב מקומי: importYear — ייבוא / שנה; setImportYear מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     importYear,
     setImportYear,
@@ -250,16 +296,19 @@ const [
     defaultYear,
   );
 
+  // מצב מקומי: title — כותרת; setTitle מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     title,
     setTitle,
   ] = useState('');
 
+  // מצב מקומי: instructions — הנתון instructions בהקשר הפעולה; setInstructions מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     instructions,
     setInstructions,
   ] = useState('');
 
+  // מצב מקומי: deadline — הנתון deadline בהקשר הפעולה; setDeadline מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     deadline,
     setDeadline,
@@ -361,7 +410,9 @@ const {
     resetScheduleState,
 } =
   useSchedule();
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ autoSchedulingDraftState .draft, loadEditableSchedulingDraft, clearEditableSchedulingDraft, ].
   useEffect(() => {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !autoSchedulingDraftState .draft.
   if (
     !autoSchedulingDraftState
       .draft
@@ -411,8 +462,10 @@ const {
     clearError,
   } =
     useAvailabilityPeriods();
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ canManageAvailability, loadPeriodSubmissions, requestedPeriodId, requestedTab, ].
   useEffect(
   () => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר requestedTab !== 'submissions' || !requestedPeriodId || !canManageAvailability.
     if (
       requestedTab !==
         'submissions' ||
@@ -437,24 +490,29 @@ const {
     requestedTab,
   ],
 );
+  // הפניה יציבה submissionsPanelRef בין רינדורים; שינוי current אינו מפעיל רינדור בפני עצמו.
   const submissionsPanelRef =
     useRef<HTMLDivElement | null>(
       null,
     );
 
+  // הפניה יציבה matrixPanelRef בין רינדורים; שינוי current אינו מפעיל רינדור בפני עצמו.
   const matrixPanelRef =
     useRef<HTMLDivElement | null>(
       null,
     );
 
+  // הפניה יציבה assignmentCandidatesPanelRef בין רינדורים; שינוי current אינו מפעיל רינדור בפני עצמו.
   const assignmentCandidatesPanelRef =
     useRef<HTMLDivElement | null>(
       null,
     );
 
+  // ערך מחושב availableYears — שנים; נשמר בין רינדורים עד שינוי התלויות.
   const availableYears =
     useMemo(
       () => {
+        // currentYear — שנה.
         const currentYear =
           new Date()
             .getFullYear();
@@ -468,7 +526,9 @@ const {
       [],
     );
 
+// תופעת לוואי לאחר רינדור בהתאם לתלויות [ activeWorkspaceTab, canSubmitAvailability, canManageAvailability, canPrepareSchedule, ].
 useEffect(() => {
+  // isActiveTabVisible — האם הרשומה פעילה.
   const isActiveTabVisible =
     (
       activeWorkspaceTab ===
@@ -491,10 +551,12 @@ useEffect(() => {
       canPrepareSchedule
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isActiveTabVisible.
   if (isActiveTabVisible) {
     return;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canSubmitAvailability.
   if (canSubmitAvailability) {
     setActiveWorkspaceTab(
       'my-availability',
@@ -503,6 +565,7 @@ useEffect(() => {
     return;
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canManageAvailability.
   if (canManageAvailability) {
     setActiveWorkspaceTab(
       'period-management',
@@ -523,6 +586,12 @@ useEffect(() => {
   canPrepareSchedule,
 ]);
 
+  /**
+   * פעולה אסינכרונית handleRebuildPeriod: טיפול באירוע עבור תקופה.
+   * @param periodId — מזהה התקופה.
+   * @param periodTitle — תקופה / כותרת.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleRebuildPeriod =
     async (
       periodId: string,
@@ -534,6 +603,7 @@ useEffect(() => {
           'הפעולה תמחק את המשמרות הקיימות של החודש ותיצור אותן מחדש לפי החגים והמועדים המעודכנים.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
@@ -545,6 +615,12 @@ useEffect(() => {
       );
     };
 
+  /**
+   * פעולה אסינכרונית handleOpenPeriod: טיפול באירוע עבור תקופה.
+   * @param periodId — מזהה התקופה.
+   * @param periodTitle — תקופה / כותרת.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleOpenPeriod =
     async (
       periodId: string,
@@ -556,6 +632,7 @@ useEffect(() => {
           'לאחר הפתיחה המוקדנים יוכלו להזין זמינות, ולא יהיה ניתן לבנות מחדש את משמרות החודש.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
@@ -567,6 +644,11 @@ useEffect(() => {
       );
     };
 
+  /**
+   * פעולה אסינכרונית handleSubmit: טיפול באירוע עבור הנתון handleSubmit בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSubmit =
     async (
       event:
@@ -604,6 +686,10 @@ useEffect(() => {
       setDeadline('');
     };
 
+  /**
+   * פעולה אסינכרונית handleImportSpecialDays: טיפול באירוע עבור ייבוא / ימים.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleImportSpecialDays =
     async (): Promise<void> => {
       clearError();
@@ -612,12 +698,17 @@ useEffect(() => {
         importYear,
       );
     };
+/**
+ * פעולה handleCloseSubmissionsTracking: טיפול באירוע עבור הנתון handleCloseSubmissionsTracking בהקשר הפעולה.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 const handleCloseSubmissionsTracking =
   (): void => {
     resetSubmissionsTracking();
 
     resetMatrix();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר returnTo === '/shifts?tab=availability'.
     if (
       returnTo ===
       '/shifts?tab=availability'
@@ -637,6 +728,11 @@ const handleCloseSubmissionsTracking =
       },
     );
   };
+  /**
+   * פעולה אסינכרונית handleOpenSubmissionsTracking: טיפול באירוע עבור הנתון handleOpenSubmissionsTracking בהקשר הפעולה.
+   * @param periodId — מזהה התקופה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleOpenSubmissionsTracking =
     async (
       periodId: string,
@@ -665,8 +761,13 @@ const handleCloseSubmissionsTracking =
       }, 0);
     };
 
+  /**
+   * פעולה אסינכרונית handleRefreshSubmissionsTracking: טיפול באירוע עבור הנתון handleRefreshSubmissionsTracking בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleRefreshSubmissionsTracking =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedPeriodId.
       if (!selectedPeriodId) {
         return;
       }
@@ -676,8 +777,13 @@ const handleCloseSubmissionsTracking =
       );
     };
 
+  /**
+   * פעולה אסינכרונית handleCloseAvailabilityPeriod: טיפול באירוע עבור תקופת אילוצים.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleCloseAvailabilityPeriod =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedPeriodId || !submissionsState.data.
       if (
         !selectedPeriodId ||
         !submissionsState.data
@@ -690,6 +796,7 @@ const handleCloseSubmissionsTracking =
         period,
       } = submissionsState.data;
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר summary.totalDispatchers === 0.
       if (
         summary.totalDispatchers ===
           0
@@ -697,6 +804,7 @@ const handleCloseSubmissionsTracking =
         return;
       }
 
+      // periodTitle — תקופה / כותרת.
       const periodTitle =
         period.title ??
         `${hebrewMonths[
@@ -721,12 +829,14 @@ const handleCloseSubmissionsTracking =
               'לאחר הסגירה המוקדנים לא יוכלו עוד לשנות או להגיש אילוצים.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
       clearError();
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await closePeriod(
           selectedPeriodId,
@@ -743,8 +853,13 @@ const handleCloseSubmissionsTracking =
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleReopenAvailabilityPeriod: טיפול באירוע עבור תקופת אילוצים.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleReopenAvailabilityPeriod =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedPeriodId || !submissionsState.data.
       if (
         !selectedPeriodId ||
         !submissionsState.data
@@ -757,10 +872,12 @@ const handleCloseSubmissionsTracking =
           'לפתוח מחדש את תקופת האילוצים? המוקדנים יוכלו שוב לערוך ולהגיש.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await reopenPeriod(
           selectedPeriodId,
@@ -774,8 +891,13 @@ const handleCloseSubmissionsTracking =
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleDeleteSelectedAvailabilityPeriod: טיפול באירוע עבור תקופת אילוצים.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleDeleteSelectedAvailabilityPeriod =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedPeriodId || !submissionsState.data.
       if (
         !selectedPeriodId ||
         !submissionsState.data
@@ -783,6 +905,7 @@ const handleCloseSubmissionsTracking =
         return;
       }
 
+      // title — כותרת.
       const title =
         submissionsState.data
           .period.title ??
@@ -794,8 +917,13 @@ const handleCloseSubmissionsTracking =
       );
     };
 
+  /**
+   * פעולה אסינכרונית handlePrepareSelectedAvailabilityPeriod: טיפול באירוע עבור תקופת אילוצים.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handlePrepareSelectedAvailabilityPeriod =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedPeriodId.
       if (!selectedPeriodId) {
         return;
       }
@@ -809,6 +937,7 @@ const handleCloseSubmissionsTracking =
       );
     };
 
+  // canCloseSelectedPeriod — נבחר / תקופה.
   const canCloseSelectedPeriod =
     Boolean(
       submissionsState.data &&
@@ -818,8 +947,13 @@ const handleCloseSubmissionsTracking =
         .totalDispatchers > 0,
     );
 
+  /**
+   * פעולה אסינכרונית handleOpenAvailabilityMatrix: טיפול באירוע עבור אילוצים וזמינות / מטריצת נתונים.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleOpenAvailabilityMatrix =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedPeriodId.
       if (!selectedPeriodId) {
         return;
       }
@@ -838,8 +972,13 @@ const handleCloseSubmissionsTracking =
       }, 0);
     };
 
+  /**
+   * פעולה אסינכרונית handleRefreshAvailabilityMatrix: טיפול באירוע עבור אילוצים וזמינות / מטריצת נתונים.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleRefreshAvailabilityMatrix =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedMatrixPeriodId.
       if (!selectedMatrixPeriodId) {
         return;
       }
@@ -849,6 +988,11 @@ const handleCloseSubmissionsTracking =
       );
     };
 
+  /**
+   * פעולה אסינכרונית handleOpenAssignmentCandidates: טיפול באירוע עבור הקצאה.
+   * @param periodId — מזהה התקופה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleOpenAssignmentCandidates =
     async (
       periodId: string,
@@ -875,8 +1019,10 @@ const handleCloseSubmissionsTracking =
     }, 0);
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ canPrepareSchedule, clearEditableSchedulingDraft, loadCandidates, requestedPeriodId, requestedTab, resetAutoSchedulingDraft, resetScheduleState, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר requestedTab !== 'schedule-preparation' || !requestedPeriodId || !canPrepareSchedule.
       if (
         requestedTab !==
           'schedule-preparation' ||
@@ -923,8 +1069,13 @@ const handleCloseSubmissionsTracking =
     ],
   );
 
+  /**
+   * פעולה אסינכרונית handleRefreshAssignmentCandidates: טיפול באירוע עבור הקצאה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleRefreshAssignmentCandidates =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedAssignmentPeriodId.
       if (
         !selectedAssignmentPeriodId
       ) {
@@ -936,8 +1087,13 @@ const handleCloseSubmissionsTracking =
       );
     };
 
+  /**
+   * פעולה handleGenerateSchedulingDraft: טיפול באירוע עבור טיוטה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleGenerateSchedulingDraft =
     (): void => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !assignmentCandidatesState .data.
       if (
         !assignmentCandidatesState
           .data
@@ -950,14 +1106,20 @@ const handleCloseSubmissionsTracking =
           .data,
       );
     };
+  /**
+   * פעולה אסינכרונית handleSaveSchedulingDraft: טיפול באירוע עבור טיוטה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSaveSchedulingDraft =
     async (): Promise<void> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedAssignmentPeriodId.
     if (
       !selectedAssignmentPeriodId
     ) {
       return;
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר editableSchedulingValidation .errorCount > 0.
     if (
       editableSchedulingValidation
         .errorCount > 0
@@ -969,6 +1131,7 @@ const handleCloseSubmissionsTracking =
       return;
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר editableSchedulingAssignments .length + intentionallyUnassignedShiftIds .length !== assignmentCandidatesState .data?.shifts.length.
     if (
       editableSchedulingAssignments
         .length +
@@ -998,6 +1161,7 @@ const handleCloseSubmissionsTracking =
           'האם להמשיך ולשמור את השיבוץ?',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !warningsConfirmed.
       if (!warningsConfirmed) {
         return;
       }
@@ -1014,6 +1178,7 @@ const handleCloseSubmissionsTracking =
             : '.'),
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
@@ -1021,6 +1186,7 @@ const handleCloseSubmissionsTracking =
 
     clearScheduleError();
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await saveScheduleDraft({
         availabilityPeriodId:
@@ -1034,6 +1200,7 @@ const handleCloseSubmissionsTracking =
         confirmWarnings,
       });
 
+      // selectedPeriod — נבחר / תקופה.
       const selectedPeriod = assignmentCandidatesState.data?.period;
 
       if (selectedPeriod) {
@@ -1048,6 +1215,12 @@ const handleCloseSubmissionsTracking =
        */
     }
   };
+  /**
+   * פעולה אסינכרונית handleDeleteAvailabilityPeriod: טיפול באירוע עבור תקופת אילוצים.
+   * @param periodId — מזהה התקופה.
+   * @param periodTitle — תקופה / כותרת.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleDeleteAvailabilityPeriod =
     async (
       periodId: string,
@@ -1064,6 +1237,7 @@ const handleCloseSubmissionsTracking =
           'האם להמשיך?',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !warningConfirmed.
       if (!warningConfirmed) {
         return;
       }
@@ -1075,12 +1249,14 @@ const handleCloseSubmissionsTracking =
           'האם אתה בטוח שברצונך למחוק את החודש?',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !finalConfirmation.
       if (!finalConfirmation) {
         return;
       }
 
       clearError();
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await deletePeriod(
           periodId,
@@ -1454,6 +1630,7 @@ const handleCloseSubmissionsTracking =
               <div className="availability-periods-list">
                 {state.periods.map(
                   (period) => {
+                    // periodTitle — תקופה / כותרת.
                     const periodTitle =
                       period.title ??
                       `${hebrewMonths[

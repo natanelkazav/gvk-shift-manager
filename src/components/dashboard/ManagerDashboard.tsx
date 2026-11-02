@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/dashboard/ManagerDashboard.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור לוח בקרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ManagerDashboardProps, formatTime, getDisplayName, ManagerDashboard.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarCheck2,
   Headphones,
@@ -15,17 +22,28 @@ import DashboardCard
 import ProgressCard
   from './ProgressCard';
 
+/**
+ * חוזה הנתונים ManagerDashboardProps: לוח בקרה / מאפייני הרכיב.
+ */
 interface ManagerDashboardProps {
+  // data — נתונים.
   data:
     ManagerDashboardData;
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -51,6 +69,12 @@ function formatTime(
   );
 }
 
+/**
+ * פעולה getDisplayName: שליפה או חישוב של שם תצוגה.
+ * @param displayName — שם תצוגה.
+ * @param scheduleName — שיבוץ / שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDisplayName(
   displayName:
     string | null,
@@ -65,13 +89,19 @@ function getDisplayName(
   );
 }
 
+/**
+ * פעולה ManagerDashboard: לוח בקרה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function ManagerDashboard({
   data,
 }: ManagerDashboardProps) {
+  // dispatcherSummary — מוקדנים / סיכום.
   const dispatcherSummary =
     data.monthlySummary
       .dispatcherShifts;
 
+  // driverSummary — כוננים / סיכום.
   const driverSummary =
     data.monthlySummary
       .driverDuties;

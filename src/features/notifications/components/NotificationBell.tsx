@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/notifications/components/NotificationBell.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור התראות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NotificationBell.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   Bell,
 } from 'lucide-react';
@@ -15,6 +22,9 @@ import {
 import NotificationPopover
   from './NotificationPopover';
 
+/**
+ * פעולה NotificationBell: התראות.
+ */
 function NotificationBell() {
   const {
     unreadCount,
@@ -22,6 +32,7 @@ function NotificationBell() {
   } =
     useNotificationContext();
 
+  // מצב מקומי: isOpen — האם המצב פתוח; setIsOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isOpen,
     setIsOpen,
@@ -30,19 +41,27 @@ function NotificationBell() {
       false,
     );
 
+  // הפניה יציבה containerRef בין רינדורים; שינוי current אינו מפעיל רינדור בפני עצמו.
   const containerRef =
     useRef<HTMLDivElement | null>(
       null,
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isOpen, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
       if (
         !isOpen
       ) {
         return;
       }
 
+      /**
+       * פעולה handleDocumentClick: טיפול באירוע עבור הנתון handleDocumentClick בהקשר הפעולה.
+       * @param event — אירוע.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleDocumentClick =
         (
           event:
@@ -62,6 +81,11 @@ function NotificationBell() {
           }
         };
 
+      /**
+       * פעולה handleEscape: טיפול באירוע עבור הנתון handleEscape בהקשר הפעולה.
+       * @param event — אירוע.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleEscape =
         (
           event:
@@ -104,6 +128,7 @@ function NotificationBell() {
     ],
   );
 
+  // accessibleLabel — תווית.
   const accessibleLabel =
     unreadCount > 0
       ? `פתיחת ההתראות. ${unreadCount} התראות שלא נקראו`

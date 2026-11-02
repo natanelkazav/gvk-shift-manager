@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/ShiftSwapsPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור החלפת משמרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: formatShift, formatRequestShift, getErrorMessage, ShiftSwapsPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   ArrowLeft,
   ArrowLeftRight,
@@ -35,12 +42,14 @@ import type {
 } from '../types/shiftSwap';
 import '../styles/shiftSwaps.css';
 
+// EMPTY_OPTIONS — אפשרויות בחירה.
 const EMPTY_OPTIONS: ShiftSwapCreateOptions = {
   myShifts: [],
   dispatchers: [],
   counterpartyShifts: [],
 };
 
+// STATUS_LABELS — סטטוס.
 const STATUS_LABELS: Record<
   ShiftSwapStatus,
   string
@@ -61,9 +70,15 @@ const STATUS_LABELS: Record<
     'פג תוקף',
 };
 
+/**
+ * פעולה formatShift: עיצוב ערך לתצוגה עבור משמרת.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatShift(
   shift: ShiftSwapShiftOption,
 ): string {
+  // date — תאריך.
   const date = new Intl.DateTimeFormat(
     'he-IL',
     {
@@ -111,11 +126,19 @@ function formatShift(
   return `${weekday} · ${date} · \u2066${start}–${end}\u2069`;
 }
 
+/**
+ * פעולה formatRequestShift: עיצוב ערך לתצוגה עבור נתוני הבקשה / משמרת.
+ * @param date — תאריך.
+ * @param startsAt — מועד התחלה.
+ * @param endsAt — מועד סיום.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatRequestShift(
   date: string | null,
   startsAt: string | null,
   endsAt: string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !date || !startsAt || !endsAt.
   if (
     !date ||
     !startsAt ||
@@ -139,9 +162,15 @@ function formatRequestShift(
   });
 }
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error.message;
   }
@@ -149,6 +178,9 @@ function getErrorMessage(
   return 'אירעה שגיאה לא צפויה.';
 }
 
+/**
+ * פעולה ShiftSwapsPage: החלפת משמרות.
+ */
 function ShiftSwapsPage() {
   const {
     user,
@@ -156,60 +188,80 @@ function ShiftSwapsPage() {
     hasPermission,
   } = useAuth();
 
+  // מצב מקומי: requests — הנתון requests בהקשר הפעולה; setRequests מעדכנת אותו ומפעילה רינדור לפי React.
   const [requests, setRequests] =
     useState<ShiftSwapRequest[]>([]);
+  // מצב מקומי: options — אפשרויות בחירה; setOptions מעדכנת אותו ומפעילה רינדור לפי React.
   const [options, setOptions] =
     useState<ShiftSwapCreateOptions>(
       EMPTY_OPTIONS,
     );
+  // מצב מקומי: isLoading — האם טעינה מתבצעת; setIsLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [isLoading, setIsLoading] =
     useState(true);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] =
     useState<string | null>(null);
+  // מצב מקומי: success — הנתון success בהקשר הפעולה; setSuccess מעדכנת אותו ומפעילה רינדור לפי React.
   const [success, setSuccess] =
     useState<string | null>(null);
+  // מצב מקומי: isCreateOpen — הנתון isCreateOpen בהקשר הפעולה; setIsCreateOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [isCreateOpen, setIsCreateOpen] =
     useState(false);
+  // מצב מקומי: swapType — הנתון swapType בהקשר הפעולה; setSwapType מעדכנת אותו ומפעילה רינדור לפי React.
   const [swapType, setSwapType] =
     useState<ShiftSwapType>('one_way');
+  // מצב מקומי: requesterShiftId — מזהה המשמרת; setRequesterShiftId מעדכנת אותו ומפעילה רינדור לפי React.
   const [requesterShiftId, setRequesterShiftId] =
     useState('');
+  // מצב מקומי: counterpartyUserId — מזהה משתמש; setCounterpartyUserId מעדכנת אותו ומפעילה רינדור לפי React.
   const [counterpartyUserId, setCounterpartyUserId] =
     useState('');
+  // מצב מקומי: counterpartyShiftId — מזהה המשמרת; setCounterpartyShiftId מעדכנת אותו ומפעילה רינדור לפי React.
   const [counterpartyShiftId, setCounterpartyShiftId] =
     useState('');
+  // מצב מקומי: busyRequestId — מזהה הבקשה; setBusyRequestId מעדכנת אותו ומפעילה רינדור לפי React.
   const [busyRequestId, setBusyRequestId] =
     useState<string | null>(null);
+  // מצב מקומי: isCreating — הנתון isCreating בהקשר הפעולה; setIsCreating מעדכנת אותו ומפעילה רינדור לפי React.
   const [isCreating, setIsCreating] =
     useState(false);
+  // מצב מקומי: createError — שגיאה; setCreateError מעדכנת אותו ומפעילה רינדור לפי React.
   const [createError, setCreateError] =
     useState<string | null>(null);
+  // מצב מקומי: collapsedSections — הנתון collapsedSections בהקשר הפעולה; setCollapsedSections מעדכנת אותו ומפעילה רינדור לפי React.
   const [collapsedSections, setCollapsedSections] =
     useState<Record<string, boolean>>({
       myRequests: true,
       swappedWithMe: true,
     });
+  // מצב מקומי: sectionSeenAt — הנתון sectionSeenAt בהקשר הפעולה; setSectionSeenAt מעדכנת אותו ומפעילה רינדור לפי React.
   const [sectionSeenAt, setSectionSeenAt] =
     useState<Record<string, string | null>>(() => ({
       myRequests: localStorage.getItem('shift-swaps:my-requests-seen-at'),
       swappedWithMe: localStorage.getItem('shift-swaps:swapped-with-me-seen-at'),
     }));
+  // canCreate — הנתון canCreate בהקשר הפעולה.
   const canCreate =
     profile?.role === 'dispatcher' &&
     hasPermission('shift_swaps.view');
 
+  // canApprove — הנתון canApprove בהקשר הפעולה.
   const canApprove =
     hasPermission('shift_swaps.approve');
 
+  // loadData — נתונים.
   const loadData = useCallback(
     async (): Promise<void> => {
       setIsLoading(true);
       setError(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         const requestsPromise =
           shiftSwapService.getRequests();
 
+        // optionsPromise — אפשרויות בחירה.
         const optionsPromise = canCreate
           ? shiftSwapService.getCreateOptions()
           : Promise.resolve(
@@ -237,14 +289,22 @@ function ShiftSwapsPage() {
     [canCreate],
   );
 
+// תופעת לוואי לאחר רינדור בהתאם לתלויות [canCreate].
 useEffect(() => {
+  // isCancelled — הנתון isCancelled בהקשר הפעולה.
   let isCancelled = false;
 
+  /**
+   * פעולה אסינכרונית loadInitialData: טעינת נתונים.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const loadInitialData = async (): Promise<void> => {
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       const requestsPromise =
         shiftSwapService.getRequests();
 
+      // optionsPromise — אפשרויות בחירה.
       const optionsPromise = canCreate
         ? shiftSwapService.getCreateOptions()
         : Promise.resolve(EMPTY_OPTIONS);
@@ -257,6 +317,7 @@ useEffect(() => {
         optionsPromise,
       ]);
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
       if (isCancelled) {
         return;
       }
@@ -264,6 +325,7 @@ useEffect(() => {
       setRequests(loadedRequests);
       setOptions(loadedOptions);
     } catch (loadError) {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
       if (isCancelled) {
         return;
       }
@@ -285,6 +347,7 @@ useEffect(() => {
   };
 }, [canCreate]);
 
+  // ערך מחושב myRequests — הנתון myRequests בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const myRequests = useMemo(
     () =>
       requests.filter(
@@ -296,6 +359,7 @@ useEffect(() => {
   );
 
 
+  // ערך מחושב swappedWithMe — הנתון swappedWithMe בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const swappedWithMe = useMemo(
     () =>
       requests.filter(
@@ -306,6 +370,11 @@ useEffect(() => {
     [requests, user?.id],
   );
 
+  /**
+   * פעולה getLatestUpdatedAt: שליפה או חישוב של מועד עדכון.
+   * @param items — פריטים.
+   * @returns string | null — הפלט בהתאם לחתימה.
+   */
   const getLatestUpdatedAt = (
     items: ShiftSwapRequest[],
   ): string | null =>
@@ -317,35 +386,47 @@ useEffect(() => {
       null,
     );
 
+  // latestMyRequestsUpdatedAt — מועד עדכון.
   const latestMyRequestsUpdatedAt =
     getLatestUpdatedAt(myRequests);
+  // latestSwappedWithMeUpdatedAt — מועד עדכון.
   const latestSwappedWithMeUpdatedAt =
     getLatestUpdatedAt(swappedWithMe);
 
+  // hasNewMyRequests — הנתון hasNewMyRequests בהקשר הפעולה.
   const hasNewMyRequests = Boolean(
     latestMyRequestsUpdatedAt &&
       (!sectionSeenAt.myRequests ||
         latestMyRequestsUpdatedAt > sectionSeenAt.myRequests),
   );
 
+  // hasNewSwappedWithMe — הנתון hasNewSwappedWithMe בהקשר הפעולה.
   const hasNewSwappedWithMe = Boolean(
     latestSwappedWithMeUpdatedAt &&
       (!sectionSeenAt.swappedWithMe ||
         latestSwappedWithMeUpdatedAt > sectionSeenAt.swappedWithMe),
   );
 
+  /**
+   * פעולה markSectionSeen: הנתון markSectionSeen בהקשר הפעולה.
+   * @param sectionKey — מפתח.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const markSectionSeen = (
     sectionKey: 'myRequests' | 'swappedWithMe',
   ): void => {
+    // latestUpdatedAt — מועד עדכון.
     const latestUpdatedAt =
       sectionKey === 'myRequests'
         ? latestMyRequestsUpdatedAt
         : latestSwappedWithMeUpdatedAt;
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !latestUpdatedAt.
     if (!latestUpdatedAt) {
       return;
     }
 
+    // storageKey — מפתח.
     const storageKey =
       sectionKey === 'myRequests'
         ? 'shift-swaps:my-requests-seen-at'
@@ -358,6 +439,11 @@ useEffect(() => {
     }));
   };
 
+  /**
+   * פעולה toggleSection: החלפת בחירה עבור הנתון toggleSection בהקשר הפעולה.
+   * @param sectionKey — מפתח.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const toggleSection = (
     sectionKey: 'myRequests' | 'swappedWithMe',
   ): void => {
@@ -375,6 +461,7 @@ useEffect(() => {
     });
   };
 
+  // ערך מחושב awaitingMyResponse — תוצאת הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const awaitingMyResponse = useMemo(
     () =>
       requests.filter(
@@ -387,6 +474,7 @@ useEffect(() => {
     [requests, user?.id],
   );
 
+  // ערך מחושב awaitingManager — הנתון awaitingManager בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const awaitingManager = useMemo(
     () =>
       canApprove
@@ -399,14 +487,17 @@ useEffect(() => {
     [canApprove, requests],
   );
 
+  // selectedRequesterShift — נבחר / משמרת.
   const selectedRequesterShift =
     options.myShifts.find(
       (shift) =>
         shift.id === requesterShiftId,
     ) ?? null;
 
+  // ערך מחושב availableCounterpartyShifts — מספר הסימונים כזמין; נשמר בין רינדורים עד שינוי התלויות.
   const availableCounterpartyShifts =
     useMemo(() => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !counterpartyUserId || !selectedRequesterShift.
       if (
         !counterpartyUserId ||
         !selectedRequesterShift
@@ -427,6 +518,10 @@ useEffect(() => {
       selectedRequesterShift,
     ]);
 
+  /**
+   * פעולה resetCreateForm: איפוס הנתון resetCreateForm בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const resetCreateForm =
     (): void => {
       setSwapType('one_way');
@@ -435,12 +530,17 @@ useEffect(() => {
       setCounterpartyShiftId('');
     };
 
+/**
+ * פעולה אסינכרונית handleCreate: טיפול באירוע עבור הנתון handleCreate בהקשר הפעולה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 const handleCreate =
   async (): Promise<void> => {
     setIsCreating(true);
     setCreateError(null);
     setSuccess(null);
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await shiftSwapService.createRequest({
         swapType,
@@ -469,6 +569,13 @@ const handleCreate =
     }
   };
 
+  /**
+   * פעולה אסינכרונית runRequestAction: נתוני הבקשה.
+   * @param requestId — מזהה הבקשה.
+   * @param action — הנתון action בהקשר הפעולה.
+   * @param successMessage — הודעה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const runRequestAction =
     async (
       requestId: string,
@@ -479,6 +586,7 @@ const handleCreate =
       setError(null);
       setSuccess(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await action();
         setSuccess(successMessage);
@@ -492,6 +600,12 @@ const handleCreate =
       }
     };
 
+  /**
+   * פעולה renderRequestCard: בניית תצוגה עבור נתוני הבקשה.
+   * @param request — נתוני הבקשה.
+   * @param actions — הנתון actions בהקשר הפעולה.
+   * @returns React.ReactNode — הפלט בהתאם לחתימה.
+   */
   const renderRequestCard = (
     request: ShiftSwapRequest,
     actions?: React.ReactNode,

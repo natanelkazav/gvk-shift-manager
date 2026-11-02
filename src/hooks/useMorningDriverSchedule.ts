@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useMorningDriverSchedule.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור כונני בוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: MorningDriverScheduleState, normalizeError, useMorningDriverSchedule.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useState,
@@ -19,38 +26,51 @@ import type {
   TransferMyMorningDriverAssignmentResponse,
 } from '../types/morningDriverSchedule';
 
+/**
+ * חוזה הנתונים MorningDriverScheduleState: כונני בוקר.
+ */
 interface MorningDriverScheduleState {
+  // data — נתונים.
   data:
     MorningDriverScheduleData | null;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
 
   isCreating: boolean;
 
+  // updatingAssignmentId — הקצאה / מזהה.
   updatingAssignmentId:
     string | null;
 
+  // transferringAssignmentId — הקצאה / מזהה.
   transferringAssignmentId:
     string | null;
 
   isPublishing: boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 
+  // lastCreatedResult — תוצאה.
   lastCreatedResult:
     CreateMorningDriverScheduleDraftResponse | null;
 
+  // lastUpdatedResult — תוצאה.
   lastUpdatedResult:
     UpdateMorningDriverScheduleAssignmentResponse | null;
 
+  // lastTransferredResult — תוצאה.
   lastTransferredResult:
     TransferMyMorningDriverAssignmentResponse | null;
 
+  // lastPublishedResult — פורסם / תוצאה.
   lastPublishedResult:
     PublishMorningDriverScheduleResponse | null;
 }
 
+// initialState — מצב.
 const initialState:
   MorningDriverScheduleState = {
     data:
@@ -87,17 +107,25 @@ const initialState:
       null,
   };
 
+/**
+ * פעולה normalizeError: נרמול שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeError(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
+    // normalized — הנתון normalized בהקשר הפעולה.
     const normalized =
       error.message
         .trim()
         .toLowerCase();
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes( 'availability period must be closed', ).
     if (
       normalized.includes(
         'availability period must be closed',
@@ -106,6 +134,7 @@ function normalizeError(
       return 'יש לסגור את חודש האילוצים לפני יצירת השיבוץ.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes( 'minimum morning driver staffing is incomplete', ).
     if (
       normalized.includes(
         'minimum morning driver staffing is incomplete',
@@ -114,6 +143,7 @@ function normalizeError(
       return 'לא ניתן לפרסם: חסר לפחות כונן אחד במשמרת אחת או יותר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes( 'not allowed', ).
     if (
       normalized.includes(
         'not allowed',
@@ -123,6 +153,7 @@ function normalizeError(
     }
 
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes( 'only published morning driver schedules can be changed by drivers', ).
     if (
       normalized.includes(
         'only published morning driver schedules can be changed by drivers',
@@ -131,6 +162,7 @@ function normalizeError(
       return 'ניתן לשנות כוננות אישית רק לאחר פרסום הלוח.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes( 'morning drivers can change assignments only in the current month', ).
     if (
       normalized.includes(
         'morning drivers can change assignments only in the current month',
@@ -139,6 +171,7 @@ function normalizeError(
       return 'ניתן לשנות כוננויות אישיות רק בחודש הנוכחי.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes( 'past morning driver assignments cannot be changed', ).
     if (
       normalized.includes(
         'past morning driver assignments cannot be changed',
@@ -147,6 +180,7 @@ function normalizeError(
       return 'לא ניתן לשנות כוננות שכבר עברה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes( 'morning driver can transfer only their own assignment', ).
     if (
       normalized.includes(
         'morning driver can transfer only their own assignment',
@@ -155,6 +189,7 @@ function normalizeError(
       return 'ניתן להעביר רק כוננות שמשובצת על שמך.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes( 'locked morning driver assignment cannot be changed', ).
     if (
       normalized.includes(
         'locked morning driver assignment cannot be changed',
@@ -163,6 +198,7 @@ function normalizeError(
       return 'הכוננות נעולה ולא ניתן לשנות אותה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalized.includes( 'selected morning driver is already assigned to this shift', ).
     if (
       normalized.includes(
         'selected morning driver is already assigned to this shift',
@@ -177,7 +213,11 @@ function normalizeError(
   return 'לא ניתן היה לבצע את הפעולה בלוח כונני הבוקר.';
 }
 
+/**
+ * פעולה useMorningDriverSchedule: חיבור מצב או הקשר עבור כונני בוקר.
+ */
 export function useMorningDriverSchedule() {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -186,6 +226,7 @@ export function useMorningDriverSchedule() {
       initialState,
     );
 
+  // loadSchedule — שיבוץ.
   const loadSchedule =
     useCallback(
       async (
@@ -209,7 +250,9 @@ export function useMorningDriverSchedule() {
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await morningDriverScheduleService
               .getSchedule(
@@ -263,6 +306,7 @@ export function useMorningDriverSchedule() {
       [],
     );
 
+  // createDraft — טיוטה.
   const createDraft =
     useCallback(
       async (
@@ -285,13 +329,16 @@ export function useMorningDriverSchedule() {
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await morningDriverScheduleService
               .createDraft(
                 availabilityPeriodId,
               );
 
+          // data — נתונים.
           const data =
             await morningDriverScheduleService
               .getSchedule(
@@ -343,6 +390,7 @@ export function useMorningDriverSchedule() {
       [],
     );
 
+  // updateAssignment — הקצאה.
   const updateAssignment =
     useCallback(
       async (
@@ -366,13 +414,16 @@ export function useMorningDriverSchedule() {
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await morningDriverScheduleService
               .updateAssignment(
                 request,
               );
 
+          // data — נתונים.
           const data =
             state.data
               ? await morningDriverScheduleService
@@ -428,12 +479,15 @@ export function useMorningDriverSchedule() {
       ],
     );
 
+  // updateShiftTime — משמרת / זמן.
   const updateShiftTime =
     useCallback(
       async (request: UpdateMorningDriverShiftTimeRequest): Promise<void> => {
         setState((current) => ({ ...current, error: null }));
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await morningDriverScheduleService.updateShiftTime(request);
+          // data — נתונים.
           const data = state.data
             ? await morningDriverScheduleService.getSchedule(state.data.period.id)
             : null;
@@ -446,6 +500,7 @@ export function useMorningDriverSchedule() {
       [state.data],
     );
 
+  // setIntentionallyUnassigned — קבוצה ייחודית.
   const setIntentionallyUnassigned =
     useCallback(
       async (
@@ -461,12 +516,14 @@ export function useMorningDriverSchedule() {
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await morningDriverScheduleService
             .setIntentionallyUnassigned(
               request,
             );
 
+          // data — נתונים.
           const data =
             state.data
               ? await morningDriverScheduleService
@@ -497,9 +554,11 @@ export function useMorningDriverSchedule() {
       [state.data],
     );
 
+  // publishSchedule — שיבוץ.
   const publishSchedule =
     useCallback(
       async (): Promise<PublishMorningDriverScheduleResponse> => {
+        // עצירת הפעולה עם שגיאה כאשר !state.data.
         if (
           !state.data
         ) {
@@ -525,13 +584,16 @@ export function useMorningDriverSchedule() {
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await morningDriverScheduleService
               .publishSchedule(
                 state.data.period.id,
               );
 
+          // data — נתונים.
           const data =
             await morningDriverScheduleService
               .getSchedule(
@@ -586,19 +648,23 @@ export function useMorningDriverSchedule() {
     );
 
 
+  // transferMyAssignment — הקצאה.
   const transferMyAssignment =
     useCallback(
       async (
         request:
           TransferMyMorningDriverAssignmentRequest,
       ): Promise<TransferMyMorningDriverAssignmentResponse> => {
+        // normalizedAssignmentId — הקצאה / מזהה.
         const normalizedAssignmentId =
           request.assignmentId.trim();
 
+        // schedulePeriodId — תקופת שיבוץ.
         const schedulePeriodId =
           state.data?.period.id ??
           null;
 
+        // עצירת הפעולה עם שגיאה כאשר !normalizedAssignmentId.
         if (
           !normalizedAssignmentId
         ) {
@@ -607,6 +673,7 @@ export function useMorningDriverSchedule() {
           );
         }
 
+        // עצירת הפעולה עם שגיאה כאשר !schedulePeriodId.
         if (
           !schedulePeriodId
         ) {
@@ -632,7 +699,9 @@ export function useMorningDriverSchedule() {
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await morningDriverScheduleService
               .transferMyAssignment({
@@ -643,6 +712,7 @@ export function useMorningDriverSchedule() {
                   request.newDriverId.trim(),
               });
 
+          // data — נתונים.
           const data =
             await morningDriverScheduleService
               .getSchedule(

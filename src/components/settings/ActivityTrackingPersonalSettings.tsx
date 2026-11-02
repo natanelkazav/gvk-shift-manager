@@ -1,25 +1,67 @@
+/**
+ * קובץ: src/components/settings/ActivityTrackingPersonalSettings.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור מעקב פעילות וזמני עבודה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ActivityTrackingPersonalSettings.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { useEffect, useState } from 'react';
 import { BellRing, Clock3, TimerReset } from 'lucide-react';
 import { activityTrackingService } from '../../services/activityTrackingService';
 import type { ActivityPersonalSettingsRole } from '../../types/activityTracking';
 
+/**
+ * פעולה minutesLabel: דקות / תווית.
+ * @param value — ערך.
+ */
 const minutesLabel=(value:number)=>value<60?`${value} דקות`:value%60===0?`${value/60} שעות`:`${Math.floor(value/60)}:${String(value%60).padStart(2,'0')} שעות`;
+/**
+ * פעולה effective: הנתון effective בהקשר הפעולה.
+ * @param personal — הנתון personal בהקשר הפעולה.
+ * @param fallback — הנתון fallback בהקשר הפעולה.
+ */
 const effective=(personal:boolean|null, fallback:boolean)=>personal===null?fallback:personal;
+/**
+ * פעולה sourceLabel: מקור / תווית.
+ * @param personal — הנתון personal בהקשר הפעולה.
+ */
 const sourceLabel=(personal:boolean|null)=>personal===null?'ברירת המחדל של התפקיד':'הגדרה אישית';
 
+/**
+ * פעולה ActivityTrackingPersonalSettings: מעקב פעילות וזמני עבודה.
+ */
 export default function ActivityTrackingPersonalSettings(){
+ // מצב מקומי: roles — הנתון roles בהקשר הפעולה; setRoles מעדכנת אותו ומפעילה רינדור לפי React.
  const[roles,setRoles]=useState<ActivityPersonalSettingsRole[]>([]);const[busy,setBusy]=useState<string|null>(null);const[message,setMessage]=useState('');
+ // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
  useEffect(()=>{void activityTrackingService.getMySettings().then(setRoles).catch(e=>console.error('Activity settings failed:',e))},[]);
  if(!roles.length)return null;
+ /**
+  * פעולה patch: הנתון patch בהקשר הפעולה.
+  * @param id — מזהה.
+  * @param changes — הנתון changes בהקשר הפעולה.
+  */
  const patch=(id:string,changes:Partial<ActivityPersonalSettingsRole['personal']>)=>setRoles(v=>v.map(r=>r.jobTypeId===id?{...r,personal:{...r.personal,...changes}}:r));
+ /**
+  * פעולה אסינכרונית save: שמירת הנתון save בהקשר הפעולה.
+  * @param r — הנתון r בהקשר הפעולה.
+  */
  const save=async(r:ActivityPersonalSettingsRole)=>{setBusy(r.jobTypeId);setMessage('');try{await activityTrackingService.saveMySettings(r.jobTypeId,r.personal);setRoles(await activityTrackingService.getMySettings());setMessage('הגדרות מעקב הפעילות נשמרו.')}catch(e){setMessage(e instanceof Error?e.message:'שמירת ההגדרות נכשלה.')}finally{setBusy(null)}};
+ /**
+  * פעולה אסינכרונית reset: איפוס הנתון reset בהקשר הפעולה.
+  * @param r — הנתון r בהקשר הפעולה.
+  */
  const reset=async(r:ActivityPersonalSettingsRole)=>{setBusy(r.jobTypeId);setMessage('');try{await activityTrackingService.resetMySettings(r.jobTypeId);setRoles(await activityTrackingService.getMySettings());setMessage('חזרת לברירת המחדל של התפקיד.')}finally{setBusy(null)}};
  return <div className="activity-personal-settings"><div className="settings-subsection-heading"><Clock3 size={20}/><div><h3>מעקב פעילות</h3><p>אפשר להתאים את מדיניות הטיימר האישית. בכל כרטיס מוצג גם מה הוגדר כברירת המחדל של התפקיד.</p></div></div>{roles.map(r=>{
   const autoEnd=effective(r.personal.autoEndEnabled,r.defaults.autoEndEnabled);
+  // endReminder — תזכורות.
   const endReminder=effective(r.personal.endReminderEnabled,r.defaults.endReminderEnabled);
   const continuous=effective(r.personal.continuousReminderEnabled,r.defaults.continuousReminderEnabled);
+  // autoEndTime — שעת סיום.
   const autoEndTime=r.personal.autoEndTime??r.defaults.autoEndTime;
+  // endMinutes — דקות.
   const endMinutes=r.personal.endReminderMinutesBefore??r.defaults.endReminderMinutesBefore;
+  // continuousMinutes — דקות.
   const continuousMinutes=r.personal.continuousReminderMinutes??r.defaults.continuousReminderMinutes;
   return <section className="settings-reminder-card activity-policy-role" key={r.jobTypeId}><div className="settings-reminder-card-heading"><div><strong>{r.jobTypeName}</strong><span>שינויים אישיים גוברים על ברירת המחדל של התפקיד. אפשר לחזור אליה בכל עת.</span></div></div><div className="activity-policy-cards">
    <article className="activity-policy-card"><div className="activity-policy-card-title"><Clock3 size={19}/><div><strong>סיום יום אוטומטי</strong><span>אם לא לחצת על „סיום יום”, המערכת תסגור את הפעילות בשעה שנקבעה.</span></div></div><div className="activity-policy-default">ברירת המחדל של התפקיד: <strong>{r.defaults.autoEndEnabled?`פעיל · ${r.defaults.autoEndTime}`:'כבוי'}</strong></div><label className="activity-policy-toggle"><input type="checkbox" checked={autoEnd} onChange={e=>patch(r.jobTypeId,{autoEndEnabled:e.target.checked})}/><span>{autoEnd?'פעיל':'כבוי'}</span><small>{sourceLabel(r.personal.autoEndEnabled)}</small></label>{autoEnd?<label className="activity-policy-field"><span>שעת סיום</span><input type="time" value={autoEndTime} onChange={e=>patch(r.jobTypeId,{autoEndTime:e.target.value})}/></label>:null}</article>

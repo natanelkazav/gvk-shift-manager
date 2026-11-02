@@ -1,12 +1,19 @@
+-- קובץ: supabase/migrations/20260824042000_enable_driver_edit_any_current_next.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור כוננים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_driver_schedule_draft, public.get_morning_driver_schedule.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Allow on-call and morning-driver users with edit_any to truly edit any published assignment
 -- in the current month and next month. Dispatcher behavior is intentionally unchanged.
 
+-- עדכון רשומות ב־public.permissions בהתאם לקלט ולתנאים להלן.
 update public.permissions
 set
   display_name = 'עריכת כל כוננות בחודש הנוכחי והבא',
   description = 'מאפשרת לשנות כל כונן משובץ בלוח שפורסם של החודש הנוכחי או החודש הבא, גם כוננות של משתמש אחר וגם תאריך שכבר עבר בחודש הנוכחי.'
 where permission_key = 'driver_schedule.edit_any';
 
+-- עדכון רשומות ב־public.permissions בהתאם לקלט ולתנאים להלן.
 update public.permissions
 set
   display_name = 'עריכת כל משמרת כונן בוקר בחודש הנוכחי והבא',
@@ -14,6 +21,7 @@ set
 where permission_key = 'morning_driver_schedule.edit_any';
 
 -- Make the capability part of the normal defaults for these two user types.
+-- הוספת רשומות ל־public.role_default_permissions בהתאם לקלט ולתנאים להלן.
 insert into public.role_default_permissions (role_name, permission_key)
 values
   ('on_call', 'driver_schedule.edit_any'),
@@ -22,6 +30,7 @@ on conflict do nothing;
 
 -- Existing users should receive the new default as well. Authorization still remains
 -- permission-based everywhere; this is only a one-time grant to existing users.
+-- הוספת רשומות ל־public.user_permissions בהתאם לקלט ולתנאים להלן.
 insert into public.user_permissions (user_id, permission_key)
 select profile.id,
        case
@@ -37,37 +46,48 @@ where profile.is_active = true
   )
 on conflict do nothing;
 
+-- פונקציית מסד public.get_driver_schedule_draft: שליפה או חישוב של כוננים / שיבוץ / טיוטה.
 CREATE OR REPLACE FUNCTION public.get_driver_schedule_draft(requested_schedule_period_id uuid DEFAULT NULL::uuid, requested_year integer DEFAULT NULL::integer, requested_month integer DEFAULT NULL::integer)
  RETURNS jsonb
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_permissions — הרשאות.
   current_permissions text[];
 
   target_period
     public.driver_schedule_periods%rowtype;
 
+  -- days_json — ימים.
   days_json jsonb :=
     '[]'::jsonb;
 
   drivers_json jsonb :=
     '[]'::jsonb;
 
+  -- assigned_days_count — ימים / כמות.
   assigned_days_count integer := 0;
+  -- unassigned_days_count — ימים / כמות.
   unassigned_days_count integer := 0;
+  -- warning_count — כמות.
   warning_count integer := 0;
 begin
   current_user_id :=
     auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles
@@ -75,6 +95,7 @@ begin
       current_user_id
       and is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'user not active';
   end if;
@@ -85,6 +106,7 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'driver_schedule.view' =
       any(current_permissions)
@@ -98,10 +120,12 @@ begin
     'driver_schedule.edit_any' =
       any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_schedule_period_id.
   if requested_schedule_period_id
     is not null
   then
@@ -134,7 +158,9 @@ begin
     limit 1;
   end if;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'period',
         null,
@@ -318,6 +344,7 @@ begin
     'on_call'::public.user_role
     and profile.is_active = true;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'period',
       jsonb_build_object(
@@ -384,32 +411,42 @@ end;
 $function$
 ;
 
+-- פונקציית מסד public.get_morning_driver_schedule: שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION public.get_morning_driver_schedule(requested_schedule_period_id uuid DEFAULT NULL::uuid, requested_year integer DEFAULT NULL::integer, requested_month integer DEFAULT NULL::integer)
  RETURNS jsonb
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
 
+  -- current_permissions — הרשאות.
   current_permissions text[];
 
   schedule_period
     public.morning_driver_schedule_periods%rowtype;
 
+  -- can_view_team — האם צפייה מותרת.
   can_view_team boolean;
 
+  -- can_edit — האם עריכה מותרת.
   can_edit boolean;
 
+  -- can_view_personal — האם צפייה מותרת.
   can_view_personal boolean;
 
   drivers_json jsonb;
 
+  -- assignments_json — הקצאות.
   assignments_json jsonb;
 
+  -- total_assignments — סך הכול / הקצאות.
   total_assignments integer := 0;
 
+  -- assigned_assignments — הקצאות.
   assigned_assignments integer := 0;
 
   minimum_unfilled integer := 0;
@@ -419,7 +456,9 @@ begin
   current_user_id :=
     auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not authenticated';
   end if;
@@ -445,15 +484,18 @@ begin
     'morning_driver_schedule.edit_any'
       = any(current_permissions);
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     can_view_personal
     or can_view_team
     or can_edit
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_schedule_period_id.
   if requested_schedule_period_id
     is not null
   then
@@ -485,6 +527,7 @@ begin
     limit 1;
   end if;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
     return null;
   end if;
@@ -668,6 +711,7 @@ begin
     and assignment.assigned_user_id
       is null;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'period',
       jsonb_build_object(

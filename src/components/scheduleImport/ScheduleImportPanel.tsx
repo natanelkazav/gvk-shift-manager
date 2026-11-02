@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/scheduleImport/ScheduleImportPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור שיבוץ / ייבוא.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ScheduleImportPanelProps, SelectedMappings, CurrentMonthImportStrategy, formatImportDate, formatShiftTime, normalizeImportedName, getImportStrategyLabel, createResolvedNameKey, getMatchSourceLabel, getUserDisplayName ועוד.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
   CalendarDays,
@@ -45,21 +52,33 @@ import type {
 
 import '../../styles/scheduleImport.css';
 
+/**
+ * חוזה הנתונים ScheduleImportPanelProps: שיבוץ / ייבוא / מאפייני הרכיב.
+ */
 interface ScheduleImportPanelProps {
+  // disabled — האם האפשרות מושבתת (אופציונלי).
   disabled?: boolean;
 }
 
+/**
+ * טיפוס SelectedMappings: נבחר.
+ */
 type SelectedMappings =
   Record<string, string>;
 
+/**
+ * טיפוס CurrentMonthImportStrategy: חודש / ייבוא / שיטת שיבוץ.
+ */
 type CurrentMonthImportStrategy =
   | 'missing_only'
   | 'replace'
   | 'rebuild';
 
+// PREVIEW_ROW_LIMIT — שורה / מגבלת תוצאות.
 const PREVIEW_ROW_LIMIT =
   20;
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -74,12 +93,19 @@ const hebrewMonths = [
   'נובמבר',
   'דצמבר',
 ];
+/**
+ * פעולה formatImportDate: עיצוב ערך לתצוגה עבור ייבוא / תאריך.
+ * @param dateValue — תאריך / ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatImportDate(
   dateValue: string,
 ): string {
+  // dateParts — תאריך.
   const dateParts =
     dateValue.split('-');
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר dateParts.length !== 3.
   if (
     dateParts.length !== 3
   ) {
@@ -93,6 +119,7 @@ function formatImportDate(
   ] =
     dateParts;
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !year || !month || !day.
   if (
     !year ||
     !month ||
@@ -103,6 +130,12 @@ function formatImportDate(
 
   return `${day}/${month}/${year}`;
 }
+/**
+ * פעולה formatShiftTime: עיצוב ערך לתצוגה עבור משמרת / זמן.
+ * @param startTime — שעת התחלה.
+ * @param endTime — שעת סיום.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatShiftTime(
   startTime: string,
   endTime: string,
@@ -114,6 +147,11 @@ function formatShiftTime(
   return `\u2066${startTime}–${endTime}\u2069`;
 }
 
+/**
+ * פעולה normalizeImportedName: נרמול שם.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeImportedName(
   value: string,
 ): string {
@@ -129,6 +167,7 @@ function normalizeImportedName(
     .replace(
       /[ךםןףץ]/g,
       (character) => {
+        // finalLetterMap — מפת התאמה.
         const finalLetterMap:
           Record<
             string,
@@ -157,6 +196,11 @@ function normalizeImportedName(
     );
 }
 
+/**
+ * פעולה getImportStrategyLabel: שליפה או חישוב של ייבוא / שיטת שיבוץ / תווית.
+ * @param strategy — שיטת שיבוץ.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getImportStrategyLabel(
   strategy:
     ScheduleImportStrategy,
@@ -179,6 +223,11 @@ function getImportStrategyLabel(
   }
 }
 
+/**
+ * פעולה createResolvedNameKey: יצירת שם / מפתח.
+ * @param resolvedName — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function createResolvedNameKey(
   resolvedName:
     ScheduleImportResolvedName,
@@ -189,6 +238,11 @@ function createResolvedNameKey(
   ].join(':');
 }
 
+/**
+ * פעולה getMatchSourceLabel: שליפה או חישוב של מקור / תווית.
+ * @param resolvedName — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getMatchSourceLabel(
   resolvedName:
     ScheduleImportResolvedName,
@@ -211,6 +265,11 @@ function getMatchSourceLabel(
   }
 }
 
+/**
+ * פעולה getUserDisplayName: שליפה או חישוב של שם תצוגה.
+ * @param user — משתמש.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getUserDisplayName(
   user:
     ScheduleImportUser,
@@ -224,14 +283,20 @@ function getUserDisplayName(
   );
 }
 
+/**
+ * פעולה ScheduleImportPanel: שיבוץ / ייבוא.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function ScheduleImportPanel({
   disabled = false,
 }: ScheduleImportPanelProps) {
+  // הפניה יציבה fileInputRef בין רינדורים; שינוי current אינו מפעיל רינדור בפני עצמו.
   const fileInputRef =
     useRef<HTMLInputElement | null>(
       null,
     );
 
+  // מצב מקומי: selectedFile — נבחר / קובץ; setSelectedFile מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedFile,
     setSelectedFile,
@@ -240,6 +305,7 @@ function ScheduleImportPanel({
       null,
     );
 
+  // מצב מקומי: preview — הנתון preview בהקשר הפעולה; setPreview מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     preview,
     setPreview,
@@ -248,6 +314,7 @@ function ScheduleImportPanel({
       null,
     );
 
+  // מצב מקומי: importUsersData — ייבוא / משתמשים / נתונים; setImportUsersData מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     importUsersData,
     setImportUsersData,
@@ -256,6 +323,7 @@ function ScheduleImportPanel({
       null,
     );
 
+  // מצב מקומי: resolvedDispatcherNames — מוקדנים; setResolvedDispatcherNames מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     resolvedDispatcherNames,
     setResolvedDispatcherNames,
@@ -264,6 +332,7 @@ function ScheduleImportPanel({
       ScheduleImportResolvedName[]
     >([]);
 
+  // מצב מקומי: resolvedDriverNames — כוננים; setResolvedDriverNames מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     resolvedDriverNames,
     setResolvedDriverNames,
@@ -271,6 +340,7 @@ function ScheduleImportPanel({
     useState<
       ScheduleImportResolvedName[]
     >([]);
+  // מצב מקומי: resolvedMorningDriverNames — כונני בוקר; setResolvedMorningDriverNames מעדכנת אותו ומפעילה רינדור לפי React.
   const [
   resolvedMorningDriverNames,
   setResolvedMorningDriverNames,
@@ -278,6 +348,7 @@ function ScheduleImportPanel({
   useState<
     ScheduleImportResolvedName[]
   >([]);
+  // מצב מקומי: selectedMappings — נבחר; setSelectedMappings מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedMappings,
     setSelectedMappings,
@@ -286,18 +357,21 @@ function ScheduleImportPanel({
       {},
     );
 
+  // מצב מקומי: isAnalyzing — הנתון isAnalyzing בהקשר הפעולה; setIsAnalyzing מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isAnalyzing,
     setIsAnalyzing,
   ] =
     useState(false);
 
+  // מצב מקומי: isLoadingUsers — האם טעינה מתבצעת; setIsLoadingUsers מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isLoadingUsers,
     setIsLoadingUsers,
   ] =
     useState(false);
 
+  // מצב מקומי: savingMappingKey — שמירה / מפתח; setSavingMappingKey מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     savingMappingKey,
     setSavingMappingKey,
@@ -306,6 +380,7 @@ function ScheduleImportPanel({
       null,
     );
 
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     error,
     setError,
@@ -314,6 +389,7 @@ function ScheduleImportPanel({
       null,
     );
 
+  // מצב מקומי: identityError — שגיאה; setIdentityError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     identityError,
     setIdentityError,
@@ -321,6 +397,7 @@ function ScheduleImportPanel({
     useState<string | null>(
       null,
     );
+    // מצב מקומי: currentMonthImportStrategy — חודש / ייבוא / שיטת שיבוץ; setCurrentMonthImportStrategy מעדכנת אותו ומפעילה רינדור לפי React.
     const [
       currentMonthImportStrategy,
       setCurrentMonthImportStrategy,
@@ -328,6 +405,7 @@ function ScheduleImportPanel({
       useState<CurrentMonthImportStrategy>(
         'missing_only',
       );
+      // מצב מקומי: importSimulation — ייבוא; setImportSimulation מעדכנת אותו ומפעילה רינדור לפי React.
       const [
         importSimulation,
         setImportSimulation,
@@ -336,12 +414,14 @@ function ScheduleImportPanel({
           null,
         );
 
+      // מצב מקומי: isSimulatingImport — ייבוא; setIsSimulatingImport מעדכנת אותו ומפעילה רינדור לפי React.
       const [
         isSimulatingImport,
         setIsSimulatingImport,
       ] =
         useState(false);
 
+      // מצב מקומי: simulationError — שגיאה; setSimulationError מעדכנת אותו ומפעילה רינדור לפי React.
       const [
         simulationError,
         setSimulationError,
@@ -350,18 +430,21 @@ function ScheduleImportPanel({
           null,
         );
 
+      // מצב מקומי: isConfirmDialogOpen — הנתון isConfirmDialogOpen בהקשר הפעולה; setIsConfirmDialogOpen מעדכנת אותו ומפעילה רינדור לפי React.
       const [
         isConfirmDialogOpen,
         setIsConfirmDialogOpen,
       ] =
         useState(false);
 
+      // מצב מקומי: isExecutingImport — ייבוא; setIsExecutingImport מעדכנת אותו ומפעילה רינדור לפי React.
       const [
         isExecutingImport,
         setIsExecutingImport,
       ] =
         useState(false);
 
+      // מצב מקומי: executionError — שגיאה; setExecutionError מעדכנת אותו ומפעילה רינדור לפי React.
       const [
         executionError,
         setExecutionError,
@@ -370,6 +453,7 @@ function ScheduleImportPanel({
           null,
         );
 
+      // מצב מקומי: executionResult — תוצאה; setExecutionResult מעדכנת אותו ומפעילה רינדור לפי React.
       const [
         executionResult,
         setExecutionResult,
@@ -378,22 +462,29 @@ function ScheduleImportPanel({
           null,
         );
 
+      // מצב מקומי: showAllDispatcherShifts — מוקדנים / משמרות; setShowAllDispatcherShifts מעדכנת אותו ומפעילה רינדור לפי React.
       const [
         showAllDispatcherShifts,
         setShowAllDispatcherShifts,
       ] =
         useState(false);
 
+      // מצב מקומי: showAllDriverDuties — כוננים; setShowAllDriverDuties מעדכנת אותו ומפעילה רינדור לפי React.
       const [
         showAllDriverDuties,
         setShowAllDriverDuties,
       ] =
         useState(false);
+        // מצב מקומי: showAllMorningDriverShifts — כונני בוקר; setShowAllMorningDriverShifts מעדכנת אותו ומפעילה רינדור לפי React.
         const [
   showAllMorningDriverShifts,
   setShowAllMorningDriverShifts,
 ] =
   useState(false);
+    /**
+     * פעולה resetImport: איפוס ייבוא.
+     * @returns void — הפלט בהתאם לחתימה.
+     */
     const resetImport =
       (): void => {
         setSelectedFile(
@@ -488,6 +579,12 @@ function ScheduleImportPanel({
         }
       };
 
+  /**
+   * פעולה resolvePreviewNames: קביעת ערך עבור הנתון resolvePreviewNames בהקשר הפעולה.
+   * @param importPreview — ייבוא.
+   * @param usersData — משתמשים / נתונים.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const resolvePreviewNames =
     (
       importPreview:
@@ -496,6 +593,7 @@ function ScheduleImportPanel({
       usersData:
         ScheduleImportUsersData,
     ): void => {
+      // dispatcherNames — מוקדנים.
       const dispatcherNames =
         importPreview
           .dispatcherShifts
@@ -504,6 +602,7 @@ function ScheduleImportPanel({
               shift.dispatcherName,
           );
 
+      // driverNames — כוננים.
       const driverNames =
         importPreview
           .driverDuties
@@ -511,17 +610,20 @@ function ScheduleImportPanel({
             (duty) =>
               duty.driverName,
           );
+      // morningDriverNames — כונני בוקר.
       const morningDriverNames =
         importPreview.morningDriverShifts.map(
           shift =>
             shift.morningDriverName,
         );
+        // resolvedMorningDrivers — כונני בוקר.
         const resolvedMorningDrivers =
   scheduleImportIdentityService
     .resolveMorningDriverNames(
       morningDriverNames,
       usersData,
     );
+      // resolvedDispatchers — הנתון resolvedDispatchers בהקשר הפעולה.
       const resolvedDispatchers =
         scheduleImportIdentityService
           .resolveDispatcherNames(
@@ -529,6 +631,7 @@ function ScheduleImportPanel({
             usersData,
           );
 
+      // resolvedDrivers — הנתון resolvedDrivers בהקשר הפעולה.
       const resolvedDrivers =
         scheduleImportIdentityService
           .resolveOnCallDriverNames(
@@ -536,6 +639,7 @@ function ScheduleImportPanel({
             usersData,
           );
 
+      // initialMappings — הנתון initialMappings בהקשר הפעולה.
       const initialMappings:
         SelectedMappings = {};
 
@@ -575,6 +679,11 @@ setResolvedMorningDriverNames(
       );
     };
 
+  /**
+   * פעולה אסינכרונית loadIdentityData: טעינת נתונים.
+   * @param importPreview — ייבוא.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const loadIdentityData =
     async (
       importPreview:
@@ -588,7 +697,9 @@ setResolvedMorningDriverNames(
         null,
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // usersData — משתמשים / נתונים.
         const usersData =
           await scheduleImportIdentityService
             .getImportUsers();
@@ -617,10 +728,16 @@ setResolvedMorningDriverNames(
       }
     };
 
+  /**
+   * פעולה אסינכרונית analyzeFile: קובץ.
+   * @param file — קובץ.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const analyzeFile =
     async (
       file: File,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר disabled || isAnalyzing.
       if (
         disabled ||
         isAnalyzing
@@ -699,7 +816,9 @@ setResolvedMorningDriverNames(
         true,
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // importPreview — ייבוא.
         const importPreview =
           await scheduleImportService
             .analyzeScheduleWorkbook(
@@ -729,15 +848,22 @@ setResolvedMorningDriverNames(
       }
     };
 
+  /**
+   * פעולה handleFileChange: טיפול באירוע עבור קובץ.
+   * @param event — אירוע.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleFileChange =
     (
       event:
         ChangeEvent<HTMLInputElement>,
     ): void => {
+      // file — קובץ.
       const file =
         event.target.files?.[0] ??
         null;
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !file.
       if (!file) {
         return;
       }
@@ -747,6 +873,12 @@ setResolvedMorningDriverNames(
       );
     };
 
+  /**
+   * פעולה handleMappingChange: טיפול באירוע עבור הנתון handleMappingChange בהקשר הפעולה.
+   * @param resolvedName — שם.
+   * @param userId — מזהה משתמש.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleMappingChange =
     (
       resolvedName:
@@ -754,6 +886,7 @@ setResolvedMorningDriverNames(
 
       userId: string,
     ): void => {
+      // mappingKey — מפתח.
       const mappingKey =
         createResolvedNameKey(
           resolvedName,
@@ -789,28 +922,37 @@ setResolvedMorningDriverNames(
       );
     };
 
+  /**
+   * פעולה אסינכרונית handleSaveMapping: טיפול באירוע עבור הנתון handleSaveMapping בהקשר הפעולה.
+   * @param resolvedName — שם.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSaveMapping =
     async (
       resolvedName:
         ScheduleImportResolvedName,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !importUsersData.
       if (
         !importUsersData
       ) {
         return;
       }
 
+      // mappingKey — מפתח.
       const mappingKey =
         createResolvedNameKey(
           resolvedName,
         );
 
+      // selectedUserId — מזהה משתמש.
       const selectedUserId =
         selectedMappings[
           mappingKey
         ]?.trim() ??
         '';
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !selectedUserId.
       if (!selectedUserId) {
         setIdentityError(
           `יש לבחור משתמש עבור "${resolvedName.sourceName}".`,
@@ -827,6 +969,7 @@ setResolvedMorningDriverNames(
         null,
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await scheduleImportIdentityService
           .saveNameAlias({
@@ -840,6 +983,7 @@ setResolvedMorningDriverNames(
               resolvedName.userType,
           });
 
+        // refreshedUsersData — משתמשים / נתונים.
         const refreshedUsersData =
           await scheduleImportIdentityService
             .getImportUsers();
@@ -868,24 +1012,31 @@ setResolvedMorningDriverNames(
         );
       }
     };
+/**
+ * פעולה buildResolvedImportData: הרכבת ייבוא / נתונים.
+ */
 const buildResolvedImportData =
   () => {
+    // עצירת הפעולה עם שגיאה כאשר !preview.
     if (!preview) {
       throw new Error(
         'לא קיימים נתוני ייבוא לניתוח.',
       );
     }
 
+    // dispatcherUserIds — מזהה משתמש; מיפוי לחיפוש לפי מפתח.
     const dispatcherUserIds =
       new Map<string, string>();
 
     resolvedDispatcherNames.forEach(
       (resolvedName) => {
+        // mappingKey — מפתח.
         const mappingKey =
           createResolvedNameKey(
             resolvedName,
           );
 
+        // userId — מזהה משתמש.
         const userId =
           selectedMappings[
             mappingKey
@@ -904,16 +1055,19 @@ const buildResolvedImportData =
       },
     );
 
+    // driverUserIds — מזהה משתמש; מיפוי לחיפוש לפי מפתח.
     const driverUserIds =
       new Map<string, string>();
 
     resolvedDriverNames.forEach(
       (resolvedName) => {
+        // mappingKey — מפתח.
         const mappingKey =
           createResolvedNameKey(
             resolvedName,
           );
 
+        // userId — מזהה משתמש.
         const userId =
           selectedMappings[
             mappingKey
@@ -932,16 +1086,19 @@ const buildResolvedImportData =
       },
     );
 
+    // morningDriverUserIds — כונני בוקר; מיפוי לחיפוש לפי מפתח.
     const morningDriverUserIds =
       new Map<string, string>();
 
     resolvedMorningDriverNames.forEach(
       (resolvedName) => {
+        // mappingKey — מפתח.
         const mappingKey =
           createResolvedNameKey(
             resolvedName,
           );
 
+        // userId — מזהה משתמש.
         const userId =
           selectedMappings[
             mappingKey
@@ -960,9 +1117,11 @@ const buildResolvedImportData =
       },
     );
 
+    // dispatcherShifts — מוקדנים / משמרות.
     const dispatcherShifts =
       preview.dispatcherShifts.map(
         (shift) => {
+          // userId — מזהה משתמש.
           const userId =
             dispatcherUserIds.get(
               normalizeImportedName(
@@ -970,6 +1129,7 @@ const buildResolvedImportData =
               ),
             );
 
+          // עצירת הפעולה עם שגיאה כאשר !userId.
           if (!userId) {
             throw new Error(
               `לא נמצאה התאמת משתמש עבור המוקדן "${shift.dispatcherName}".`,
@@ -991,9 +1151,11 @@ const buildResolvedImportData =
         },
       );
 
+    // driverDuties — כוננים.
     const driverDuties =
       preview.driverDuties.map(
         (duty) => {
+          // userId — מזהה משתמש.
           const userId =
             driverUserIds.get(
               normalizeImportedName(
@@ -1001,6 +1163,7 @@ const buildResolvedImportData =
               ),
             );
 
+          // עצירת הפעולה עם שגיאה כאשר !userId.
           if (!userId) {
             throw new Error(
               `לא נמצאה התאמת משתמש עבור הכונן "${duty.driverName}".`,
@@ -1019,9 +1182,11 @@ const buildResolvedImportData =
         },
       );
 
+    // morningDriverShifts — כונני בוקר.
     const morningDriverShifts =
       preview.morningDriverShifts.map(
         (shift) => {
+          // userId — מזהה משתמש.
           const userId =
             morningDriverUserIds.get(
               normalizeImportedName(
@@ -1029,6 +1194,7 @@ const buildResolvedImportData =
               ),
             );
 
+          // עצירת הפעולה עם שגיאה כאשר !userId.
           if (!userId) {
             throw new Error(
               `לא נמצאה התאמת משתמש עבור כונן הבוקר "${shift.morningDriverName}".`,
@@ -1062,6 +1228,7 @@ const buildResolvedImportData =
         },
       );
 
+    // importStrategy — ייבוא / שיטת שיבוץ.
     const importStrategy:
       ScheduleImportStrategy =
       currentMonthImportStrategy;
@@ -1074,8 +1241,13 @@ const buildResolvedImportData =
     };
   };
 
+/**
+ * פעולה אסינכרונית handlePreviewImport: טיפול באירוע עבור ייבוא.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 const handlePreviewImport =
   async (): Promise<void> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !preview || isSimulatingImport || isExecutingImport || preview.periodType === 'future'.
     if (
       !preview ||
       isSimulatingImport ||
@@ -1086,6 +1258,7 @@ const handlePreviewImport =
       return;
     }
 
+    // unresolvedCount — כמות.
     const unresolvedCount =
       [
         ...resolvedDispatcherNames,
@@ -1104,6 +1277,7 @@ const handlePreviewImport =
           ),
       ).length;
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר unresolvedCount > 0.
     if (
       unresolvedCount >
       0
@@ -1135,6 +1309,7 @@ const handlePreviewImport =
       true,
     );
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       const {
         dispatcherShifts,
@@ -1144,6 +1319,7 @@ const handlePreviewImport =
       } =
         buildResolvedImportData();
 
+      // simulationResult — תוצאה.
       const simulationResult =
         await scheduleImportExecutionService
           .previewImport({
@@ -1184,8 +1360,13 @@ const handlePreviewImport =
     }
   };
 
+  /**
+   * פעולה handleOpenConfirmation: טיפול באירוע עבור הנתון handleOpenConfirmation בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleOpenConfirmation =
     (): void => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !importSimulation ?.canImport || isExecutingImport.
       if (
         !importSimulation
           ?.canImport ||
@@ -1203,8 +1384,13 @@ const handlePreviewImport =
       );
     };
 
+  /**
+   * פעולה אסינכרונית handleExecuteImport: טיפול באירוע עבור ייבוא.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleExecuteImport =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !preview || !selectedFile || !importSimulation ?.canImport || isExecutingImport.
       if (
         !preview ||
         !selectedFile ||
@@ -1223,6 +1409,7 @@ const handlePreviewImport =
         true,
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         const {
           dispatcherShifts,
@@ -1260,6 +1447,7 @@ const handlePreviewImport =
           },
         );
 
+        // result — תוצאה.
         const result =
           await scheduleImportExecutionService
             .executeImport({
@@ -1318,6 +1506,12 @@ const handlePreviewImport =
       }
     };
 
+  /**
+   * פעולה renderResolvedNames: בניית תצוגה עבור הנתון renderResolvedNames בהקשר הפעולה.
+   * @param resolvedNames — הנתון resolvedNames בהקשר הפעולה.
+   * @param users — משתמשים.
+   * @param userType — משתמש.
+   */
   const renderResolvedNames =
     (
       resolvedNames:
@@ -1329,6 +1523,7 @@ const handlePreviewImport =
       userType:
         ScheduleImportUserType,
     ) => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר resolvedNames.length === 0.
       if (
         resolvedNames.length ===
         0
@@ -1345,23 +1540,27 @@ const handlePreviewImport =
         <div className="schedule-import-identities-list">
           {resolvedNames.map(
             (resolvedName) => {
+              // mappingKey — מפתח.
               const mappingKey =
                 createResolvedNameKey(
                   resolvedName,
                 );
 
+              // selectedUserId — מזהה משתמש.
               const selectedUserId =
                 selectedMappings[
                   mappingKey
                 ] ??
                 '';
 
+              // isResolved — הנתון isResolved בהקשר הפעולה.
               const isResolved =
                 Boolean(
                   resolvedName
                     .matchedUserId,
                 );
 
+              // isSaving — האם שמירה מתבצעת.
               const isSaving =
                 savingMappingKey ===
                 mappingKey;
@@ -1532,6 +1731,7 @@ const handlePreviewImport =
       );
     };
 
+  // ערך מחושב allResolvedNames — הנתון allResolvedNames בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const allResolvedNames =
     useMemo(
       () => [
@@ -1546,6 +1746,7 @@ const handlePreviewImport =
       ],
     );
 
+  // unresolvedNamesCount — כמות.
   const unresolvedNamesCount =
     allResolvedNames.filter(
       (resolvedName) =>
@@ -1559,6 +1760,7 @@ const handlePreviewImport =
     unresolvedNamesCount ===
       0;
 
+  // detectedPeriodTitle — תקופה / כותרת.
   const detectedPeriodTitle =
     preview
       ? `${
@@ -1568,6 +1770,7 @@ const handlePreviewImport =
           preview.month
         } ${preview.year}`
       : null;
+      // periodTypeLabel — תקופה / תווית.
       const periodTypeLabel =
         preview?.periodType ===
           'historical'
@@ -1580,6 +1783,7 @@ const handlePreviewImport =
               ? 'חודש עתידי'
               : null;
 
+      // periodTypeDescription — תקופה.
       const periodTypeDescription =
         preview?.periodType ===
           'historical'
@@ -1592,6 +1796,7 @@ const handlePreviewImport =
               ? 'ייבוא חודש עתידי עדיין אינו נתמך, כדי לא לעקוף את תהליך האילוצים ויצירת הטיוטה.'
               : null;
 
+      // canContinueToImport — ייבוא.
       const canContinueToImport =
         Boolean(
           preview &&
@@ -1605,6 +1810,7 @@ const handlePreviewImport =
           !executionResult,
         );
 
+      // visibleDispatcherShifts — מוקדנים / משמרות.
       const visibleDispatcherShifts =
         preview
           ? showAllDispatcherShifts
@@ -1615,6 +1821,7 @@ const handlePreviewImport =
               )
           : [];
 
+      // visibleDriverDuties — כוננים.
       const visibleDriverDuties =
         preview
           ? showAllDriverDuties
@@ -1625,6 +1832,7 @@ const handlePreviewImport =
               )
           : [];
 
+      // visibleMorningDriverShifts — כונני בוקר.
       const visibleMorningDriverShifts =
         preview
           ? showAllMorningDriverShifts
@@ -1635,6 +1843,7 @@ const handlePreviewImport =
               )
           : [];
 
+      // confirmationStrategy — שיטת שיבוץ.
       const confirmationStrategy =
         importSimulation
           ? getImportStrategyLabel(

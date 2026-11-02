@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useDashboard.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור לוח בקרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UseDashboardResult, getErrorMessage, hasActiveAssignment, useDashboard, loadInitialDashboard.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useEffect,
@@ -13,33 +20,48 @@ import type {
   DashboardResponse,
 } from '../types/dashboard';
 
+/**
+ * חוזה הנתונים UseDashboardResult: לוח בקרה / תוצאה.
+ */
 interface UseDashboardResult {
+  // dashboard — לוח בקרה.
   dashboard:
     DashboardResponse | null;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
 
   isRefreshing: boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 
   refresh:
     () => Promise<void>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 }
 
+// ACTIVE_REFRESH_INTERVAL_MS — פעיל / מרווח זמן.
 const ACTIVE_REFRESH_INTERVAL_MS =
   30 * 1000;
 
+// IDLE_REFRESH_INTERVAL_MS — מרווח זמן.
 const IDLE_REFRESH_INTERVAL_MS =
   5 * 60 * 1000;
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -49,6 +71,11 @@ function getErrorMessage(
   return 'לא ניתן היה לטעון את לוח הבקרה.';
 }
 
+/**
+ * פעולה hasActiveAssignment: בדיקת קיום עבור פעיל / הקצאה.
+ * @param dashboard — לוח בקרה.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function hasActiveAssignment(
   dashboard:
     DashboardResponse | null,
@@ -72,8 +99,13 @@ function hasActiveAssignment(
   );
 }
 
+/**
+ * פעולה useDashboard: חיבור מצב או הקשר עבור לוח בקרה.
+ * @returns UseDashboardResult — הפלט בהתאם לחתימה.
+ */
 export function useDashboard():
   UseDashboardResult {
+  // מצב מקומי: dashboard — לוח בקרה; setDashboard מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     dashboard,
     setDashboard,
@@ -82,18 +114,21 @@ export function useDashboard():
       null,
     );
 
+  // מצב מקומי: isLoading — האם טעינה מתבצעת; setIsLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isLoading,
     setIsLoading,
   ] =
     useState(true);
 
+  // מצב מקומי: isRefreshing — הנתון isRefreshing בהקשר הפעולה; setIsRefreshing מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isRefreshing,
     setIsRefreshing,
   ] =
     useState(false);
 
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     error,
     setError,
@@ -102,18 +137,27 @@ export function useDashboard():
       null,
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(
     () => {
+      // isCancelled — הנתון isCancelled בהקשר הפעולה.
       let isCancelled =
         false;
 
+      /**
+       * פעולה אסינכרונית loadInitialDashboard: טעינת לוח בקרה.
+       * @returns Promise<void> — הפלט בהתאם לחתימה.
+       */
       async function loadInitialDashboard():
         Promise<void> {
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // response — תוצאת הפעולה.
           const response =
             await dashboardService
               .getMyDashboard();
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
           if (
             isCancelled
           ) {
@@ -130,6 +174,7 @@ export function useDashboard():
         } catch (
           loadError
         ) {
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
           if (
             isCancelled
           ) {
@@ -162,6 +207,7 @@ export function useDashboard():
     [],
   );
 
+  // ערך מחושב refreshIntervalMs — מרווח זמן; נשמר בין רינדורים עד שינוי התלויות.
   const refreshIntervalMs =
     useMemo(
       () =>
@@ -175,20 +221,26 @@ export function useDashboard():
       ],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ refreshIntervalMs, ].
   useEffect(
     () => {
+      // isCancelled — הנתון isCancelled בהקשר הפעולה.
       let isCancelled =
         false;
 
+      // intervalId — מרווח זמן / מזהה.
       const intervalId =
         window.setInterval(
           () => {
             void (async () => {
+              // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
               try {
+                // response — תוצאת הפעולה.
                 const response =
                   await dashboardService
                     .getMyDashboard();
 
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
                 if (
                   isCancelled
                 ) {
@@ -205,6 +257,7 @@ export function useDashboard():
               } catch (
                 refreshError
               ) {
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
                 if (
                   isCancelled
                 ) {
@@ -239,6 +292,7 @@ export function useDashboard():
   const refresh =
     useCallback(
       async (): Promise<void> => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isRefreshing.
         if (
           isRefreshing
         ) {
@@ -253,7 +307,9 @@ export function useDashboard():
           null,
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // response — תוצאת הפעולה.
           const response =
             await dashboardService
               .getMyDashboard();
@@ -280,6 +336,7 @@ export function useDashboard():
       ],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback(
       (): void => {

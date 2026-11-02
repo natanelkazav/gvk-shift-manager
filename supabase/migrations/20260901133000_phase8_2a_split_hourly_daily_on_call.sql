@@ -1,3 +1,7 @@
+-- קובץ: supabase/migrations/20260901133000_phase8_2a_split_hourly_daily_on_call.sql
+-- מטרה: הפרדת מודל כוננות לפי שעות ממודל כוננות לפי יום.
+-- מטרות עיקריות:
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 8.2A refinement: distinguish hourly and full-day on-call structures.
@@ -7,6 +11,7 @@ begin;
 -- NOTE: dynamic job types are stored in public.job_types. Effective-month
 -- versions store their configuration inside the `snapshot` JSONB document.
 
+-- עדכון רשומות ב־public.job_types בהתאם לקלט ולתנאים להלן.
 update public.job_types
 set scheduling_config = jsonb_set(
   coalesce(scheduling_config, '{}'::jsonb),
@@ -16,6 +21,7 @@ set scheduling_config = jsonb_set(
 )
 where scheduling_config #>> '{shiftPattern,workMode}' = 'on_call';
 
+-- עדכון רשומות ב־public.job_type_configuration_versions בהתאם לקלט ולתנאים להלן.
 update public.job_type_configuration_versions
 set snapshot = jsonb_set(
   snapshot,

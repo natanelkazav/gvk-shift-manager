@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/ui/Modal.tsx
+ * מטרה: מעטפת חלון מודאלי להצגת תוכן ולטיפול בסגירה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ModalProps, lockBodyScroll, unlockBodyScroll, Modal.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   X,
 } from 'lucide-react';
@@ -9,12 +16,20 @@ import {
   type ReactNode,
 } from 'react';
 
+/**
+ * חוזה הנתונים ModalProps: מאפייני הרכיב.
+ */
 interface ModalProps {
+  // isOpen — האם המצב פתוח.
   isOpen: boolean;
+  // title — כותרת.
   title: string;
+  // children — התוכן המקונן של הרכיב.
   children: ReactNode;
   footer?: ReactNode;
+  // onClose — פונקציית סגירת התצוגה.
   onClose: () => void;
+  // className — שם (אופציונלי).
   className?: string;
 }
 
@@ -24,12 +39,18 @@ interface ModalProps {
  * נדרש משום שייתכן Modal בתוך Modal
  * (לדוגמה: יום בלוח → עריכת שיבוץ).
  */
+// openModalCount — כמות.
 let openModalCount =
   0;
 
+// originalBodyOverflow — תוכן.
 let originalBodyOverflow =
   '';
 
+/**
+ * פעולה lockBodyScroll: תוכן.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function lockBodyScroll(): void {
   if (
     openModalCount ===
@@ -48,6 +69,10 @@ function lockBodyScroll(): void {
     1;
 }
 
+/**
+ * פעולה unlockBodyScroll: תוכן.
+ * @returns void — הפלט בהתאם לחתימה.
+ */
 function unlockBodyScroll(): void {
   openModalCount =
     Math.max(
@@ -68,6 +93,10 @@ function unlockBodyScroll(): void {
   }
 }
 
+/**
+ * פעולה Modal: הנתון Modal בהקשר הפעולה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function Modal({
   isOpen,
   title,
@@ -76,17 +105,25 @@ function Modal({
   onClose,
   className,
 }: ModalProps) {
+  // titleId — כותרת / מזהה.
   const titleId =
     useId();
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ isOpen, onClose, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
       if (
         !isOpen
       ) {
         return undefined;
       }
 
+      /**
+       * פעולה handleKeyDown: טיפול באירוע עבור מפתח.
+       * @param event — אירוע.
+       * @returns void — הפלט בהתאם לחתימה.
+       */
       const handleKeyDown =
         (
           event:
@@ -122,12 +159,18 @@ function Modal({
     ],
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isOpen.
   if (
     !isOpen
   ) {
     return null;
   }
 
+  /**
+   * פעולה handleBackdropClick: טיפול באירוע עבור הנתון handleBackdropClick בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleBackdropClick =
     (
       event:

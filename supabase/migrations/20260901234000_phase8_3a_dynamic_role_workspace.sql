@@ -1,34 +1,51 @@
+-- קובץ: supabase/migrations/20260901234000_phase8_3a_dynamic_role_workspace.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_role_workspace.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 8.3A: read-only dynamic role workspace.
 -- Gives managers one generic view of a dynamic role and proves that imported
 -- historical data is queryable by job_type_id before any production cutover.
 
+-- פונקציית מסד public.get_dynamic_role_workspace: שליפה או חישוב של דינמי.
 create or replace function public.get_dynamic_role_workspace(requested_job_type_id uuid)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
   role_record public.job_types%rowtype;
+  -- historical_period_count — נתונים היסטוריים / תקופה / כמות.
   historical_period_count integer := 0;
+  -- historical_assignment_count — נתונים היסטוריים / הקצאה / כמות.
   historical_assignment_count integer := 0;
+  -- historical_availability_count — נתונים היסטוריים / אילוצים וזמינות / כמות.
   historical_availability_count integer := 0;
+  -- membership_count — שיוך לתפקיד / כמות.
   membership_count integer := 0;
+  -- materialization_count — מימוש תצורת השיבוץ לחודש / כמות.
   materialization_count integer := 0;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions up
     where up.user_id = current_user_id
       and up.permission_key in ('users.view', 'users.manage', 'statistics.view')
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -36,7 +53,9 @@ begin
   from public.job_types jt
   where jt.id = requested_job_type_id;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type not found';
   end if;
 
@@ -62,6 +81,7 @@ begin
   join public.dynamic_historical_periods hp on hp.id = hv.historical_period_id
   where hp.job_type_id = requested_job_type_id;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'jobTypeId', role_record.id,
     'jobTypeName', role_record.name,
@@ -109,6 +129,7 @@ begin
 end;
 $function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_role_workspace(uuid) to authenticated;
 
 commit;

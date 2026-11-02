@@ -1,7 +1,14 @@
+/*
+ * קובץ: src/components/users/EditUserModalTabs.css
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור משתמש.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .edit-user-modal-with-tabs  */
 .edit-user-modal-with-tabs {
   width: min(720px, 100%);
 }
 
+/* כללי עיצוב עבור .edit-user-tabs  */
 .edit-user-tabs {
   display: flex;
   align-items: stretch;
@@ -16,6 +23,7 @@
     );
 }
 
+/* כללי עיצוב עבור .edit-user-tab  */
 .edit-user-tab {
   position: relative;
   display: inline-flex;
@@ -41,6 +49,7 @@
     color 160ms ease;
 }
 
+/* כללי עיצוב עבור .edit-user-tab::after  */
 .edit-user-tab::after {
   position: absolute;
   right: 12px;
@@ -52,6 +61,7 @@
   content: '';
 }
 
+/* כללי עיצוב עבור .edit-user-tab:hover:not(:disabled)  */
 .edit-user-tab:hover:not(:disabled) {
   background: rgb(255 255 255 / 75%);
   color:
@@ -61,6 +71,7 @@
     );
 }
 
+/* כללי עיצוב עבור .edit-user-tab-active  */
 .edit-user-tab-active {
   background:
     var(
@@ -74,6 +85,7 @@
     );
 }
 
+/* כללי עיצוב עבור .edit-user-tab-active::after  */
 .edit-user-tab-active::after {
   background:
     var(
@@ -82,6 +94,7 @@
     );
 }
 
+/* כללי עיצוב עבור .edit-user-tab:focus-visible  */
 .edit-user-tab:focus-visible {
   outline: 2px solid
     var(
@@ -91,11 +104,13 @@
   outline-offset: -2px;
 }
 
+/* כללי עיצוב עבור .edit-user-tab:disabled  */
 .edit-user-tab:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
+/* כללי עיצוב עבור .edit-user-tab-panel  */
 .edit-user-tab-panel {
   display: flex;
   flex-direction: column;
@@ -103,6 +118,7 @@
   min-height: 320px;
 }
 
+/* כללי עיצוב עבור .edit-user-permissions-placeholder  */
 .edit-user-permissions-placeholder {
   display: flex;
   min-height: 320px;
@@ -126,6 +142,7 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .edit-user-permissions-placeholder-icon  */
 .edit-user-permissions-placeholder-icon {
   display: grid;
   place-items: center;
@@ -145,6 +162,7 @@
     );
 }
 
+/* כללי עיצוב עבור .edit-user-permissions-placeholder h3  */
 .edit-user-permissions-placeholder h3 {
   margin: 0;
   color:
@@ -155,6 +173,7 @@
   font-size: 1.05rem;
 }
 
+/* כללי עיצוב עבור .edit-user-permissions-placeholder p  */
 .edit-user-permissions-placeholder p {
   max-width: 420px;
   margin: 0;
@@ -167,6 +186,7 @@
   line-height: 1.65;
 }
 
+/* כללי עיצוב עבור .edit-user-permissions-placeholder span  */
 .edit-user-permissions-placeholder span {
   margin-top: 4px;
   padding: 6px 10px;
@@ -177,6 +197,7 @@
   font-weight: 600;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .edit-user-tabs {
     padding-inline: 12px;
@@ -196,12 +217,14 @@
     padding-inline: 18px;
   }
 }
+/* כללי עיצוב עבור .user-permissions-tab  */
 .user-permissions-tab {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .user-permissions-toolbar  */
 .user-permissions-toolbar {
   display: flex;
   align-items: center;
@@ -214,12 +237,14 @@
   background: #f8fafc;
 }
 
+/* כללי עיצוב עבור .user-permissions-summary  */
 .user-permissions-summary {
   display: flex;
   align-items: center;
   gap: 11px;
 }
 
+/* כללי עיצוב עבור .user-permissions-summary-icon  */
 .user-permissions-summary-icon {
   display: grid;
   place-items: center;
@@ -233,36 +258,42 @@
     var(--color-primary, #2563eb);
 }
 
+/* כללי עיצוב עבור .user-permissions-summary > div:last-child  */
 .user-permissions-summary > div:last-child {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .user-permissions-summary strong  */
 .user-permissions-summary strong {
   color:
     var(--color-text, #0f172a);
   font-size: 0.92rem;
 }
 
+/* כללי עיצוב עבור .user-permissions-summary span  */
 .user-permissions-summary span {
   color:
     var(--color-text-muted, #64748b);
   font-size: 0.8rem;
 }
 
+/* כללי עיצוב עבור .user-permissions-toolbar-actions  */
 .user-permissions-toolbar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .user-permissions-groups  */
 .user-permissions-groups {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .user-permissions-group  */
 .user-permissions-group {
   overflow: hidden;
   border: 1px solid
@@ -272,6 +303,7 @@
     var(--color-surface, #ffffff);
 }
 
+/* כללי עיצוב עבור .user-permissions-group-header  */
 .user-permissions-group-header {
   display: flex;
   align-items: center;
@@ -283,6 +315,7 @@
   background: #f8fafc;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-header h3  */
 .user-permissions-group-header h3 {
   margin: 0;
   color:
@@ -290,6 +323,7 @@
   font-size: 0.94rem;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-header p  */
 .user-permissions-group-header p {
   margin: 4px 0 0;
   color:
@@ -297,6 +331,7 @@
   font-size: 0.8rem;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-header > span  */
 .user-permissions-group-header > span {
   display: inline-flex;
   min-width: 42px;
@@ -311,11 +346,13 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .user-permissions-list  */
 .user-permissions-list {
   display: flex;
   flex-direction: column;
 }
 
+/* כללי עיצוב עבור .user-permission-item  */
 .user-permission-item {
   display: flex;
   align-items: flex-start;
@@ -328,27 +365,33 @@
     background-color 150ms ease;
 }
 
+/* כללי עיצוב עבור .user-permission-item:last-child  */
 .user-permission-item:last-child {
   border-bottom: 0;
 }
 
+/* כללי עיצוב עבור .user-permission-item:hover  */
 .user-permission-item:hover {
   background: #f8fafc;
 }
 
+/* כללי עיצוב עבור .user-permission-item-selected  */
 .user-permission-item-selected {
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .user-permission-item-selected:hover  */
 .user-permission-item-selected:hover {
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .user-permission-item-disabled  */
 .user-permission-item-disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
+/* כללי עיצוב עבור .user-permission-item input  */
 .user-permission-item input {
   position: absolute;
   width: 1px;
@@ -358,6 +401,7 @@
   pointer-events: none;
 }
 
+/* כללי עיצוב עבור .user-permission-switch  */
 .user-permission-switch {
   position: relative;
   width: 42px;
@@ -370,6 +414,7 @@
     background-color 160ms ease;
 }
 
+/* כללי עיצוב עבור .user-permission-switch span  */
 .user-permission-switch span {
   position: absolute;
   top: 3px;
@@ -385,6 +430,7 @@
 }
 
 .user-permission-item-selected
+/* כללי עיצוב עבור .user-permission-switch  */
   .user-permission-switch {
   background:
     var(--color-primary, #2563eb);
@@ -392,10 +438,12 @@
 
 .user-permission-item-selected
   .user-permission-switch
+/* כללי עיצוב עבור span  */
   span {
   transform: translateX(-18px);
 }
 
+/* כללי עיצוב עבור .user-permission-content  */
 .user-permission-content {
   display: flex;
   min-width: 0;
@@ -404,12 +452,14 @@
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .user-permission-content strong  */
 .user-permission-content strong {
   color:
     var(--color-text, #0f172a);
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .user-permission-content small  */
 .user-permission-content small {
   color:
     var(--color-text-muted, #64748b);
@@ -417,6 +467,7 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .user-permission-content code  */
 .user-permission-content code {
   width: fit-content;
   margin-top: 2px;
@@ -428,6 +479,7 @@
   font-size: 0.7rem;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .user-permissions-toolbar {
     align-items: stretch;
@@ -445,6 +497,7 @@
     width: 100%;
   }
 }
+/* כללי עיצוב עבור .edit-user-permissions-status  */
 .edit-user-permissions-status {
   min-height: 240px;
   display: flex;
@@ -456,10 +509,12 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .edit-user-permissions-status strong  */
 .edit-user-permissions-status strong {
   font-size: 16px;
 }
 
+/* כללי עיצוב עבור .edit-user-permissions-status span  */
 .edit-user-permissions-status span {
   max-width: 420px;
   color: var(--text-muted, #667085);
@@ -467,6 +522,7 @@
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .edit-user-permissions-error  */
 .edit-user-permissions-error {
   padding: 24px;
   background: #fff7f7;
@@ -474,10 +530,12 @@
   border-radius: 14px;
 }
 
+/* כללי עיצוב עבור .edit-user-permissions-error strong  */
 .edit-user-permissions-error strong {
   color: #a61b1b;
 }
 
+/* כללי עיצוב עבור .edit-user-permissions-loading-icon  */
 .edit-user-permissions-loading-icon {
   flex-shrink: 0;
   animation:
@@ -485,11 +543,13 @@
     0.85s linear infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes edit-user-permissions-spin */
 @keyframes edit-user-permissions-spin {
   to {
     transform: rotate(360deg);
   }
 }
+/* כללי עיצוב עבור .create-user-permissions-count  */
 .create-user-permissions-count {
   min-width: 24px;
   height: 24px;
@@ -505,14 +565,17 @@
 }
 
 .edit-user-tab-active
+/* כללי עיצוב עבור .create-user-permissions-count  */
   .create-user-permissions-count {
   background: rgba(255, 255, 255, 0.22);
 }
 /* Permissions editor upgrade */
+/* כללי עיצוב עבור .edit-user-modal-with-tabs  */
 .edit-user-modal-with-tabs {
   width: min(860px, 100%);
 }
 
+/* כללי עיצוב עבור .user-permissions-search  */
 .user-permissions-search {
   display: flex;
   align-items: center;
@@ -529,6 +592,7 @@
     box-shadow 150ms ease;
 }
 
+/* כללי עיצוב עבור .user-permissions-search:focus-within  */
 .user-permissions-search:focus-within {
   border-color:
     var(--color-primary, #2563eb);
@@ -537,6 +601,7 @@
     rgb(37 99 235 / 12%);
 }
 
+/* כללי עיצוב עבור .user-permissions-search input  */
 .user-permissions-search input {
   min-width: 0;
   flex: 1;
@@ -549,6 +614,7 @@
   font-size: 0.88rem;
 }
 
+/* כללי עיצוב עבור .user-permissions-search button  */
 .user-permissions-search button {
   display: inline-grid;
   width: 32px;
@@ -561,11 +627,13 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .user-permissions-search button:hover:not(:disabled)  */
 .user-permissions-search button:hover:not(:disabled) {
   background: #f1f5f9;
   color: #0f172a;
 }
 
+/* כללי עיצוב עבור .user-permissions-empty-search  */
 .user-permissions-empty-search {
   display: flex;
   min-height: 190px;
@@ -581,54 +649,65 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .user-permissions-empty-search strong  */
 .user-permissions-empty-search strong {
   color: #334155;
 }
 
+/* כללי עיצוב עבור .user-permissions-empty-search span  */
 .user-permissions-empty-search span {
   font-size: 0.8rem;
 }
 
+/* כללי עיצוב עבור .user-permissions-group  */
 .user-permissions-group {
   --permission-accent: #64748b;
   --permission-soft: #f1f5f9;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-blue  */
 .user-permissions-group-blue {
   --permission-accent: #2563eb;
   --permission-soft: #eff6ff;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-green  */
 .user-permissions-group-green {
   --permission-accent: #059669;
   --permission-soft: #ecfdf5;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-amber  */
 .user-permissions-group-amber {
   --permission-accent: #d97706;
   --permission-soft: #fffbeb;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-orange  */
 .user-permissions-group-orange {
   --permission-accent: #ea580c;
   --permission-soft: #fff7ed;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-purple  */
 .user-permissions-group-purple {
   --permission-accent: #7c3aed;
   --permission-soft: #f5f3ff;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-rose  */
 .user-permissions-group-rose {
   --permission-accent: #e11d48;
   --permission-soft: #fff1f2;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-slate  */
 .user-permissions-group-slate {
   --permission-accent: #475569;
   --permission-soft: #f8fafc;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-header  */
 .user-permissions-group-header {
   align-items: flex-start;
   background:
@@ -639,6 +718,7 @@
     );
 }
 
+/* כללי עיצוב עבור .user-permissions-group-heading  */
 .user-permissions-group-heading {
   display: flex;
   min-width: 0;
@@ -646,6 +726,7 @@
   gap: 11px;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-accent  */
 .user-permissions-group-accent {
   width: 5px;
   min-height: 44px;
@@ -654,10 +735,12 @@
   background: var(--permission-accent);
 }
 
+/* כללי עיצוב עבור .user-permissions-group-heading h3  */
 .user-permissions-group-heading h3 {
   color: #0f172a;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-summary  */
 .user-permissions-group-summary {
   display: flex;
   flex: 0 0 auto;
@@ -666,6 +749,7 @@
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-summary > span  */
 .user-permissions-group-summary > span {
   display: inline-flex;
   justify-content: center;
@@ -678,12 +762,14 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-actions  */
 .user-permissions-group-actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-actions button  */
 .user-permissions-group-actions button {
   border: 0;
   border-radius: 8px;
@@ -698,6 +784,7 @@
     inset 0 0 0 1px #dbe3ee;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-actions button:hover:not(:disabled)  */
 .user-permissions-group-actions button:hover:not(:disabled) {
   color: var(--permission-accent);
   box-shadow:
@@ -705,28 +792,34 @@
     var(--permission-accent);
 }
 
+/* כללי עיצוב עבור .user-permissions-group-actions button:disabled  */
 .user-permissions-group-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.48;
 }
 
+/* כללי עיצוב עבור .user-permission-item-selected  */
 .user-permission-item-selected {
   background: var(--permission-soft);
 }
 
+/* כללי עיצוב עבור .user-permission-item-selected:hover  */
 .user-permission-item-selected:hover {
   background: var(--permission-soft);
 }
 
 .user-permission-item-selected
+/* כללי עיצוב עבור .user-permission-switch  */
   .user-permission-switch {
   background: var(--permission-accent);
 }
 
+/* כללי עיצוב עבור .user-permission-content code  */
 .user-permission-content code {
   display: none;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .user-permissions-group-header {
     align-items: stretch;
@@ -751,6 +844,7 @@
     width: 100%;
   }
 }
+/* כללי עיצוב עבור .user-permissions-group-toggle  */
 .user-permissions-group-toggle {
   display: flex;
   min-width: 0;
@@ -766,6 +860,7 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-heading-text  */
 .user-permissions-group-heading-text {
   display: flex;
   min-width: 0;
@@ -774,17 +869,20 @@
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-heading-text strong  */
 .user-permissions-group-heading-text strong {
   color: #0f172a;
   font-size: 0.92rem;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-heading-text small  */
 .user-permissions-group-heading-text small {
   color: #64748b;
   font-size: 0.75rem;
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .user-permissions-group-chevron  */
 .user-permissions-group-chevron {
   flex: 0 0 auto;
   margin-top: 4px;
@@ -793,16 +891,19 @@
 }
 
 .user-permissions-group-open
+/* כללי עיצוב עבור .user-permissions-group-chevron  */
   .user-permissions-group-chevron {
   transform: rotate(180deg);
 }
 
 .user-permissions-group:not(
   .user-permissions-group-open
+/* כללי עיצוב עבור ) .user-permissions-group-header  */
 ) .user-permissions-group-header {
   border-bottom: 0;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .user-permissions-group-toggle {
     width: 100%;
@@ -810,6 +911,7 @@
 }
 
 /* Phase 9.2 - permission profile + dynamic job type scope */
+/* כללי עיצוב עבור .permission-policy-card  */
 .permission-policy-card {
   display: grid;
   gap: 16px;
@@ -822,12 +924,14 @@
 
 .permission-policy-card-header strong,
 .permission-policy-field > span,
+/* כללי עיצוב עבור .permission-policy-scope > strong  */
 .permission-policy-scope > strong {
   display: block;
   font-weight: 800;
 }
 
 .permission-policy-card-header span,
+/* כללי עיצוב עבור .permission-policy-note  */
 .permission-policy-note {
   display: block;
   margin-top: 4px;
@@ -835,11 +939,13 @@
   color: var(--text-secondary, #64748b);
 }
 
+/* כללי עיצוב עבור .permission-policy-field  */
 .permission-policy-field {
   display: grid;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .permission-policy-field select  */
 .permission-policy-field select {
   width: 100%;
   min-height: 44px;
@@ -850,18 +956,21 @@
   color: inherit;
 }
 
+/* כללי עיצוב עבור .permission-policy-scope  */
 .permission-policy-scope {
   display: grid;
   gap: 10px;
 }
 
 .permission-policy-scope > label,
+/* כללי עיצוב עבור .permission-policy-job-types > label  */
 .permission-policy-job-types > label {
   display: flex;
   align-items: center;
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .permission-policy-job-types  */
 .permission-policy-job-types {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -872,22 +981,26 @@
   background: var(--surface, #fff);
 }
 
+/* כללי עיצוב עבור .permission-policy-job-types > label  */
 .permission-policy-job-types > label {
   padding: 8px 10px;
   border-radius: 10px;
   background: rgba(148, 163, 184, 0.08);
 }
 
+/* כללי עיצוב עבור .permission-policy-job-types small  */
 .permission-policy-job-types small {
   margin-inline-start: auto;
   color: var(--text-secondary, #64748b);
   direction: ltr;
 }
 
+/* כללי עיצוב עבור .permission-policy-note-error  */
 .permission-policy-note-error {
   color: #b91c1c;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .permission-policy-job-types {
     grid-template-columns: 1fr;
@@ -895,11 +1008,13 @@
 }
 
 /* Phase 10.4 — Dynamic-first user assignments */
+/* כללי עיצוב עבור .dynamic-user-assignments-editor  */
 .dynamic-user-assignments-editor {
   display: grid;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignments-intro  */
 .dynamic-user-assignments-intro {
   display: flex;
   align-items: flex-start;
@@ -910,6 +1025,7 @@
   background: var(--surface-secondary, rgba(148, 163, 184, 0.08));
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignments-intro > div  */
 .dynamic-user-assignments-intro > div {
   display: grid;
   gap: 4px;
@@ -917,16 +1033,19 @@
 
 .dynamic-user-assignments-intro span,
 .dynamic-user-assignment-heading span,
+/* כללי עיצוב עבור .dynamic-user-assignment-options small  */
 .dynamic-user-assignment-options small {
   color: var(--text-secondary, #64748b);
   font-size: 0.84rem;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-list  */
 .dynamic-user-assignment-list {
   display: grid;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-card  */
 .dynamic-user-assignment-card {
   display: grid;
   gap: 14px;
@@ -936,6 +1055,7 @@
   background: var(--surface-primary, transparent);
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-heading  */
 .dynamic-user-assignment-heading {
   display: flex;
   justify-content: space-between;
@@ -943,11 +1063,13 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-heading > div  */
 .dynamic-user-assignment-heading > div {
   display: grid;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-strategy  */
 .dynamic-user-assignment-strategy {
   white-space: nowrap;
   padding: 4px 8px;
@@ -956,12 +1078,14 @@
   font-size: 0.74rem !important;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-options  */
 .dynamic-user-assignment-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-options label  */
 .dynamic-user-assignment-options label {
   display: grid;
   grid-template-columns: auto auto 1fr;
@@ -973,28 +1097,33 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-options label > span  */
 .dynamic-user-assignment-options label > span {
   display: grid;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-scope  */
 .dynamic-user-assignment-scope {
   display: grid;
   gap: 6px;
   max-width: 300px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-scope > span  */
 .dynamic-user-assignment-scope > span {
   font-size: 0.82rem;
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignment-scope select  */
 .dynamic-user-assignment-scope select {
   min-height: 40px;
   border-radius: 10px;
   padding-inline: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-assignments-empty  */
 .dynamic-user-assignments-empty {
   padding: 18px;
   border: 1px dashed var(--border-color, rgba(148, 163, 184, 0.4));
@@ -1003,6 +1132,7 @@
   text-align: center;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .dynamic-user-assignment-options {
     grid-template-columns: 1fr;

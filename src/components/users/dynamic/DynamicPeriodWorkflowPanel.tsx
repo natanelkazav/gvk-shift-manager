@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/users/dynamic/DynamicPeriodWorkflowPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי / תקופה / תהליך עבודה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: Props, DynamicPeriodWorkflowPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { BellRing, CalendarClock, CheckCircle2, ChevronUp, LoaderCircle, LockKeyhole, PencilLine, Play, Send, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
@@ -7,19 +14,32 @@ import DynamicAvailabilityShadowWorkspace from './DynamicAvailabilityShadowWorks
 import DynamicScheduleDraftEditor from './DynamicScheduleDraftEditor';
 import DynamicPublishedScheduleEditor from './DynamicPublishedScheduleEditor';
 
+/**
+ * חוזה הנתונים Props: מאפייני הרכיב.
+ */
 interface Props {
+  // jobType — סוג תפקיד.
   jobType: DynamicJobType;
+  // selectedYear — נבחר / שנה (אופציונלי).
   selectedYear?: number;
+  // selectedMonth — נבחר / חודש (אופציונלי).
   selectedMonth?: number;
+  // showPeriodPicker — תקופה (אופציונלי).
   showPeriodPicker?: boolean;
+  // onWorkflowChanged — תהליך עבודה (אופציונלי).
   onWorkflowChanged?: () => void;
 }
 
+/**
+ * פעולה getInitialMonth: שליפה או חישוב של חודש.
+ * @returns { year: number; month: number } — הפלט בהתאם לחתימה.
+ */
 const getInitialMonth = (): { year: number; month: number } => {
   const now = new Date();
   return { year: now.getFullYear(), month: now.getMonth() + 1 };
 };
 
+// statusLabel — סטטוס / תווית.
 const statusLabel: Record<string, string> = {
   shadow: 'נוצר',
   draft: 'טיוטה',
@@ -32,6 +52,10 @@ const statusLabel: Record<string, string> = {
   published: 'פורסם',
 };
 
+/**
+ * פעולה DynamicPeriodWorkflowPanel: דינמי / תקופה / תהליך עבודה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicPeriodWorkflowPanel({
   jobType,
   selectedYear,
@@ -39,30 +63,50 @@ function DynamicPeriodWorkflowPanel({
   showPeriodPicker = true,
   onWorkflowChanged,
 }: Props) {
+  // ערך מחושב initial — הנתון initial בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const initial = useMemo(getInitialMonth, []);
+  // מצב מקומי: internalYear — שנה; setInternalYear מעדכנת אותו ומפעילה רינדור לפי React.
   const [internalYear, setInternalYear] = useState(initial.year);
+  // מצב מקומי: internalMonth — חודש; setInternalMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [internalMonth, setInternalMonth] = useState(initial.month);
+  // year — שנה.
   const year = selectedYear ?? internalYear;
+  // month — חודש.
   const month = selectedMonth ?? internalMonth;
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [state, setState] = useState<DynamicPeriodWorkflowState | null>(null);
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy, setBusy] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: message — הודעה; setMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [message, setMessage] = useState<string | null>(null);
+  // מצב מקומי: refreshKey — מפתח; setRefreshKey מעדכנת אותו ומפעילה רינדור לפי React.
   const [refreshKey, setRefreshKey] = useState(0);
+  // מצב מקומי: showDraftEditor — טיוטה; setShowDraftEditor מעדכנת אותו ומפעילה רינדור לפי React.
   const [showDraftEditor, setShowDraftEditor] = useState(false);
+  // מצב מקומי: showPublishedEditor — פורסם; setShowPublishedEditor מעדכנת אותו ומפעילה רינדור לפי React.
   const [showPublishedEditor, setShowPublishedEditor] = useState(false);
+  // הפניה יציבה loadGenerationRef בין רינדורים; שינוי current אינו מפעיל רינדור בפני עצמו.
   const loadGenerationRef = useRef(0);
 
+  /**
+   * פעולה אסינכרונית load: טעינת הנתון load בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const load = async (): Promise<void> => {
     const generation = ++loadGenerationRef.current;
     setBusy(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // nextState — מצב.
       const nextState = await dynamicSchedulingService.getPeriodWorkflow(jobType.id, year, month);
       if (generation !== loadGenerationRef.current) return;
       // The draft's saved metrics are a generation-time snapshot. Revalidate the
       // actual assignments after every edit and whenever the workflow reloads.
       if (nextState.draft?.id && !nextState.publication) {
+        // validation — אימות נתונים.
         const validation = await dynamicSchedulingService.getDraftWeeklyRestValidation(nextState.draft.id);
         if (generation !== loadGenerationRef.current) return;
         nextState.draft.metrics = {
@@ -74,6 +118,7 @@ function DynamicPeriodWorkflowPanel({
       }
       setState(nextState);
       if (nextState.period) {
+        // reminderState — תזכורות / מצב.
         const reminderState = await dynamicSchedulingService.getDynamicAvailabilityReminderSettings(jobType.id, year, month);
         if (generation !== loadGenerationRef.current) return;
         setReminders(reminderState);
@@ -87,6 +132,7 @@ function DynamicPeriodWorkflowPanel({
     }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [jobType.id, year, month].
   useEffect(() => {
     loadGenerationRef.current += 1;
     setState(null);
@@ -97,10 +143,17 @@ function DynamicPeriodWorkflowPanel({
     void load();
   }, [jobType.id, year, month]);
 
+  /**
+   * פעולה אסינכרונית run: הנתון run בהקשר הפעולה.
+   * @param action — הנתון action בהקשר הפעולה.
+   * @param successMessage — הודעה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const run = async (action: () => Promise<unknown>, successMessage: string): Promise<void> => {
     setBusy(true);
     setError(null);
     setMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await action();
       setMessage(successMessage);
@@ -114,21 +167,31 @@ function DynamicPeriodWorkflowPanel({
     }
   };
 
+  // מצב מקומי: deadlineInput — קלט; setDeadlineInput מעדכנת אותו ומפעילה רינדור לפי React.
   const [deadlineInput, setDeadlineInput] = useState('');
+  // מצב מקומי: reminders — תזכורות; setReminders מעדכנת אותו ומפעילה רינדור לפי React.
   const [reminders, setReminders] = useState<DynamicAvailabilityReminderSettings>({ days: [7, 3, 1], deliveries: [] });
+  // מצב מקומי: selectedReminderDays — נבחר / תזכורות / ימים; setSelectedReminderDays מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedReminderDays, setSelectedReminderDays] = useState<number[]>([7, 3, 1]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [state?.period?.submissionDeadline].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !state?.period?.submissionDeadline.
     if (!state?.period?.submissionDeadline) {
       setDeadlineInput('');
       return;
     }
     const deadline = new Date(state.period.submissionDeadline);
+    // offset — מיקום תחילת התוצאות.
     const offset = deadline.getTimezoneOffset();
     const local = new Date(deadline.getTime() - offset * 60_000);
     setDeadlineInput(local.toISOString().slice(0, 16));
   }, [state?.period?.submissionDeadline]);
 
+  /**
+   * פעולה saveDeadline: שמירת הנתון saveDeadline בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const saveDeadline = (): Promise<void> => run(
     async () => {
       await dynamicSchedulingService.setDynamicPeriodSubmissionDeadline(
@@ -141,8 +204,13 @@ function DynamicPeriodWorkflowPanel({
     'מועד ההגשה עודכן.',
   );
 
+  /**
+   * פעולה saveReminderSettings: שמירת תזכורות / הגדרות.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const saveReminderSettings = (): Promise<void> => run(
     async () => {
+      // days — ימים.
       const days = [...selectedReminderDays].sort((a, b) => b - a);
       if (days.length === 0) throw new Error('יש לבחור לפחות תזכורת אוטומטית אחת.');
       await dynamicSchedulingService.setDynamicAvailabilityReminderSettings(jobType.id, days);
@@ -150,8 +218,13 @@ function DynamicPeriodWorkflowPanel({
     'התזכורות האוטומטיות עודכנו לתפקיד.',
   );
 
+  /**
+   * פעולה createPeriod: יצירת תקופה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const createPeriod = (): Promise<void> => run(
     async () => {
+      // עצירת הפעולה עם שגיאה כאשר !deadlineInput.
       if (!deadlineInput) {
         throw new Error('יש לקבוע מועד אחרון להגשת אילוצים לפני יצירת התקופה.');
       }
@@ -166,8 +239,13 @@ function DynamicPeriodWorkflowPanel({
     'תקופת האילוצים נוצרה ומועד ההגשה נשמר. אפשר לפתוח אותה להגשה.',
   );
 
+  /**
+   * פעולה openPeriod: פתיחת תקופה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const openPeriod = (): Promise<void> => run(
     async () => {
+      // עצירת הפעולה עם שגיאה כאשר !state?.period?.submissionDeadline.
       if (!state?.period?.submissionDeadline) {
         throw new Error('יש לקבוע ולשמור מועד אחרון להגשת אילוצים לפני פתיחת התקופה.');
       }
@@ -176,11 +254,19 @@ function DynamicPeriodWorkflowPanel({
     'תקופת האילוצים נפתחה.',
   );
 
+  /**
+   * פעולה closePeriod: סגירת תקופה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const closePeriod = (): Promise<void> => run(
     async () => { await dynamicSchedulingService.setPeriodStatus(jobType.id, year, month, 'close'); },
     'תקופת האילוצים נסגרה. אפשר ליצור טיוטת שיבוץ.',
   );
 
+  /**
+   * פעולה createDraft: יצירת טיוטה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const createDraft = (): Promise<void> => run(
     async () => {
       if (state?.schedulingStrategy === 'monthly_rotation_constraints') {
@@ -194,6 +280,10 @@ function DynamicPeriodWorkflowPanel({
       : 'טיוטת השיבוץ נוצרה במנוע הדינמי.',
   );
 
+  /**
+   * פעולה publishDraft: פרסום טיוטה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const publishDraft = (): Promise<void> => {
     if (!state?.draft?.id) return Promise.resolve();
     return run(
@@ -202,28 +292,47 @@ function DynamicPeriodWorkflowPanel({
     );
   };
 
+  // periodStatus — תקופה / סטטוס.
   const periodStatus = state?.period?.status ?? null;
+  // draftStatus — טיוטה / סטטוס.
   const draftStatus = state?.draft?.status ?? null;
   const unfilled = Number(state?.draft?.metrics?.unfilledRequiredPositions ?? 0);
   const effectiveUnfilled = Number(state?.draft?.metrics?.effectiveUnfilledRequiredPositions ?? unfilled);
+  // weeklyRestViolations — שבועי / מנוחה.
   const weeklyRestViolations = Array.isArray(state?.draft?.metrics?.weeklyRestViolations)
     ? state.draft.metrics.weeklyRestViolations as unknown as DynamicWeeklyRestViolation[]
     : [];
+  // weeklyRestValid — שבועי / מנוחה.
   const weeklyRestValid = state?.draft?.metrics?.weeklyRestRuleEnabled === true
     ? state.draft.metrics.weeklyRestValid === true
     : true;
+  // canPublish — הנתון canPublish בהקשר הפעולה.
   const canPublish = Boolean(state?.draft && periodStatus === 'closed' && effectiveUnfilled === 0 && ['generated', 'incomplete'].includes(draftStatus ?? ''));
+  // permissions — הרשאות.
   const permissions = state?.permissions ?? {};
+  /**
+   * פעולה can: בדיקת אפשרות פעולה עבור הנתון can בהקשר הפעולה.
+   * @param permissionKey — מפתח ההרשאה.
+   * @returns boolean — הפלט בהתאם לחתימה.
+   */
   const can = (permissionKey: string): boolean => permissions[permissionKey] === true;
+  // canOpenPeriod — תקופה.
   const canOpenPeriod = can('availability.open_period');
+  // canClosePeriod — תקופה.
   const canClosePeriod = can('availability.close_period');
+  // canViewAvailability — האם צפייה מותרת.
   const canViewAvailability = can('availability.view_team');
+  // canManageSubmissions — האם פעולת ניהול מותרת.
   const canManageSubmissions = can('availability.manage_submissions');
+  // canCreateDraft — טיוטה.
   const canCreateDraft = state?.schedulingStrategy === 'monthly_rotation_constraints'
     ? can('rotation.generate')
     : can('schedule.create_draft');
+  // canEditDraft — האם עריכה מותרת.
   const canEditDraft = can('schedule.edit_draft');
+  // canPublishSchedule — שיבוץ.
   const canPublishSchedule = can('schedule.publish');
+  // canEditPublished — האם עריכה מותרת.
   const canEditPublished = can('schedule.edit_published');
 
   return (

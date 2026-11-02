@@ -1,42 +1,72 @@
+/**
+ * קובץ: supabase/functions/unified-schedule-edit-action/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת unified-schedule-edit-action.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: EditableCategory, EditRequest, NotificationContext, createJsonResponse, getRequiredEnvironmentVariable, getString, getInteger, getJerusalemCurrentMonth, hasPermission, createNotification ועוד.
+ * - קריאות RPC המופעלות בקובץ: get_driver_schedule_draft, update_current_driver_schedule_day, get_morning_driver_schedule, update_morning_driver_schedule_assignment.
+ * - מקורות נתונים הנזכרים בקריאות from: user_permissions, notifications, notification_recipients, profiles, audit_logs.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   createClient,
   type SupabaseClient,
 } from 'npm:@supabase/supabase-js@2';
 
+/**
+ * טיפוס EditableCategory: הנתון EditableCategory בהקשר הפעולה.
+ */
 type EditableCategory =
   | 'on_call'
   | 'morning_driver';
 
+/**
+ * חוזה הנתונים EditRequest: נתוני הבקשה.
+ */
 interface EditRequest {
   category?: unknown;
+  // sourceId — מקור / מזהה (אופציונלי).
   sourceId?: unknown;
+  // year — שנה (אופציונלי).
   year?: unknown;
+  // month — חודש (אופציונלי).
   month?: unknown;
+  // newUserId — מזהה העובד לאחר השינוי (אופציונלי).
   newUserId?: unknown;
   reason?: unknown;
 }
 
+/**
+ * חוזה הנתונים NotificationContext: התראות.
+ */
 interface NotificationContext {
   category:
     EditableCategory;
+  // sourceId — מקור / מזהה.
   sourceId:
     string;
+  // date — תאריך.
   date:
     string;
+  // timeLabel — זמן / תווית.
   timeLabel:
     string | null;
+  // oldUserId — מזהה משתמש.
   oldUserId:
     string | null;
+  // oldUserName — משתמש / שם.
   oldUserName:
     string | null;
+  // newUserId — מזהה העובד לאחר השינוי.
   newUserId:
     string;
+  // newUserName — משתמש / שם.
   newUserName:
     string | null;
   reason:
     string | null;
 }
 
+// corsHeaders — הנתון corsHeaders בהקשר הפעולה.
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': [
@@ -49,6 +79,12 @@ const corsHeaders = {
     'POST, OPTIONS',
 };
 
+/**
+ * פעולה createJsonResponse: יצירת תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 function createJsonResponse(
   body: unknown,
   status = 200,
@@ -66,14 +102,21 @@ function createJsonResponse(
   );
 }
 
+/**
+ * פעולה getRequiredEnvironmentVariable: שליפה או חישוב של הנתון getRequiredEnvironmentVariable בהקשר הפעולה.
+ * @param name — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getRequiredEnvironmentVariable(
   name: string,
 ): string {
+  // value — ערך.
   const value =
     Deno.env
       .get(name)
       ?.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !value.
   if (!value) {
     throw new Error(
       `Missing required environment variable: ${name}`,
@@ -83,9 +126,15 @@ function getRequiredEnvironmentVariable(
   return value;
 }
 
+/**
+ * פעולה getString: שליפה או חישוב של הנתון getString בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function getString(
   value: unknown,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value !== 'string'.
   if (
     typeof value !==
       'string'
@@ -97,6 +146,11 @@ function getString(
     null;
 }
 
+/**
+ * פעולה getInteger: שליפה או חישוב של הנתון getInteger בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns number | null — הפלט בהתאם לחתימה.
+ */
 function getInteger(
   value: unknown,
 ): number | null {
@@ -109,8 +163,14 @@ function getInteger(
     : null;
 }
 
+/**
+ * פעולה getJerusalemCurrentMonth: שליפה או חישוב של חודש.
+ * @returns { year: number; month: number; } — הפלט בהתאם לחתימה.
+ */
 function getJerusalemCurrentMonth(): {
+  // year — שנה.
   year: number;
+  // month — חודש.
   month: number;
 } {
   const parts =
@@ -128,6 +188,7 @@ function getJerusalemCurrentMonth(): {
       new Date(),
     );
 
+  // year — שנה.
   const year =
     Number(
       parts.find(
@@ -137,6 +198,7 @@ function getJerusalemCurrentMonth(): {
       )?.value,
     );
 
+  // month — חודש.
   const month =
     Number(
       parts.find(
@@ -152,12 +214,20 @@ function getJerusalemCurrentMonth(): {
   };
 }
 
+/**
+ * פעולה אסינכרונית hasPermission: בדיקת קיום עבור הרשאות.
+ * @param adminClient — לקוח.
+ * @param userId — מזהה משתמש.
+ * @param permissionKey — מפתח ההרשאה.
+ * @returns Promise<boolean> — הפלט בהתאם לחתימה.
+ */
 async function hasPermission(
   adminClient:
     SupabaseClient,
   userId: string,
   permissionKey: string,
 ): Promise<boolean> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -179,6 +249,7 @@ async function hasPermission(
       )
       .maybeSingle();
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (error) {
     throw error;
   }
@@ -186,6 +257,16 @@ async function hasPermission(
   return Boolean(data);
 }
 
+/**
+ * פעולה אסינכרונית createNotification: יצירת התראות.
+ * @param adminClient — לקוח.
+ * @param actorUserId — מזהה משתמש.
+ * @param context — הנתון context בהקשר הפעולה.
+ * @param targetUserId — מזהה משתמש היעד.
+ * @param title — כותרת.
+ * @param body — תוכן.
+ * @returns Promise<string> — הפלט בהתאם לחתימה.
+ */
 async function createNotification(
   adminClient:
     SupabaseClient,
@@ -206,6 +287,7 @@ async function createNotification(
         1000,
     ).toISOString();
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data:
       notification,
@@ -248,6 +330,7 @@ async function createNotification(
       .select('id')
       .single();
 
+  // עצירת הפעולה עם שגיאה כאשר notificationError || !notification.
   if (
     notificationError ||
     !notification
@@ -260,6 +343,7 @@ async function createNotification(
     );
   }
 
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     error:
       recipientError,
@@ -275,6 +359,7 @@ async function createNotification(
           targetUserId,
       });
 
+  // עצירת הפעולה עם שגיאה כאשר recipientError.
   if (recipientError) {
     throw recipientError;
   }
@@ -283,12 +368,21 @@ async function createNotification(
     string;
 }
 
+/**
+ * פעולה אסינכרונית deliverNotification: התראות.
+ * @param supabaseUrl — כתובת יעד.
+ * @param supabaseAnonKey — מפתח.
+ * @param authorizationHeader — הנתון authorizationHeader בהקשר הפעולה.
+ * @param notificationId — התראות / מזהה.
+ * @returns Promise<void> — הפלט בהתאם לחתימה.
+ */
 async function deliverNotification(
   supabaseUrl: string,
   supabaseAnonKey: string,
   authorizationHeader: string,
   notificationId: string,
 ): Promise<void> {
+  // response — תוצאת הפעולה.
   const response =
     await fetch(
       `${supabaseUrl}/functions/v1/send-notification`,
@@ -310,10 +404,12 @@ async function deliverNotification(
       },
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר response.ok.
   if (response.ok) {
     return;
   }
 
+  // body — תוכן.
   const body =
     await response
       .text()
@@ -324,6 +420,12 @@ async function deliverNotification(
   );
 }
 
+/**
+ * פעולה buildDateLabel: הרכבת תאריך / תווית.
+ * @param date — תאריך.
+ * @param timeLabel — זמן / תווית.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function buildDateLabel(
   date: string,
   timeLabel:
@@ -334,6 +436,13 @@ function buildDateLabel(
     : date;
 }
 
+/**
+ * פעולה אסינכרונית createChangeNotifications: יצירת התראות.
+ * @param adminClient — לקוח.
+ * @param actorUserId — מזהה משתמש.
+ * @param context — הנתון context בהקשר הפעולה.
+ * @returns Promise<string[]> — הפלט בהתאם לחתימה.
+ */
 async function createChangeNotifications(
   adminClient:
     SupabaseClient,
@@ -341,6 +450,7 @@ async function createChangeNotifications(
   context:
     NotificationContext,
 ): Promise<string[]> {
+  // notificationIds — התראות.
   const notificationIds:
     string[] = [];
 
@@ -391,6 +501,7 @@ Deno.serve(
     request:
       Request,
   ): Promise<Response> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method === 'OPTIONS'.
     if (
       request.method ===
         'OPTIONS'
@@ -404,6 +515,7 @@ Deno.serve(
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !==
         'POST'
@@ -417,15 +529,19 @@ Deno.serve(
       );
     }
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         getRequiredEnvironmentVariable(
           'SUPABASE_URL',
         );
+      // supabaseAnonKey — מפתח.
       const supabaseAnonKey =
         getRequiredEnvironmentVariable(
           'SUPABASE_ANON_KEY',
         );
+      // serviceRoleKey — שירות / מפתח.
       const serviceRoleKey =
         getRequiredEnvironmentVariable(
           'SUPABASE_SERVICE_ROLE_KEY',
@@ -436,12 +552,14 @@ Deno.serve(
           .get('Authorization')
           ?.trim();
 
+      // עצירת הפעולה עם שגיאה כאשר !authorizationHeader.
       if (!authorizationHeader) {
         throw new Error(
           'לא נמצאה התחברות פעילה.',
         );
       }
 
+      // rawBody — תוכן.
       const rawBody =
         await request.json() as
           EditRequest;
@@ -450,18 +568,22 @@ Deno.serve(
         getString(
           rawBody.category,
         );
+      // sourceId — מקור / מזהה.
       const sourceId =
         getString(
           rawBody.sourceId,
         );
+      // year — שנה.
       const year =
         getInteger(
           rawBody.year,
         );
+      // month — חודש.
       const month =
         getInteger(
           rawBody.month,
         );
+      // newUserId — מזהה העובד לאחר השינוי.
       const newUserId =
         getString(
           rawBody.newUserId,
@@ -471,6 +593,7 @@ Deno.serve(
           rawBody.reason,
         );
 
+      // עצירת הפעולה עם שגיאה כאשר ( category !== 'on_call' && category !== 'morning_driver' ) || !sourceId || !year || !month || !newUserId.
       if (
         (
           category !==
@@ -488,17 +611,21 @@ Deno.serve(
         );
       }
 
+      // currentMonth — חודש.
       const currentMonth =
         getJerusalemCurrentMonth();
 
+      // currentPeriodValue — תקופה / ערך.
       const currentPeriodValue =
         currentMonth.year * 12 +
         currentMonth.month - 1;
 
+      // requestedPeriodValue — תקופה / ערך.
       const requestedPeriodValue =
         year * 12 +
         month - 1;
 
+      // עצירת הפעולה עם שגיאה כאשר requestedPeriodValue !== currentPeriodValue && requestedPeriodValue !== currentPeriodValue + 1.
       if (
         requestedPeriodValue !==
           currentPeriodValue &&
@@ -510,6 +637,7 @@ Deno.serve(
         );
       }
 
+      // userClient — משתמש / לקוח.
       const userClient =
         createClient(
           supabaseUrl,
@@ -530,6 +658,7 @@ Deno.serve(
           },
         );
 
+      // adminClient — לקוח.
       const adminClient =
         createClient(
           supabaseUrl,
@@ -544,6 +673,7 @@ Deno.serve(
           },
         );
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           userData,
@@ -553,6 +683,7 @@ Deno.serve(
         await userClient.auth
           .getUser();
 
+      // עצירת הפעולה עם שגיאה כאשר userError || !userData.user.
       if (
         userError ||
         !userData.user
@@ -562,15 +693,18 @@ Deno.serve(
         );
       }
 
+      // actorUserId — מזהה משתמש.
       const actorUserId =
         userData.user.id;
 
+      // permissionKey — מפתח ההרשאה.
       const permissionKey =
         category ===
           'on_call'
           ? 'driver_schedule.edit_any'
           : 'morning_driver_schedule.edit_any';
 
+      // עצירת הפעולה עם שגיאה כאשר !await hasPermission( adminClient, actorUserId, permissionKey, ).
       if (
         !await hasPermission(
           adminClient,
@@ -585,6 +719,7 @@ Deno.serve(
 
       let context:
         NotificationContext;
+      // result — תוצאה.
       let result:
         Record<string, unknown>;
 
@@ -592,6 +727,7 @@ Deno.serve(
         category ===
           'on_call'
       ) {
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           data:
             scheduleData,
@@ -610,25 +746,37 @@ Deno.serve(
             },
           );
 
+        // עצירת הפעולה עם שגיאה כאשר scheduleError.
         if (scheduleError) {
           throw scheduleError;
         }
 
+        // schedule — שיבוץ.
         const schedule =
           scheduleData as {
+            // period — תקופה (אופציונלי).
             period?: {
+              // status — סטטוס (אופציונלי).
               status?: unknown;
             };
+            // days — ימים (אופציונלי).
             days?: Array<{
+              // id — מזהה (אופציונלי).
               id?: unknown;
+              // dutyDate — תאריך (אופציונלי).
               dutyDate?: unknown;
+              // assignedUserId — מזהה העובד המשובץ (אופציונלי).
               assignedUserId?: unknown;
+              // assignedUserName — משתמש / שם (אופציונלי).
               assignedUserName?: unknown;
+              // isLocked — האם הרשומה נעולה (אופציונלי).
               isLocked?: unknown;
+              // notes — הערות (אופציונלי).
               notes?: unknown;
             }>;
           } | null;
 
+        // עצירת הפעולה עם שגיאה כאשר schedule?.period?.status !== 'published'.
         if (
           schedule?.period?.status !==
             'published'
@@ -638,6 +786,7 @@ Deno.serve(
           );
         }
 
+        // day — יום.
         const day =
           schedule.days?.find(
             (candidate) =>
@@ -645,12 +794,14 @@ Deno.serve(
                 sourceId,
           );
 
+        // עצירת הפעולה עם שגיאה כאשר !day.
         if (!day) {
           throw new Error(
             'יום הכוננות לא נמצא.',
           );
         }
 
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           data:
             updateData,
@@ -675,6 +826,7 @@ Deno.serve(
             },
           );
 
+        // עצירת הפעולה עם שגיאה כאשר updateError.
         if (updateError) {
           throw updateError;
         }
@@ -708,6 +860,7 @@ Deno.serve(
           reason,
         };
       } else {
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           data:
             scheduleData,
@@ -726,27 +879,41 @@ Deno.serve(
             },
           );
 
+        // עצירת הפעולה עם שגיאה כאשר scheduleError.
         if (scheduleError) {
           throw scheduleError;
         }
 
+        // schedule — שיבוץ.
         const schedule =
           scheduleData as {
+            // period — תקופה (אופציונלי).
             period?: {
+              // status — סטטוס (אופציונלי).
               status?: unknown;
             };
+            // assignments — הקצאות (אופציונלי).
             assignments?: Array<{
+              // id — מזהה (אופציונלי).
               id?: unknown;
+              // shiftDate — תאריך המשמרת (אופציונלי).
               shiftDate?: unknown;
+              // startTime — שעת התחלה (אופציונלי).
               startTime?: unknown;
+              // endTime — שעת סיום (אופציונלי).
               endTime?: unknown;
+              // assignedUserId — מזהה העובד המשובץ (אופציונלי).
               assignedUserId?: unknown;
+              // assignedUserName — משתמש / שם (אופציונלי).
               assignedUserName?: unknown;
+              // isLocked — האם הרשומה נעולה (אופציונלי).
               isLocked?: unknown;
+              // notes — הערות (אופציונלי).
               notes?: unknown;
             }>;
           } | null;
 
+        // עצירת הפעולה עם שגיאה כאשר schedule?.period?.status !== 'published'.
         if (
           schedule?.period?.status !==
             'published'
@@ -756,6 +923,7 @@ Deno.serve(
           );
         }
 
+        // assignment — הקצאה.
         const assignment =
           schedule.assignments?.find(
             (candidate) =>
@@ -763,12 +931,14 @@ Deno.serve(
                 sourceId,
           );
 
+        // עצירת הפעולה עם שגיאה כאשר !assignment.
         if (!assignment) {
           throw new Error(
             'משמרת כונן הבוקר לא נמצאה.',
           );
         }
 
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           data:
             updateData,
@@ -793,6 +963,7 @@ Deno.serve(
             },
           );
 
+        // עצירת הפעולה עם שגיאה כאשר updateError.
         if (updateError) {
           throw updateError;
         }
@@ -801,10 +972,12 @@ Deno.serve(
           updateData as
             Record<string, unknown>;
 
+        // startTime — שעת התחלה.
         const startTime =
           getString(
             assignment.startTime,
           );
+        // endTime — שעת סיום.
         const endTime =
           getString(
             assignment.endTime,
@@ -839,6 +1012,7 @@ Deno.serve(
         };
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           actorProfile,
@@ -856,6 +1030,7 @@ Deno.serve(
           )
           .maybeSingle();
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           targetProfile,
@@ -873,6 +1048,7 @@ Deno.serve(
           )
           .maybeSingle();
 
+      // auditAction — יומן שינויים.
       const auditAction =
         context.category ===
           'on_call'
@@ -885,6 +1061,7 @@ Deno.serve(
           ? 'driver_schedule_day'
           : 'morning_driver_schedule_assignment';
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         error:
           auditLogError,
@@ -977,6 +1154,7 @@ Deno.serve(
         );
       }
 
+      // notificationIds — התראות.
       const notificationIds =
         await createChangeNotifications(
           adminClient,

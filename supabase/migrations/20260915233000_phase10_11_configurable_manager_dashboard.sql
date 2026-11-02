@@ -1,5 +1,12 @@
+-- קובץ: supabase/migrations/20260915233000_phase10_11_configurable_manager_dashboard.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור לוח בקרה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.can_configure_manager_dashboard, public.get_my_dashboard_widget_settings, public.save_my_dashboard_widget_settings, public.get_my_manager_dashboard_widgets.
+-- - מבני טבלאות: public.user_dashboard_widgets.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
+-- הגדרת מבנה הטבלה public.user_dashboard_widgets והאילוצים המופיעים בהמשך.
 create table if not exists public.user_dashboard_widgets (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -15,16 +22,21 @@ create table if not exists public.user_dashboard_widgets (
   unique(user_id, widget_type, time_scope, job_type_id)
 );
 
+-- הגדרת האינדקס user_dashboard_widgets_user_sort_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists user_dashboard_widgets_user_sort_idx
   on public.user_dashboard_widgets(user_id, sort_order);
 
+-- עדכון מבנה או הגדרות הטבלה public.user_dashboard_widgets.
 alter table public.user_dashboard_widgets enable row level security;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.user_dashboard_widgets from anon, authenticated;
 
+-- פונקציית מסד public.can_configure_manager_dashboard: בדיקת אפשרות פעולה עבור לוח בקרה.
 create or replace function public.can_configure_manager_dashboard(requested_user_id uuid default auth.uid())
 returns boolean
 language sql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -45,19 +57,24 @@ as $function$
      );
 $function$;
 
+-- פונקציית מסד public.get_my_dashboard_widget_settings: שליפה או חישוב של לוח בקרה / הגדרות.
 create or replace function public.get_my_dashboard_widget_settings()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   v_actor uuid:=auth.uid();
 begin
+  -- הסתעפות לפי התנאי not public.can_configure_manager_dashboard(v_actor).
   if not public.can_configure_manager_dashboard(v_actor) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'canConfigure', true,
     'jobTypes', coalesce((
@@ -97,44 +114,59 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.save_my_dashboard_widget_settings: שמירת לוח בקרה / הגדרות.
 create or replace function public.save_my_dashboard_widget_settings(
   requested_widgets jsonb
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   v_actor uuid:=auth.uid();
+  -- v_item — פריט.
   v_item jsonb;
+  -- v_job_type_id — מזהה סוג התפקיד.
   v_job_type_id uuid;
   v_scope text;
   v_order integer:=0;
 begin
+  -- הסתעפות לפי התנאי not public.can_configure_manager_dashboard(v_actor).
   if not public.can_configure_manager_dashboard(v_actor) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
+  -- הסתעפות לפי התנאי requested_widgets is null or jsonb_typeof(requested_widgets)<>'array'.
   if requested_widgets is null or jsonb_typeof(requested_widgets)<>'array' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'widgets must be an array';
   end if;
+  -- הסתעפות לפי התנאי jsonb_array_length(requested_widgets)>12.
   if jsonb_array_length(requested_widgets)>12 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'up to 12 dashboard widgets are allowed';
   end if;
 
+  -- מחיקת הרשומות שנבחרו מתוך public.user_dashboard_widgets בהתאם לקלט ולתנאים להלן.
   delete from public.user_dashboard_widgets where user_id=v_actor;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for v_item in select value from jsonb_array_elements(requested_widgets)
   loop
     v_job_type_id:=(v_item->>'jobTypeId')::uuid;
     v_scope:=v_item->>'timeScope';
+    -- הסתעפות לפי התנאי v_scope not in ('current','today') then raise exception 'invalid time scope'; end if;.
     if v_scope not in ('current','today') then raise exception 'invalid time scope'; end if;
+    -- הסתעפות לפי התנאי not exists(.
     if not exists(
       select 1 from public.job_types jt
       where jt.id=v_job_type_id and jt.is_active=true
         and coalesce(jt.scheduling_strategy,'availability_optimizer')<>'none'
     ) then raise exception 'invalid job type'; end if;
 
+    -- הוספת רשומות ל־public.user_dashboard_widgets בהתאם לקלט ולתנאים להלן.
     insert into public.user_dashboard_widgets(
       user_id,widget_type,time_scope,job_type_id,sort_order,enabled
     ) values(v_actor,'staffing',v_scope,v_job_type_id,v_order,true)
@@ -147,9 +179,11 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.get_my_manager_dashboard_widgets: שליפה או חישוב של לוח בקרה.
 create or replace function public.get_my_manager_dashboard_widgets()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -159,6 +193,7 @@ declare
   v_today date:=timezone('Asia/Jerusalem',now())::date;
   v_now_time time:=timezone('Asia/Jerusalem',now())::time;
 begin
+  -- הסתעפות לפי התנאי not public.can_configure_manager_dashboard(v_actor).
   if not public.can_configure_manager_dashboard(v_actor) then
     return '[]'::jsonb;
   end if;
@@ -228,14 +263,22 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.can_configure_manager_dashboard(uuid) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dashboard_widget_settings() from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.save_my_dashboard_widget_settings(jsonb) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_manager_dashboard_widgets() from public;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.can_configure_manager_dashboard(uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dashboard_widget_settings() to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.save_my_dashboard_widget_settings(jsonb) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_manager_dashboard_widgets() to authenticated;
 
 commit;

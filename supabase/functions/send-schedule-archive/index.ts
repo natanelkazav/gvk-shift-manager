@@ -1,7 +1,17 @@
+/**
+ * קובץ: supabase/functions/send-schedule-archive/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת send-schedule-archive.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: jsonResponse, requiredEnv, stringValue.
+ * - קריאות RPC המופעלות בקובץ: get_my_permissions.
+ * - מקורות נתונים הנזכרים בקריאות from: profiles, audit_logs.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   createClient,
 } from 'npm:@supabase/supabase-js@2';
 
+// corsHeaders — הנתון corsHeaders בהקשר הפעולה.
 const corsHeaders = {
   'Access-Control-Allow-Origin':
     '*',
@@ -19,14 +29,22 @@ const corsHeaders = {
     'POST, OPTIONS',
 };
 
+// archiveSubject — ארכיון.
 const archiveSubject =
   'GVK_MONTHLY_TEAMS_ARCHIVE';
 
+// maxBase64Length — הנתון maxBase64Length בהקשר הפעולה.
 const maxBase64Length =
   12 *
   1024 *
   1024;
 
+/**
+ * פעולה jsonResponse: תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 function jsonResponse(
   body: unknown,
   status = 200,
@@ -48,9 +66,15 @@ function jsonResponse(
   );
 }
 
+/**
+ * פעולה requiredEnv: הנתון requiredEnv בהקשר הפעולה.
+ * @param name — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function requiredEnv(
   name: string,
 ): string {
+  // value — ערך.
   const value =
     Deno.env
       .get(
@@ -58,6 +82,7 @@ function requiredEnv(
       )
       ?.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !value.
   if (
     !value
   ) {
@@ -69,9 +94,15 @@ function requiredEnv(
   return value;
 }
 
+/**
+ * פעולה stringValue: ערך.
+ * @param value — ערך.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function stringValue(
   value: unknown,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value !== 'string'.
   if (
     typeof value !==
       'string'
@@ -90,6 +121,7 @@ Deno.serve(
     request:
       Request,
   ): Promise<Response> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method === 'OPTIONS'.
     if (
       request.method ===
         'OPTIONS'
@@ -103,6 +135,7 @@ Deno.serve(
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !==
         'POST'
@@ -116,32 +149,39 @@ Deno.serve(
       );
     }
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         requiredEnv(
           'SUPABASE_URL',
         );
 
+      // anonKey — מפתח.
       const anonKey =
         requiredEnv(
           'SUPABASE_ANON_KEY',
         );
 
+      // serviceRoleKey — שירות / מפתח.
       const serviceRoleKey =
         requiredEnv(
           'SUPABASE_SERVICE_ROLE_KEY',
         );
 
+      // resendApiKey — מפתח.
       const resendApiKey =
         requiredEnv(
           'RESEND_API_KEY',
         );
 
+      // fromEmail — כתובת דוא״ל.
       const fromEmail =
         requiredEnv(
           'RESEND_FROM_EMAIL',
         );
 
+      // recipientEmail — כתובת דוא״ל.
       const recipientEmail =
         requiredEnv(
           'SCHEDULE_ARCHIVE_RECIPIENT_EMAIL',
@@ -154,6 +194,7 @@ Deno.serve(
           )
           ?.trim();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !authorizationHeader.
       if (
         !authorizationHeader
       ) {
@@ -166,6 +207,7 @@ Deno.serve(
         );
       }
 
+      // userClient — משתמש / לקוח.
       const userClient =
         createClient(
           supabaseUrl,
@@ -188,6 +230,7 @@ Deno.serve(
           },
         );
 
+      // adminClient — לקוח.
       const adminClient =
         createClient(
           supabaseUrl,
@@ -203,6 +246,7 @@ Deno.serve(
           },
         );
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           userData,
@@ -213,6 +257,7 @@ Deno.serve(
         await userClient.auth
           .getUser();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר userError || !userData.user.
       if (
         userError ||
         !userData.user
@@ -226,6 +271,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           permissionData,
@@ -237,12 +283,14 @@ Deno.serve(
           'get_my_permissions',
         );
 
+      // עצירת הפעולה עם שגיאה כאשר permissionError.
       if (
         permissionError
       ) {
         throw permissionError;
       }
 
+      // permissions — הרשאות.
       const permissions =
         Array.isArray(
           permissionData,
@@ -250,6 +298,7 @@ Deno.serve(
           ? permissionData
           : [];
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !permissions.includes( 'schedule_export.manage', ).
       if (
         !permissions.includes(
           'schedule_export.manage',
@@ -264,6 +313,7 @@ Deno.serve(
         );
       }
 
+      // body — תוכן.
       const body =
         await request
           .json() as
@@ -272,28 +322,33 @@ Deno.serve(
             unknown
           >;
 
+      // fileName — קובץ / שם.
       const fileName =
         stringValue(
           body.fileName,
         );
 
+      // fileBase64 — קובץ.
       const fileBase64 =
         stringValue(
           body.fileBase64,
         );
 
+      // year — שנה.
       const year =
         typeof body.year ===
           'number'
           ? body.year
           : Number.NaN;
 
+      // month — חודש.
       const month =
         typeof body.month ===
           'number'
           ? body.month
           : Number.NaN;
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !fileName || !fileBase64 || !Number.isInteger( year, ) || !Number.isInteger( month, ) || month < 1 || month > 12.
       if (
         !fileName ||
         !fileBase64 ||
@@ -315,6 +370,7 @@ Deno.serve(
         );
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !fileName .toLowerCase() .endsWith( '.xlsx', ).
       if (
         !fileName
           .toLowerCase()
@@ -331,6 +387,7 @@ Deno.serve(
         );
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר fileBase64.length > maxBase64Length.
       if (
         fileBase64.length >
           maxBase64Length
@@ -344,6 +401,7 @@ Deno.serve(
         );
       }
 
+      // resendResponse — תוצאת הפעולה.
       const resendResponse =
         await fetch(
           'https://api.resend.com/emails',
@@ -401,6 +459,7 @@ Deno.serve(
         await resendResponse
           .text();
 
+      // resendBody — תוכן.
       let resendBody:
         Record<
           string,
@@ -408,6 +467,7 @@ Deno.serve(
         > | null =
           null;
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         resendBody =
           JSON.parse(
@@ -422,6 +482,7 @@ Deno.serve(
           null;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !resendResponse.ok.
       if (
         !resendResponse.ok
       ) {
@@ -446,6 +507,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           actorProfile,
@@ -463,6 +525,7 @@ Deno.serve(
           )
           .maybeSingle();
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         error:
           auditError,

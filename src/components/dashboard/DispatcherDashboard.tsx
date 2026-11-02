@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/dashboard/DispatcherDashboard.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור מוקדנים / לוח בקרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DispatcherDashboardProps, formatDate, formatTime, getDisplayName, DispatcherDashboard.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarClock,
   Radio,
@@ -14,19 +21,30 @@ import DashboardCard
 import ProgressCard
   from './ProgressCard';
 
+/**
+ * חוזה הנתונים DispatcherDashboardProps: מוקדנים / לוח בקרה / מאפייני הרכיב.
+ */
 interface DispatcherDashboardProps {
+  // data — נתונים.
   data:
     DispatcherDashboardData;
 }
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -52,12 +70,19 @@ function formatDate(
   );
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -83,6 +108,12 @@ function formatTime(
   );
 }
 
+/**
+ * פעולה getDisplayName: שליפה או חישוב של שם תצוגה.
+ * @param displayName — שם תצוגה.
+ * @param scheduleName — שיבוץ / שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDisplayName(
   displayName:
     string | null,
@@ -97,12 +128,18 @@ function getDisplayName(
   );
 }
 
+/**
+ * פעולה DispatcherDashboard: מוקדנים / לוח בקרה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DispatcherDashboard({
   data,
 }: DispatcherDashboardProps) {
+  // currentShift — משמרת.
   const currentShift =
     data.currentShift;
 
+  // nextShift — משמרת.
   const nextShift =
     data.nextShift;
 

@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useAuditLogs.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור יומן שינויים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UseAuditLogsResult, getErrorMessage, getDateRange, useAuditLogs.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import { effectiveAuditAction, auditActionCategory } from '../utils/auditCatalog';
 import {
   useCallback,
@@ -16,20 +23,28 @@ import type {
   AuditLogsState,
 } from '../types/audit';
 
+/**
+ * חוזה הנתונים UseAuditLogsResult: יומן שינויים / תוצאה.
+ */
 interface UseAuditLogsResult {
+  // auditLogsState — יומן שינויים / מצב.
   auditLogsState:
     AuditLogsState;
 
+  // filteredEntries — רשומות.
   filteredEntries:
     AuditLogEntry[];
 
+  // loadAuditLogs — יומן שינויים.
   loadAuditLogs:
     () => Promise<void>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   AuditLogsState = {
     entries:
@@ -42,9 +57,15 @@ const initialState:
       null,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -54,6 +75,11 @@ function getErrorMessage(
   return 'אירעה שגיאה בלתי צפויה בטעינת יומן המערכת.';
 }
 
+/**
+ * פעולה getDateRange: שליפה או חישוב של טווח התאריכים.
+ * @param filters — מסננים.
+ * @returns { from: Date | null; to: Date | null; } — הפלט בהתאם לחתימה.
+ */
 function getDateRange(
   filters:
     AuditLogFilters,
@@ -64,6 +90,7 @@ function getDateRange(
   const now =
     new Date();
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר filters.timeRange === 'today'.
   if (
     filters.timeRange ===
       'today'
@@ -82,12 +109,14 @@ function getDateRange(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר filters.timeRange === '7d' || filters.timeRange === '30d'.
   if (
     filters.timeRange ===
       '7d' ||
     filters.timeRange ===
       '30d'
   ) {
+    // days — ימים.
     const days =
       filters.timeRange ===
         '7d'
@@ -111,6 +140,7 @@ function getDateRange(
     };
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר filters.timeRange === 'custom'.
   if (
     filters.timeRange ===
       'custom'
@@ -156,10 +186,16 @@ function getDateRange(
   };
 }
 
+/**
+ * פעולה useAuditLogs: חיבור מצב או הקשר עבור יומן שינויים.
+ * @param filters — מסננים.
+ * @returns UseAuditLogsResult — הפלט בהתאם לחתימה.
+ */
 export function useAuditLogs(
   filters:
     AuditLogFilters,
 ): UseAuditLogsResult {
+  // מצב מקומי: auditLogsState — יומן שינויים / מצב; setAuditLogsState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     auditLogsState,
     setAuditLogsState,
@@ -168,6 +204,7 @@ export function useAuditLogs(
       initialState,
     );
 
+  // loadAuditLogs — יומן שינויים.
   const loadAuditLogs =
     useCallback(
       async (): Promise<void> => {
@@ -185,7 +222,9 @@ export function useAuditLogs(
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // entries — רשומות.
           const entries =
             await auditService
               .getAuditLogs({
@@ -225,6 +264,7 @@ export function useAuditLogs(
       [],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ loadAuditLogs, ].
   useEffect(
     () => {
       void loadAuditLogs();
@@ -234,9 +274,11 @@ export function useAuditLogs(
     ],
   );
 
+  // ערך מחושב filteredEntries — רשומות; נשמר בין רינדורים עד שינוי התלויות.
   const filteredEntries =
     useMemo(
       () => {
+        // normalizedSearchTerm — הנתון normalizedSearchTerm בהקשר הפעולה.
         const normalizedSearchTerm =
           filters.searchTerm
             .trim()
@@ -292,6 +334,7 @@ export function useAuditLogs(
                   normalizedSearchTerm,
                 );
 
+              // createdAt — מועד יצירה.
               const createdAt =
                 new Date(
                   entry.createdAt,
@@ -333,6 +376,7 @@ export function useAuditLogs(
       ],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback(
       (): void => {

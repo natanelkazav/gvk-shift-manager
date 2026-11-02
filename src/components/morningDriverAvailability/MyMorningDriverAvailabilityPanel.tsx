@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/morningDriverAvailability/MyMorningDriverAvailabilityPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כונני בוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: formatDate, formatDateTime, formatTime, getShiftLabel, MyMorningDriverAvailabilityPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   CheckCircle2,
@@ -28,6 +35,7 @@ import type {
 
 import '../../styles/morningDriverAvailabilityPersonal.css';
 
+// HEBREW_MONTHS — חודשים.
 const HEBREW_MONTHS = [
   'ינואר',
   'פברואר',
@@ -43,14 +51,21 @@ const HEBREW_MONTHS = [
   'דצמבר',
 ] as const;
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -69,17 +84,25 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה formatDateTime: עיצוב ערך לתצוגה עבור תאריך / זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDateTime(
   value:
     string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return 'לא הוגדר';
   }
 
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -97,6 +120,11 @@ function formatDateTime(
   ).format(date);
 }
 
+/**
+ * פעולה formatTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatTime(
   value: string,
 ): string {
@@ -106,6 +134,11 @@ function formatTime(
   );
 }
 
+/**
+ * פעולה getShiftLabel: שליפה או חישוב של משמרת / תווית.
+ * @param shift — משמרת.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getShiftLabel(
   shift:
     MorningDriverAvailabilityShift,
@@ -127,6 +160,9 @@ function getShiftLabel(
   }
 }
 
+/**
+ * פעולה MyMorningDriverAvailabilityPanel: כונני בוקר.
+ */
 function MyMorningDriverAvailabilityPanel() {
   const {
     state,
@@ -141,20 +177,24 @@ function MyMorningDriverAvailabilityPanel() {
   } =
     useMorningDriverAvailability();
 
+  // ערך מחושב groupedShifts — משמרות; נשמר בין רינדורים עד שינוי התלויות.
   const groupedShifts =
     useMemo(
       () => {
+        // groups — קבוצות; מיפוי לחיפוש לפי מפתח.
         const groups =
           new Map<
             string,
             MorningDriverAvailabilityShift[]
           >();
 
+        // עיבוד כל פריט מתוך state.data?.shifts ?? [] בנפרד.
         for (
           const shift
           of state.data?.shifts ??
           []
         ) {
+          // currentGroup — קבוצה.
           const currentGroup =
             groups.get(
               shift.shiftDate,
@@ -209,6 +249,7 @@ function MyMorningDriverAvailabilityPanel() {
       ],
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר state.isLoading.
   if (
     state.isLoading
   ) {
@@ -229,6 +270,7 @@ function MyMorningDriverAvailabilityPanel() {
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר state.error && !state.data.
   if (
     state.error &&
     !state.data
@@ -265,6 +307,7 @@ function MyMorningDriverAvailabilityPanel() {
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !state.data.
   if (
     !state.data
   ) {
@@ -304,14 +347,17 @@ function MyMorningDriverAvailabilityPanel() {
   } =
     state.data;
 
+  // periodTitle — תקופה / כותרת.
   const periodTitle =
     period.title ??
     `${HEBREW_MONTHS[period.month - 1]} ${period.year}`;
 
+  // isSubmitted — הוגש.
   const isSubmitted =
     submission.status ===
     'submitted';
 
+  // isEditable — הנתון isEditable בהקשר הפעולה.
   const isEditable =
     period.status ===
       'open' &&
@@ -546,6 +592,7 @@ function MyMorningDriverAvailabilityPanel() {
           (
             group,
           ) => {
+            // firstShift — משמרת.
             const firstShift =
               group.shifts[0];
 

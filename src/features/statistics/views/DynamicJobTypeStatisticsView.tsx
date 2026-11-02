@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/statistics/views/DynamicJobTypeStatisticsView.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סוג תפקיד.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: ViewMode, Props, displayName, formatHours, DynamicJobTypeStatisticsView.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { useEffect, useState } from 'react';
 import { attendanceService } from '../../../services/attendanceService';
 import type { AttendanceStatisticsRow } from '../../../types/attendance';
@@ -19,15 +26,31 @@ import type { DynamicStatisticsWorkspace } from '../../../types/dynamicStatistic
 import StatisticsBarChart from '../components/StatisticsBarChart';
 import StatisticsPieChart from '../components/StatisticsPieChart';
 
+/**
+ * טיפוס ViewMode: מצב פעולה.
+ */
 type ViewMode = 'overview' | 'charts' | 'tables' | 'availability' | 'payroll';
 
+/**
+ * חוזה הנתונים Props: מאפייני הרכיב.
+ */
 interface Props {
+  // data — נתונים.
   data: DynamicStatisticsWorkspace;
+  // selectedUserIds — מזהי המשתמשים שנבחרו.
   selectedUserIds: string[];
+  // mode — מצב פעולה.
   mode: ViewMode;
+  // attendanceEnabled — נוכחות / האם האפשרות מופעלת (אופציונלי).
   attendanceEnabled?: boolean;
 }
 
+/**
+ * פעולה displayName: שם תצוגה.
+ * @param displayNameValue — שם תצוגה.
+ * @param scheduleName — שיבוץ / שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function displayName(
   displayNameValue: string,
   scheduleName: string | null,
@@ -35,29 +58,51 @@ function displayName(
   return scheduleName?.trim() || displayNameValue.trim() || 'ללא שם';
 }
 
+/**
+ * פעולה formatHours: עיצוב ערך לתצוגה עבור שעות.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatHours(value: number): string {
   const rounded = Math.round(value * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
+/**
+ * פעולה DynamicJobTypeStatisticsView: סוג תפקיד.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicJobTypeStatisticsView({
   data,
   selectedUserIds,
   mode,
   attendanceEnabled = false,
 }: Props) {
+  // selected — נבחר; אוסף ערכים ייחודיים.
   const selected = new Set(selectedUserIds);
+  // מצב מקומי: attendanceRows — נוכחות / שורות; setAttendanceRows מעדכנת אותו ומפעילה רינדור לפי React.
   const [attendanceRows, setAttendanceRows] = useState<AttendanceStatisticsRow[]>([]);
+  // מצב מקומי: attendanceError — נוכחות / שגיאה; setAttendanceError מעדכנת אותו ומפעילה רינדור לפי React.
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  // מצב מקומי: attendanceRefresh — נוכחות; setAttendanceRefresh מעדכנת אותו ומפעילה רינדור לפי React.
   const [attendanceRefresh, setAttendanceRefresh] = useState(0);
+  // מצב מקומי: editingAttendance — נוכחות; setEditingAttendance מעדכנת אותו ומפעילה רינדור לפי React.
   const [editingAttendance, setEditingAttendance] = useState<AttendanceStatisticsRow | null>(null);
+  // מצב מקומי: editClockIn — הנתון editClockIn בהקשר הפעולה; setEditClockIn מעדכנת אותו ומפעילה רינדור לפי React.
   const [editClockIn, setEditClockIn] = useState('');
+  // מצב מקומי: editClockOut — הנתון editClockOut בהקשר הפעולה; setEditClockOut מעדכנת אותו ומפעילה רינדור לפי React.
   const [editClockOut, setEditClockOut] = useState('');
+  // מצב מקומי: editReason — הנתון editReason בהקשר הפעולה; setEditReason מעדכנת אותו ומפעילה רינדור לפי React.
   const [editReason, setEditReason] = useState('');
+  // מצב מקומי: editSaving — שמירה; setEditSaving מעדכנת אותו ומפעילה רינדור לפי React.
   const [editSaving, setEditSaving] = useState(false);
+  // מצב מקומי: editError — שגיאה; setEditError מעדכנת אותו ומפעילה רינדור לפי React.
   const [editError, setEditError] = useState<string | null>(null);
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [mode,attendanceEnabled,data.jobType.jobTypeId,data.filters.years,data.filters.months,selectedUserIds,attendanceRefresh].
   useEffect(() => {
+    // shouldLoadAttendance — נוכחות.
     const shouldLoadAttendance = attendanceEnabled && (mode === 'tables' || (mode === 'overview' && selectedUserIds.length === 1));
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !shouldLoadAttendance.
     if (!shouldLoadAttendance) {
       setAttendanceRows([]);
       setAttendanceError(null);
@@ -70,14 +115,17 @@ function DynamicJobTypeStatisticsView({
   const people = selected.size === 0
     ? data.people
     : data.people.filter((row) => selected.has(row.userId));
+  // availabilityPeople — אילוצים וזמינות.
   const availabilityPeople = selected.size === 0
     ? data.availabilityPeople
     : data.availabilityPeople.filter((row) => selected.has(row.userId));
 
+  // filteredAssignmentCount — הקצאה / כמות.
   const filteredAssignmentCount = people.reduce(
     (sum, row) => sum + row.assignmentCount,
     0,
   );
+  // filteredTimedHours — שעות.
   const filteredTimedHours = people.reduce(
     (sum, row) => sum + row.timedHours,
     0,
@@ -90,22 +138,35 @@ function DynamicJobTypeStatisticsView({
     (sum, row) => sum + row.substitutionCount,
     0,
   );
+  // visibleAssignments — הקצאות.
   const visibleAssignments = selected.size === 0 ? data.summary.assignmentCount : filteredAssignmentCount;
+  // visibleHours — שעות.
   const visibleHours = selected.size === 0 ? data.summary.timedHours : filteredTimedHours;
+  // workersWithAssignments — הקצאות.
   const workersWithAssignments = people.filter((row) => row.assignmentCount > 0).length;
+  // averageAssignmentsPerWorker — הקצאות.
   const averageAssignmentsPerWorker = workersWithAssignments ? visibleAssignments / workersWithAssignments : 0;
+  // averageHoursPerTimedAssignment — שעות / הקצאה.
   const averageHoursPerTimedAssignment = data.summary.timedAssignmentCount ? visibleHours / data.summary.timedAssignmentCount : 0;
 
+  /**
+   * פעולה formatCurrency: עיצוב ערך לתצוגה עבור הנתון formatCurrency בהקשר הפעולה.
+   * @param value — ערך.
+   * @returns string — הפלט בהתאם לחתימה.
+   */
   const formatCurrency = (value: number): string => new Intl.NumberFormat('he-IL', {
     style: 'currency',
     currency: 'ILS',
     maximumFractionDigits: 2,
   }).format(value);
+  // singleSelectedPayroll — נבחר / חישובי שכר.
   const singleSelectedPayroll = selectedUserIds.length === 1
     ? data.payrollPeople.find((row) => row.userId === selectedUserIds[0])
     : null;
+  // attendanceActualPay — נוכחות.
   const attendanceActualPay = attendanceRows.reduce((sum, row) => sum + (row.wage ?? 0), 0);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר mode === 'overview'.
   if (mode === 'overview') {
     return (
       <section className="statistics-section">
@@ -204,6 +265,7 @@ function DynamicJobTypeStatisticsView({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר mode === 'charts'.
   if (mode === 'charts') {
     return (
       <div className="statistics-charts-grid">
@@ -253,10 +315,13 @@ function DynamicJobTypeStatisticsView({
   }
 
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר mode === 'payroll'.
   if (mode === 'payroll') {
+    // visiblePayroll — חישובי שכר.
     const visiblePayroll = selected.size === 0
       ? data.payrollPeople
       : data.payrollPeople.filter((row) => selected.has(row.userId));
+    // totalPay — סך הכול.
     const totalPay = visiblePayroll.reduce((sum, row) => sum + row.projectedPay, 0);
     return (
       <>
@@ -312,7 +377,9 @@ function DynamicJobTypeStatisticsView({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר mode === 'availability'.
   if (mode === 'availability') {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.jobType.availabilityEnabled && data.availabilitySummary.periodCount === 0.
     if (!data.jobType.availabilityEnabled && data.availabilitySummary.periodCount === 0) {
       return (
         <section className="statistics-section">
@@ -386,22 +453,50 @@ function DynamicJobTypeStatisticsView({
     );
   }
 
+  /**
+   * פעולה money: הנתון money בהקשר הפעולה.
+   * @param value — ערך.
+   */
   const money = (value: number | null) => value == null
     ? '—'
     : new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS' }).format(value);
+  /**
+   * פעולה dateTime: תאריך / זמן.
+   * @param value — ערך.
+   */
   const dateTime = (value: string | null) => value
     ? new Intl.DateTimeFormat('he-IL', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
     : '—';
+  /**
+   * פעולה mapLink: מיפוי מפת התאמה.
+   * @param lat — הנתון lat בהקשר הפעולה.
+   * @param lng — הנתון lng בהקשר הפעולה.
+   */
   const mapLink = (lat: number | null, lng: number | null) => lat == null || lng == null
     ? null
     : `https://www.google.com/maps?q=${lat},${lng}`;
+  /**
+   * פעולה formatWorkedHours: עיצוב ערך לתצוגה עבור שעות.
+   * @param value — ערך.
+   * @returns string — הפלט בהתאם לחתימה.
+   */
   const formatWorkedHours = (value: number): string => value.toFixed(2);
+  /**
+   * פעולה toLocalInput: המרה עבור קלט.
+   * @param value — ערך.
+   * @returns string — הפלט בהתאם לחתימה.
+   */
   const toLocalInput = (value: string | null): string => {
     if (!value) return '';
+    // date — תאריך.
     const date = new Date(value);
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     return local.toISOString().slice(0,16);
   };
+  /**
+   * פעולה openAttendanceEdit: פתיחת נוכחות.
+   * @param row — שורה.
+   */
   const openAttendanceEdit = (row: AttendanceStatisticsRow) => {
     setEditingAttendance(row);
     setEditClockIn(toLocalInput(row.clockInAt));
@@ -409,20 +504,37 @@ function DynamicJobTypeStatisticsView({
     setEditReason('');
     setEditError(null);
   };
+  /**
+   * פעולה אסינכרונית saveAttendanceEdit: שמירת נוכחות.
+   */
   const saveAttendanceEdit = async () => {
     if (!editingAttendance || !editClockIn) return;
     setEditSaving(true); setEditError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await attendanceService.updateSession(editingAttendance.id,new Date(editClockIn).toISOString(),editClockOut?new Date(editClockOut).toISOString():null,editReason);
       setEditingAttendance(null); setAttendanceRefresh((value)=>value+1);
     } catch(error) { setEditError(error instanceof Error?error.message:'לא ניתן לשמור את התיקון'); }
     finally { setEditSaving(false); }
   };
+  /**
+   * פעולה attendanceTime: נוכחות / זמן.
+   * @param value — ערך.
+   * @param edited — הנתון edited בהקשר הפעולה.
+   * @param missing — הנתון missing בהקשר הפעולה.
+   */
   const attendanceTime = (value:string|null,edited:boolean,missing=false) => {
     if (missing) return <span className="attendance-missing-exit"><AlertTriangle size={16} aria-hidden="true" /> לא ביצע יציאה</span>;
     if (!value) return '—';
     return <span className="attendance-time-source" title={edited?'נערך על ידי מנהל התפקיד':'דווח על ידי בעל התפקיד'}>{edited?<Pencil size={16} aria-hidden="true" />:<UserRoundCheck size={16} aria-hidden="true" />}{dateTime(value)}</span>;
   };
+  /**
+   * פעולה locationCell: הנתון locationCell בהקשר הפעולה.
+   * @param lat — הנתון lat בהקשר הפעולה.
+   * @param lng — הנתון lng בהקשר הפעולה.
+   * @param distanceM — הנתון distanceM בהקשר הפעולה.
+   * @param withinRadius — הנתון withinRadius בהקשר הפעולה.
+   */
   const locationCell = (lat: number | null, lng: number | null, distanceM: number | null, withinRadius: boolean | null) => {
     const href = mapLink(lat, lng);
     if (!href) return '—';

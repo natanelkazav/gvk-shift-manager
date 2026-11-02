@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/push/hooks/usePushStatus.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור התראות Push / סטטוס.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PushStatusState, UsePushStatusResult, getErrorMessage, usePushStatus.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useState,
@@ -8,46 +15,61 @@ import {
   type PushPermissionState,
 } from '../../../services/pushNotificationService';
 
+/**
+ * חוזה הנתונים PushStatusState: התראות Push / סטטוס / מצב.
+ */
 interface PushStatusState {
   isSupported:
     boolean;
 
+  // permission — הרשאות.
   permission:
     PushPermissionState;
 
   isSubscribed:
     boolean;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading:
     boolean;
 
   isEnabling:
     boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 }
 
+/**
+ * חוזה הנתונים UsePushStatusResult: התראות Push / סטטוס / תוצאה.
+ */
 interface UsePushStatusResult {
+  // state — מצב.
   state:
     PushStatusState;
 
   shouldPrompt:
     boolean;
 
+  // shouldShowBlockedMessage — הודעה.
   shouldShowBlockedMessage:
     boolean;
 
+  // loadStatus — סטטוס.
   loadStatus:
     () => Promise<void>;
 
+  // enablePush — התראות Push.
   enablePush:
     () => Promise<boolean>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   PushStatusState = {
     isSupported:
@@ -69,9 +91,15 @@ const initialState:
       null,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -81,8 +109,13 @@ function getErrorMessage(
   return 'אירעה שגיאה בבדיקת מצב ההתראות.';
 }
 
+/**
+ * פעולה usePushStatus: חיבור מצב או הקשר עבור התראות Push / סטטוס.
+ * @returns UsePushStatusResult — הפלט בהתאם לחתימה.
+ */
 export function usePushStatus():
   UsePushStatusResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -91,6 +124,7 @@ export function usePushStatus():
       initialState,
     );
 
+  // loadStatus — סטטוס.
   const loadStatus =
     useCallback(
       async (): Promise<void> => {
@@ -108,7 +142,9 @@ export function usePushStatus():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // status — סטטוס.
           const status =
             await pushNotificationService
               .getStatus();
@@ -155,6 +191,7 @@ export function usePushStatus():
       [],
     );
 
+  // enablePush — התראות Push.
   const enablePush =
     useCallback(
       async (): Promise<boolean> => {
@@ -172,10 +209,12 @@ export function usePushStatus():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
           await pushNotificationService
             .enablePush();
 
+          // status — סטטוס.
           const status =
             await pushNotificationService
               .getStatus();
@@ -226,6 +265,7 @@ export function usePushStatus():
       [],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback(
       (): void => {
@@ -251,6 +291,7 @@ export function usePushStatus():
       'unsupported' &&
     !state.isSubscribed;
 
+  // shouldShowBlockedMessage — הודעה.
   const shouldShowBlockedMessage =
     state.isSupported &&
     state.permission ===

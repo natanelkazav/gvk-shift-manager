@@ -1,11 +1,19 @@
+-- קובץ: supabase/migrations/20260915220000_phase10_9_10_daily_report_detail_attachments.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דוחות פעילות יומיים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_daily_report_notification_detail.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
+-- פונקציית מסד public.get_daily_report_notification_detail: שליפה או חישוב של דוחות פעילות יומיים.
 create or replace function public.get_daily_report_notification_detail(requested_report_id uuid)
 returns jsonb language plpgsql security definer set search_path=''
 as $$
 declare actor uuid:=auth.uid();
 begin
+ -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
  if actor is null then raise exception 'not authenticated'; end if;
+ -- הסתעפות לפי התנאי not exists(.
  if not exists(
    select 1 from public.daily_reports r join public.job_types jt on jt.id=r.job_type_id
    where r.id=requested_report_id and (
@@ -34,6 +42,7 @@ begin
 end $$;
 
 -- Existing daily-report notifications gain attachment count immediately.
+-- עדכון רשומות ב־public.notifications בהתאם לקלט ולתנאים להלן.
 update public.notifications n
 set data = coalesce(n.data,'{}'::jsonb) || jsonb_build_object(
  'attachmentCount',

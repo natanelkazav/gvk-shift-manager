@@ -1,27 +1,51 @@
+/**
+ * קובץ: src/components/users/dynamic/DynamicMonthlyRotationPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי / סבב כוננויות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DynamicMonthlyRotationPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { ArrowDown, ArrowUp, CalendarRange, LoaderCircle, RefreshCw, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { dynamicSchedulingService } from '../../../services/dynamicSchedulingService';
 import type { DynamicJobType, DynamicRotationWorkspace } from '../../../types/dynamicScheduling';
 import { Button } from '../../ui';
 
+// sourceLabel — מקור / תווית.
 const sourceLabel: Record<string, string> = {
   historical_best_window: 'נלמד מההיסטוריה',
   membership_fallback: 'נוצר מרשימת העובדים',
   manual: 'הוגדר ידנית',
 };
 
+/**
+ * פעולה DynamicMonthlyRotationPanel: דינמי / סבב כוננויות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicMonthlyRotationPanel({ jobType }: { jobType: DynamicJobType }) {
+  // מצב מקומי: data — נתונים; setData מעדכנת אותו ומפעילה רינדור לפי React.
   const [data, setData] = useState<DynamicRotationWorkspace | null>(null);
+  // מצב מקומי: order — הנתון order בהקשר הפעולה; setOrder מעדכנת אותו ומפעילה רינדור לפי React.
   const [order, setOrder] = useState<string[]>([]);
+  // מצב מקומי: anchorDate — תאריך; setAnchorDate מעדכנת אותו ומפעילה רינדור לפי React.
   const [anchorDate, setAnchorDate] = useState('');
+  // מצב מקומי: reason — הנתון reason בהקשר הפעולה; setReason מעדכנת אותו ומפעילה רינדור לפי React.
   const [reason, setReason] = useState('');
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy, setBusy] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
+  // מצב מקומי: message — הודעה; setMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [message, setMessage] = useState<string | null>(null);
 
+  /**
+   * פעולה אסינכרונית load: טעינת הנתון load בהקשר הפעולה.
+   */
   const load = async () => {
     setBusy(true); setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await dynamicSchedulingService.getRotationWorkspace(jobType.id);
       setData(result);
       setOrder(result.rotationUserIds ?? []);
@@ -31,16 +55,23 @@ function DynamicMonthlyRotationPanel({ jobType }: { jobType: DynamicJobType }) {
     } finally { setBusy(false); }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [jobType.id].
   useEffect(() => { void load(); }, [jobType.id]);
 
+  // ערך מחושב names — הנתון names בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const names = useMemo(
     () => new Map((data?.members ?? []).map((member) => [member.userId, member.displayName])),
     [data?.members],
   );
 
+  /**
+   * פעולה אסינכרונית initialize: הנתון initialize בהקשר הפעולה.
+   */
   const initialize = async () => {
     setBusy(true); setError(null); setMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await dynamicSchedulingService.initializeRotation(jobType.id);
       setData(result); setOrder(result.rotationUserIds); setAnchorDate(result.anchorDate ?? '');
       setMessage('הסבב חושב ונשמר. מעכשיו הוא נשמר כרצף המקורי של התפקיד.');
@@ -48,18 +79,31 @@ function DynamicMonthlyRotationPanel({ jobType }: { jobType: DynamicJobType }) {
     finally { setBusy(false); }
   };
 
+  /**
+   * פעולה move: הנתון move בהקשר הפעולה.
+   * @param index — מיקום באוסף.
+   * @param delta — הנתון delta בהקשר הפעולה.
+   */
   const move = (index: number, delta: number) => {
+    // nextIndex — מיקום באוסף.
     const nextIndex = index + delta;
     if (nextIndex < 0 || nextIndex >= order.length) return;
+    // next — הנתון next בהקשר הפעולה.
     const next = [...order];
     [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
     setOrder(next);
   };
 
+  /**
+   * פעולה אסינכרונית save: שמירת הנתון save בהקשר הפעולה.
+   */
   const save = async () => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !anchorDate.
     if (!anchorDate) { setError('יש לבחור תאריך עוגן.'); return; }
     setBusy(true); setError(null); setMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await dynamicSchedulingService.updateRotation(jobType.id, order, anchorDate, reason);
       setData(result); setOrder(result.rotationUserIds); setReason('');
       setMessage('הסבב החודשי עודכן. שינויים עתידיים ימשיכו מהרצף הזה.');

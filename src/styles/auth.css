@@ -1,3 +1,9 @@
+/*
+ * קובץ: src/styles/auth.css
+ * מטרה: הגדרת עיצוב ופריסה עבור אימות משתמשים.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .auth-page  */
 .auth-page {
   display: grid;
   min-height: 100vh;
@@ -16,10 +22,12 @@
     );
 }
 
+/* כללי עיצוב עבור .auth-panel  */
 .auth-panel {
   width: min(440px, 100%);
 }
 
+/* כללי עיצוב עבור .auth-brand  */
 .auth-brand {
   display: flex;
   align-items: center;
@@ -27,6 +35,7 @@
   margin-bottom: var(--space-6);
 }
 
+/* כללי עיצוב עבור .auth-brand-icon  */
 .auth-brand-icon {
   display: grid;
   width: 58px;
@@ -39,16 +48,19 @@
   box-shadow: var(--shadow-md);
 }
 
+/* כללי עיצוב עבור .auth-brand h1  */
 .auth-brand h1 {
   margin-bottom: var(--space-1);
   font-size: var(--font-size-xl);
 }
 
+/* כללי עיצוב עבור .auth-brand p  */
 .auth-brand p {
   margin: 0;
   font-size: var(--font-size-sm);
 }
 
+/* כללי עיצוב עבור .auth-card  */
 .auth-card {
   overflow: hidden;
   border: 1px solid var(--color-gray-200);
@@ -57,19 +69,23 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* כללי עיצוב עבור .auth-card-header  */
 .auth-card-header {
   padding: var(--space-6);
   border-bottom: 1px solid var(--color-gray-200);
 }
 
+/* כללי עיצוב עבור .auth-card-header h2  */
 .auth-card-header h2 {
   margin-bottom: var(--space-2);
 }
 
+/* כללי עיצוב עבור .auth-card-header p  */
 .auth-card-header p {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .auth-form  */
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -77,6 +93,7 @@
   padding: var(--space-6);
 }
 
+/* כללי עיצוב עבור .auth-error  */
 .auth-error {
   margin:
     var(--space-5)
@@ -91,12 +108,14 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .auth-submit-button  */
 .auth-submit-button {
   width: 100%;
   min-height: 48px;
   margin-top: var(--space-2);
 }
 
+/* כללי עיצוב עבור .auth-footer  */
 .auth-footer {
   margin:
     var(--space-5)
@@ -106,6 +125,7 @@
   font-size: var(--font-size-xs);
 }
 
+/* כללי עיצוב עבור .loading-screen  */
 .loading-screen {
   display: flex;
   min-height: 100vh;
@@ -117,11 +137,13 @@
   background: var(--color-gray-100);
 }
 
+/* כללי עיצוב עבור .loading-screen p  */
 .loading-screen p {
   margin: 0;
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .loading-spinner  */
 .loading-spinner {
   width: 42px;
   height: 42px;
@@ -131,12 +153,14 @@
   animation: loading-spin 800ms linear infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes loading-spin */
 @keyframes loading-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 520px) */
 @media (max-width: 520px) {
   .auth-page {
     align-items: start;
@@ -162,6 +186,7 @@
   }
 }
 
+/* כללי עיצוב עבור .auth-remember-row  */
 .auth-remember-row {
   display: flex;
   align-items: flex-start;
@@ -173,6 +198,7 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .auth-remember-row input  */
 .auth-remember-row input {
   width: 18px;
   height: 18px;
@@ -181,6 +207,7 @@
   accent-color: var(--color-primary-600);
 }
 
+/* כללי עיצוב עבור .auth-remember-row span  */
 .auth-remember-row span {
   display: flex;
   min-width: 0;
@@ -188,23 +215,27 @@
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .auth-remember-row strong  */
 .auth-remember-row strong {
   color: var(--color-gray-900);
   font-size: var(--font-size-sm);
 }
 
+/* כללי עיצוב עבור .auth-remember-row small  */
 .auth-remember-row small {
   color: var(--color-gray-500);
   font-size: var(--font-size-xs);
   line-height: 1.45;
 }
 
+/* כללי עיצוב עבור .auth-remember-row:has(input:disabled)  */
 .auth-remember-row:has(input:disabled) {
   cursor: not-allowed;
   opacity: 0.65;
 }
 
 
+/* כללי עיצוב עבור .auth-success  */
 .auth-success {
   margin:
     var(--space-5)
@@ -221,12 +252,14 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .auth-forgot-password-row  */
 .auth-forgot-password-row {
   display: flex;
   justify-content: flex-start;
   margin-top: calc(var(--space-3) * -1);
 }
 
+/* כללי עיצוב עבור .auth-forgot-password-button  */
 .auth-forgot-password-button {
   padding: 0;
   border: 0;
@@ -238,21 +271,25 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .auth-forgot-password-button:hover:not(:disabled)  */
 .auth-forgot-password-button:hover:not(:disabled) {
   text-decoration: underline;
 }
 
+/* כללי עיצוב עבור .auth-forgot-password-button:focus-visible  */
 .auth-forgot-password-button:focus-visible {
   outline: 2px solid var(--color-primary-500);
   outline-offset: 4px;
   border-radius: 4px;
 }
 
+/* כללי עיצוב עבור .auth-forgot-password-button:disabled  */
 .auth-forgot-password-button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 520px) */
 @media (max-width: 520px) {
   .auth-success {
     margin:

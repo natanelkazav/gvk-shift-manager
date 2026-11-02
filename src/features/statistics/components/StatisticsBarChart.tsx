@@ -1,20 +1,42 @@
+/**
+ * קובץ: src/features/statistics/components/StatisticsBarChart.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: BarItem, StatisticsBarChartProps, StatisticsBarChart.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
+/**
+ * חוזה הנתונים BarItem: פריט.
+ */
 interface BarItem {
+  // label — תווית.
   label: string;
 
+  // value — ערך.
   value: number;
 }
 
+/**
+ * חוזה הנתונים StatisticsBarChartProps: סטטיסטיקה / מאפייני הרכיב.
+ */
 interface StatisticsBarChartProps {
+  // title — כותרת.
   title: string;
 
   description?: string;
 
+  // items — פריטים.
   items:
     BarItem[];
 
+  // emptyMessage — הודעה (אופציונלי).
   emptyMessage?: string;
 }
 
+/**
+ * פעולה StatisticsBarChart: סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function StatisticsBarChart({
   title,
   description,
@@ -22,6 +44,7 @@ function StatisticsBarChart({
   emptyMessage =
     'אין נתונים להצגה.',
 }: StatisticsBarChartProps) {
+  // maximumValue — ערך.
   const maximumValue =
     Math.max(
       0,

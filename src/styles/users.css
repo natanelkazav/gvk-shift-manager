@@ -1,9 +1,16 @@
+/*
+ * קובץ: src/styles/users.css
+ * מטרה: הגדרת עיצוב ופריסה עבור משתמשים.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .users-page  */
 .users-page {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
+/* כללי עיצוב עבור .users-error  */
 .users-error {
   padding: 14px 16px;
   border: 1px solid var(--color-danger-border, #fecaca);
@@ -13,12 +20,14 @@
   font-size: 0.94rem;
 }
 
+/* כללי עיצוב עבור .users-statistics  */
 .users-statistics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .users-stat-card  */
 .users-stat-card {
   display: flex;
   align-items: center;
@@ -31,26 +40,31 @@
   box-shadow: var(--shadow-sm, 0 1px 3px rgb(0 0 0 / 8%));
 }
 
+/* כללי עיצוב עבור .users-stat-card svg  */
 .users-stat-card svg {
   flex: 0 0 auto;
 }
 
+/* כללי עיצוב עבור .users-stat-card div  */
 .users-stat-card div {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .users-stat-card span  */
 .users-stat-card span {
   color: var(--color-text-muted, #64748b);
   font-size: 0.88rem;
 }
 
+/* כללי עיצוב עבור .users-stat-card strong  */
 .users-stat-card strong {
   color: var(--color-text, #0f172a);
   font-size: 1.55rem;
 }
 
+/* כללי עיצוב עבור .users-filters  */
 .users-filters {
   display: grid;
   grid-template-columns:
@@ -65,18 +79,21 @@
   background: var(--color-surface, #ffffff);
 }
 
+/* כללי עיצוב עבור .users-filter-field  */
 .users-filter-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .users-filter-field > span  */
 .users-filter-field > span {
   color: var(--color-text, #0f172a);
   font-size: 0.9rem;
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .users-filter-field select  */
 .users-filter-field select {
   width: 100%;
   min-height: 42px;
@@ -88,12 +105,14 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .users-filter-field select:focus  */
 .users-filter-field select:focus {
   outline: 2px solid var(--color-primary-soft, #bfdbfe);
   outline-offset: 1px;
   border-color: var(--color-primary, #2563eb);
 }
 
+/* כללי עיצוב עבור .users-table-container  */
 .users-table-container {
   overflow-x: auto;
   border: 1px solid var(--color-border, var(--theme-border));
@@ -101,6 +120,7 @@
   background: var(--color-surface, #ffffff);
 }
 
+/* כללי עיצוב עבור .users-table  */
 .users-table {
   width: 100%;
   min-width: 940px;
@@ -108,6 +128,7 @@
 }
 
 .users-table th,
+/* כללי עיצוב עבור .users-table td  */
 .users-table td {
   padding: 14px 16px;
   text-align: right;
@@ -115,6 +136,7 @@
   border-bottom: 1px solid var(--color-border, var(--theme-border));
 }
 
+/* כללי עיצוב עבור .users-table th  */
 .users-table th {
   background: var(--color-background-subtle, #f8fafc);
   color: var(--color-text-muted, #475569);
@@ -123,42 +145,50 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .users-table tbody tr:last-child td  */
 .users-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
+/* כללי עיצוב עבור .users-table tbody tr:hover  */
 .users-table tbody tr:hover {
   background: var(--color-background-subtle, #f8fafc);
 }
 
+/* כללי עיצוב עבור .users-user-cell  */
 .users-user-cell {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .users-user-cell > div:last-child  */
 .users-user-cell > div:last-child {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .users-user-cell strong  */
 .users-user-cell strong {
   color: var(--color-text, #0f172a);
   font-size: 0.94rem;
 }
 
+/* כללי עיצוב עבור .users-user-cell span  */
 .users-user-cell span {
   color: var(--color-text-muted, #64748b);
   font-size: 0.82rem;
 }
 
+/* כללי עיצוב עבור .users-user-cell small  */
 .users-user-cell small {
   color: var(--color-primary, #2563eb);
   font-size: 0.74rem;
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .users-avatar  */
 .users-avatar {
   display: grid;
   place-items: center;
@@ -172,6 +202,7 @@
 }
 
 .users-role-badge,
+/* כללי עיצוב עבור .users-status  */
 .users-status {
   display: inline-flex;
   align-items: center;
@@ -183,21 +214,25 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .users-role-badge  */
 .users-role-badge {
   background: var(--theme-surface-soft);
   color: var(--theme-text);
 }
 
+/* כללי עיצוב עבור .users-status-active  */
 .users-status-active {
   background: #ecfdf5;
   color: #047857;
 }
 
+/* כללי עיצוב עבור .users-status-inactive  */
 .users-status-inactive {
   background: #fef2f2;
   color: #b91c1c;
 }
 
+/* כללי עיצוב עבור .users-empty-state  */
 .users-empty-state {
   display: flex;
   min-height: 240px;
@@ -210,26 +245,31 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .users-empty-state p  */
 .users-empty-state p {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .users-loading-icon  */
 .users-loading-icon {
   animation: users-spin 900ms linear infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes users-spin */
 @keyframes users-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1100px) */
 @media (max-width: 1100px) {
   .users-statistics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .users-statistics {
     grid-template-columns: 1fr;
@@ -239,6 +279,7 @@
     grid-template-columns: 1fr;
   }
 }
+/* כללי עיצוב עבור .users-actions  */
 .users-actions {
   display: flex;
   align-items: center;
@@ -246,10 +287,12 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .modal-open  */
 .modal-open {
   overflow: hidden;
 }
 
+/* כללי עיצוב עבור .edit-user-modal-backdrop  */
 .edit-user-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -261,6 +304,7 @@
   backdrop-filter: blur(3px);
 }
 
+/* כללי עיצוב עבור .edit-user-modal  */
 .edit-user-modal {
   width: min(620px, 100%);
   max-height: calc(100vh - 40px);
@@ -271,6 +315,7 @@
   box-shadow: 0 24px 64px rgb(15 23 42 / 25%);
 }
 
+/* כללי עיצוב עבור .edit-user-modal-header  */
 .edit-user-modal-header {
   display: flex;
   align-items: center;
@@ -280,24 +325,28 @@
   border-bottom: 1px solid var(--color-border, var(--theme-border));
 }
 
+/* כללי עיצוב עבור .edit-user-modal-title  */
 .edit-user-modal-title {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .edit-user-modal-title h2  */
 .edit-user-modal-title h2 {
   margin: 0;
   color: var(--color-text, #0f172a);
   font-size: 1.1rem;
 }
 
+/* כללי עיצוב עבור .edit-user-modal-title p  */
 .edit-user-modal-title p {
   margin: 3px 0 0;
   color: var(--color-text-muted, #64748b);
   font-size: 0.84rem;
 }
 
+/* כללי עיצוב עבור .edit-user-modal-icon  */
 .edit-user-modal-icon {
   display: grid;
   place-items: center;
@@ -309,6 +358,7 @@
   color: var(--color-primary, #2563eb);
 }
 
+/* כללי עיצוב עבור .edit-user-modal-close  */
 .edit-user-modal-close {
   display: grid;
   place-items: center;
@@ -322,16 +372,19 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .edit-user-modal-close:hover  */
 .edit-user-modal-close:hover {
   background: var(--theme-surface-soft);
   color: var(--color-text, #0f172a);
 }
 
+/* כללי עיצוב עבור .edit-user-modal-close:disabled  */
 .edit-user-modal-close:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
+/* כללי עיצוב עבור .edit-user-form  */
 .edit-user-form {
   display: flex;
   flex-direction: column;
@@ -339,24 +392,28 @@
   padding: 22px;
 }
 
+/* כללי עיצוב עבור .edit-user-form-grid  */
 .edit-user-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .edit-user-field  */
 .edit-user-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .edit-user-field > span  */
 .edit-user-field > span {
   color: var(--color-text, #0f172a);
   font-size: 0.9rem;
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .edit-user-field select  */
 .edit-user-field select {
   width: 100%;
   min-height: 42px;
@@ -368,18 +425,21 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .edit-user-field select:focus  */
 .edit-user-field select:focus {
   border-color: var(--color-primary, #2563eb);
   outline: 2px solid var(--color-primary-soft, #bfdbfe);
   outline-offset: 1px;
 }
 
+/* כללי עיצוב עבור .edit-user-options  */
 .edit-user-options {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .edit-user-option  */
 .edit-user-option {
   display: flex;
   align-items: flex-start;
@@ -391,6 +451,7 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .edit-user-option input  */
 .edit-user-option input {
   width: 18px;
   height: 18px;
@@ -398,22 +459,26 @@
   accent-color: var(--color-primary, #2563eb);
 }
 
+/* כללי עיצוב עבור .edit-user-option > span  */
 .edit-user-option > span {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .edit-user-option strong  */
 .edit-user-option strong {
   color: var(--color-text, #0f172a);
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .edit-user-option small  */
 .edit-user-option small {
   color: var(--color-text-muted, #64748b);
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .edit-user-form-error  */
 .edit-user-form-error {
   padding: 12px 14px;
   border: 1px solid #fecaca;
@@ -423,6 +488,7 @@
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .edit-user-current-user-note  */
 .edit-user-current-user-note {
   padding: 11px 13px;
   border: 1px solid #fde68a;
@@ -432,6 +498,7 @@
   font-size: 0.86rem;
 }
 
+/* כללי עיצוב עבור .edit-user-modal-actions  */
 .edit-user-modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -439,6 +506,7 @@
   padding-top: 4px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .edit-user-modal-backdrop {
     align-items: end;
@@ -463,6 +531,7 @@
     width: 100%;
   }
 }
+/* כללי עיצוב עבור .delete-user-modal  */
 .delete-user-modal {
   width: min(560px, 100%);
   max-height: calc(100vh - 40px);
@@ -473,6 +542,7 @@
   box-shadow: 0 24px 64px rgb(15 23 42 / 30%);
 }
 
+/* כללי עיצוב עבור .delete-user-modal-header  */
 .delete-user-modal-header {
   display: flex;
   align-items: center;
@@ -483,24 +553,28 @@
   background: #fff7f7;
 }
 
+/* כללי עיצוב עבור .delete-user-modal-title  */
 .delete-user-modal-title {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .delete-user-modal-title h2  */
 .delete-user-modal-title h2 {
   margin: 0;
   color: #991b1b;
   font-size: 1.1rem;
 }
 
+/* כללי עיצוב עבור .delete-user-modal-title p  */
 .delete-user-modal-title p {
   margin: 3px 0 0;
   color: #b91c1c;
   font-size: 0.84rem;
 }
 
+/* כללי עיצוב עבור .delete-user-modal-icon  */
 .delete-user-modal-icon {
   display: grid;
   place-items: center;
@@ -512,6 +586,7 @@
   color: #b91c1c;
 }
 
+/* כללי עיצוב עבור .delete-user-form  */
 .delete-user-form {
   display: flex;
   flex-direction: column;
@@ -519,6 +594,7 @@
   padding: 22px;
 }
 
+/* כללי עיצוב עבור .delete-user-warning  */
 .delete-user-warning {
   display: flex;
   align-items: flex-start;
@@ -530,26 +606,31 @@
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .delete-user-warning svg  */
 .delete-user-warning svg {
   flex: 0 0 auto;
   margin-top: 1px;
 }
 
+/* כללי עיצוב עבור .delete-user-warning > div  */
 .delete-user-warning > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .delete-user-warning strong  */
 .delete-user-warning strong {
   font-size: 0.92rem;
 }
 
+/* כללי עיצוב עבור .delete-user-warning span  */
 .delete-user-warning span {
   font-size: 0.82rem;
   line-height: 1.55;
 }
 
+/* כללי עיצוב עבור .delete-user-target  */
 .delete-user-target {
   display: flex;
   align-items: center;
@@ -560,44 +641,52 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .delete-user-target > div:last-child  */
 .delete-user-target > div:last-child {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .delete-user-target strong  */
 .delete-user-target strong {
   color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
+/* כללי עיצוב עבור .delete-user-target span  */
 .delete-user-target span {
   color: var(--theme-text-muted);
   font-size: 0.82rem;
 }
 
+/* כללי עיצוב עבור .delete-user-target small  */
 .delete-user-target small {
   color: var(--theme-text-muted);
   font-size: 0.75rem;
 }
 
+/* כללי עיצוב עבור .delete-user-field  */
 .delete-user-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .delete-user-field > span  */
 .delete-user-field > span {
   color: var(--theme-text-strong);
   font-size: 0.9rem;
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .delete-user-field > span small  */
 .delete-user-field > span small {
   color: var(--theme-text-muted);
   font-weight: 400;
 }
 
+/* כללי עיצוב עבור .delete-user-field textarea  */
 .delete-user-field textarea {
   width: 100%;
   min-height: 100px;
@@ -611,18 +700,21 @@
   line-height: 1.55;
 }
 
+/* כללי עיצוב עבור .delete-user-field textarea:focus  */
 .delete-user-field textarea:focus {
   border-color: #dc2626;
   outline: 2px solid #fecaca;
   outline-offset: 1px;
 }
 
+/* כללי עיצוב עבור .delete-user-field > small  */
 .delete-user-field > small {
   align-self: flex-end;
   color: var(--theme-text-muted);
   font-size: 0.74rem;
 }
 
+/* כללי עיצוב עבור .delete-user-confirmation  */
 .delete-user-confirmation {
   display: flex;
   flex-direction: column;
@@ -633,12 +725,14 @@
   background: #fff7f7;
 }
 
+/* כללי עיצוב עבור .delete-user-confirmation p  */
 .delete-user-confirmation p {
   margin: 0;
   color: #7f1d1d;
   font-size: 0.86rem;
 }
 
+/* כללי עיצוב עבור .delete-user-confirmation code  */
 .delete-user-confirmation code {
   width: fit-content;
   padding: 4px 9px;
@@ -649,6 +743,7 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .delete-user-modal-actions  */
 .delete-user-modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -656,16 +751,19 @@
   padding-top: 2px;
 }
 
+/* כללי עיצוב עבור .delete-user-loading-icon  */
 .delete-user-loading-icon {
   animation: delete-user-spin 850ms linear infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes delete-user-spin */
 @keyframes delete-user-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .delete-user-modal {
     width: 100%;
@@ -681,12 +779,14 @@
     width: 100%;
   }
 }
+/* כללי עיצוב עבור .users-role-groups  */
 .users-role-groups {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .users-role-group  */
 .users-role-group {
   overflow: hidden;
   border: 1px solid var(--theme-border);
@@ -695,6 +795,7 @@
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
+/* כללי עיצוב עבור .users-role-group-header  */
 .users-role-group-header {
   display: grid;
   grid-template-columns:
@@ -715,19 +816,23 @@
   transition: background-color 160ms ease;
 }
 
+/* כללי עיצוב עבור .users-role-group-header:hover  */
 .users-role-group-header:hover {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .users-role-group-header:focus-visible  */
 .users-role-group-header:focus-visible {
   outline: 3px solid #bfdbfe;
   outline-offset: -3px;
 }
 
+/* כללי עיצוב עבור .users-role-group-collapsed .users-role-group-header  */
 .users-role-group-collapsed .users-role-group-header {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .users-role-group-icon  */
 .users-role-group-icon {
   display: inline-flex;
   width: 44px;
@@ -739,6 +844,7 @@
   color: #2563eb;
 }
 
+/* כללי עיצוב עבור .users-role-group-heading  */
 .users-role-group-heading {
   display: flex;
   min-width: 0;
@@ -746,17 +852,20 @@
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .users-role-group-title-row  */
 .users-role-group-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .users-role-group-title-row strong  */
 .users-role-group-title-row strong {
   color: var(--theme-text-strong);
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .users-role-group-heading small  */
 .users-role-group-heading small {
   overflow: hidden;
   color: var(--theme-text-muted);
@@ -765,6 +874,7 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .users-role-group-count  */
 .users-role-group-count {
   display: inline-flex;
   min-width: 26px;
@@ -779,6 +889,7 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .users-role-group-summary  */
 .users-role-group-summary {
   display: flex;
   align-items: center;
@@ -788,6 +899,7 @@
 }
 
 .users-role-group-active-count,
+/* כללי עיצוב עבור .users-role-group-inactive-count  */
 .users-role-group-inactive-count {
   display: inline-flex;
   align-items: center;
@@ -797,16 +909,19 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .users-role-group-active-count  */
 .users-role-group-active-count {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .users-role-group-inactive-count  */
 .users-role-group-inactive-count {
   background: #fee2e2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .users-role-group-toggle  */
 .users-role-group-toggle {
   display: inline-flex;
   align-items: center;
@@ -814,36 +929,44 @@
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .users-role-group-content  */
 .users-role-group-content {
   border-top: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .users-group-table-wrapper  */
 .users-group-table-wrapper {
   overflow-x: auto;
 }
 
+/* כללי עיצוב עבור .users-group-table  */
 .users-group-table {
   min-width: 860px;
   border: 0;
   border-radius: 0;
 }
 
+/* כללי עיצוב עבור .users-group-table thead th  */
 .users-group-table thead th {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .users-group-table tbody tr:last-child td  */
 .users-group-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
+/* כללי עיצוב עבור .users-row-current  */
 .users-row-current {
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .users-row-inactive  */
 .users-row-inactive {
   opacity: 0.72;
 }
 
+/* כללי עיצוב עבור .users-user-details  */
 .users-user-details {
   display: flex;
   min-width: 0;
@@ -851,6 +974,7 @@
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .users-user-name-row  */
 .users-user-name-row {
   display: flex;
   align-items: center;
@@ -858,6 +982,7 @@
   gap: 7px;
 }
 
+/* כללי עיצוב עבור .users-current-user-badge  */
 .users-current-user-badge {
   display: inline-flex;
   padding: 3px 7px;
@@ -869,40 +994,48 @@
 }
 
 .users-schedule-name,
+/* כללי עיצוב עבור .users-last-login  */
 .users-last-login {
   color: var(--theme-text-secondary);
   font-size: 0.67rem;
 }
 
+/* כללי עיצוב עבור .users-role-badge-admin  */
 .users-role-badge-admin {
   background: #fef3c7;
   color: #92400e;
 }
 
+/* כללי עיצוב עבור .users-role-badge-manager  */
 .users-role-badge-manager {
   background: #ede9fe;
   color: #6d28d9;
 }
 
+/* כללי עיצוב עבור .users-role-badge-dispatcher  */
 .users-role-badge-dispatcher {
   background: #dbeafe;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .users-role-badge-on_call  */
 .users-role-badge-on_call {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .users-role-badge-viewer  */
 .users-role-badge-viewer {
   background: var(--theme-surface-soft);
   color: var(--theme-text-secondary);
 }
 
+/* כללי עיצוב עבור .users-icon-actions  */
 .users-icon-actions {
   flex-wrap: nowrap;
 }
 
+/* כללי עיצוב עבור .users-icon-actions .button  */
 .users-icon-actions .button {
   min-width: 38px;
   width: 38px;
@@ -910,10 +1043,12 @@
   padding: 0;
 }
 
+/* כללי עיצוב עבור .users-action-loading-icon  */
 .users-action-loading-icon {
   animation: users-action-spin 1s linear infinite;
 }
 
+/* כללי עיצוב עבור .users-role-groups-footer  */
 .users-role-groups-footer {
   display: flex;
   align-items: center;
@@ -924,16 +1059,19 @@
   font-size: 0.65rem;
 }
 
+/* כללי עיצוב עבור .users-role-groups-footer strong  */
 .users-role-groups-footer strong {
   color: var(--theme-text);
 }
 
+/* הגדרת שלבי האנימציה @keyframes users-action-spin */
 @keyframes users-action-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .users-role-group-header {
     grid-template-columns:
@@ -951,33 +1089,40 @@
     white-space: normal;
   }
 }
+/* כללי עיצוב עבור .users-inactive-group  */
 .users-inactive-group {
   border-color: #fed7aa;
   background: #fffdf8;
 }
 
+/* כללי עיצוב עבור .users-inactive-group-header  */
 .users-inactive-group-header {
   background: linear-gradient(135deg, #fff7ed, #fffbeb);
 }
 
+/* כללי עיצוב עבור .users-inactive-group-header:hover  */
 .users-inactive-group-header:hover {
   background: #fff7ed;
 }
 
+/* כללי עיצוב עבור .users-inactive-group-icon  */
 .users-inactive-group-icon {
   background: #ffedd5;
   color: #c2410c;
 }
 
+/* כללי עיצוב עבור .users-inactive-group-count  */
 .users-inactive-group-count {
   background: #ffedd5;
   color: #9a3412;
 }
 
+/* כללי עיצוב עבור .users-inactive-content  */
 .users-inactive-content {
   background: #fffcf7;
 }
 
+/* כללי עיצוב עבור .users-inactive-list  */
 .users-inactive-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -985,6 +1130,7 @@
   padding: 16px;
 }
 
+/* כללי עיצוב עבור .users-inactive-card  */
 .users-inactive-card {
   display: flex;
   align-items: center;
@@ -996,6 +1142,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .users-inactive-card-main  */
 .users-inactive-card-main {
   display: flex;
   align-items: center;
@@ -1003,12 +1150,14 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .users-avatar-inactive  */
 .users-avatar-inactive {
   background: var(--theme-surface-soft);
   color: var(--theme-text-muted);
   filter: grayscale(0.45);
 }
 
+/* כללי עיצוב עבור .users-inactive-card-details  */
 .users-inactive-card-details {
   display: flex;
   flex-direction: column;
@@ -1016,6 +1165,7 @@
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .users-inactive-card-details > strong  */
 .users-inactive-card-details > strong {
   overflow: hidden;
   color: var(--theme-text-strong);
@@ -1024,6 +1174,7 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .users-inactive-card-details > span  */
 .users-inactive-card-details > span {
   overflow: hidden;
   color: var(--theme-text-muted);
@@ -1032,6 +1183,7 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .users-inactive-card-meta  */
 .users-inactive-card-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1040,6 +1192,7 @@
   margin-top: 3px;
 }
 
+/* כללי עיצוב עבור .users-inactive-card-actions  */
 .users-inactive-card-actions {
   display: flex;
   flex: 0 0 auto;
@@ -1048,12 +1201,14 @@
   gap: 7px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1050px) */
 @media (max-width: 1050px) {
   .users-inactive-list {
     grid-template-columns: 1fr;
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .users-inactive-card {
     align-items: stretch;
@@ -1070,12 +1225,14 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 520px) */
 @media (max-width: 520px) {
   .users-inactive-card-actions {
     grid-template-columns: 1fr;
   }
 }
 
+/* כללי עיצוב עבור .users-page-tabs  */
 .users-page-tabs {
   display: inline-flex;
   align-self: flex-start;
@@ -1086,6 +1243,7 @@
   background: var(--color-background-subtle, #f8fafc);
 }
 
+/* כללי עיצוב עבור .users-page-tabs button  */
 .users-page-tabs button {
   display: inline-flex;
   align-items: center;
@@ -1101,18 +1259,21 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .users-page-tabs button.is-active  */
 .users-page-tabs button.is-active {
   background: var(--color-surface, #fff);
   color: var(--color-primary, #2563eb);
   box-shadow: 0 1px 4px rgb(15 23 42 / 10%);
 }
 
+/* כללי עיצוב עבור .dynamic-job-types-panel  */
 .dynamic-job-types-panel {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .dynamic-job-types-intro  */
 .dynamic-job-types-intro {
   display: flex;
   justify-content: space-between;
@@ -1123,12 +1284,14 @@
   background: linear-gradient(135deg, #eff6ff, #f8fafc);
 }
 
+/* כללי עיצוב עבור .dynamic-job-types-intro h2  */
 .dynamic-job-types-intro h2 {
   margin: 4px 0 6px;
 }
 
 .dynamic-job-types-intro p,
 .dynamic-config-section p,
+/* כללי עיצוב עבור .dynamic-phase-note  */
 .dynamic-phase-note {
   color: var(--color-text-muted, #64748b);
 }
@@ -1136,24 +1299,28 @@
 .dynamic-job-types-kicker,
 .dynamic-job-types-intro-actions,
 .dynamic-schedule-group-stats,
+/* כללי עיצוב עבור .dynamic-job-type-row-meta  */
 .dynamic-job-type-row-meta {
   display: flex;
   align-items: center;
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .dynamic-job-types-kicker  */
 .dynamic-job-types-kicker {
   color: #4f46e5;
   font-size: 0.82rem;
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dynamic-job-types-intro-actions  */
 .dynamic-job-types-intro-actions {
   align-self: flex-start;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
+/* כללי עיצוב עבור .dynamic-feature-status  */
 .dynamic-feature-status {
   padding: 7px 10px;
   border-radius: 999px;
@@ -1163,17 +1330,20 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dynamic-feature-status.is-on  */
 .dynamic-feature-status.is-on {
   background: #ecfdf5;
   color: #047857;
 }
 
+/* כללי עיצוב עבור .dynamic-schedule-groups-grid  */
 .dynamic-schedule-groups-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-schedule-group-card  */
 .dynamic-schedule-group-card {
   overflow: hidden;
   border: 1px solid var(--color-border, var(--theme-border));
@@ -1182,6 +1352,7 @@
   box-shadow: var(--shadow-sm, 0 1px 3px rgb(0 0 0 / 8%));
 }
 
+/* כללי עיצוב עבור .dynamic-schedule-group-card > header  */
 .dynamic-schedule-group-card > header {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -1191,16 +1362,19 @@
 }
 
 .dynamic-schedule-group-card h3,
+/* כללי עיצוב עבור .dynamic-schedule-group-card p  */
 .dynamic-schedule-group-card p {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-schedule-group-card p  */
 .dynamic-schedule-group-card p {
   margin-top: 4px;
   color: var(--color-text-muted, #64748b);
   font-size: 0.85rem;
 }
 
+/* כללי עיצוב עבור .dynamic-schedule-group-icon  */
 .dynamic-schedule-group-icon {
   display: grid;
   place-items: center;
@@ -1212,6 +1386,7 @@
 }
 
 .dynamic-expand-button,
+/* כללי עיצוב עבור .dynamic-job-type-row-meta button  */
 .dynamic-job-type-row-meta button {
   display: grid;
   place-items: center;
@@ -1224,16 +1399,19 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-schedule-group-stats  */
 .dynamic-schedule-group-stats {
   padding: 0 18px 14px;
   color: var(--theme-text-muted);
   font-size: 0.8rem;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-list  */
 .dynamic-job-type-list {
   border-top: 1px solid var(--color-border, var(--theme-border));
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-row  */
 .dynamic-job-type-row {
   display: flex;
   align-items: center;
@@ -1243,26 +1421,31 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-row > div:first-child  */
 .dynamic-job-type-row > div:first-child {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-row span  */
 .dynamic-job-type-row span {
   color: var(--theme-text-muted);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .dynamic-shift-template-list  */
 .dynamic-shift-template-list {
   padding: 14px 16px 16px;
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-shift-template-list h4  */
 .dynamic-shift-template-list h4 {
   margin: 0 0 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-shift-template-row  */
 .dynamic-shift-template-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1271,11 +1454,13 @@
   border-bottom: 1px dashed var(--theme-border-strong);
 }
 
+/* כללי עיצוב עבור .dynamic-shift-template-row small  */
 .dynamic-shift-template-row small {
   grid-column: 1 / -1;
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-phase-note  */
 .dynamic-phase-note {
   padding: 15px 17px;
   border: 1px solid #fde68a;
@@ -1284,11 +1469,13 @@
   line-height: 1.7;
 }
 
+/* כללי עיצוב עבור .dynamic-phase-note strong  */
 .dynamic-phase-note strong {
   color: #92400e;
   margin-left: 6px;
 }
 
+/* כללי עיצוב עבור .dynamic-job-types-loading  */
 .dynamic-job-types-loading {
   display: flex;
   align-items: center;
@@ -1299,22 +1486,26 @@
 }
 
 .dynamic-job-type-form,
+/* כללי עיצוב עבור .dynamic-config-section  */
 .dynamic-config-section {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-form  */
 .dynamic-job-type-form {
   min-width: min(760px, 78vw);
 }
 
+/* כללי עיצוב עבור .dynamic-form-grid  */
 .dynamic-form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .dynamic-select-field  */
 .dynamic-select-field {
   display: flex;
   flex-direction: column;
@@ -1323,6 +1514,7 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .dynamic-select-field select  */
 .dynamic-select-field select {
   display: block;
   width: 100%;
@@ -1344,26 +1536,31 @@
 
 .dynamic-select-field { min-width: 0; }
 .dynamic-select-field select option { direction: rtl; }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 820px) */
 @media (max-width: 820px) {
   .dynamic-form-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* כללי עיצוב עבור .dynamic-config-section  */
 .dynamic-config-section {
   padding-top: 15px;
   border-top: 1px solid var(--theme-border);
 }
 
 .dynamic-config-section h3,
+/* כללי עיצוב עבור .dynamic-config-section p  */
 .dynamic-config-section p {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-choice-grid  */
 .dynamic-choice-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-choice-chip  */
 .dynamic-choice-chip {
   display: inline-flex;
   align-items: center;
@@ -1376,12 +1573,14 @@
   font-size: 0.84rem;
 }
 
+/* כללי עיצוב עבור .dynamic-choice-chip:has(input:checked)  */
 .dynamic-choice-chip:has(input:checked) {
   border-color: #93c5fd;
   background: #eff6ff;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .dynamic-permissions-list  */
 .dynamic-permissions-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1390,12 +1589,14 @@
   overflow: auto;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-group  */
 .dynamic-permission-group {
   padding: 12px;
   border: 1px solid var(--theme-border);
   border-radius: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-group > div  */
 .dynamic-permission-group > div {
   display: flex;
   flex-direction: column;
@@ -1403,6 +1604,7 @@
   margin-top: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-group label  */
 .dynamic-permission-group label {
   display: flex;
   align-items: center;
@@ -1410,6 +1612,7 @@
   font-size: 0.82rem;
 }
 
+/* כללי עיצוב עבור .dynamic-ai-preview  */
 .dynamic-ai-preview {
   flex-direction: row;
   align-items: flex-start;
@@ -1420,10 +1623,12 @@
   color: #5b21b6;
 }
 
+/* כללי עיצוב עבור .dynamic-empty-note  */
 .dynamic-empty-note {
   padding: 8px 0;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1050px) */
 @media (max-width: 1050px) {
   .dynamic-schedule-groups-grid,
   .dynamic-form-grid,
@@ -1432,6 +1637,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .users-page-tabs,
   .dynamic-job-types-intro {
@@ -1453,6 +1659,7 @@
   }
 }
 
+/* כללי עיצוב עבור .dynamic-edit-group-button  */
 .dynamic-edit-group-button {
   display: inline-flex;
   align-items: center;
@@ -1469,6 +1676,7 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-schedule-editor  */
 .dynamic-schedule-editor {
   display: flex;
   flex-direction: column;
@@ -1479,6 +1687,7 @@
   padding-inline-end: 4px;
 }
 
+/* כללי עיצוב עבור .dynamic-editor-shadow-note  */
 .dynamic-editor-shadow-note {
   display: flex;
   align-items: flex-start;
@@ -1490,17 +1699,20 @@
   color: #5b21b6;
 }
 
+/* כללי עיצוב עבור .dynamic-editor-shadow-note > div  */
 .dynamic-editor-shadow-note > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-editor-shadow-note span  */
 .dynamic-editor-shadow-note span {
   color: #6d28d9;
   font-size: 0.82rem;
 }
 
+/* כללי עיצוב עבור .dynamic-editor-section  */
 .dynamic-editor-section {
   display: flex;
   flex-direction: column;
@@ -1509,6 +1721,7 @@
   border-top: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .dynamic-editor-section-heading  */
 .dynamic-editor-section-heading {
   display: flex;
   align-items: flex-start;
@@ -1517,22 +1730,26 @@
 }
 
 .dynamic-editor-section-heading h3,
+/* כללי עיצוב עבור .dynamic-editor-section-heading p  */
 .dynamic-editor-section-heading p {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-editor-section-heading p  */
 .dynamic-editor-section-heading p {
   margin-top: 4px;
   color: var(--theme-text-muted);
   font-size: 0.84rem;
 }
 
+/* כללי עיצוב עבור .dynamic-day-rules-grid  */
 .dynamic-day-rules-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-day-rule-card  */
 .dynamic-day-rule-card {
   display: flex;
   flex-direction: column;
@@ -1547,6 +1764,7 @@
 .dynamic-shift-editor-main input,
 .dynamic-pay-segment-row input,
 .dynamic-preview-controls input,
+/* כללי עיצוב עבור .dynamic-preview-controls select  */
 .dynamic-preview-controls select {
   min-height: 38px;
   padding: 0 9px;
@@ -1556,6 +1774,7 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .dynamic-shift-family  */
 .dynamic-shift-family {
   display: flex;
   flex-direction: column;
@@ -1568,6 +1787,7 @@
 
 .dynamic-shift-family-title,
 .dynamic-pay-segments-title,
+/* כללי עיצוב עבור .dynamic-preview-controls  */
 .dynamic-preview-controls {
   display: flex;
   align-items: center;
@@ -1575,6 +1795,7 @@
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-shift-editor-card  */
 .dynamic-shift-editor-card {
   padding: 13px;
   border: 1px solid #dbeafe;
@@ -1582,6 +1803,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .dynamic-shift-editor-main  */
 .dynamic-shift-editor-main {
   display: grid;
   grid-template-columns: 1.4fr 1.2fr repeat(5, minmax(80px, 0.7fr)) auto;
@@ -1589,6 +1811,7 @@
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .dynamic-shift-editor-main > label  */
 .dynamic-shift-editor-main > label {
   display: flex;
   flex-direction: column;
@@ -1598,6 +1821,7 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .dynamic-danger-icon  */
 .dynamic-danger-icon {
   display: grid;
   place-items: center;
@@ -1610,6 +1834,7 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-pay-segments  */
 .dynamic-pay-segments {
   display: flex;
   flex-direction: column;
@@ -1620,12 +1845,14 @@
 }
 
 .dynamic-pay-segments-title > span,
+/* כללי עיצוב עבור .dynamic-pay-segments-title > button  */
 .dynamic-pay-segments-title > button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .dynamic-pay-segments-title > button  */
 .dynamic-pay-segments-title > button {
   border: 0;
   background: transparent;
@@ -1635,6 +1862,7 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-pay-segment-row  */
 .dynamic-pay-segment-row {
   display: grid;
   grid-template-columns: 120px auto 120px 110px minmax(130px, 1fr) auto;
@@ -1642,12 +1870,14 @@
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-pay-segment-row label  */
 .dynamic-pay-segment-row label {
   display: flex;
   align-items: center;
   gap: 5px;
 }
 
+/* כללי עיצוב עבור .dynamic-pay-segment-row button  */
 .dynamic-pay-segment-row button {
   display: grid;
   place-items: center;
@@ -1660,19 +1890,23 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-preview-controls  */
 .dynamic-preview-controls {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
+/* כללי עיצוב עבור .dynamic-preview-controls input  */
 .dynamic-preview-controls input {
   width: 92px;
 }
 
+/* כללי עיצוב עבור .dynamic-preview-controls select  */
 .dynamic-preview-controls select {
   width: 72px;
 }
 
+/* כללי עיצוב עבור .dynamic-preview-days  */
 .dynamic-preview-days {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1681,6 +1915,7 @@
   overflow: auto;
 }
 
+/* כללי עיצוב עבור .dynamic-preview-day  */
 .dynamic-preview-day {
   display: grid;
   grid-template-columns: minmax(135px, 0.8fr) 1.5fr;
@@ -1691,22 +1926,26 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .dynamic-preview-day.is-off  */
 .dynamic-preview-day.is-off {
   background: var(--theme-surface-muted);
   opacity: 0.8;
 }
 
+/* כללי עיצוב עבור .dynamic-preview-day > div:first-child  */
 .dynamic-preview-day > div:first-child {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-preview-day > div:first-child span  */
 .dynamic-preview-day > div:first-child span {
   color: var(--theme-text-muted);
   font-size: 0.76rem;
 }
 
+/* כללי עיצוב עבור .dynamic-preview-shifts  */
 .dynamic-preview-shifts {
   display: flex;
   flex-wrap: wrap;
@@ -1714,6 +1953,7 @@
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .dynamic-preview-shifts > span  */
 .dynamic-preview-shifts > span {
   padding: 5px 7px;
   border-radius: 7px;
@@ -1722,11 +1962,13 @@
   font-size: 0.75rem;
 }
 
+/* כללי עיצוב עבור .dynamic-preview-shifts .dynamic-preview-off  */
 .dynamic-preview-shifts .dynamic-preview-off {
   background: var(--theme-surface-soft);
   color: var(--theme-text-muted);
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1100px) */
 @media (max-width: 1100px) {
   .dynamic-day-rules-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1742,6 +1984,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .dynamic-schedule-editor {
     width: 100%;
@@ -1760,13 +2003,16 @@
 }
 
 /* Dynamic scheduling Phase 4 - availability configuration */
+/* כללי עיצוב עבור .dynamic-availability-config  */
 .dynamic-availability-config {
   display: grid;
   gap: 14px;
 }
+/* כללי עיצוב עבור .dynamic-availability-master  */
 .dynamic-availability-master {
   width: fit-content;
 }
+/* כללי עיצוב עבור .dynamic-availability-subsection  */
 .dynamic-availability-subsection {
   display: grid;
   gap: 10px;
@@ -1774,19 +2020,23 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
 }
+/* כללי עיצוב עבור .dynamic-capacity-grid  */
 .dynamic-capacity-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
+/* כללי עיצוב עבור .dynamic-capacity-item  */
 .dynamic-capacity-item {
   display: grid;
   gap: 7px;
 }
+/* כללי עיצוב עבור .dynamic-capacity-item label  */
 .dynamic-capacity-item label {
   font-weight: 600;
   font-size: 0.9rem;
 }
+/* כללי עיצוב עבור .dynamic-capacity-item input[type='number']  */
 .dynamic-capacity-item input[type='number'] {
   width: 100%;
   min-height: 40px;
@@ -1796,9 +2046,11 @@
   background: var(--surface-color);
   color: inherit;
 }
+/* כללי עיצוב עבור .dynamic-capacity-item input[type='number']:disabled  */
 .dynamic-capacity-item input[type='number']:disabled {
   opacity: 0.55;
 }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-capacity-grid {
     grid-template-columns: 1fr;
@@ -1806,20 +2058,24 @@
 }
 
 /* Dynamic scheduling Phase 5 - rules + shadow optimizer */
+/* כללי עיצוב עבור .dynamic-scheduling-rules-config  */
 .dynamic-scheduling-rules-config {
   display: grid;
   gap: 14px;
 }
+/* כללי עיצוב עבור .dynamic-rule-mode-grid  */
 .dynamic-rule-mode-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
+/* כללי עיצוב עבור .dynamic-rule-list  */
 .dynamic-rule-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
+/* כללי עיצוב עבור .dynamic-engine-priority-note  */
 .dynamic-engine-priority-note {
   display: grid;
   gap: 5px;
@@ -1828,14 +2084,17 @@
   background: color-mix(in srgb, var(--primary-color) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--primary-color) 20%, var(--border-color));
 }
+/* כללי עיצוב עבור .dynamic-engine-priority-note span  */
 .dynamic-engine-priority-note span {
   font-size: 0.87rem;
   color: var(--text-secondary);
 }
+/* כללי עיצוב עבור .dynamic-shadow-tester  */
 .dynamic-shadow-tester {
   display: grid;
   gap: 16px;
 }
+/* כללי עיצוב עבור .dynamic-shadow-tester-warning  */
 .dynamic-shadow-tester-warning {
   display: flex;
   gap: 10px;
@@ -1845,25 +2104,30 @@
   background: var(--theme-surface-muted);
   border: 1px solid var(--border-color);
 }
+/* כללי עיצוב עבור .dynamic-shadow-tester-warning > div  */
 .dynamic-shadow-tester-warning > div {
   display: grid;
   gap: 3px;
 }
+/* כללי עיצוב עבור .dynamic-shadow-tester-warning span  */
 .dynamic-shadow-tester-warning span {
   color: var(--text-secondary);
   font-size: 0.86rem;
 }
+/* כללי עיצוב עבור .dynamic-shadow-period-picker  */
 .dynamic-shadow-period-picker {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
+/* כללי עיצוב עבור .dynamic-shadow-period-picker label  */
 .dynamic-shadow-period-picker label {
   display: grid;
   gap: 6px;
   font-weight: 600;
 }
 .dynamic-shadow-period-picker input,
+/* כללי עיצוב עבור .dynamic-shadow-period-picker select  */
 .dynamic-shadow-period-picker select {
   min-height: 40px;
   border: 1px solid var(--border-color);
@@ -1872,11 +2136,13 @@
   background: var(--surface-color);
   color: inherit;
 }
+/* כללי עיצוב עבור .dynamic-shadow-actions  */
 .dynamic-shadow-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
+/* כללי עיצוב עבור .dynamic-shadow-success  */
 .dynamic-shadow-success {
   padding: 10px 12px;
   border-radius: 10px;
@@ -1884,15 +2150,18 @@
   color: #166534;
   border: 1px solid #bbf7d0;
 }
+/* כללי עיצוב עבור .dynamic-shadow-analysis  */
 .dynamic-shadow-analysis {
   display: grid;
   gap: 14px;
 }
+/* כללי עיצוב עבור .dynamic-shadow-metrics  */
 .dynamic-shadow-metrics {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
+/* כללי עיצוב עבור .dynamic-shadow-metrics > div  */
 .dynamic-shadow-metrics > div {
   display: grid;
   gap: 4px;
@@ -1901,13 +2170,16 @@
   background: var(--theme-surface-muted);
   border: 1px solid var(--border-color);
 }
+/* כללי עיצוב עבור .dynamic-shadow-metrics span  */
 .dynamic-shadow-metrics span {
   color: var(--text-secondary);
   font-size: 0.76rem;
 }
+/* כללי עיצוב עבור .dynamic-shadow-metrics strong  */
 .dynamic-shadow-metrics strong {
   font-size: 1.15rem;
 }
+/* כללי עיצוב עבור .dynamic-shadow-warnings  */
 .dynamic-shadow-warnings {
   display: grid;
   gap: 7px;
@@ -1917,13 +2189,16 @@
   border: 1px solid #fed7aa;
   color: #9a3412;
 }
+/* כללי עיצוב עבור .dynamic-shadow-warnings p  */
 .dynamic-shadow-warnings p {
   margin: 0;
 }
+/* כללי עיצוב עבור .dynamic-shadow-targets  */
 .dynamic-shadow-targets {
   display: grid;
   gap: 8px;
 }
+/* כללי עיצוב עבור .dynamic-shadow-targets > div  */
 .dynamic-shadow-targets > div {
   display: grid;
   grid-template-columns: minmax(130px, 1fr) minmax(180px, 2fr) auto;
@@ -1932,10 +2207,12 @@
   padding: 9px 11px;
   border-bottom: 1px solid var(--border-color);
 }
+/* כללי עיצוב עבור .dynamic-shadow-targets span  */
 .dynamic-shadow-targets span {
   color: var(--text-secondary);
   font-size: 0.82rem;
 }
+/* כללי עיצוב עבור .dynamic-shadow-draft-result  */
 .dynamic-shadow-draft-result {
   display: flex;
   flex-wrap: wrap;
@@ -1945,11 +2222,13 @@
   background: #eff6ff;
   border: 1px solid #bfdbfe;
 }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .dynamic-shadow-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .dynamic-rule-mode-grid,
   .dynamic-shadow-period-picker {
@@ -1959,6 +2238,7 @@
     grid-template-columns: 1fr;
   }
 }
+/* כללי עיצוב עבור .dynamic-custom-rule-proposal  */
 .dynamic-custom-rule-proposal {
   display: grid;
   gap: 8px;
@@ -1966,19 +2246,23 @@
   border: 1px dashed var(--border-color);
   border-radius: 12px;
 }
+/* כללי עיצוב עבור .dynamic-custom-rule-proposal .button  */
 .dynamic-custom-rule-proposal .button {
   width: fit-content;
 }
+/* כללי עיצוב עבור .dynamic-custom-rule-proposal small  */
 .dynamic-custom-rule-proposal small {
   color: var(--text-secondary);
 }
 
 /* Dynamic scheduling phase 6 — shadow availability workspace */
+/* כללי עיצוב עבור .dynamic-shadow-workspace-section  */
 .dynamic-shadow-workspace-section {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-color, #e5e7eb);
 }
+/* כללי עיצוב עבור .dynamic-shadow-section-heading  */
 .dynamic-shadow-section-heading {
   display: flex;
   align-items: baseline;
@@ -1986,18 +2270,22 @@
   gap: 1rem;
   margin-bottom: 0.75rem;
 }
+/* כללי עיצוב עבור .dynamic-shadow-section-heading h4  */
 .dynamic-shadow-section-heading h4 {
   margin: 0;
 }
+/* כללי עיצוב עבור .dynamic-shadow-section-heading span  */
 .dynamic-shadow-section-heading span {
   font-size: 0.82rem;
   color: var(--text-muted, #64748b);
 }
+/* כללי עיצוב עבור .dynamic-availability-workspace  */
 .dynamic-availability-workspace {
   display: grid;
   gap: 0.85rem;
 }
 .dynamic-availability-toolbar,
+/* כללי עיצוב עבור .dynamic-capacity-row  */
 .dynamic-capacity-row {
   display: flex;
   gap: 0.75rem;
@@ -2005,6 +2293,7 @@
   flex-wrap: wrap;
 }
 .dynamic-availability-toolbar label,
+/* כללי עיצוב עבור .dynamic-capacity-row label  */
 .dynamic-capacity-row label {
   display: grid;
   gap: 0.3rem;
@@ -2013,6 +2302,7 @@
 }
 .dynamic-availability-toolbar select,
 .dynamic-capacity-row select,
+/* כללי עיצוב עבור .dynamic-capacity-row input  */
 .dynamic-capacity-row input {
   min-height: 38px;
   border: 1px solid var(--border-color, #dbe2ea);
@@ -2021,6 +2311,7 @@
   background: var(--surface, #fff);
   color: inherit;
 }
+/* כללי עיצוב עבור .dynamic-availability-grid  */
 .dynamic-availability-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -2029,6 +2320,7 @@
   overflow: auto;
   padding: 0.15rem;
 }
+/* כללי עיצוב עבור .dynamic-availability-slot  */
 .dynamic-availability-slot {
   display: flex;
   justify-content: space-between;
@@ -2039,18 +2331,22 @@
   padding: 0.65rem;
   background: var(--surface, #fff);
 }
+/* כללי עיצוב עבור .dynamic-availability-slot > div  */
 .dynamic-availability-slot > div {
   display: grid;
   gap: 0.12rem;
 }
 .dynamic-availability-slot span,
+/* כללי עיצוב עבור .dynamic-availability-slot small  */
 .dynamic-availability-slot small {
   font-size: 0.78rem;
   color: var(--text-muted, #64748b);
 }
+/* כללי עיצוב עבור .dynamic-availability-slot small  */
 .dynamic-availability-slot small {
   color: #b45309;
 }
+/* כללי עיצוב עבור .dynamic-availability-slot select  */
 .dynamic-availability-slot select {
   max-width: 112px;
   border: 1px solid var(--border-color, #dbe2ea);
@@ -2059,25 +2355,30 @@
   background: var(--surface, #fff);
   color: inherit;
 }
+/* כללי עיצוב עבור .dynamic-availability-save  */
 .dynamic-availability-save {
   display: flex;
   justify-content: flex-start;
 }
+/* כללי עיצוב עבור .dynamic-legacy-comparison  */
 .dynamic-legacy-comparison {
   border: 1px dashed var(--border-color, var(--theme-border-strong));
   border-radius: 12px;
   padding: 0.8rem;
 }
+/* כללי עיצוב עבור .dynamic-legacy-comparison h4  */
 .dynamic-legacy-comparison h4 {
   margin: 0 0 0.65rem;
 }
 .dynamic-shadow-loading,
+/* כללי עיצוב עבור .dynamic-shadow-empty  */
 .dynamic-shadow-empty {
   padding: 0.85rem;
   border-radius: 10px;
   background: var(--surface-muted, #f8fafc);
   color: var(--text-muted, #64748b);
 }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 700px) */
 @media (max-width: 700px) {
   .dynamic-shadow-section-heading {
     display: grid;
@@ -2091,10 +2392,12 @@
 }
 
 /* Phase 7.1 — flexible employment recommendations + Shadow diagnostics */
+/* כללי עיצוב עבור .dynamic-employment-members  */
 .dynamic-employment-members {
   display: grid;
   gap: 0.75rem;
 }
+/* כללי עיצוב עבור .dynamic-employment-member-row  */
 .dynamic-employment-member-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(150px, 190px);
@@ -2105,14 +2408,17 @@
   border-radius: 11px;
   background: var(--surface, #fff);
 }
+/* כללי עיצוב עבור .dynamic-employment-member-row > div  */
 .dynamic-employment-member-row > div {
   display: grid;
   gap: 0.15rem;
 }
+/* כללי עיצוב עבור .dynamic-employment-member-row span  */
 .dynamic-employment-member-row span {
   font-size: 0.8rem;
   color: var(--text-muted, #64748b);
 }
+/* כללי עיצוב עבור .dynamic-employment-member-row select  */
 .dynamic-employment-member-row select {
   min-height: 40px;
   border: 1px solid var(--border-color, #dbe2ea);
@@ -2121,17 +2427,20 @@
   background: var(--surface, #fff);
   color: inherit;
 }
+/* כללי עיצוב עבור .dynamic-shadow-diagnostics  */
 .dynamic-shadow-diagnostics {
   display: grid;
   gap: 0.7rem;
   padding-top: 0.25rem;
 }
+/* כללי עיצוב עבור .dynamic-shadow-diagnostic-slot  */
 .dynamic-shadow-diagnostic-slot {
   border: 1px solid var(--border-color, var(--theme-border));
   border-radius: 12px;
   background: var(--surface, #fff);
   overflow: hidden;
 }
+/* כללי עיצוב עבור .dynamic-shadow-diagnostic-slot summary  */
 .dynamic-shadow-diagnostic-slot summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -2141,20 +2450,24 @@
   cursor: pointer;
   background: var(--surface-muted, #f8fafc);
 }
+/* כללי עיצוב עבור .dynamic-shadow-diagnostic-slot summary b  */
 .dynamic-shadow-diagnostic-slot summary b {
   font-size: 0.82rem;
   color: #b91c1c;
 }
+/* כללי עיצוב עבור .dynamic-shadow-diagnostic-slot > p  */
 .dynamic-shadow-diagnostic-slot > p {
   margin: 0.7rem 0.8rem 0;
   color: var(--text-muted, #64748b);
   font-size: 0.84rem;
 }
+/* כללי עיצוב עבור .dynamic-shadow-diagnostic-candidates  */
 .dynamic-shadow-diagnostic-candidates {
   display: grid;
   gap: 0.45rem;
   padding: 0.75rem;
 }
+/* כללי עיצוב עבור .dynamic-shadow-diagnostic-candidates > div  */
 .dynamic-shadow-diagnostic-candidates > div {
   display: grid;
   grid-template-columns: minmax(100px, 0.7fr) minmax(0, 1.5fr);
@@ -2164,17 +2477,21 @@
   background: #fff7ed;
   border: 1px solid #fed7aa;
 }
+/* כללי עיצוב עבור .dynamic-shadow-diagnostic-candidates > div.is-eligible  */
 .dynamic-shadow-diagnostic-candidates > div.is-eligible {
   background: #eff6ff;
   border-color: #bfdbfe;
 }
+/* כללי עיצוב עבור .dynamic-shadow-diagnostic-candidates span  */
 .dynamic-shadow-diagnostic-candidates span {
   font-size: 0.82rem;
 }
+/* כללי עיצוב עבור .dynamic-shadow-diagnostic-candidates small  */
 .dynamic-shadow-diagnostic-candidates small {
   grid-column: 1/-1;
   color: var(--text-muted, #64748b);
 }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 700px) */
 @media (max-width: 700px) {
   .dynamic-employment-member-row,
   .dynamic-shadow-diagnostic-slot summary,
@@ -2187,6 +2504,7 @@
 }
 
 /* Phase 8 - Dynamic Shadow quality validation */
+/* כללי עיצוב עבור .dynamic-shadow-validation  */
 .dynamic-shadow-validation {
   display: grid;
   gap: 16px;
@@ -2195,6 +2513,7 @@
   border-top: 1px solid var(--border-color, var(--theme-border));
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-note  */
 .dynamic-shadow-validation-note {
   padding: 12px 14px;
   border: 1px solid var(--theme-border-strong);
@@ -2204,11 +2523,13 @@
 }
 
 .dynamic-shadow-validation-workers,
+/* כללי עיצוב עבור .dynamic-shadow-validation-slots  */
 .dynamic-shadow-validation-slots {
   display: grid;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-worker  */
 .dynamic-shadow-validation-worker {
   display: grid;
   grid-template-columns: minmax(120px, 1fr) minmax(220px, 2fr) minmax(170px, 1.5fr) auto;
@@ -2220,19 +2541,23 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-worker small  */
 .dynamic-shadow-validation-worker small {
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-worker b  */
 .dynamic-shadow-validation-worker b {
   font-size: 12px;
   color: #2563eb;
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-worker b.is-warning  */
 .dynamic-shadow-validation-worker b.is-warning {
   color: #b45309;
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-slot  */
 .dynamic-shadow-validation-slot {
   border: 1px solid #dbe3ee;
   border-radius: 12px;
@@ -2240,11 +2565,13 @@
   overflow: hidden;
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-slot.is-different  */
 .dynamic-shadow-validation-slot.is-different {
   border-color: #f5c27a;
   background: #fffaf2;
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-slot summary  */
 .dynamic-shadow-validation-slot summary {
   display: flex;
   align-items: center;
@@ -2254,15 +2581,18 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-slot.is-match summary > span  */
 .dynamic-shadow-validation-slot.is-match summary > span {
   color: #15803d;
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-slot.is-different summary > span  */
 .dynamic-shadow-validation-slot.is-different summary > span {
   color: #b45309;
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-compare  */
 .dynamic-shadow-validation-compare {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2271,6 +2601,7 @@
 }
 
 .dynamic-shadow-validation-compare > div,
+/* כללי עיצוב עבור .dynamic-shadow-validation-reasons > div  */
 .dynamic-shadow-validation-reasons > div {
   display: grid;
   gap: 6px;
@@ -2279,17 +2610,20 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-reasons  */
 .dynamic-shadow-validation-reasons {
   display: grid;
   gap: 10px;
   padding: 0 14px 14px;
 }
 
+/* כללי עיצוב עבור .dynamic-shadow-validation-reasons ul  */
 .dynamic-shadow-validation-reasons ul {
   margin: 0;
   padding-inline-start: 20px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-shadow-validation-worker {
     grid-template-columns: 1fr;
@@ -2301,6 +2635,7 @@
 }
 
 /* Phase 8.2A UX cleanup: keep the dynamic role editor readable and fully responsive. */
+/* כללי עיצוב עבור .dynamic-job-type-modal  */
 .dynamic-job-type-modal {
   width: min(980px, calc(100vw - 48px));
   max-width: 980px;
@@ -2308,35 +2643,42 @@
 }
 
 .dynamic-job-type-modal .modal-header,
+/* כללי עיצוב עבור .dynamic-job-type-modal .modal-footer  */
 .dynamic-job-type-modal .modal-footer {
   position: sticky;
   z-index: 3;
   background: var(--color-white, #fff);
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-modal .modal-header  */
 .dynamic-job-type-modal .modal-header {
   top: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-modal .modal-footer  */
 .dynamic-job-type-modal .modal-footer {
   bottom: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-modal .modal-body  */
 .dynamic-job-type-modal .modal-body {
   max-height: calc(100vh - 190px);
   overflow-y: auto;
   overflow-x: hidden;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-modal .dynamic-job-type-form  */
 .dynamic-job-type-modal .dynamic-job-type-form {
   width: 100%;
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-modal .dynamic-form-grid  */
 .dynamic-job-type-modal .dynamic-form-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+/* כללי עיצוב עבור .dynamic-form-section  */
 .dynamic-form-section {
   padding: 18px;
   border: 1px solid var(--theme-border);
@@ -2344,12 +2686,14 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .dynamic-section-heading  */
 .dynamic-section-heading {
   display: flex;
   align-items: flex-start;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-section-heading > span  */
 .dynamic-section-heading > span {
   display: grid;
   place-items: center;
@@ -2363,15 +2707,18 @@
   font-weight: 900;
 }
 
+/* כללי עיצוב עבור .dynamic-section-heading > div  */
 .dynamic-section-heading > div {
   min-width: 0;
 }
 
 .dynamic-section-heading h3,
+/* כללי עיצוב עבור .dynamic-section-heading small  */
 .dynamic-section-heading small {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-section-heading small  */
 .dynamic-section-heading small {
   display: block;
   margin-top: 3px;
@@ -2379,16 +2726,19 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .dynamic-work-structure-section  */
 .dynamic-work-structure-section {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-work-pattern-days  */
 .dynamic-work-pattern-days {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-work-day-card  */
 .dynamic-work-day-card {
   min-width: 0;
   padding: 14px;
@@ -2398,11 +2748,13 @@
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
+/* כללי עיצוב עבור .dynamic-work-day-card.is-active  */
 .dynamic-work-day-card.is-active {
   border-color: #bfdbfe;
   box-shadow: 0 0 0 1px rgb(59 130 246 / 7%);
 }
 
+/* כללי עיצוב עבור .dynamic-work-day-header  */
 .dynamic-work-day-header {
   display: flex;
   align-items: center;
@@ -2410,6 +2762,7 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-work-day-header > div:first-child  */
 .dynamic-work-day-header > div:first-child {
   display: flex;
   flex-direction: column;
@@ -2417,17 +2770,20 @@
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-work-day-header span  */
 .dynamic-work-day-header span {
   color: var(--theme-text-muted);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .dynamic-day-active-toggle:has(input:checked)  */
 .dynamic-day-active-toggle:has(input:checked) {
   border-color: #86efac;
   background: #f0fdf4;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .dynamic-shift-template-list  */
 .dynamic-shift-template-list {
   display: flex;
   flex-direction: column;
@@ -2437,6 +2793,7 @@
   background: transparent;
 }
 
+/* כללי עיצוב עבור .dynamic-shift-editor-card  */
 .dynamic-shift-editor-card {
   padding: 12px;
   border: 1px solid var(--theme-border);
@@ -2444,19 +2801,23 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-shift-editor-card .dynamic-job-type-row  */
 .dynamic-shift-editor-card .dynamic-job-type-row {
   padding: 0 0 10px;
   border-bottom: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-shift-editor-card .dynamic-form-grid  */
 .dynamic-shift-editor-card .dynamic-form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* כללי עיצוב עבור .dynamic-scheduling-basics .dynamic-form-grid  */
 .dynamic-scheduling-basics .dynamic-form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .dynamic-job-type-modal {
     width: min(760px, calc(100vw - 24px));
@@ -2470,6 +2831,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .dynamic-job-type-modal {
     width: 100%;
@@ -2492,6 +2854,7 @@
 }
 
 /* Phase 8.2A cleanup: keep the role form focused on business decisions. */
+/* כללי עיצוב עבור .dynamic-employment-inline  */
 .dynamic-employment-inline {
   grid-column: 1 / -1;
   margin-top: 10px;
@@ -2500,12 +2863,14 @@
   color: var(--theme-text-secondary);
 }
 
+/* כללי עיצוב עבור .dynamic-part-time-inline  */
 .dynamic-part-time-inline {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-section-title-row  */
 .dynamic-section-title-row {
   display: flex;
   align-items: flex-start;
@@ -2514,10 +2879,12 @@
 }
 
 .dynamic-section-title-row h3,
+/* כללי עיצוב עבור .dynamic-section-title-row p  */
 .dynamic-section-title-row p {
   margin-top: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-advanced-toggle  */
 .dynamic-advanced-toggle {
   display: inline-flex;
   align-items: center;
@@ -2534,18 +2901,21 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-advanced-toggle:hover  */
 .dynamic-advanced-toggle:hover {
   border-color: #93c5fd;
   background: var(--theme-surface-muted);
 }
 
 .dynamic-simple-rule-grid,
+/* כללי עיצוב עבור .dynamic-advanced-balance-grid  */
 .dynamic-advanced-balance-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-rest-simple  */
 .dynamic-rest-simple {
   display: flex;
   align-items: center;
@@ -2557,6 +2927,7 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-rest-simple > label:first-child  */
 .dynamic-rest-simple > label:first-child {
   display: inline-flex;
   align-items: center;
@@ -2564,16 +2935,19 @@
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .dynamic-inline-number  */
 .dynamic-inline-number {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-inline-number input  */
 .dynamic-inline-number input {
   width: 88px;
 }
 
+/* כללי עיצוב עבור .dynamic-advanced-rules-panel  */
 .dynamic-advanced-rules-panel {
   display: flex;
   flex-direction: column;
@@ -2585,10 +2959,12 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-max-shifts-inline  */
 .dynamic-max-shifts-inline {
   justify-content: flex-start;
 }
 
+/* כללי עיצוב עבור .dynamic-auto-capabilities-note  */
 .dynamic-auto-capabilities-note {
   display: flex;
   align-items: flex-start;
@@ -2601,6 +2977,7 @@
   line-height: 1.5;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .dynamic-simple-rule-grid,
   .dynamic-advanced-balance-grid {
@@ -2619,26 +2996,31 @@
 }
 
 /* Phase 8.2A refinement: one day block per row + holiday templates + 200% component. */
+/* כללי עיצוב עבור .dynamic-work-pattern-days  */
 .dynamic-work-pattern-days {
   grid-template-columns: 1fr;
 }
 
+/* כללי עיצוב עבור .dynamic-work-day-card  */
 .dynamic-work-day-card {
   width: 100%;
 }
 
+/* כללי עיצוב עבור .dynamic-day-template-link  */
 .dynamic-day-template-link {
   margin-top: 10px;
   width: fit-content;
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-day-template-link:has(input:checked)  */
 .dynamic-day-template-link:has(input:checked) {
   border-color: #93c5fd;
   background: #eff6ff;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .dynamic-shift-premium-row  */
 .dynamic-shift-premium-row {
   display: flex;
   align-items: flex-start;
@@ -2648,16 +3030,19 @@
   border-top: 1px dashed #dbe3ee;
 }
 
+/* כללי עיצוב עבור .dynamic-premium-toggle  */
 .dynamic-premium-toggle {
   flex: 0 0 auto;
 }
 
+/* כללי עיצוב עבור .dynamic-premium-toggle:has(input:checked)  */
 .dynamic-premium-toggle:has(input:checked) {
   border-color: #c4b5fd;
   background: #f5f3ff;
   color: #6d28d9;
 }
 
+/* כללי עיצוב עבור .dynamic-premium-hours-field  */
 .dynamic-premium-hours-field {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) 100px;
@@ -2668,10 +3053,12 @@
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .dynamic-premium-hours-field > span  */
 .dynamic-premium-hours-field > span {
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-premium-hours-field input  */
 .dynamic-premium-hours-field input {
   width: 100%;
   min-height: 42px;
@@ -2683,12 +3070,14 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .dynamic-premium-hours-field small  */
 .dynamic-premium-hours-field small {
   grid-column: 1 / -1;
   color: var(--theme-text-muted);
   font-weight: 400;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 700px) */
 @media (max-width: 700px) {
   .dynamic-work-day-header,
   .dynamic-shift-premium-row {
@@ -2711,6 +3100,7 @@
 }
 
 /* Phase 8.2B · dynamic role lifecycle */
+/* כללי עיצוב עבור .dynamic-job-type-title-line  */
 .dynamic-job-type-title-line {
   display: flex;
   align-items: center;
@@ -2718,6 +3108,7 @@
   gap: 7px;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-frozen-badge  */
 .dynamic-job-type-frozen-badge {
   display: inline-flex;
   align-items: center;
@@ -2731,29 +3122,34 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-row-meta .dynamic-freeze-role-button  */
 .dynamic-job-type-row-meta .dynamic-freeze-role-button {
   color: #0369a1;
   background: #f0f9ff;
   border-color: #bae6fd;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-row-meta .dynamic-reactivate-role-button  */
 .dynamic-job-type-row-meta .dynamic-reactivate-role-button {
   color: #047857;
   background: #ecfdf5;
   border-color: #a7f3d0;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-row-meta .dynamic-delete-role-button  */
 .dynamic-job-type-row-meta .dynamic-delete-role-button {
   color: #b91c1c;
   background: #fff7f7;
   border-color: #fecaca;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-row-meta button:disabled  */
 .dynamic-job-type-row-meta button:disabled {
   cursor: wait;
   opacity: 0.55;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-action-error  */
 .dynamic-job-type-action-error {
   margin-bottom: 12px;
 }
@@ -2779,6 +3175,7 @@
 .dynamic-legacy-preview strong { font-size: 1.15rem; }
 .dynamic-legacy-preview span { color: var(--text-muted, #64748b); font-size: .8rem; }
 .dynamic-legacy-success { padding: 10px 12px; border: 1px solid #86b798; border-radius: 10px; }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .dynamic-membership-user-row { grid-template-columns: 1fr; }
   .dynamic-member-part-time { padding-right: 0; }
@@ -2786,12 +3183,14 @@
 }
 
 /* Phase 8.2C.1 — simplified dynamic role/member UX. Schedule groups stay internal. */
+/* כללי עיצוב עבור .dynamic-role-cards-grid  */
 .dynamic-role-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-role-card  */
 .dynamic-role-card {
   border: 1px solid var(--border-color, #d9dee7);
   border-radius: 16px;
@@ -2804,6 +3203,7 @@
 
 .dynamic-role-card.is-frozen { opacity: .72; }
 .dynamic-role-card-main { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+/* כללי עיצוב עבור .dynamic-role-card-icon  */
 .dynamic-role-card-icon {
   width: 40px;
   height: 40px;
@@ -2818,6 +3218,7 @@
 .dynamic-role-card-copy p { color: var(--text-muted, #64748b); overflow-wrap: anywhere; }
 .dynamic-role-card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .dynamic-role-card-tags span,
+/* כללי עיצוב עבור .dynamic-membership-fixed-scope  */
 .dynamic-membership-fixed-scope {
   border: 1px solid var(--border-color, #d9dee7);
   border-radius: 999px;
@@ -2830,6 +3231,7 @@
 .dynamic-role-card-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .dynamic-role-card-actions > button:not(.button),
 .dynamic-role-card-actions > .button { min-height: 40px; }
+/* כללי עיצוב עבור .dynamic-role-card-actions > button:not(.button)  */
 .dynamic-role-card-actions > button:not(.button) {
   min-width: 40px;
   border: 1px solid var(--border-color, #d9dee7);
@@ -2840,6 +3242,7 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-membership-heading  */
 .dynamic-membership-heading {
   display: flex;
   align-items: flex-start;
@@ -2848,6 +3251,7 @@
   flex-wrap: wrap;
 }
 .dynamic-membership-heading > div { min-width: 0; flex: 1; }
+/* כללי עיצוב עבור .dynamic-membership-picker  */
 .dynamic-membership-picker {
   border: 1px solid var(--border-color, #d9dee7);
   border-radius: 12px;
@@ -2859,6 +3263,7 @@
 .dynamic-membership-picker-title { display: grid; gap: 2px; }
 .dynamic-membership-picker-title span { color: var(--text-muted, #64748b); font-size: 13px; }
 .dynamic-membership-picker-list { display: grid; gap: 8px; max-height: 320px; overflow: auto; }
+/* כללי עיצוב עבור .dynamic-membership-picker-user  */
 .dynamic-membership-picker-user {
   display: flex;
   align-items: center;
@@ -2873,6 +3278,7 @@
 .dynamic-membership-picker-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .dynamic-membership-user-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .dynamic-membership-user-controls select { min-height: 40px; min-width: 150px; }
+/* כללי עיצוב עבור .dynamic-membership-empty-state  */
 .dynamic-membership-empty-state {
   display: grid;
   justify-items: center;
@@ -2885,6 +3291,7 @@
 }
 .dynamic-membership-empty-state strong { color: var(--text-color, #111827); }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .dynamic-role-card-actions > .button { width: 100%; }
   .dynamic-membership-user-controls { justify-content: stretch; }
@@ -2893,11 +3300,13 @@
 }
 
 /* Phase 8.2C.2 — detailed legacy migration preview */
+/* כללי עיצוב עבור .dynamic-legacy-review-grid  */
 .dynamic-legacy-review-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
+/* כללי עיצוב עבור .dynamic-legacy-review-card  */
 .dynamic-legacy-review-card {
   border: 1px solid var(--border-color, #d9dee7);
   border-radius: 12px;
@@ -2909,6 +3318,7 @@
 }
 .dynamic-legacy-review-card h5 { margin: 0; font-size: .95rem; }
 .dynamic-legacy-review-list { display: grid; gap: 8px; }
+/* כללי עיצוב עבור .dynamic-legacy-review-row  */
 .dynamic-legacy-review-row {
   display: flex;
   justify-content: space-between;
@@ -2921,6 +3331,7 @@
 }
 .dynamic-legacy-review-row > span { display: grid; gap: 2px; min-width: 0; }
 .dynamic-legacy-review-row small { color: var(--text-muted, #64748b); overflow-wrap: anywhere; }
+/* כללי עיצוב עבור .dynamic-legacy-review-row b  */
 .dynamic-legacy-review-row b {
   flex: 0 0 auto;
   border-radius: 999px;
@@ -2936,6 +3347,7 @@
 .dynamic-legacy-review-empty { color: var(--text-muted, #64748b); padding: 8px 2px; }
 .dynamic-legacy-issues { display: grid; gap: 8px; }
 .dynamic-legacy-issues > div,
+/* כללי עיצוב עבור .dynamic-legacy-ready  */
 .dynamic-legacy-ready {
   border: 1px solid var(--border-color, #d9dee7);
   border-radius: 10px;
@@ -2948,6 +3360,7 @@
 .dynamic-legacy-issues > div.is-warning { border-color: #d6a84a; }
 .dynamic-legacy-issues > div.is-error { border-color: #d98c8c; }
 .dynamic-legacy-ready { border-color: #86b798; }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-legacy-review-grid { grid-template-columns: 1fr; }
   .dynamic-legacy-review-row { align-items: flex-start; }
@@ -2987,16 +3400,19 @@
 .dynamic-role-parity-item.is-ready em { color: #166534; background: #f0fdf4; }
 .dynamic-role-parity-item.is-missing em { color: #991b1b; background: #fef2f2; }
 .dynamic-role-parity-item.is-partial em { color: #92400e; background: #fffbeb; }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-role-workspace-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dynamic-role-parity-item { grid-template-columns: auto minmax(0, 1fr); }
   .dynamic-role-parity-item em { grid-column: 2; justify-self: start; }
 }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 460px) */
 @media (max-width: 460px) {
   .dynamic-role-workspace-metrics { grid-template-columns: 1fr; }
 }
 
 /* Phase 8.3A.1 - role-aware operational capabilities */
+/* כללי עיצוב עבור .dynamic-schedule-change-mode  */
 .dynamic-schedule-change-mode {
   display: grid;
   gap: 10px;
@@ -3012,11 +3428,13 @@
 .dynamic-operational-capability-choice > span small { color: var(--text-secondary, #64748b); font-weight: 400; line-height: 1.45; }
 
 /* Phase 8.3B · Generic period workflow */
+/* כללי עיצוב עבור .dynamic-period-workflow  */
 .dynamic-period-workflow {
   display: grid;
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-head  */
 .dynamic-period-workflow-head {
   display: flex;
   justify-content: space-between;
@@ -3026,21 +3444,25 @@
 }
 
 .dynamic-period-workflow-head h4,
+/* כללי עיצוב עבור .dynamic-period-workflow-availability h4  */
 .dynamic-period-workflow-availability h4 {
   margin: 0 0 6px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-head p  */
 .dynamic-period-workflow-head p {
   margin: 0;
   color: var(--text-muted, #64748b);
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-picker  */
 .dynamic-period-workflow-picker {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-picker label  */
 .dynamic-period-workflow-picker label {
   display: grid;
   gap: 5px;
@@ -3049,6 +3471,7 @@
 }
 
 .dynamic-period-workflow-picker select,
+/* כללי עיצוב עבור .dynamic-period-workflow-picker input  */
 .dynamic-period-workflow-picker input {
   min-width: 96px;
   padding: 9px 10px;
@@ -3058,12 +3481,14 @@
   color: inherit;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps  */
 .dynamic-period-workflow-steps {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps > div  */
 .dynamic-period-workflow-steps > div {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -3075,6 +3500,7 @@
   background: var(--surface, #fff);
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps > div > span  */
 .dynamic-period-workflow-steps > div > span {
   grid-row: 1 / span 2;
   width: 30px;
@@ -3086,26 +3512,31 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps > div.is-current  */
 .dynamic-period-workflow-steps > div.is-current {
   border-color: #93b4ff;
   background: #f7faff;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps > div.is-done  */
 .dynamic-period-workflow-steps > div.is-done {
   border-color: #9fd8b3;
   background: #f5fcf7;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-steps small  */
 .dynamic-period-workflow-steps small {
   color: var(--text-muted, #64748b);
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-metrics  */
 .dynamic-period-workflow-metrics {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-metrics span  */
 .dynamic-period-workflow-metrics span {
   border: 1px solid var(--border-color, #d8e0ea);
   border-radius: 999px;
@@ -3113,6 +3544,7 @@
   background: var(--surface, #fff);
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-actions  */
 .dynamic-period-workflow-actions {
   display: flex;
   flex-wrap: wrap;
@@ -3121,6 +3553,7 @@
 }
 
 .dynamic-period-workflow-note,
+/* כללי עיצוב עבור .dynamic-period-workflow-published  */
 .dynamic-period-workflow-published {
   border: 1px solid var(--border-color, #d8e0ea);
   border-radius: 14px;
@@ -3128,11 +3561,13 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-note.is-warning  */
 .dynamic-period-workflow-note.is-warning {
   border-color: #e6bd70;
   background: #fffaf0;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-published  */
 .dynamic-period-workflow-published {
   display: flex;
   gap: 10px;
@@ -3141,20 +3576,24 @@
   background: #f5fcf7;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-published div  */
 .dynamic-period-workflow-published div {
   display: grid;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-published span  */
 .dynamic-period-workflow-published span {
   color: var(--text-muted, #64748b);
 }
 
+/* כללי עיצוב עבור .dynamic-period-workflow-availability  */
 .dynamic-period-workflow-availability {
   border-top: 1px solid var(--border-color, #d8e0ea);
   padding-top: 18px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-period-workflow-steps {
     grid-template-columns: 1fr;
@@ -3169,6 +3608,7 @@
 }
 
 /* Phase 8.3B.1 - quick availability rules */
+/* כללי עיצוב עבור .dynamic-availability-bulk-rule  */
 .dynamic-availability-bulk-rule {
   display: grid;
   gap: 14px;
@@ -3179,6 +3619,7 @@
   background: var(--surface-subtle, #f8fafc);
 }
 
+/* כללי עיצוב עבור .dynamic-availability-bulk-rule-head  */
 .dynamic-availability-bulk-rule-head {
   display: flex;
   align-items: flex-start;
@@ -3186,10 +3627,12 @@
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-bulk-rule-head > div  */
 .dynamic-availability-bulk-rule-head > div {
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-bulk-rule-head h4  */
 .dynamic-availability-bulk-rule-head h4 {
   display: flex;
   align-items: center;
@@ -3197,12 +3640,14 @@
   margin: 0 0 4px;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-bulk-rule-head p  */
 .dynamic-availability-bulk-rule-head p {
   margin: 0;
   color: var(--text-secondary, #64748b);
   font-size: .9rem;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-bulk-rule-head > span  */
 .dynamic-availability-bulk-rule-head > span {
   flex: 0 0 auto;
   padding: 5px 9px;
@@ -3213,6 +3658,7 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-rule-sentence  */
 .dynamic-availability-rule-sentence {
   display: flex;
   align-items: center;
@@ -3222,6 +3668,7 @@
 }
 
 .dynamic-availability-rule-sentence select,
+/* כללי עיצוב עבור .dynamic-availability-rule-sentence input[type='time']  */
 .dynamic-availability-rule-sentence input[type='time'] {
   min-height: 40px;
   padding: 7px 10px;
@@ -3232,12 +3679,14 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-weekday-picker  */
 .dynamic-availability-weekday-picker {
   display: grid;
   grid-template-columns: repeat(7, minmax(72px, 1fr));
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-weekday-picker button  */
 .dynamic-availability-weekday-picker button {
   min-height: 42px;
   padding: 8px;
@@ -3249,6 +3698,7 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-weekday-picker button.is-selected  */
 .dynamic-availability-weekday-picker button.is-selected {
   border-color: var(--primary-color, #2563eb);
   background: color-mix(in srgb, var(--primary-color, #2563eb) 10%, white);
@@ -3256,10 +3706,12 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-rule-help  */
 .dynamic-availability-rule-help {
   color: var(--text-secondary, #64748b);
 }
 
+/* כללי עיצוב עבור .dynamic-availability-rule-actions  */
 .dynamic-availability-rule-actions {
   display: flex;
   align-items: center;
@@ -3267,17 +3719,20 @@
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-rule-actions small  */
 .dynamic-availability-rule-actions small {
   color: var(--text-secondary, #64748b);
 }
 
 
+/* כללי עיצוב עבור .dynamic-availability-shift-picker  */
 .dynamic-availability-shift-picker {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-shift-picker label  */
 .dynamic-availability-shift-picker label {
   display: flex;
   align-items: center;
@@ -3290,23 +3745,27 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-shift-picker label.is-selected  */
 .dynamic-availability-shift-picker label.is-selected {
   border-color: var(--primary-color, #2563eb);
   background: color-mix(in srgb, var(--primary-color, #2563eb) 8%, white);
 }
 
+/* כללי עיצוב עבור .dynamic-availability-shift-picker input  */
 .dynamic-availability-shift-picker input {
   inline-size: 18px;
   block-size: 18px;
   margin: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-shift-picker-actions  */
 .dynamic-availability-shift-picker-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-shift-picker-actions button  */
 .dynamic-availability-shift-picker-actions button {
   padding: 0;
   border: 0;
@@ -3319,6 +3778,7 @@
   text-underline-offset: 2px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-availability-bulk-rule-head {
     display: grid;
@@ -3340,6 +3800,7 @@
 }
 
 
+/* כללי עיצוב עבור .dynamic-availability-whole-month-rule  */
 .dynamic-availability-whole-month-rule {
   display: flex;
   align-items: center;
@@ -3350,16 +3811,19 @@
   border-radius: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-whole-month-rule > div  */
 .dynamic-availability-whole-month-rule > div {
   display: grid;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-availability-whole-month-rule span  */
 .dynamic-availability-whole-month-rule span {
   color: var(--text-secondary, #64748b);
   font-size: .86rem;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-availability-whole-month-rule {
     align-items: stretch;
@@ -3368,6 +3832,7 @@
 }
 
 /* Phase 8.3C — generic dynamic draft editor */
+/* כללי עיצוב עבור .dynamic-draft-editor  */
 .dynamic-draft-editor {
   margin-top: 18px;
   border: 1px solid var(--border-color, #dbe3ee);
@@ -3376,6 +3841,7 @@
   padding: 18px;
 }
 
+/* כללי עיצוב עבור .dynamic-draft-editor-head  */
 .dynamic-draft-editor-head {
   display: flex;
   align-items: flex-start;
@@ -3384,6 +3850,7 @@
   margin-bottom: 14px;
 }
 
+/* כללי עיצוב עבור .dynamic-draft-editor-head h4  */
 .dynamic-draft-editor-head h4 {
   display: flex;
   align-items: center;
@@ -3398,6 +3865,7 @@
 .dynamic-draft-editor-summary .is-ok { background: #ecfdf5; color: #166534; }
 .dynamic-draft-editor-list { display: grid; gap: 12px; }
 
+/* כללי עיצוב עבור .dynamic-draft-slot  */
 .dynamic-draft-slot {
   border: 1px solid var(--theme-border);
   border-radius: 14px;
@@ -3420,6 +3888,7 @@
 .dynamic-draft-missing-control { margin-top: 10px; display: flex; gap: 9px; align-items: center; flex-wrap: wrap; color: #9a3412; }
 .dynamic-draft-missing-control label { display: inline-flex; gap: 7px; align-items: center; font-weight: 600; }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-draft-editor-head { flex-direction: column; }
   .dynamic-draft-editor-summary { justify-content: flex-start; }
@@ -3429,6 +3898,7 @@
 }
 
 /* Phase 8.3C.1 - explicit draft editor entry point */
+/* כללי עיצוב עבור .dynamic-period-draft-editor-shell  */
 .dynamic-period-draft-editor-shell {
   margin-top: 16px;
   border: 1px solid var(--border-color, #dbe3ef);
@@ -3437,6 +3907,7 @@
   overflow: hidden;
 }
 
+/* כללי עיצוב עבור .dynamic-period-draft-editor-shell-head  */
 .dynamic-period-draft-editor-shell-head {
   display: flex;
   align-items: center;
@@ -3447,16 +3918,19 @@
   background: var(--surface-muted, #f8fafc);
 }
 
+/* כללי עיצוב עבור .dynamic-period-draft-editor-shell-head > div  */
 .dynamic-period-draft-editor-shell-head > div {
   display: grid;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .dynamic-period-draft-editor-shell-head span  */
 .dynamic-period-draft-editor-shell-head span {
   color: var(--text-muted, #64748b);
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .dynamic-period-draft-editor-shell .dynamic-draft-editor  */
 .dynamic-period-draft-editor-shell .dynamic-draft-editor {
   margin: 0;
   border: 0;
@@ -3464,6 +3938,7 @@
 }
 
 /* Phase 8.3C.2 — draft list / monthly calendar views */
+/* כללי עיצוב עבור .dynamic-draft-view-toggle  */
 .dynamic-draft-view-toggle {
   display: inline-flex;
   gap: 4px;
@@ -3473,6 +3948,7 @@
   border-radius: 12px;
   background: var(--theme-surface-muted);
 }
+/* כללי עיצוב עבור .dynamic-draft-view-toggle button  */
 .dynamic-draft-view-toggle button {
   display: inline-flex;
   align-items: center;
@@ -3498,6 +3974,7 @@
 .dynamic-draft-calendar-shift select { width: 100%; min-width: 0; min-height: 30px; border: 1px solid var(--theme-border-strong); border-radius: 7px; background: var(--theme-surface); padding: 0 6px; font-size: .76rem; }
 .dynamic-draft-calendar-shift small { color: var(--theme-text-muted); font-size: .7rem; }
 .dynamic-draft-calendar-unassigned { color: #b45309; font-weight: 700; font-size: .76rem; }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .dynamic-draft-calendar { overflow-x: auto; padding-bottom: 6px; }
   .dynamic-draft-calendar .month-calendar { min-width: 900px; }
@@ -3522,17 +3999,20 @@
 .dynamic-published-editor-current > span, .dynamic-published-editor-current small { color: var(--theme-text-muted); }
 .dynamic-published-editor-current .is-inactive { color: #b91c1c; font-weight: 600; }
 .dynamic-published-editor-row select, .dynamic-published-editor-row input { width: 100%; min-height: 40px; border: 1px solid var(--theme-border-strong); border-radius: 9px; padding: 8px 10px; background: var(--theme-surface); }
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .dynamic-published-editor-head { flex-direction: column; }
   .dynamic-published-editor-row { grid-template-columns: 1fr; }
 }
 
 /* Phase 9.1.4 - published schedule explicit save flow */
+/* כללי עיצוב עבור .dynamic-published-editor-row.has-pending-change  */
 .dynamic-published-editor-row.has-pending-change {
   outline: 2px solid color-mix(in srgb, var(--primary, #2563eb) 22%, transparent);
   outline-offset: -1px;
 }
 
+/* כללי עיצוב עבור .dynamic-published-editor-pending  */
 .dynamic-published-editor-pending {
   display: inline-flex;
   align-items: center;
@@ -3542,6 +4022,7 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .dynamic-published-editor-savebar  */
 .dynamic-published-editor-savebar {
   position: sticky;
   bottom: 0;
@@ -3558,21 +4039,25 @@
   box-shadow: 0 -6px 22px rgb(15 23 42 / 8%);
 }
 
+/* כללי עיצוב עבור .dynamic-published-editor-savebar > div  */
 .dynamic-published-editor-savebar > div {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
 }
 
+/* כללי עיצוב עבור .dynamic-published-editor-savebar > div > span  */
 .dynamic-published-editor-savebar > div > span {
   font-size: 0.8rem;
   opacity: 0.76;
 }
 
+/* כללי עיצוב עבור .dynamic-published-editor-savebar.has-changes  */
 .dynamic-published-editor-savebar.has-changes {
   border-color: color-mix(in srgb, var(--primary, #2563eb) 45%, var(--border-color, #d9e1ec));
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .dynamic-published-editor-savebar {
     align-items: stretch;
@@ -3585,6 +4070,7 @@
 }
 
 /* Phase 9.2 - capability-driven job type permissions */
+/* כללי עיצוב עבור .dynamic-permission-builder  */
 .dynamic-permission-builder {
   display: grid;
   gap: 14px;
@@ -3594,28 +4080,33 @@
   background: var(--surface-secondary, rgba(127, 127, 127, 0.06));
 }
 
+/* כללי עיצוב עבור .dynamic-permission-builder-heading  */
 .dynamic-permission-builder-heading {
   display: flex;
   align-items: flex-start;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-builder-heading > div  */
 .dynamic-permission-builder-heading > div {
   display: grid;
   gap: 4px;
 }
 
 .dynamic-permission-builder-heading span,
+/* כללי עיצוב עבור .dynamic-permission-footnote  */
 .dynamic-permission-footnote {
   opacity: 0.78;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-features  */
 .dynamic-permission-features {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-features > span  */
 .dynamic-permission-features > span {
   padding: 5px 9px;
   border: 1px solid var(--border-color, #d8dee9);
@@ -3623,12 +4114,14 @@
   font-size: 0.82rem;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-columns  */
 .dynamic-permission-columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-column  */
 .dynamic-permission-column {
   display: grid;
   align-content: start;
@@ -3639,11 +4132,13 @@
   background: var(--surface-primary, transparent);
 }
 
+/* כללי עיצוב עבור .dynamic-permission-column h5  */
 .dynamic-permission-column h5 {
   margin: 0 0 4px;
 }
 
 .dynamic-permission-option,
+/* כללי עיצוב עבור .dynamic-job-type-manager-row  */
 .dynamic-job-type-manager-row {
   display: flex;
   align-items: flex-start;
@@ -3652,6 +4147,7 @@
 }
 
 .dynamic-permission-option > span,
+/* כללי עיצוב עבור .dynamic-job-type-manager-row > span  */
 .dynamic-job-type-manager-row > span {
   display: grid;
   gap: 2px;
@@ -3659,10 +4155,12 @@
 }
 
 .dynamic-permission-option small,
+/* כללי עיצוב עבור .dynamic-job-type-manager-row small  */
 .dynamic-job-type-manager-row small {
   opacity: 0.72;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-manager-list  */
 .dynamic-job-type-manager-list {
   display: grid;
   gap: 8px;
@@ -3670,17 +4168,20 @@
   overflow: auto;
 }
 
+/* כללי עיצוב עבור .dynamic-job-type-manager-row  */
 .dynamic-job-type-manager-row {
   padding: 9px 10px;
   border: 1px solid var(--border-color, #d8dee9);
   border-radius: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-permission-summary  */
 .dynamic-user-permission-summary {
   display: grid;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-permission-role  */
 .dynamic-user-permission-role {
   display: grid;
   gap: 8px;
@@ -3689,6 +4190,7 @@
   border-radius: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-permission-role-heading  */
 .dynamic-user-permission-role-heading {
   display: flex;
   justify-content: space-between;
@@ -3696,17 +4198,20 @@
   align-items: center;
 }
 
+/* כללי עיצוב עבור .dynamic-user-permission-role-heading span  */
 .dynamic-user-permission-role-heading span {
   font-size: 0.8rem;
   opacity: 0.72;
 }
 
+/* כללי עיצוב עבור .dynamic-user-permission-chips  */
 .dynamic-user-permission-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-permission-chips > span  */
 .dynamic-user-permission-chips > span {
   padding: 4px 8px;
   border-radius: 999px;
@@ -3714,6 +4219,7 @@
   font-size: 0.78rem;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-permission-columns {
     grid-template-columns: 1fr;
@@ -3721,57 +4227,68 @@
 }
 
 /* Phase 9.2.2 - dynamic per-user Job Type permission toggles */
+/* כללי עיצוב עבור .dynamic-user-job-type-permissions  */
 .dynamic-user-job-type-permissions {
   display: grid;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-job-type-permissions-intro  */
 .dynamic-user-job-type-permissions-intro {
   align-items: center;
 }
 
+/* כללי עיצוב עבור .dynamic-user-job-type-permission-body  */
 .dynamic-user-job-type-permission-body {
   display: grid;
   gap: 18px;
   padding: 0 16px 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-job-type-permission-section  */
 .dynamic-user-job-type-permission-section {
   display: grid;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-job-type-permission-section + .dynamic-user-job-type-permission-section  */
 .dynamic-user-job-type-permission-section + .dynamic-user-job-type-permission-section {
   border-top: 1px solid var(--color-border, var(--theme-border));
   padding-top: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-job-type-permission-section-heading  */
 .dynamic-user-job-type-permission-section-heading {
   display: grid;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-user-job-type-permission-section-heading strong  */
 .dynamic-user-job-type-permission-section-heading strong {
   font-size: 0.95rem;
 }
 
+/* כללי עיצוב עבור .dynamic-user-job-type-permission-section-heading span  */
 .dynamic-user-job-type-permission-section-heading span {
   color: var(--color-text-muted, #64748b);
   font-size: 0.82rem;
 }
 
 /* Phase 9.2.3 - compact grouped dynamic permissions */
+/* כללי עיצוב עבור .dynamic-permission-group-summary  */
 .dynamic-permission-group-summary {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-list-wrapper  */
 .dynamic-permission-category-list-wrapper {
   display: grid;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category  */
 .dynamic-permission-category {
   overflow: hidden;
   border: 1px solid var(--color-border, var(--theme-border));
@@ -3779,10 +4296,12 @@
   background: var(--color-surface, #fff);
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-open  */
 .dynamic-permission-category-open {
   background: color-mix(in srgb, var(--color-primary, #2563eb) 3%, var(--color-surface, #fff));
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-header  */
 .dynamic-permission-category-header {
   display: flex;
   align-items: center;
@@ -3791,6 +4310,7 @@
   padding: 8px 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-expand  */
 .dynamic-permission-category-expand {
   display: flex;
   flex: 1;
@@ -3805,29 +4325,35 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-expand > svg  */
 .dynamic-permission-category-expand > svg {
   flex: 0 0 auto;
   transition: transform 160ms ease;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-open .dynamic-permission-category-expand > svg  */
 .dynamic-permission-category-open .dynamic-permission-category-expand > svg {
   transform: rotate(180deg);
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-expand > span  */
 .dynamic-permission-category-expand > span {
   display: grid;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-expand strong  */
 .dynamic-permission-category-expand strong {
   font-size: 0.92rem;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-expand small  */
 .dynamic-permission-category-expand small {
   color: var(--color-text-muted, #64748b);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-control  */
 .dynamic-permission-category-control {
   display: flex;
   flex: 0 0 auto;
@@ -3838,12 +4364,14 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-control > span:first-child  */
 .dynamic-permission-category-control > span:first-child {
   color: var(--color-text-muted, #64748b);
   font-size: 0.78rem;
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-control > input  */
 .dynamic-permission-category-control > input {
   position: absolute;
   width: 1px;
@@ -3853,31 +4381,38 @@
 }
 
 /* Keep dynamic role/manager category toggles identical to system permission toggles. */
+/* כללי עיצוב עבור .dynamic-permission-category-control-selected .user-permission-switch  */
 .dynamic-permission-category-control-selected .user-permission-switch {
   background: var(--color-primary, #2563eb);
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-control-selected .user-permission-switch span  */
 .dynamic-permission-category-control-selected .user-permission-switch span {
   transform: translateX(-18px);
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-control-partial .user-permission-switch  */
 .dynamic-permission-category-control-partial .user-permission-switch {
   background: color-mix(in srgb, var(--color-primary, #2563eb) 48%, #cbd5e1);
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-control-partial .user-permission-switch span  */
 .dynamic-permission-category-control-partial .user-permission-switch span {
   transform: translateX(-9px);
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-control-disabled  */
 .dynamic-permission-category-control-disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-category-list  */
 .dynamic-permission-category-list {
   border-top: 1px solid var(--color-border, var(--theme-border));
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .dynamic-permission-category-header {
     align-items: flex-start;
@@ -3893,12 +4428,14 @@
 }
 
 /* Phase 9.2.3 — role-aware defaults and override provenance */
+/* כללי עיצוב עבור .dynamic-permission-intro-actions  */
 .dynamic-permission-intro-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-permission-reset-button  */
 .dynamic-permission-reset-button {
   display: inline-flex;
   align-items: center;
@@ -3919,11 +4456,13 @@
 .dynamic-permission-source-override { color: #9a6510 !important; font-weight: 700; }
 .dynamic-permission-override-badge { color: #9a6510 !important; background: #fff7df; border-radius: 999px; padding: 2px 7px; }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .dynamic-user-job-type-permissions-intro { align-items: flex-start; }
   .dynamic-permission-intro-actions { flex-direction: column-reverse; align-items: flex-start; }
 }
 
+/* כללי עיצוב עבור .client-version-panel  */
 .client-version-panel {
   border: 1px solid var(--color-border, var(--theme-border));
   border-radius: var(--radius-lg, 14px);
@@ -3931,6 +4470,7 @@
   overflow: hidden;
 }
 
+/* כללי עיצוב עבור .client-version-panel-toggle  */
 .client-version-panel-toggle {
   width: 100%;
   min-height: 64px;
@@ -3947,6 +4487,7 @@
   text-align: right;
 }
 
+/* כללי עיצוב עבור .client-version-panel-toggle > span:first-child  */
 .client-version-panel-toggle > span:first-child {
   display: inline-flex;
   align-items: center;
@@ -3954,19 +4495,23 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .client-version-panel-current  */
 .client-version-panel-current {
   color: var(--color-text-muted, #64748b);
   font-size: 0.86rem;
 }
 
+/* כללי עיצוב עבור .client-version-panel-toggle svg:last-child  */
 .client-version-panel-toggle svg:last-child {
   transition: transform 160ms ease;
 }
 
+/* כללי עיצוב עבור .client-version-panel-toggle svg:last-child.is-open  */
 .client-version-panel-toggle svg:last-child.is-open {
   transform: rotate(180deg);
 }
 
+/* כללי עיצוב עבור .client-version-panel-body  */
 .client-version-panel-body {
   display: flex;
   flex-direction: column;
@@ -3976,6 +4521,7 @@
 }
 
 .client-version-toolbar,
+/* כללי עיצוב עבור .client-version-send-row  */
 .client-version-send-row {
   display: flex;
   align-items: center;
@@ -3984,12 +4530,14 @@
   flex-wrap: wrap;
 }
 
+/* כללי עיצוב עבור .client-version-summary  */
 .client-version-summary {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
+/* כללי עיצוב עבור .client-version-summary span  */
 .client-version-summary span {
   padding: 7px 10px;
   border-radius: 999px;
@@ -3998,10 +4546,12 @@
   font-size: 0.82rem;
 }
 
+/* כללי עיצוב עבור .client-version-summary strong  */
 .client-version-summary strong {
   color: var(--color-text, #0f172a);
 }
 
+/* כללי עיצוב עבור .client-version-send-row label  */
 .client-version-send-row label {
   display: flex;
   align-items: center;
@@ -4010,6 +4560,7 @@
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .client-version-send-row select  */
 .client-version-send-row select {
   min-width: 240px;
   min-height: 42px;
@@ -4021,10 +4572,12 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .client-version-table-wrap  */
 .client-version-table-wrap {
   overflow-x: auto;
 }
 
+/* כללי עיצוב עבור .client-version-table  */
 .client-version-table {
   width: 100%;
   min-width: 900px;
@@ -4032,6 +4585,7 @@
 }
 
 .client-version-table th,
+/* כללי עיצוב עבור .client-version-table td  */
 .client-version-table td {
   padding: 11px 12px;
   border-bottom: 1px solid var(--color-border, var(--theme-border));
@@ -4039,22 +4593,26 @@
   vertical-align: middle;
 }
 
+/* כללי עיצוב עבור .client-version-table th  */
 .client-version-table th {
   background: var(--color-background-subtle, #f8fafc);
   color: var(--color-text-muted, #475569);
   font-size: 0.8rem;
 }
 
+/* כללי עיצוב עבור .client-version-table td:first-child  */
 .client-version-table td:first-child {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .client-version-table td small  */
 .client-version-table td small {
   color: var(--color-text-muted, #64748b);
 }
 
+/* כללי עיצוב עבור .client-version-status  */
 .client-version-status {
   display: inline-flex;
   padding: 5px 9px;
@@ -4069,6 +4627,7 @@
 .client-version-status.is-outdated { background: #fef2f2; color: #b91c1c; }
 .client-version-status.is-unknown { background: var(--theme-surface-soft); color: var(--theme-text-secondary); }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .client-version-panel-toggle {
     grid-template-columns: 1fr auto;
@@ -4088,6 +4647,7 @@
 }
 
 /* Phase 10.6.7 - generic cross Job Type dashboard context policy */
+/* כללי עיצוב עבור .dynamic-dashboard-context-policy  */
 .dynamic-dashboard-context-policy {
   display: grid;
   gap: 10px;
@@ -4097,28 +4657,33 @@
   background: var(--surface-primary, transparent);
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-context-policy-heading  */
 .dynamic-dashboard-context-policy-heading {
   display: flex;
   align-items: flex-start;
   gap: 9px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-context-policy-heading > div  */
 .dynamic-dashboard-context-policy-heading > div {
   display: grid;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-context-policy-heading span  */
 .dynamic-dashboard-context-policy-heading span {
   opacity: 0.76;
   font-size: 0.88rem;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-context-options  */
 .dynamic-dashboard-context-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-context-option  */
 .dynamic-dashboard-context-option {
   display: flex;
   align-items: flex-start;
@@ -4129,15 +4694,18 @@
   cursor: pointer;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-context-option > span  */
 .dynamic-dashboard-context-option > span {
   display: grid;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-context-option small  */
 .dynamic-dashboard-context-option small {
   opacity: 0.72;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .dynamic-dashboard-context-options {
     grid-template-columns: 1fr;
@@ -4145,6 +4713,7 @@
 }
 
 /* Phase 10.6.8 - operational window for daily on-call roles */
+/* כללי עיצוב עבור .dynamic-daily-on-call-window  */
 .dynamic-daily-on-call-window {
   display: grid;
   gap: 12px;
@@ -4154,15 +4723,18 @@
   background: var(--surface-muted, rgba(148, 163, 184, 0.06));
 }
 
+/* כללי עיצוב עבור .dynamic-daily-on-call-window > div:first-child  */
 .dynamic-daily-on-call-window > div:first-child {
   display: grid;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .dynamic-daily-on-call-window > div:first-child small  */
 .dynamic-daily-on-call-window > div:first-child small {
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .dynamic-daily-on-call-window-fields  */
 .dynamic-daily-on-call-window-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4170,6 +4742,7 @@
   max-width: 420px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .dynamic-daily-on-call-window-fields {
     grid-template-columns: 1fr;
@@ -4182,20 +4755,24 @@
 .dynamic-daily-report-settings > div:first-child { display:grid;gap:8px; }
 
 /* Phase 10.10.2 — manager availability submission state */
+/* כללי עיצוב עבור .dynamic-submission-status  */
 .dynamic-submission-status {
   font-weight: 700;
   border-width: 1px;
 }
+/* כללי עיצוב עבור .dynamic-submission-status.is-draft  */
 .dynamic-submission-status.is-draft {
   background: #fff7ed;
   border-color: #fdba74;
   color: #9a3412;
 }
+/* כללי עיצוב עבור .dynamic-submission-status.is-submitted  */
 .dynamic-submission-status.is-submitted {
   background: #ecfdf5;
   border-color: #86efac;
   color: #166534;
 }
+/* כללי עיצוב עבור .dynamic-submission-status.is-reopened  */
 .dynamic-submission-status.is-reopened {
   background: #eff6ff;
   border-color: #93c5fd;
@@ -4227,6 +4804,7 @@
 .dynamic-rotation-preview-table .is-head { background:var(--theme-surface-muted); font-weight:800; }
 .dynamic-rotation-preview-table .is-substitution { color:#b45309; font-weight:800; }
 .dynamic-rotation-preview-table .is-original { color:#15803d; font-weight:800; }
+/* התאמת הפריסה לתנאי המסך @media (max-width:760px) */
 @media (max-width:760px) {
   .dynamic-rotation-header { flex-direction:column; }
   .dynamic-rotation-preview-table { overflow-x:auto; }
@@ -4236,6 +4814,7 @@
 .dynamic-attendance-settings{display:grid;gap:1rem;margin-top:1rem;padding:1rem;border:1px solid var(--color-border);border-radius:14px;background:var(--color-surface-subtle)}
 
 /* Draft-only scheduling statistics */
+/* כללי עיצוב עבור .dynamic-draft-statistics  */
 .dynamic-draft-statistics {
   margin: 14px 0 18px;
   border: 1px solid var(--theme-border);
@@ -4261,24 +4840,29 @@
 .dynamic-draft-statistics-table tbody tr:last-child td { border-bottom: 0; }
 
 /* Availability-normalized draft balance tones */
+/* כללי עיצוב עבור .dynamic-draft-statistics-table .balance-cell.balance-good  */
 .dynamic-draft-statistics-table .balance-cell.balance-good {
   background: #dcfce7;
   box-shadow: inset 0 0 0 1px #86efac;
 }
+/* כללי עיצוב עבור .dynamic-draft-statistics-table .balance-cell.balance-watch  */
 .dynamic-draft-statistics-table .balance-cell.balance-watch {
   background: #fef3c7;
   box-shadow: inset 0 0 0 1px #fcd34d;
 }
+/* כללי עיצוב עבור .dynamic-draft-statistics-table .balance-cell.balance-bad  */
 .dynamic-draft-statistics-table .balance-cell.balance-bad {
   background: #fee2e2;
   box-shadow: inset 0 0 0 1px #fca5a5;
 }
+/* כללי עיצוב עבור .dynamic-draft-statistics-table .balance-cell.balance-muted  */
 .dynamic-draft-statistics-table .balance-cell.balance-muted {
   background: var(--theme-surface-muted);
   color: var(--theme-text-muted);
 }
 
 /* Optional 200% hours column in dynamic draft statistics */
+/* כללי עיצוב עבור .dynamic-draft-statistics-head  */
 .dynamic-draft-statistics-head {
   display: flex;
   align-items: center;
@@ -4286,6 +4870,7 @@
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-draft-statistics-option  */
 .dynamic-draft-statistics-option {
   display: inline-flex;
   align-items: center;
@@ -4298,12 +4883,14 @@
   user-select: none;
 }
 
+/* כללי עיצוב עבור .dynamic-draft-statistics-option input  */
 .dynamic-draft-statistics-option input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
+/* כללי עיצוב עבור .dynamic-draft-statistics-switch  */
 .dynamic-draft-statistics-switch {
   width: 38px;
   height: 22px;
@@ -4314,6 +4901,7 @@
   direction: ltr;
 }
 
+/* כללי עיצוב עבור .dynamic-draft-statistics-switch > span  */
 .dynamic-draft-statistics-switch > span {
   display: block;
   width: 18px;
@@ -4325,19 +4913,23 @@
   transition: transform .18s ease;
 }
 
+/* כללי עיצוב עבור .dynamic-draft-statistics-option input:checked + .dynamic-draft-statistics-switch  */
 .dynamic-draft-statistics-option input:checked + .dynamic-draft-statistics-switch {
   background: #2563eb;
 }
 
+/* כללי עיצוב עבור .dynamic-draft-statistics-option input:checked + .dynamic-draft-statistics-switch > span  */
 .dynamic-draft-statistics-option input:checked + .dynamic-draft-statistics-switch > span {
   transform: translateX(16px);
 }
 
+/* כללי עיצוב עבור .dynamic-draft-statistics-option input:focus-visible + .dynamic-draft-statistics-switch  */
 .dynamic-draft-statistics-option input:focus-visible + .dynamic-draft-statistics-switch {
   outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .dynamic-draft-statistics-head {
     align-items: flex-start;

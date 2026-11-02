@@ -1,19 +1,41 @@
+/**
+ * קובץ: src/components/users/UsersFilters.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור משתמשים / מסננים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UsersFiltersProps, UsersFilters.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { Search } from 'lucide-react';
 import { Input } from '../ui';
 import type { SystemAccountType } from '../../config/systemAccountTypes';
 import type { UsersFilters as UsersFiltersState } from '../../types/users';
 
+/**
+ * חוזה הנתונים UsersFiltersProps: משתמשים / מסננים / מאפייני הרכיב.
+ */
 interface UsersFiltersProps {
+  // filters — מסננים.
   filters: UsersFiltersState;
+  // onChange — פונקציית דיווח על שינוי.
   onChange: (
     filters: UsersFiltersState,
   ) => void;
 }
 
+/**
+ * פעולה UsersFilters: משתמשים / מסננים.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function UsersFilters({
   filters,
   onChange,
 }: UsersFiltersProps) {
+  /**
+   * פעולה updateFilter: עדכון סינון.
+   * @param key — מפתח.
+   * @param value — ערך.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const updateFilter = <
     Key extends keyof UsersFiltersState,
   >(

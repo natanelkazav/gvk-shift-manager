@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/availability/AvailabilityManagementActionBar.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AvailabilityManagementActionBarProps, AvailabilityManagementActionBar.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarRange,
   ClipboardList,
@@ -11,26 +18,38 @@ import {
   Button,
 } from '../ui';
 
+/**
+ * חוזה הנתונים AvailabilityManagementActionBarProps: אילוצים וזמינות / מאפייני הרכיב.
+ */
 interface AvailabilityManagementActionBarProps {
+  // status — סטטוס.
   status: string;
 
   isBusy?: boolean;
 
+  // canPrepareSchedule — שיבוץ (אופציונלי).
   canPrepareSchedule?: boolean;
 
   onOpen?: (() => void) | null;
 
+  // onClose — פונקציית סגירת התצוגה (אופציונלי).
   onClose?: (() => void) | null;
 
   onReopen?: (() => void) | null;
 
   onDelete?: (() => void) | null;
 
+  // onPrepareSchedule — שיבוץ (אופציונלי).
   onPrepareSchedule?: (() => void) | null;
 
+  // onGoToSchedule — שיבוץ (אופציונלי).
   onGoToSchedule?: (() => void) | null;
 }
 
+/**
+ * פעולה AvailabilityManagementActionBar: אילוצים וזמינות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function AvailabilityManagementActionBar({
   status,
   isBusy = false,

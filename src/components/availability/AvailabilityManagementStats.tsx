@@ -1,18 +1,38 @@
+/**
+ * קובץ: src/components/availability/AvailabilityManagementStats.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AvailabilityManagementStat, AvailabilityManagementStatsProps, AvailabilityManagementStats.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   type LucideIcon,
 } from 'lucide-react';
 
+/**
+ * חוזה הנתונים AvailabilityManagementStat: אילוצים וזמינות.
+ */
 interface AvailabilityManagementStat {
+  // label — תווית.
   label: string;
+  // value — ערך.
   value: number | string;
   icon: LucideIcon;
 }
 
+/**
+ * חוזה הנתונים AvailabilityManagementStatsProps: אילוצים וזמינות / מאפייני הרכיב.
+ */
 interface AvailabilityManagementStatsProps {
+  // items — פריטים.
   items:
     AvailabilityManagementStat[];
 }
 
+/**
+ * פעולה AvailabilityManagementStats: אילוצים וזמינות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function AvailabilityManagementStats({
   items,
 }: AvailabilityManagementStatsProps) {

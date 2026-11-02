@@ -1,8 +1,16 @@
+/**
+ * קובץ: src/components/settings/LegacyCompatibilityPanel.tsx
+ * מטרה: הצגת אפשרויות התאימות בין המנגנון הדינמי לרכיבי המערכת הוותיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: LegacyCompatibilityPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import './LegacyCompatibilityPanel.css';
 
+// legacyTools — הנתון legacyTools בהקשר הפעולה.
 const legacyTools = [
   {
     path: '/legacy/availability',
@@ -36,6 +44,9 @@ const legacyTools = [
   },
 ] as const;
 
+/**
+ * פעולה LegacyCompatibilityPanel: הנתון LegacyCompatibilityPanel בהקשר הפעולה.
+ */
 export default function LegacyCompatibilityPanel() {
   return (
     <div className="legacy-compatibility-panel" dir="rtl">

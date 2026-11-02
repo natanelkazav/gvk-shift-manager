@@ -1,26 +1,40 @@
+-- קובץ: supabase/migrations/20261009020000_personal_rotation_actual_assignment_fix.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סבב כוננויות / הקצאה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_dynamic_rotation_dates.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Correct the personal rotation preview without changing scheduling or exchange behavior.
 -- Standalone latest version of the personal rotation preview RPC.
+-- פונקציית מסד public.get_my_dynamic_rotation_dates: שליפה או חישוב של דינמי / סבב כוננויות / תאריכים.
 create or replace function public.get_my_dynamic_rotation_dates(
   requested_job_type_id uuid, requested_year integer, requested_month integer
 ) returns jsonb
 language plpgsql stable security definer set search_path = '' as $fn$
 declare
   v_actor uuid := auth.uid();
+  -- v_state — מצב.
   v_state public.dynamic_job_type_rotation_state%rowtype;
   v_first date;
   v_last date;
+  -- v_publication_id — מזהה.
   v_publication_id uuid;
+  -- v_result — תוצאה.
   v_result jsonb;
 begin
+  -- הסתעפות לפי התנאי v_actor is null then raise exception 'Not authenticated'; end if;.
   if v_actor is null then raise exception 'Not authenticated'; end if;
+  -- הסתעפות לפי התנאי requested_job_type_id is null or requested_year not between 2020 and 2100.
   if requested_job_type_id is null or requested_year not between 2020 and 2100
      or requested_month not between 1 and 12 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Invalid job type or month';
   end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.job_type_memberships m
     where m.job_type_id = requested_job_type_id and m.user_id = v_actor
   ) then raise exception 'Not a member of job type'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.job_types j
     where j.id = requested_job_type_id
@@ -29,6 +43,7 @@ begin
 
   select * into v_state from public.dynamic_job_type_rotation_state
   where job_type_id = requested_job_type_id;
+  -- הסתעפות לפי התנאי v_state.job_type_id is null or coalesce(cardinality(v_state.rotation_user_ids), 0) = 0.
   if v_state.job_type_id is null or coalesce(cardinality(v_state.rotation_user_ids), 0) = 0
      then return '[]'::jsonb; end if;
 
@@ -73,5 +88,7 @@ begin
   return v_result;
 end;
 $fn$;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_rotation_dates(uuid, integer, integer) from public, anon;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_rotation_dates(uuid, integer, integer) to authenticated;

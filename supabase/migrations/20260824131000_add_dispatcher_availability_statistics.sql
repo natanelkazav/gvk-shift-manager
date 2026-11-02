@@ -1,28 +1,41 @@
+-- קובץ: supabase/migrations/20260824131000_add_dispatcher_availability_statistics.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור מוקדנים / אילוצים וזמינות / סטטיסטיקה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.save_my_shift_availability, public.submit_my_availability, public.close_availability_period, public.get_dispatcher_availability_statistics.
+-- - מבני טבלאות: public.dispatcher_availability, public.availability_submissions.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Dispatcher availability statistics and submission provenance.
 -- Auto-filled availability stays valid for scheduling, but is tracked separately
 -- so management statistics never treat it as a dispatcher-declared preference.
 
+-- עדכון מבנה או הגדרות הטבלה public.dispatcher_availability.
 alter table public.dispatcher_availability
   add column if not exists is_auto_completed boolean not null default false;
 
+-- עדכון מבנה או הגדרות הטבלה public.availability_submissions.
 alter table public.availability_submissions
   add column if not exists submission_source text not null default 'manual';
 
+-- עדכון מבנה או הגדרות הטבלה public.availability_submissions.
 alter table public.availability_submissions
   add column if not exists auto_completed_count integer not null default 0;
 
+-- עדכון מבנה או הגדרות הטבלה public.availability_submissions.
 alter table public.availability_submissions
   drop constraint if exists availability_submissions_submission_source_check;
 
+-- עדכון מבנה או הגדרות הטבלה public.availability_submissions.
 alter table public.availability_submissions
   add constraint availability_submissions_submission_source_check
   check (submission_source in ('manual', 'auto_partial', 'auto_no_submission'));
 
 -- Backfill entries created by the existing automatic close-period behavior.
+-- עדכון רשומות ב־public.dispatcher_availability בהתאם לקלט ולתנאים להלן.
 update public.dispatcher_availability
 set is_auto_completed = true
 where note = 'סומן כזמין אוטומטית עקב אי־הגשה עד מועד סגירת התקופה.';
 
+-- עדכון רשומות ב־public.availability_submissions בהתאם לקלט ולתנאים להלן.
 update public.availability_submissions submission
 set
   auto_completed_count = stats.auto_count,
@@ -44,45 +57,61 @@ from (
 where submission.period_id = stats.period_id
   and submission.user_id = stats.user_id;
 
+-- פונקציית מסד public.save_my_shift_availability: שמירת משמרת / אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION public.save_my_shift_availability(requested_shift_slot_id uuid, requested_availability_status text, requested_note text DEFAULT NULL::text)
  RETURNS TABLE(shift_slot_id uuid, availability_status text, availability_note text, availability_updated_at timestamp with time zone, available_count integer, unavailable_count integer, answered_count integer, total_shift_count integer)
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
 
+  -- target_period_id — מזהה התקופה היעד.
   target_period_id uuid;
+  -- target_period_status — יעד / תקופה / סטטוס.
   target_period_status text;
+  -- target_submission_deadline — מועד אחרון להגשת אילוצים היעד.
   target_submission_deadline timestamptz;
 
+  -- target_submission_status — מצב ההגשה היעד.
   target_submission_status text;
 
+  -- normalized_note — הערה.
   normalized_note text;
   saved_at timestamptz;
 
+  -- calculated_available_count — מספר הסימונים כזמין.
   calculated_available_count integer;
+  -- calculated_unavailable_count — מספר הסימונים כלא זמין.
   calculated_unavailable_count integer;
+  -- calculated_total_shift_count — סך הכול / משמרת / כמות.
   calculated_total_shift_count integer;
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'User is not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile
     where profile.id = current_user_id
       and profile.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Authenticated user is not active';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions permission
@@ -91,19 +120,24 @@ begin
       and permission.permission_key =
         'availability.view'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'User is not allowed to submit availability';
   end if;
 
+  -- הסתעפות לפי התנאי requested_shift_slot_id is null.
   if requested_shift_slot_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Shift slot id is required';
   end if;
 
+  -- הסתעפות לפי התנאי requested_availability_status not in (.
   if requested_availability_status not in (
     'available',
     'unavailable'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Invalid availability status';
   end if;
@@ -119,10 +153,12 @@ begin
       ''
     );
 
+  -- הסתעפות לפי התנאי (.
   if (
     normalized_note is not null
     and length(normalized_note) > 1000
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Availability note is too long';
   end if;
@@ -141,20 +177,26 @@ begin
   where slot.id =
     requested_shift_slot_id;
 
+  -- הסתעפות לפי התנאי target_period_id is null.
   if target_period_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Shift slot was not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period_status <> 'open'.
   if target_period_status <> 'open' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Availability period is not open';
   end if;
 
+  -- הסתעפות לפי התנאי (.
   if (
     target_submission_deadline is not null
     and target_submission_deadline <= now()
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Availability submission deadline has passed';
   end if;
@@ -170,6 +212,7 @@ begin
       current_user_id
   for update;
 
+  -- הסתעפות לפי התנאי target_submission_status is null.
   if target_submission_status is null then
     insert into
       public.availability_submissions (
@@ -191,8 +234,10 @@ begin
       'draft';
   end if;
 
+  -- הסתעפות לפי התנאי target_submission_status =.
   if target_submission_status =
     'submitted' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Availability submission is already submitted';
   end if;
@@ -263,6 +308,7 @@ begin
   where slot.period_id =
     target_period_id;
 
+  -- עדכון רשומות ב־public.availability_submissions בהתאם לקלט ולתנאים להלן.
   update public.availability_submissions
   set
     available_count =
@@ -284,6 +330,7 @@ begin
     and user_id =
       current_user_id;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return query
   select
     requested_shift_slot_id,
@@ -305,38 +352,58 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.submit_my_availability: הגשת אילוצים וזמינות.
 CREATE OR REPLACE FUNCTION public.submit_my_availability()
  RETURNS TABLE(period_id uuid, submission_status text, submitted_at timestamp with time zone, available_count integer, unavailable_count integer, answered_count integer, total_shift_count integer)
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
 
+  -- current_user_email — המשתמש הנוכחי הנוכחי.
   current_user_email text;
+  -- current_user_display_name — שם תצוגה הנוכחי.
   current_user_display_name text;
 
+  -- target_period_id — מזהה התקופה היעד.
   target_period_id uuid;
+  -- target_period_title — יעד / תקופה / כותרת.
   target_period_title text;
+  -- target_period_year — יעד / תקופה / שנה.
   target_period_year integer;
+  -- target_period_month — יעד / תקופה / חודש.
   target_period_month integer;
+  -- target_period_status — יעד / תקופה / סטטוס.
   target_period_status text;
+  -- target_submission_deadline — מועד אחרון להגשת אילוצים היעד.
   target_submission_deadline timestamptz;
 
+  -- current_submission_status — מצב ההגשה הנוכחי.
   current_submission_status text;
 
+  -- calculated_available_count — מספר הסימונים כזמין.
   calculated_available_count integer;
+  -- calculated_unavailable_count — מספר הסימונים כלא זמין.
   calculated_unavailable_count integer;
+  -- calculated_answered_count — כמות.
   calculated_answered_count integer;
+  -- calculated_total_shift_count — סך הכול / משמרת / כמות.
   calculated_total_shift_count integer;
+  -- calculated_auto_completed_count — כמות.
   calculated_auto_completed_count integer;
 
+  -- submitted_timestamp — הוגש.
   submitted_timestamp timestamptz;
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'User is not authenticated';
   end if;
@@ -351,11 +418,14 @@ begin
   where profile.id = current_user_id
     and profile.is_active = true;
 
+  -- הסתעפות לפי התנאי current_user_email is null.
   if current_user_email is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Authenticated user is not active';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions permission
@@ -364,6 +434,7 @@ begin
       and permission.permission_key =
         'availability.view'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'User is not allowed to submit availability';
   end if;
@@ -390,20 +461,26 @@ begin
     period.opened_at desc nulls last
   limit 1;
 
+  -- הסתעפות לפי התנאי target_period_id is null.
   if target_period_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Open availability period was not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period_status <> 'open'.
   if target_period_status <> 'open' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Availability period is not open';
   end if;
 
+  -- הסתעפות לפי התנאי (.
   if (
     target_submission_deadline is not null
     and target_submission_deadline <= now()
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Availability submission deadline has passed';
   end if;
@@ -419,12 +496,16 @@ begin
       current_user_id
   for update;
 
+  -- הסתעפות לפי התנאי current_submission_status is null.
   if current_submission_status is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Availability submission record was not found';
   end if;
 
+  -- הסתעפות לפי התנאי current_submission_status = 'submitted'.
   if current_submission_status = 'submitted' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Availability submission is already submitted';
   end if;
@@ -472,21 +553,26 @@ begin
   where slot.period_id =
     target_period_id;
 
+  -- הסתעפות לפי התנאי calculated_total_shift_count = 0.
   if calculated_total_shift_count = 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'Availability period does not contain shift slots';
   end if;
 
+  -- הסתעפות לפי התנאי (.
   if (
     calculated_answered_count <>
     calculated_total_shift_count
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'All shift slots must be answered before submission';
   end if;
 
   submitted_timestamp := now();
 
+  -- עדכון רשומות ב־public.availability_submissions בהתאם לקלט ולתנאים להלן.
   update public.availability_submissions submission
   set
     status = 'submitted',
@@ -526,6 +612,7 @@ begin
     and submission.user_id =
       current_user_id;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs (
     action,
 
@@ -609,6 +696,7 @@ begin
     )
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return query
   select
     target_period_id,
@@ -621,6 +709,7 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.close_availability_period: סגירת תקופת אילוצים.
 create or replace function public.close_availability_period(
   requested_period_id uuid
 )
@@ -632,29 +721,45 @@ returns table(
   submitted_dispatchers integer
 )
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_actor_email — כתובת דוא״ל.
   current_actor_email text;
+  -- current_actor_display_name — שם תצוגה הנוכחי.
   current_actor_display_name text;
+  -- target_period_title — יעד / תקופה / כותרת.
   target_period_title text;
+  -- target_period_year — יעד / תקופה / שנה.
   target_period_year integer;
+  -- target_period_month — יעד / תקופה / חודש.
   target_period_month integer;
+  -- target_period_status — יעד / תקופה / סטטוס.
   target_period_status text;
+  -- calculated_total_dispatchers — סך הכול.
   calculated_total_dispatchers integer;
+  -- originally_submitted_dispatchers — הוגש.
   originally_submitted_dispatchers integer;
+  -- calculated_submitted_dispatchers — הוגש.
   calculated_submitted_dispatchers integer;
+  -- target_closed_at — יעד.
   target_closed_at timestamptz;
+  -- auto_completed_entries — רשומות.
   auto_completed_entries integer := 0;
+  -- auto_completed_users — משתמשים.
   auto_completed_users integer := 0;
   auto_note constant text :=
     'סומן כזמין אוטומטית עקב אי־הגשה עד מועד סגירת התקופה.';
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'User is not authenticated';
   end if;
 
@@ -668,20 +773,26 @@ begin
   where profile.id = current_user_id
     and profile.is_active = true;
 
+  -- הסתעפות לפי התנאי current_actor_email is null.
   if current_actor_email is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Authenticated user is not active';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions permission
     where permission.user_id = current_user_id
       and permission.permission_key = 'availability.manage'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'User is not allowed to manage availability periods';
   end if;
 
+  -- הסתעפות לפי התנאי requested_period_id is null.
   if requested_period_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Availability period id is required';
   end if;
 
@@ -699,11 +810,15 @@ begin
   where period.id = requested_period_id
   for update;
 
+  -- הסתעפות לפי התנאי target_period_year is null.
   if target_period_year is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Availability period was not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period_status <> 'open'.
   if target_period_status <> 'open' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Only open availability periods can be closed';
   end if;
 
@@ -723,7 +838,9 @@ begin
     and profile.role::text = 'dispatcher'
     and profile.is_active = true;
 
+  -- הסתעפות לפי התנאי calculated_total_dispatchers = 0.
   if calculated_total_dispatchers = 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'No active dispatchers were found';
   end if;
 
@@ -739,6 +856,7 @@ begin
     and profile.is_active = true
     and coalesce(submission.status, 'draft') <> 'submitted';
 
+  -- הוספת רשומות ל־public.availability_submissions בהתאם לקלט ולתנאים להלן.
   insert into public.availability_submissions (
     period_id,
     user_id,
@@ -764,6 +882,7 @@ begin
         and existing_submission.user_id = profile.id
     );
 
+  -- הוספת רשומות ל־public.dispatcher_availability בהתאם לקלט ולתנאים להלן.
   insert into public.dispatcher_availability (
     period_id,
     shift_slot_id,
@@ -804,6 +923,7 @@ begin
 
   get diagnostics auto_completed_entries = row_count;
 
+  -- עדכון רשומות ב־public.availability_submissions בהתאם לקלט ולתנאים להלן.
   update public.availability_submissions submission
   set
     status = 'submitted',
@@ -858,6 +978,7 @@ begin
     and profile.role::text = 'dispatcher'
     and profile.is_active = true;
 
+  -- עדכון רשומות ב־public.availability_periods בהתאם לקלט ולתנאים להלן.
   update public.availability_periods period
   set
     status = 'closed',
@@ -866,6 +987,7 @@ begin
     updated_at = target_closed_at
   where period.id = requested_period_id;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs (
     action,
     actor_user_id,
@@ -918,6 +1040,7 @@ begin
     )
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return query
   select
     requested_period_id,
@@ -928,56 +1051,74 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.get_dispatcher_availability_statistics: שליפה או חישוב של מוקדנים / אילוצים וזמינות / סטטיסטיקה.
 create or replace function public.get_dispatcher_availability_statistics(
   requested_year integer default null,
   requested_month integer default null
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- summary_json — סיכום.
   summary_json jsonb;
+  -- dispatcher_json — מוקדנים.
   dispatcher_json jsonb;
   monthly_json jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile
     where profile.id = current_user_id
       and profile.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
   current_permissions :=
     coalesce(public.get_my_permissions(), array[]::text[]);
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'statistics.view' = any(current_permissions)
     or 'users.manage' = any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_month is not null.
   if requested_month is not null
      and (requested_month < 1 or requested_month > 12) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics month is invalid';
   end if;
 
+  -- הסתעפות לפי התנאי requested_year is not null.
   if requested_year is not null
      and (requested_year < 2020 or requested_year > 2100) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics year is invalid';
   end if;
 
+  -- הסתעפות לפי התנאי requested_month is not null and requested_year is null.
   if requested_month is not null and requested_year is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics year is required when month is selected';
   end if;
 
@@ -1229,6 +1370,7 @@ begin
     'holidayAvailableCount', coalesce((select sum((item ->> 'holidayAvailableCount')::integer) from jsonb_array_elements(dispatcher_json) item), 0)
   ) into summary_json;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'summary', summary_json,
     'dispatcherStatistics', dispatcher_json,

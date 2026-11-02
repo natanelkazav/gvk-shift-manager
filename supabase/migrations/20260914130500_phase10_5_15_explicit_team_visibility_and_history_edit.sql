@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260914130500_phase10_5_15_explicit_team_visibility_and_history_edit.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור היסטוריה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_historical_slot_editor, public.set_dynamic_historical_assignment.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 10.5.15
@@ -11,6 +16,7 @@ begin;
 --    (assigned_user_id / intentionally-unassigned flag). original_user_id and
 --    source_payload remain untouched, and every change is written to audit_logs.
 
+-- עדכון רשומות ב־public.job_type_permission_settings בהתאם לקלט ולתנאים להלן.
 update public.job_type_permission_settings
 set enabled = false,
     source = 'manifest',
@@ -19,6 +25,7 @@ where permission_key = 'schedule.view_others'
   and audience = 'member'
   and source = 'migration';
 
+-- הוספת רשומות ל־public.dynamic_permission_manifest בהתאם לקלט ולתנאים להלן.
 insert into public.dynamic_permission_manifest
   (feature_key, permission_key, audience, label, description, default_enabled, sort_order)
 values
@@ -41,6 +48,7 @@ do $$
 declare
   job record;
 begin
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for job in
     select id
     from public.job_types
@@ -51,6 +59,7 @@ begin
 end;
 $$;
 
+-- פונקציית מסד public.get_dynamic_historical_slot_editor: שליפה או חישוב של דינמי / נתונים היסטוריים.
 create or replace function public.get_dynamic_historical_slot_editor(
   requested_historical_period_id uuid,
   requested_work_date date,
@@ -60,20 +69,29 @@ create or replace function public.get_dynamic_historical_slot_editor(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $function$
 declare
   actor uuid := auth.uid();
+  -- target_period — יעד / תקופה.
   target_period public.dynamic_historical_periods%rowtype;
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
   actor_is_admin boolean := false;
+  -- can_view — האם צפייה מותרת.
   can_view boolean := false;
+  -- can_edit — האם עריכה מותרת.
   can_edit boolean := false;
+  -- members_json — חברי התפקיד.
   members_json jsonb := '[]'::jsonb;
+  -- assignments_json — הקצאות.
   assignments_json jsonb := '[]'::jsonb;
 begin
+  -- הסתעפות לפי התנאי actor is null.
   if actor is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -81,7 +99,9 @@ begin
   from public.dynamic_historical_periods
   where id = requested_historical_period_id;
 
+  -- הסתעפות לפי התנאי target_period.id is null.
   if target_period.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'historical period not found';
   end if;
 
@@ -90,7 +110,9 @@ begin
   where id = target_period.job_type_id
     and legacy_role is null;
 
+  -- הסתעפות לפי התנאי target_job.id is null.
   if target_job.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'dynamic job type not found';
   end if;
 
@@ -108,7 +130,9 @@ begin
     or public.has_dynamic_job_type_permission('schedule.view_team', target_job.id, actor)
     or public.has_dynamic_job_type_permission('schedule.edit_published', target_job.id, actor);
 
+  -- הסתעפות לפי התנאי not can_view.
   if not can_view then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -161,10 +185,13 @@ begin
       ) = requested_end_time
   ) q;
 
+  -- הסתעפות לפי התנאי jsonb_array_length(assignments_json) = 0.
   if jsonb_array_length(assignments_json) = 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'historical slot not found';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'historicalPeriodId', target_period.id,
     'jobTypeId', target_job.id,
@@ -182,6 +209,7 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.set_dynamic_historical_assignment: קביעת קבוצה ייחודית / דינמי / נתונים היסטוריים / הקצאה.
 create or replace function public.set_dynamic_historical_assignment(
   requested_historical_period_id uuid,
   requested_assignment_id uuid,
@@ -190,19 +218,26 @@ create or replace function public.set_dynamic_historical_assignment(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $function$
 declare
   actor uuid := auth.uid();
+  -- target_period — יעד / תקופה.
   target_period public.dynamic_historical_periods%rowtype;
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
+  -- target_assignment — יעד / הקצאה.
   target_assignment public.dynamic_historical_assignments%rowtype;
   actor_is_admin boolean := false;
+  -- old_user_id — מזהה משתמש.
   old_user_id uuid;
   old_intentionally_unassigned boolean;
 begin
+  -- הסתעפות לפי התנאי actor is null.
   if actor is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -210,7 +245,9 @@ begin
   from public.dynamic_historical_periods
   where id = requested_historical_period_id;
 
+  -- הסתעפות לפי התנאי target_period.id is null.
   if target_period.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'historical period not found';
   end if;
 
@@ -219,7 +256,9 @@ begin
   where id = target_period.job_type_id
     and legacy_role is null;
 
+  -- הסתעפות לפי התנאי target_job.id is null.
   if target_job.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'dynamic job type not found';
   end if;
 
@@ -230,8 +269,10 @@ begin
       and p.role::text = 'admin'
   ) into actor_is_admin;
 
+  -- הסתעפות לפי התנאי not actor_is_admin.
   if not actor_is_admin
      and not public.has_dynamic_job_type_permission('schedule.edit_history', target_job.id, actor) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -241,10 +282,13 @@ begin
     and historical_period_id = target_period.id
   for update;
 
+  -- הסתעפות לפי התנאי target_assignment.id is null.
   if target_assignment.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'historical assignment not found';
   end if;
 
+  -- הסתעפות לפי התנאי requested_user_id is not null and not exists (.
   if requested_user_id is not null and not exists (
     select 1
     from public.job_type_memberships m
@@ -253,11 +297,14 @@ begin
       and m.user_id = requested_user_id
       and p.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'requested user is not an active member of this role';
   end if;
 
+  -- הסתעפות לפי התנאי target_assignment.assigned_user_id is not distinct from requested_user_id.
   if target_assignment.assigned_user_id is not distinct from requested_user_id
      and target_assignment.is_intentionally_unassigned = (requested_user_id is null) then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'saved', true,
       'changed', false,
@@ -268,11 +315,13 @@ begin
   old_user_id := target_assignment.assigned_user_id;
   old_intentionally_unassigned := target_assignment.is_intentionally_unassigned;
 
+  -- עדכון רשומות ב־public.dynamic_historical_assignments בהתאם לקלט ולתנאים להלן.
   update public.dynamic_historical_assignments
   set assigned_user_id = requested_user_id,
       is_intentionally_unassigned = (requested_user_id is null)
   where id = target_assignment.id;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(
     action,
     actor_user_id,
@@ -303,6 +352,7 @@ begin
     )
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'saved', true,
     'changed', true,
@@ -313,9 +363,13 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_historical_slot_editor(uuid,date,text,text,text) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.set_dynamic_historical_assignment(uuid,uuid,uuid,text) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_historical_slot_editor(uuid,date,text,text,text) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.set_dynamic_historical_assignment(uuid,uuid,uuid,text) to authenticated;
 
 commit;

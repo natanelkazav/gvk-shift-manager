@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useStatistics.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: StatisticsFilterState, UseStatisticsResult, getErrorMessage, getInitialFilters, useStatistics.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useEffect,
@@ -12,26 +19,45 @@ import type {
   StatisticsDashboardResponse,
 } from '../types/statistics';
 
+/**
+ * חוזה הנתונים StatisticsFilterState: סטטיסטיקה / סינון / מצב.
+ */
 interface StatisticsFilterState {
+  // years — שנים.
   years: number[];
+  // months — חודשים.
   months: number[];
 }
 
+/**
+ * חוזה הנתונים UseStatisticsResult: סטטיסטיקה / תוצאה.
+ */
 interface UseStatisticsResult {
+  // data — נתונים.
   data:
     StatisticsDashboardResponse | null;
+  // filters — מסננים.
   filters: StatisticsFilterState;
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
+  // error — שגיאה.
   error: string | null;
   setYears: (years: number[]) => void;
   setMonths: (months: number[]) => void;
   load: () => Promise<void>;
+  // clearError — שגיאה.
   clearError: () => void;
 }
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error.message;
   }
@@ -39,6 +65,10 @@ function getErrorMessage(
   return 'לא ניתן היה לטעון את נתוני הסטטיסטיקה.';
 }
 
+/**
+ * פעולה getInitialFilters: שליפה או חישוב של מסננים.
+ * @returns StatisticsFilterState — הפלט בהתאם לחתימה.
+ */
 function getInitialFilters():
   StatisticsFilterState {
   const now = new Date();
@@ -49,24 +79,33 @@ function getInitialFilters():
   };
 }
 
+/**
+ * פעולה useStatistics: חיבור מצב או הקשר עבור סטטיסטיקה.
+ * @returns UseStatisticsResult — הפלט בהתאם לחתימה.
+ */
 export function useStatistics():
   UseStatisticsResult {
+  // מצב מקומי: data — נתונים; setData מעדכנת אותו ומפעילה רינדור לפי React.
   const [data, setData] =
     useState<StatisticsDashboardResponse | null>(
       null,
     );
 
+  // מצב מקומי: filters — מסננים; setFilters מעדכנת אותו ומפעילה רינדור לפי React.
   const [filters, setFilters] =
     useState<StatisticsFilterState>(
       getInitialFilters,
     );
 
+  // מצב מקומי: isLoading — האם טעינה מתבצעת; setIsLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [isLoading, setIsLoading] =
     useState(true);
 
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] =
     useState<string | null>(null);
 
+  // fetchStatistics — סטטיסטיקה.
   const fetchStatistics =
     useCallback(
       async (): Promise<StatisticsDashboardResponse> =>
@@ -81,16 +120,25 @@ export function useStatistics():
       ],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [fetchStatistics].
   useEffect(() => {
+    // isCancelled — הנתון isCancelled בהקשר הפעולה.
     let isCancelled = false;
 
+    /**
+     * פעולה אסינכרונית run: הנתון run בהקשר הפעולה.
+     * @returns Promise<void> — הפלט בהתאם לחתימה.
+     */
     const run = async (): Promise<void> => {
       setIsLoading(true);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // response — תוצאת הפעולה.
         const response =
           await fetchStatistics();
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
         if (isCancelled) {
           return;
         }
@@ -98,6 +146,7 @@ export function useStatistics():
         setData(response);
         setError(null);
       } catch (loadError) {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
         if (isCancelled) {
           return;
         }
@@ -126,6 +175,7 @@ export function useStatistics():
       setIsLoading(true);
       setError(null);
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         setData(
           await fetchStatistics(),
@@ -143,6 +193,7 @@ export function useStatistics():
     [fetchStatistics],
   );
 
+  // setYears — קבוצה ייחודית / שנים.
   const setYears = useCallback(
     (years: number[]): void => {
       setError(null);
@@ -159,6 +210,7 @@ export function useStatistics():
     [],
   );
 
+  // setMonths — קבוצה ייחודית / חודשים.
   const setMonths = useCallback(
     (months: number[]): void => {
       setError(null);
@@ -172,6 +224,7 @@ export function useStatistics():
     [],
   );
 
+  // clearError — שגיאה.
   const clearError = useCallback(
     (): void => {
       setError(null);

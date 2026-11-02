@@ -1,9 +1,15 @@
+-- קובץ: supabase/migrations/20260824054500_fix_dispatcher_availability_reopen_and_auto_submit.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור מוקדנים / אילוצים וזמינות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.close_availability_period, public.reopen_availability_period.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Fix dispatcher availability period lifecycle:
 -- 1. Closing a period auto-completes every unmarked shift as available.
 -- 2. Auto-completed dispatcher submissions are finalized as submitted.
 -- 3. Reopening a closed period uses the current audit_logs schema and
 --    moves submitted forms to reopened so dispatchers can edit again.
 
+-- פונקציית מסד public.close_availability_period: סגירת תקופת אילוצים.
 create or replace function public.close_availability_period(
   requested_period_id uuid
 )
@@ -15,29 +21,45 @@ returns table(
   submitted_dispatchers integer
 )
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_actor_email — כתובת דוא״ל.
   current_actor_email text;
+  -- current_actor_display_name — שם תצוגה הנוכחי.
   current_actor_display_name text;
+  -- target_period_title — יעד / תקופה / כותרת.
   target_period_title text;
+  -- target_period_year — יעד / תקופה / שנה.
   target_period_year integer;
+  -- target_period_month — יעד / תקופה / חודש.
   target_period_month integer;
+  -- target_period_status — יעד / תקופה / סטטוס.
   target_period_status text;
+  -- calculated_total_dispatchers — סך הכול.
   calculated_total_dispatchers integer;
+  -- originally_submitted_dispatchers — הוגש.
   originally_submitted_dispatchers integer;
+  -- calculated_submitted_dispatchers — הוגש.
   calculated_submitted_dispatchers integer;
+  -- target_closed_at — יעד.
   target_closed_at timestamptz;
+  -- auto_completed_entries — רשומות.
   auto_completed_entries integer := 0;
+  -- auto_completed_users — משתמשים.
   auto_completed_users integer := 0;
   auto_note constant text :=
     'סומן כזמין אוטומטית עקב אי־הגשה עד מועד סגירת התקופה.';
 begin
   current_user_id := auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'User is not authenticated';
   end if;
 
@@ -51,20 +73,26 @@ begin
   where profile.id = current_user_id
     and profile.is_active = true;
 
+  -- הסתעפות לפי התנאי current_actor_email is null.
   if current_actor_email is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Authenticated user is not active';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions permission
     where permission.user_id = current_user_id
       and permission.permission_key = 'availability.manage'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'User is not allowed to manage availability periods';
   end if;
 
+  -- הסתעפות לפי התנאי requested_period_id is null.
   if requested_period_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Availability period id is required';
   end if;
 
@@ -82,11 +110,15 @@ begin
   where period.id = requested_period_id
   for update;
 
+  -- הסתעפות לפי התנאי target_period_year is null.
   if target_period_year is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Availability period was not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period_status <> 'open'.
   if target_period_status <> 'open' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'Only open availability periods can be closed';
   end if;
 
@@ -106,7 +138,9 @@ begin
     and profile.role::text = 'dispatcher'
     and profile.is_active = true;
 
+  -- הסתעפות לפי התנאי calculated_total_dispatchers = 0.
   if calculated_total_dispatchers = 0 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'No active dispatchers were found';
   end if;
 
@@ -122,6 +156,7 @@ begin
     and profile.is_active = true
     and coalesce(submission.status, 'draft') <> 'submitted';
 
+  -- הוספת רשומות ל־public.availability_submissions בהתאם לקלט ולתנאים להלן.
   insert into public.availability_submissions (
     period_id,
     user_id,
@@ -147,6 +182,7 @@ begin
         and existing_submission.user_id = profile.id
     );
 
+  -- הוספת רשומות ל־public.dispatcher_availability בהתאם לקלט ולתנאים להלן.
   insert into public.dispatcher_availability (
     period_id,
     shift_slot_id,
@@ -185,6 +221,7 @@ begin
 
   get diagnostics auto_completed_entries = row_count;
 
+  -- עדכון רשומות ב־public.availability_submissions בהתאם לקלט ולתנאים להלן.
   update public.availability_submissions submission
   set
     status = 'submitted',
@@ -219,6 +256,7 @@ begin
     and profile.role::text = 'dispatcher'
     and profile.is_active = true;
 
+  -- עדכון רשומות ב־public.availability_periods בהתאם לקלט ולתנאים להלן.
   update public.availability_periods period
   set
     status = 'closed',
@@ -227,6 +265,7 @@ begin
     updated_at = target_closed_at
   where period.id = requested_period_id;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs (
     action,
     actor_user_id,
@@ -279,6 +318,7 @@ begin
     )
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return query
   select
     requested_period_id,
@@ -290,22 +330,31 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.reopen_availability_period: פתיחה מחדש של תקופת אילוצים.
 create or replace function public.reopen_availability_period(
   requested_period_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_actor_email — כתובת דוא״ל.
   current_actor_email text;
+  -- current_actor_display_name — שם תצוגה הנוכחי.
   current_actor_display_name text;
+  -- target_period — יעד / תקופה.
   target_period public.availability_periods%rowtype;
+  -- reopened_at_value — ערך.
   reopened_at_value timestamptz := now();
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -319,20 +368,26 @@ begin
   where profile.id = current_user_id
     and profile.is_active = true;
 
+  -- הסתעפות לפי התנאי current_actor_email is null.
   if current_actor_email is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions permission
     where permission.user_id = current_user_id
       and permission.permission_key = 'availability.manage'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_period_id is null.
   if requested_period_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'availability period id is required';
   end if;
 
@@ -342,14 +397,19 @@ begin
   where period.id = requested_period_id
   for update;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'availability period not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period.status <> 'closed'.
   if target_period.status <> 'closed' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'only closed availability periods can be reopened';
   end if;
 
+  -- עדכון רשומות ב־public.availability_periods בהתאם לקלט ולתנאים להלן.
   update public.availability_periods
   set
     status = 'open',
@@ -359,6 +419,7 @@ begin
     updated_at = reopened_at_value
   where id = target_period.id;
 
+  -- עדכון רשומות ב־public.availability_submissions בהתאם לקלט ולתנאים להלן.
   update public.availability_submissions
   set
     status = 'reopened',
@@ -367,6 +428,7 @@ begin
   where period_id = target_period.id
     and status = 'submitted';
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs (
     action,
     actor_user_id,
@@ -416,6 +478,7 @@ begin
     )
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'periodId', target_period.id,
     'periodStatus', 'open',

@@ -1,3 +1,9 @@
+/*
+ * קובץ: src/styles/components.css
+ * מטרה: הגדרת סגנונות משותפים לרכיבי הממשק.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .button  */
 .button {
   display: inline-flex;
   align-items: center;
@@ -15,44 +21,53 @@
     transform var(--transition-fast);
 }
 
+/* כללי עיצוב עבור .button:hover  */
 .button:hover {
   transform: translateY(-1px);
 }
 
+/* כללי עיצוב עבור .button:active  */
 .button:active {
   transform: translateY(0);
 }
 
+/* כללי עיצוב עבור .button:disabled  */
 .button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
   transform: none;
 }
 
+/* כללי עיצוב עבור .button-primary  */
 .button-primary {
   background: var(--color-primary-600);
   color: var(--color-white);
 }
 
+/* כללי עיצוב עבור .button-primary:hover  */
 .button-primary:hover {
   background: var(--color-primary-700);
 }
 
+/* כללי עיצוב עבור .button-secondary  */
 .button-secondary {
   border-color: var(--color-gray-300);
   background: var(--color-white);
   color: var(--color-gray-700);
 }
 
+/* כללי עיצוב עבור .button-secondary:hover  */
 .button-secondary:hover {
   background: var(--color-gray-50);
 }
 
+/* כללי עיצוב עבור .button-danger  */
 .button-danger {
   background: var(--color-danger-600);
   color: var(--color-white);
 }
 
+/* כללי עיצוב עבור .card  */
 .card {
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-lg);
@@ -60,21 +75,25 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* כללי עיצוב עבור .card-header  */
 .card-header {
   padding: var(--space-5) var(--space-6);
   border-bottom: 1px solid var(--color-gray-200);
 }
 
+/* כללי עיצוב עבור .card-body  */
 .card-body {
   padding: var(--space-6);
 }
 
+/* כללי עיצוב עבור .card-title  */
 .card-title {
   margin: 0;
   font-size: var(--font-size-lg);
   color: var(--color-gray-900);
 }
 
+/* כללי עיצוב עבור .badge  */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -84,26 +103,31 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .badge-success  */
 .badge-success {
   background: var(--color-success-50);
   color: var(--color-success-600);
 }
 
+/* כללי עיצוב עבור .badge-warning  */
 .badge-warning {
   background: var(--color-warning-50);
   color: var(--color-warning-600);
 }
 
+/* כללי עיצוב עבור .badge-danger  */
 .badge-danger {
   background: var(--color-danger-50);
   color: var(--color-danger-600);
 }
 
+/* כללי עיצוב עבור .badge-info  */
 .badge-info {
   background: var(--color-info-50);
   color: var(--color-info-600);
 }
 
+/* כללי עיצוב עבור .page-header  */
 .page-header {
   display: flex;
   align-items: flex-start;
@@ -112,36 +136,43 @@
   margin-bottom: var(--space-6);
 }
 
+/* כללי עיצוב עבור .page-header-title  */
 .page-header-title {
   margin-bottom: var(--space-1);
 }
 
+/* כללי עיצוב עבור .page-header-description  */
 .page-header-description {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .page-actions  */
 .page-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
 }
 
+/* כללי עיצוב עבור .stats-grid  */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-4);
 }
 
+/* כללי עיצוב עבור .stat-card  */
 .stat-card {
   padding: var(--space-5);
 }
 
+/* כללי עיצוב עבור .stat-label  */
 .stat-label {
   margin-bottom: var(--space-2);
   color: var(--color-gray-500);
   font-size: var(--font-size-sm);
 }
 
+/* כללי עיצוב עבור .stat-value  */
 .stat-value {
   margin: 0;
   color: var(--color-gray-900);
@@ -149,12 +180,14 @@
   font-weight: 700;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1000px) */
 @media (max-width: 1000px) {
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .page-header {
     flex-direction: column;
@@ -164,32 +197,38 @@
     grid-template-columns: 1fr;
   }
 }
+/* כללי עיצוב עבור .dashboard-activity-card  */
 .dashboard-activity-card {
   margin-top: var(--space-6);
 }
+/* כללי עיצוב עבור .form-field  */
 .form-field {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
+/* כללי עיצוב עבור .form-label  */
 .form-label {
   color: var(--color-gray-700);
   font-size: var(--font-size-sm);
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .form-required  */
 .form-required {
   margin-right: var(--space-1);
   color: var(--color-danger-600);
 }
 
+/* כללי עיצוב עבור .form-control-wrapper  */
 .form-control-wrapper {
   position: relative;
 }
 
 .form-input,
 .form-select,
+/* כללי עיצוב עבור .form-textarea  */
 .form-textarea {
   width: 100%;
   border: 1px solid var(--color-gray-300);
@@ -202,11 +241,13 @@
 }
 
 .form-input,
+/* כללי עיצוב עבור .form-select  */
 .form-select {
   min-height: 44px;
   padding: 0 var(--space-3);
 }
 
+/* כללי עיצוב עבור .form-textarea  */
 .form-textarea {
   min-height: 110px;
   padding: var(--space-3);
@@ -216,12 +257,14 @@
 
 .form-input:hover,
 .form-select:hover,
+/* כללי עיצוב עבור .form-textarea:hover  */
 .form-textarea:hover {
   border-color: var(--color-gray-500);
 }
 
 .form-input:focus,
 .form-select:focus,
+/* כללי עיצוב עבור .form-textarea:focus  */
 .form-textarea:focus {
   border-color: var(--color-primary-500);
   outline: none;
@@ -230,16 +273,19 @@
 
 .form-input:disabled,
 .form-select:disabled,
+/* כללי עיצוב עבור .form-textarea:disabled  */
 .form-textarea:disabled {
   cursor: not-allowed;
   background: var(--color-gray-100);
   color: var(--color-gray-500);
 }
 
+/* כללי עיצוב עבור .form-input-with-icon  */
 .form-input-with-icon {
   padding-right: 42px;
 }
 
+/* כללי עיצוב עבור .form-control-icon  */
 .form-control-icon {
   position: absolute;
   top: 50%;
@@ -250,15 +296,18 @@
   pointer-events: none;
 }
 
+/* כללי עיצוב עבור .form-input-error  */
 .form-input-error {
   border-color: var(--color-danger-600);
 }
 
+/* כללי עיצוב עבור .form-input-error:focus  */
 .form-input-error:focus {
   border-color: var(--color-danger-600);
   box-shadow: 0 0 0 3px rgb(220 38 38 / 12%);
 }
 
+/* כללי עיצוב עבור .form-message  */
 .form-message {
   margin: 0;
   color: var(--color-gray-500);
@@ -266,16 +315,19 @@
   line-height: 1.4;
 }
 
+/* כללי עיצוב עבור .form-message-error  */
 .form-message-error {
   color: var(--color-danger-600);
 }
 
+/* כללי עיצוב עבור .form-grid  */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-5);
 }
 
+/* כללי עיצוב עבור .form-actions  */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -283,6 +335,7 @@
   margin-top: var(--space-6);
 }
 
+/* כללי עיצוב עבור .modal-backdrop  */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -295,6 +348,7 @@
   backdrop-filter: blur(3px);
 }
 
+/* כללי עיצוב עבור .modal  */
 .modal {
   width: min(560px, 100%);
   max-height: calc(100vh - 32px);
@@ -304,6 +358,7 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* כללי עיצוב עבור .modal-header  */
 .modal-header {
   display: flex;
   align-items: center;
@@ -313,11 +368,13 @@
   border-bottom: 1px solid var(--color-gray-200);
 }
 
+/* כללי עיצוב עבור .modal-title  */
 .modal-title {
   margin: 0;
   font-size: var(--font-size-lg);
 }
 
+/* כללי עיצוב עבור .modal-close-button  */
 .modal-close-button {
   display: inline-flex;
   align-items: center;
@@ -331,15 +388,18 @@
   color: var(--color-gray-600);
 }
 
+/* כללי עיצוב עבור .modal-close-button:hover  */
 .modal-close-button:hover {
   background: var(--color-gray-100);
   color: var(--color-gray-900);
 }
 
+/* כללי עיצוב עבור .modal-body  */
 .modal-body {
   padding: var(--space-6);
 }
 
+/* כללי עיצוב עבור .modal-footer  */
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -349,6 +409,7 @@
   background: var(--color-gray-50);
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .form-grid {
     grid-template-columns: 1fr;

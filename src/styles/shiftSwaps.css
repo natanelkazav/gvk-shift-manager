@@ -1,3 +1,9 @@
+/*
+ * קובץ: src/styles/shiftSwaps.css
+ * מטרה: הגדרת עיצוב ופריסה עבור החלפת משמרות.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .shift-swaps-page  */
 .shift-swaps-page {
   display: grid;
   gap: 1.25rem;
@@ -5,6 +11,7 @@
 
 .shift-swaps-header-actions,
 .shift-swap-card-actions,
+/* כללי עיצוב עבור .modal-footer  */
 .modal-footer {
   display: flex;
   align-items: center;
@@ -13,6 +20,7 @@
 }
 
 .shift-swaps-header-actions .button,
+/* כללי עיצוב עבור .shift-swap-card-actions .button  */
 .shift-swap-card-actions .button {
   display: inline-flex;
   align-items: center;
@@ -20,31 +28,37 @@
   gap: 0.45rem;
 }
 
+/* כללי עיצוב עבור .shift-swaps-sections  */
 .shift-swaps-sections {
   display: grid;
   gap: 1.5rem;
 }
 
+/* כללי עיצוב עבור .shift-swaps-sections > section  */
 .shift-swaps-sections > section {
   display: grid;
   gap: 0.85rem;
 }
 
+/* כללי עיצוב עבור .shift-swaps-sections h2  */
 .shift-swaps-sections h2 {
   margin: 0;
   font-size: 1.05rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-grid  */
 .shift-swap-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-card  */
 .shift-swap-card {
   overflow: hidden;
 }
 
+/* כללי עיצוב עבור .shift-swap-card-header  */
 .shift-swap-card-header {
   display: flex;
   align-items: flex-start;
@@ -52,11 +66,13 @@
   gap: 1rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-card-header > div  */
 .shift-swap-card-header > div {
   display: grid;
   gap: 0.4rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-status  */
 .shift-swap-status {
   width: fit-content;
   border-radius: 999px;
@@ -66,12 +82,14 @@
   background: var(--surface-muted, #f1f5f9);
 }
 
+/* כללי עיצוב עבור .shift-swap-status-approved  */
 .shift-swap-status-approved {
   background: #dcfce7;
   color: #166534;
 }
 
 .shift-swap-status-pending_counterparty,
+/* כללי עיצוב עבור .shift-swap-status-pending_manager  */
 .shift-swap-status-pending_manager {
   background: #fef3c7;
   color: #92400e;
@@ -80,11 +98,13 @@
 .shift-swap-status-rejected_by_counterparty,
 .shift-swap-status-rejected_by_manager,
 .shift-swap-status-cancelled,
+/* כללי עיצוב עבור .shift-swap-status-expired  */
 .shift-swap-status-expired {
   background: #fee2e2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .shift-swap-flow  */
 .shift-swap-flow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -92,6 +112,7 @@
   gap: 0.8rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-flow > div  */
 .shift-swap-flow > div {
   display: grid;
   gap: 0.25rem;
@@ -99,14 +120,17 @@
 }
 
 .shift-swap-flow span,
+/* כללי עיצוב עבור .shift-swap-flow small  */
 .shift-swap-flow small {
   color: var(--text-secondary, #64748b);
 }
 
+/* כללי עיצוב עבור .shift-swap-card-actions  */
 .shift-swap-card-actions {
   margin-top: 1rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-rejection-reason  */
 .shift-swap-rejection-reason {
   margin: 1rem 0 0;
   padding: 0.7rem 0.8rem;
@@ -115,6 +139,7 @@
   color: #9a3412;
 }
 
+/* כללי עיצוב עבור .shift-swap-empty-state  */
 .shift-swap-empty-state {
   min-height: 110px;
   display: flex;
@@ -128,33 +153,39 @@
   padding: 1rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-message  */
 .shift-swap-message {
   padding: 0.8rem 1rem;
   border-radius: 0.75rem;
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .shift-swap-message-error  */
 .shift-swap-message-error {
   background: #fee2e2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .shift-swap-message-success  */
 .shift-swap-message-success {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .shift-swap-create-form  */
 .shift-swap-create-form {
   display: grid;
   gap: 1rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-type-selector  */
 .shift-swap-type-selector {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-type-selector button  */
 .shift-swap-type-selector button {
   border: 1px solid var(--border-color, var(--theme-border-strong));
   background: var(--surface, #fff);
@@ -166,16 +197,19 @@
   gap: 0.35rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-type-selector button.active  */
 .shift-swap-type-selector button.active {
   border-color: #2563eb;
   box-shadow: 0 0 0 2px rgb(37 99 235 / 12%);
 }
 
+/* כללי עיצוב עבור .shift-swap-type-selector span  */
 .shift-swap-type-selector span {
   color: var(--text-secondary, #64748b);
   font-size: 0.85rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-validation-note  */
 .shift-swap-validation-note {
   padding: 0.8rem;
   border-radius: 0.75rem;
@@ -184,6 +218,7 @@
   line-height: 1.55;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 720px) */
 @media (max-width: 720px) {
   .shift-swap-flow {
     grid-template-columns: 1fr;
@@ -199,6 +234,7 @@
   }
 }
 
+/* כללי עיצוב עבור .shift-swap-collapsible-section  */
 .shift-swap-collapsible-section {
   overflow: hidden;
   border: 1px solid var(--border-color, #dbe3ef);
@@ -207,6 +243,7 @@
   padding: 0.9rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-section-toggle  */
 .shift-swap-section-toggle {
   display: flex;
   width: 100%;
@@ -221,34 +258,41 @@
   padding: 0.15rem 0.1rem 0.8rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-section-toggle > span  */
 .shift-swap-section-toggle > span {
   display: grid;
   gap: 0.2rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-section-toggle strong  */
 .shift-swap-section-toggle strong {
   font-size: 1.05rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-section-toggle small  */
 .shift-swap-section-toggle small {
   color: var(--text-secondary, #64748b);
 }
 
+/* כללי עיצוב עבור .shift-swap-section-toggle svg  */
 .shift-swap-section-toggle svg {
   transition: transform 180ms ease;
 }
 
+/* כללי עיצוב עבור .shift-swap-section-toggle svg.collapsed  */
 .shift-swap-section-toggle svg.collapsed {
   transform: rotate(90deg);
 }
 
 
+/* כללי עיצוב עבור .shift-swap-section-title-row  */
 .shift-swap-section-title-row {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
 }
 
+/* כללי עיצוב עבור .shift-swap-new-badge  */
 .shift-swap-new-badge {
   display: inline-flex;
   align-items: center;

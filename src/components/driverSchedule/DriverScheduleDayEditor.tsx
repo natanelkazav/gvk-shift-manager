@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/driverSchedule/DriverScheduleDayEditor.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כוננים / שיבוץ / יום.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DriverScheduleDayEditorProps, DriverScheduleDayEditorState, createEditorState, DriverScheduleDayEditor.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
   Lock,
@@ -20,7 +27,11 @@ import type {
   UpdateDriverScheduleDayRequest,
 } from '../../types/driverSchedule';
 
+/**
+ * חוזה הנתונים DriverScheduleDayEditorProps: כוננים / שיבוץ / יום / מאפייני הרכיב.
+ */
 interface DriverScheduleDayEditorProps {
+  // day — יום.
   day:
     DriverScheduleDay;
 
@@ -29,8 +40,10 @@ interface DriverScheduleDayEditorProps {
 
   isEditable: boolean;
 
+  // isSaving — האם שמירה מתבצעת.
   isSaving: boolean;
 
+  // holidayLabels — חג (אופציונלי).
   holidayLabels?: string[];
 
   onSave: (
@@ -39,16 +52,27 @@ interface DriverScheduleDayEditorProps {
   ) => Promise<void>;
 }
 
+/**
+ * חוזה הנתונים DriverScheduleDayEditorState: כוננים / שיבוץ / יום / מצב.
+ */
 interface DriverScheduleDayEditorState {
+  // assignedUserId — מזהה העובד המשובץ.
   assignedUserId:
     string;
 
+  // isLocked — האם הרשומה נעולה.
   isLocked: boolean;
 
+  // note — הערה.
   note:
     string;
 }
 
+/**
+ * פעולה createEditorState: יצירת מצב.
+ * @param day — יום.
+ * @returns DriverScheduleDayEditorState — הפלט בהתאם לחתימה.
+ */
 function createEditorState(
   day: DriverScheduleDay,
 ): DriverScheduleDayEditorState {
@@ -66,6 +90,10 @@ function createEditorState(
   };
 }
 
+/**
+ * פעולה DriverScheduleDayEditor: כוננים / שיבוץ / יום.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DriverScheduleDayEditor({
   day,
   drivers,
@@ -74,6 +102,7 @@ function DriverScheduleDayEditor({
   holidayLabels = [],
   onSave,
 }: DriverScheduleDayEditorProps) {
+  // מצב מקומי: formState — מצב; setFormState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     formState,
     setFormState,
@@ -87,11 +116,13 @@ function DriverScheduleDayEditor({
 
 
 
+  // initialState — מצב.
   const initialState =
     createEditorState(
       day,
     );
 
+  // isDirty — הנתון isDirty בהקשר הפעולה.
   const isDirty =
     formState.assignedUserId !==
       initialState.assignedUserId ||
@@ -100,8 +131,13 @@ function DriverScheduleDayEditor({
     formState.note !==
       initialState.note;
 
+  /**
+   * פעולה אסינכרונית handleSave: טיפול באירוע עבור הנתון handleSave בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleSave =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isEditable || isSaving || !isDirty.
       if (
         !isEditable ||
         isSaving ||
@@ -127,8 +163,13 @@ function DriverScheduleDayEditor({
       });
     };
 
+  /**
+   * פעולה handleClearAssignment: טיפול באירוע עבור הקצאה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleClearAssignment =
     (): void => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isEditable || isSaving.
       if (
         !isEditable ||
         isSaving

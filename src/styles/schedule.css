@@ -1,3 +1,9 @@
+/*
+ * קובץ: src/styles/schedule.css
+ * מטרה: הגדרת עיצוב ופריסה עבור שיבוץ.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .schedule-page  */
 .schedule-page {
   display: flex;
   flex-direction: column;
@@ -6,6 +12,7 @@
 
 .schedule-loading-state,
 .schedule-error-state,
+/* כללי עיצוב עבור .schedule-empty-state  */
 .schedule-empty-state {
   display: flex;
   min-height: 260px;
@@ -21,6 +28,7 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .schedule-error-state  */
 .schedule-error-state {
   border-color: #fecaca;
   background: #fef2f2;
@@ -28,36 +36,43 @@
 }
 
 .schedule-empty-state strong,
+/* כללי עיצוב עבור .schedule-error-state strong  */
 .schedule-error-state strong {
   color: #1e293b;
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .schedule-error-state strong  */
 .schedule-error-state strong {
   color: #991b1b;
 }
 
 .schedule-empty-state span,
+/* כללי עיצוב עבור .schedule-error-state span  */
 .schedule-error-state span {
   max-width: 520px;
   font-size: 0.78rem;
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .schedule-empty-state-compact  */
 .schedule-empty-state-compact {
   min-height: 180px;
 }
 
+/* כללי עיצוב עבור .schedule-loading-icon  */
 .schedule-loading-icon {
   animation: schedule-spin 1s linear infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes schedule-spin */
 @keyframes schedule-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* כללי עיצוב עבור .schedule-period-bar  */
 .schedule-period-bar {
   display: flex;
   align-items: center;
@@ -69,22 +84,26 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .schedule-period-bar > div  */
 .schedule-period-bar > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .schedule-period-bar span  */
 .schedule-period-bar span {
   color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .schedule-period-bar strong  */
 .schedule-period-bar strong {
   color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .schedule-status  */
 .schedule-status {
   padding: 6px 11px;
   border-radius: 999px;
@@ -92,31 +111,37 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .schedule-status-draft  */
 .schedule-status-draft {
   background: var(--theme-surface-soft);
   color: #475569 !important;
 }
 
+/* כללי עיצוב עבור .schedule-status-collecting_availability  */
 .schedule-status-collecting_availability {
   background: #eff6ff;
   color: #1d4ed8 !important;
 }
 
+/* כללי עיצוב עבור .schedule-status-scheduling  */
 .schedule-status-scheduling {
   background: #fff7ed;
   color: #c2410c !important;
 }
 
+/* כללי עיצוב עבור .schedule-status-published  */
 .schedule-status-published {
   background: #ecfdf5;
   color: #047857 !important;
 }
 
+/* כללי עיצוב עבור .schedule-status-archived  */
 .schedule-status-archived {
   background: #f3f4f6;
   color: #4b5563 !important;
 }
 
+/* כללי עיצוב עבור .schedule-view-controls  */
 .schedule-view-controls {
   display: flex;
   align-items: end;
@@ -129,12 +154,14 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .schedule-view-mode-buttons  */
 .schedule-view-mode-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .schedule-user-selector  */
 .schedule-user-selector {
   display: flex;
   min-width: 220px;
@@ -142,11 +169,13 @@
   gap: 5px;
 }
 
+/* כללי עיצוב עבור .schedule-user-selector span  */
 .schedule-user-selector span {
   color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .schedule-user-selector select  */
 .schedule-user-selector select {
   min-height: 40px;
   padding: 8px 11px;
@@ -158,6 +187,7 @@
 }
 
 .schedule-team-summary,
+/* כללי עיצוב עבור .schedule-statistics-grid  */
 .schedule-statistics-grid {
   display: grid;
   grid-template-columns:
@@ -165,12 +195,14 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .schedule-statistics-grid  */
 .schedule-statistics-grid {
   grid-template-columns:
     repeat(6, minmax(0, 1fr));
 }
 
 .schedule-team-summary article,
+/* כללי עיצוב עבור .schedule-statistics-grid article  */
 .schedule-statistics-grid article {
   display: flex;
   align-items: center;
@@ -183,6 +215,7 @@
 }
 
 .schedule-team-summary article > div,
+/* כללי עיצוב עבור .schedule-statistics-grid article > div  */
 .schedule-statistics-grid article > div {
   display: flex;
   min-width: 0;
@@ -191,34 +224,40 @@
 }
 
 .schedule-team-summary strong,
+/* כללי עיצוב עבור .schedule-statistics-grid strong  */
 .schedule-statistics-grid strong {
   color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
 .schedule-team-summary span,
+/* כללי עיצוב עבור .schedule-statistics-grid span  */
 .schedule-statistics-grid span {
   color: var(--theme-text-muted);
   font-size: 0.68rem;
 }
 
+/* כללי עיצוב עבור .schedule-personal-heading  */
 .schedule-personal-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+/* כללי עיצוב עבור .schedule-personal-heading span  */
 .schedule-personal-heading span {
   color: var(--theme-text-muted);
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .schedule-personal-heading h2  */
 .schedule-personal-heading h2 {
   margin: 2px 0 0;
   color: var(--theme-text-strong);
   font-size: 1.1rem;
 }
 
+/* כללי עיצוב עבור .schedule-progress-card  */
 .schedule-progress-card {
   display: flex;
   flex-direction: column;
@@ -229,6 +268,7 @@
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .schedule-progress-card-header  */
 .schedule-progress-card-header {
   display: flex;
   align-items: center;
@@ -236,28 +276,33 @@
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .schedule-progress-card-header > div:first-child  */
 .schedule-progress-card-header > div:first-child {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .schedule-progress-card-header span  */
 .schedule-progress-card-header span {
   color: #1d4ed8;
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .schedule-progress-card-header strong  */
 .schedule-progress-card-header strong {
   color: #1e3a8a;
   font-size: 0.92rem;
 }
 
+/* כללי עיצוב עבור .schedule-progress-percentage  */
 .schedule-progress-percentage {
   color: #1d4ed8;
   font-size: 1.25rem;
   font-weight: 900;
 }
 
+/* כללי עיצוב עבור .schedule-progress-track  */
 .schedule-progress-track {
   overflow: hidden;
   height: 11px;
@@ -265,6 +310,7 @@
   background: #dbeafe;
 }
 
+/* כללי עיצוב עבור .schedule-progress-fill  */
 .schedule-progress-fill {
   height: 100%;
   border-radius: inherit;
@@ -272,6 +318,7 @@
   transition: width 250ms ease;
 }
 
+/* כללי עיצוב עבור .schedule-progress-details  */
 .schedule-progress-details {
   display: flex;
   justify-content: space-between;
@@ -282,12 +329,14 @@
 }
 
 .schedule-next-shift,
+/* כללי עיצוב עבור .schedule-month-section  */
 .schedule-month-section {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .schedule-next-shift  */
 .schedule-next-shift {
   padding: 15px;
   border: 1px solid #c7d2fe;
@@ -295,28 +344,33 @@
   background: #eef2ff;
 }
 
+/* כללי עיצוב עבור .schedule-next-shift-heading  */
 .schedule-next-shift-heading {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .schedule-next-shift-heading > div  */
 .schedule-next-shift-heading > div {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .schedule-next-shift-heading span  */
 .schedule-next-shift-heading span {
   color: #6366f1;
   font-size: 0.69rem;
 }
 
+/* כללי עיצוב עבור .schedule-next-shift-heading strong  */
 .schedule-next-shift-heading strong {
   color: #312e81;
   font-size: 0.84rem;
 }
 
+/* כללי עיצוב עבור .schedule-month-section  */
 .schedule-month-section {
   padding: 16px;
   border: 1px solid var(--theme-border);
@@ -324,6 +378,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .schedule-month-section-header  */
 .schedule-month-section-header {
   display: flex;
   align-items: flex-start;
@@ -332,30 +387,35 @@
   margin-bottom: 14px;
 }
 
+/* כללי עיצוב עבור .schedule-month-section-header h2  */
 .schedule-month-section-header h2 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .schedule-month-section-header p  */
 .schedule-month-section-header p {
   margin: 4px 0 0;
   color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .schedule-days-list  */
 .schedule-days-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .schedule-day-group  */
 .schedule-day-group {
   overflow: hidden;
   border: 1px solid var(--theme-border);
   border-radius: 12px;
 }
 
+/* כללי עיצוב עבור .schedule-day-group > header  */
 .schedule-day-group > header {
   display: flex;
   align-items: center;
@@ -366,16 +426,19 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .schedule-day-group > header strong  */
 .schedule-day-group > header strong {
   color: #1e293b;
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .schedule-day-group > header span  */
 .schedule-day-group > header span {
   color: var(--theme-text-muted);
   font-size: 0.66rem;
 }
 
+/* כללי עיצוב עבור .schedule-day-shifts  */
 .schedule-day-shifts {
   display: grid;
   grid-template-columns:
@@ -384,6 +447,7 @@
   padding: 10px;
 }
 
+/* כללי עיצוב עבור .schedule-shift-card  */
 .schedule-shift-card {
   display: flex;
   min-width: 0;
@@ -395,11 +459,13 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .schedule-shift-card-completed  */
 .schedule-shift-card-completed {
   opacity: 0.72;
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .schedule-shift-card-current  */
 .schedule-shift-card-current {
   border-color: #86efac;
   background: #f0fdf4;
@@ -407,10 +473,12 @@
     inset 4px 0 0 #22c55e;
 }
 
+/* כללי עיצוב עבור .schedule-shift-card-premium  */
 .schedule-shift-card-premium {
   border-color: #fde68a;
 }
 
+/* כללי עיצוב עבור .schedule-shift-card-main  */
 .schedule-shift-card-main {
   display: flex;
   align-items: flex-start;
@@ -418,22 +486,26 @@
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .schedule-shift-card-main > div  */
 .schedule-shift-card-main > div {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .schedule-shift-card-main strong  */
 .schedule-shift-card-main strong {
   color: var(--theme-text-strong);
   font-size: 0.82rem;
 }
 
+/* כללי עיצוב עבור .schedule-shift-card-main span  */
 .schedule-shift-card-main span {
   color: var(--theme-text-muted);
   font-size: 0.67rem;
 }
 
+/* כללי עיצוב עבור .schedule-shift-progress-badge  */
 .schedule-shift-progress-badge {
   padding: 3px 7px;
   border-radius: 999px;
@@ -442,27 +514,32 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .schedule-shift-progress-badge-completed  */
 .schedule-shift-progress-badge-completed {
   background: var(--theme-surface-soft);
   color: #64748b !important;
 }
 
+/* כללי עיצוב עבור .schedule-shift-progress-badge-current  */
 .schedule-shift-progress-badge-current {
   background: #dcfce7;
   color: #166534 !important;
 }
 
+/* כללי עיצוב עבור .schedule-shift-progress-badge-upcoming  */
 .schedule-shift-progress-badge-upcoming {
   background: #dbeafe;
   color: #1d4ed8 !important;
 }
 
+/* כללי עיצוב עבור .schedule-shift-card-badges  */
 .schedule-shift-card-badges {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
 }
 
+/* כללי עיצוב עבור .schedule-shift-card-badges > span  */
 .schedule-shift-card-badges > span {
   padding: 3px 7px;
   border-radius: 999px;
@@ -471,6 +548,7 @@
   font-size: 0.62rem;
 }
 
+/* כללי עיצוב עבור .schedule-shift-premium-badge  */
 .schedule-shift-premium-badge {
   display: inline-flex;
   align-items: center;
@@ -479,11 +557,13 @@
   color: #92400e !important;
 }
 
+/* כללי עיצוב עבור .schedule-shift-holiday-badge  */
 .schedule-shift-holiday-badge {
   background: #f3e8ff !important;
   color: #7e22ce !important;
 }
 
+/* כללי עיצוב עבור .schedule-shift-assigned-user  */
 .schedule-shift-assigned-user {
   display: flex;
   align-items: center;
@@ -492,22 +572,26 @@
   border-top: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .schedule-shift-assigned-user > div  */
 .schedule-shift-assigned-user > div {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .schedule-shift-assigned-user span  */
 .schedule-shift-assigned-user span {
   color: var(--theme-text-muted);
   font-size: 0.62rem;
 }
 
+/* כללי עיצוב עבור .schedule-shift-assigned-user strong  */
 .schedule-shift-assigned-user strong {
   color: #1e293b;
   font-size: 0.73rem;
 }
 
+/* כללי עיצוב עבור .schedule-shift-notes  */
 .schedule-shift-notes {
   margin: 0;
   color: var(--theme-text-muted);
@@ -515,6 +599,7 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .schedule-hours-summary  */
 .schedule-hours-summary {
   display: flex;
   align-items: center;
@@ -524,10 +609,12 @@
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .schedule-hours-summary strong  */
 .schedule-hours-summary strong {
   color: #1e293b;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1100px) */
 @media (max-width: 1100px) {
   .schedule-statistics-grid {
     grid-template-columns:
@@ -540,6 +627,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .schedule-team-summary,
   .schedule-statistics-grid {
@@ -561,6 +649,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 520px) */
 @media (max-width: 520px) {
   .schedule-period-bar,
   .schedule-progress-card-header {
@@ -582,6 +671,7 @@
   }
 }
 .schedule-error-banner,
+/* כללי עיצוב עבור .schedule-success-banner  */
 .schedule-success-banner {
   display: flex;
   align-items: center;
@@ -591,12 +681,14 @@
   border-radius: 12px;
 }
 
+/* כללי עיצוב עבור .schedule-error-banner  */
 .schedule-error-banner {
   border-color: #fecaca;
   background: #fef2f2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .schedule-success-banner  */
 .schedule-success-banner {
   border-color: #bbf7d0;
   background: #f0fdf4;
@@ -604,6 +696,7 @@
 }
 
 .schedule-error-banner > div,
+/* כללי עיצוב עבור .schedule-success-banner > div  */
 .schedule-success-banner > div {
   display: flex;
   flex-direction: column;
@@ -611,15 +704,18 @@
 }
 
 .schedule-error-banner strong,
+/* כללי עיצוב עבור .schedule-success-banner strong  */
 .schedule-success-banner strong {
   font-size: 0.82rem;
 }
 
 .schedule-error-banner span,
+/* כללי עיצוב עבור .schedule-success-banner span  */
 .schedule-success-banner span {
   font-size: 0.72rem;
   line-height: 1.5;
 }
+/* כללי עיצוב עבור .schedule-display-mode  */
 .schedule-display-mode {
   display: flex;
   align-items: center;
@@ -628,16 +724,19 @@
   flex-wrap: wrap;
 }
 
+/* כללי עיצוב עבור .schedule-calendar-view  */
 .schedule-calendar-view {
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .schedule-calendar-assignments  */
 .schedule-calendar-assignments {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .schedule-calendar-assignment  */
 .schedule-calendar-assignment {
   display: flex;
   min-width: 0;
@@ -650,6 +749,7 @@
   text-align: right;
 }
 
+/* כללי עיצוב עבור .schedule-calendar-assignment strong  */
 .schedule-calendar-assignment strong {
   color: var(--color-gray-900);
   font-size: 0.78rem;
@@ -657,6 +757,7 @@
 }
 
 .schedule-calendar-assignment span,
+/* כללי עיצוב עבור .schedule-calendar-assignment small  */
 .schedule-calendar-assignment small {
   overflow: hidden;
   color: var(--color-gray-600);
@@ -665,6 +766,7 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .schedule-calendar-assignment em  */
 .schedule-calendar-assignment em {
   display: inline-flex;
   align-items: center;
@@ -676,31 +778,37 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .schedule-calendar-assignment-current  */
 .schedule-calendar-assignment-current {
   border-color: #22c55e;
   background: #f0fdf4;
 }
 
+/* כללי עיצוב עבור .schedule-calendar-assignment-premium  */
 .schedule-calendar-assignment-premium {
   border-color: #f59e0b;
   background: #fffbeb;
 }
 
+/* כללי עיצוב עבור .schedule-calendar-day-with-shift  */
 .schedule-calendar-day-with-shift {
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .schedule-calendar-day-current  */
 .schedule-calendar-day-current {
   box-shadow:
     inset 0 0 0 2px #22c55e;
 }
 
+/* כללי עיצוב עבור .schedule-calendar-day-next  */
 .schedule-calendar-day-next {
   box-shadow:
     inset 0 0 0 2px
     var(--color-primary-500);
 }
 
+/* כללי עיצוב עבור .schedule-calendar-day-current.schedule-calendar-day-next  */
 .schedule-calendar-day-current.schedule-calendar-day-next {
   box-shadow:
     inset 0 0 0 2px #22c55e,
@@ -708,10 +816,12 @@
     rgb(59 130 246 / 18%);
 }
 
+/* כללי עיצוב עבור .schedule-calendar-day-premium  */
 .schedule-calendar-day-premium {
   background: #fffdf5;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .schedule-display-mode {
     display: grid;
@@ -740,6 +850,7 @@
     font-size: 0.66rem;
   }
 }
+/* כללי עיצוב עבור .schedule-day-drawer-backdrop  */
 .schedule-day-drawer-backdrop {
   position: fixed;
   inset: 0;
@@ -749,6 +860,7 @@
   backdrop-filter: blur(2px);
 }
 
+/* כללי עיצוב עבור .schedule-day-drawer  */
 .schedule-day-drawer {
   position: fixed;
   inset-block: 0;
@@ -765,6 +877,7 @@
     ease-out;
 }
 
+/* כללי עיצוב עבור .schedule-day-drawer-header  */
 .schedule-day-drawer-header {
   display: flex;
   align-items: center;
@@ -774,22 +887,26 @@
   border-bottom: 1px solid var(--color-gray-200);
 }
 
+/* כללי עיצוב עבור .schedule-day-drawer-header > div  */
 .schedule-day-drawer-header > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+/* כללי עיצוב עבור .schedule-day-drawer-header span  */
 .schedule-day-drawer-header span {
   color: var(--color-gray-500);
   font-size: var(--font-size-sm);
 }
 
+/* כללי עיצוב עבור .schedule-day-drawer-header h2  */
 .schedule-day-drawer-header h2 {
   margin: 0;
   font-size: 1.2rem;
 }
 
+/* כללי עיצוב עבור .schedule-day-drawer-close  */
 .schedule-day-drawer-close {
   display: grid;
   width: 40px;
@@ -802,10 +919,12 @@
   color: var(--color-gray-700);
 }
 
+/* כללי עיצוב עבור .schedule-day-drawer-close:hover  */
 .schedule-day-drawer-close:hover {
   background: var(--color-gray-100);
 }
 
+/* כללי עיצוב עבור .schedule-day-drawer-content  */
 .schedule-day-drawer-content {
   display: flex;
   flex: 1;
@@ -815,6 +934,7 @@
   padding: 18px;
 }
 
+/* הגדרת שלבי האנימציה @keyframes schedule-drawer-enter */
 @keyframes schedule-drawer-enter {
   from {
     transform: translateX(100%);
@@ -827,6 +947,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 560px) */
 @media (max-width: 560px) {
   .schedule-day-drawer {
     inset-block-start: auto;
@@ -851,6 +972,7 @@
     }
   }
 }
+/* כללי עיצוב עבור .schedule-shift-edit-actions  */
 .schedule-shift-edit-actions {
   display: flex;
   justify-content: flex-end;
@@ -859,10 +981,12 @@
   border-top: 1px solid var(--color-gray-200);
 }
 
+/* כללי עיצוב עבור .schedule-shift-edit-actions button  */
 .schedule-shift-edit-actions button {
   min-height: 38px;
 }
 
+/* כללי עיצוב עבור .schedule-edit-modal-content  */
 .schedule-edit-modal-content {
   display: flex;
   flex-direction: column;
@@ -870,6 +994,7 @@
 }
 
 .schedule-edit-shift-summary,
+/* כללי עיצוב עבור .schedule-edit-current-assignment  */
 .schedule-edit-current-assignment {
   display: flex;
   flex-direction: column;
@@ -881,21 +1006,25 @@
 }
 
 .schedule-edit-shift-summary span,
+/* כללי עיצוב עבור .schedule-edit-current-assignment span  */
 .schedule-edit-current-assignment span {
   color: var(--color-gray-500);
   font-size: var(--font-size-sm);
 }
 
 .schedule-edit-shift-summary strong,
+/* כללי עיצוב עבור .schedule-edit-current-assignment strong  */
 .schedule-edit-current-assignment strong {
   color: var(--color-gray-900);
 }
 
+/* כללי עיצוב עבור .schedule-edit-shift-summary small  */
 .schedule-edit-shift-summary small {
   color: var(--color-gray-600);
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .schedule-edit-error  */
 .schedule-edit-error {
   padding: 12px 14px;
   border: 1px solid #fecaca;
@@ -906,6 +1035,7 @@
   font-weight: 600;
 }
 
+/* כללי עיצוב עבור .schedule-month-navigation  */
 .schedule-month-navigation {
   display: flex;
   align-items: center;
@@ -914,6 +1044,7 @@
   flex-wrap: wrap;
 }
 
+/* כללי עיצוב עבור .schedule-month-loading  */
 .schedule-month-loading {
   display: inline-flex;
   align-items: center;
@@ -927,6 +1058,7 @@
   font-size: 0.82rem;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .schedule-month-section-header {
     flex-direction: column;
@@ -951,6 +1083,7 @@
   }
 }
 
+/* כללי עיצוב עבור .schedule-month-section-viewed-month  */
 .schedule-month-section-viewed-month {
   display: block;
   margin-top: 6px;
@@ -958,26 +1091,31 @@
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .schedule-month-feedback  */
 .schedule-month-feedback {
   margin-bottom: 14px;
 }
 
+/* כללי עיצוב עבור .schedule-shift-card-unassigned  */
 .schedule-shift-card-unassigned {
   border-color: #fca5a5;
   background: #fff1f2;
   box-shadow: inset 4px 0 0 #dc2626;
 }
 
+/* כללי עיצוב עבור .schedule-shift-assigned-user-unassigned  */
 .schedule-shift-assigned-user-unassigned {
   border-top-color: #fecaca;
 }
 
 .schedule-shift-assigned-user-unassigned span,
+/* כללי עיצוב עבור .schedule-shift-assigned-user-unassigned strong  */
 .schedule-shift-assigned-user-unassigned strong {
   color: #b91c1c;
 }
 
 
+/* כללי עיצוב עבור .schedule-shift-candidate-summary  */
 .schedule-shift-candidate-summary {
   margin-top: 0.55rem;
   padding: 0.5rem 0.65rem;
@@ -988,6 +1126,7 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .schedule-calendar-assignment-unassigned  */
 .schedule-calendar-assignment-unassigned {
   border-color: #ef4444 !important;
   background: #fef2f2 !important;
@@ -995,6 +1134,7 @@
 }
 
 /* Draft scheduling overview */
+/* כללי עיצוב עבור .schedule-draft-overview  */
 .schedule-draft-overview {
   display: grid;
   gap: 18px;
@@ -1004,6 +1144,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .schedule-draft-overview-header span  */
 .schedule-draft-overview-header span {
   color: #2563eb;
   font-weight: 800;
@@ -1011,22 +1152,26 @@
 }
 
 .schedule-draft-overview-header h2,
+/* כללי עיצוב עבור .schedule-draft-balance-heading h3  */
 .schedule-draft-balance-heading h3 {
   margin: 4px 0 0;
 }
 
 .schedule-draft-overview-header p,
+/* כללי עיצוב עבור .schedule-draft-balance-heading p  */
 .schedule-draft-balance-heading p {
   margin: 6px 0 0;
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .schedule-draft-summary-grid  */
 .schedule-draft-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .schedule-draft-summary-grid article  */
 .schedule-draft-summary-grid article {
   display: flex;
   align-items: center;
@@ -1038,15 +1183,18 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .schedule-draft-summary-grid article div  */
 .schedule-draft-summary-grid article div {
   display: grid;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .schedule-draft-summary-grid strong  */
 .schedule-draft-summary-grid strong {
   font-size: 1.45rem;
 }
 
+/* כללי עיצוב עבור .schedule-draft-summary-grid span  */
 .schedule-draft-summary-grid span {
   color: var(--theme-text-muted);
   font-size: 0.9rem;
@@ -1056,11 +1204,13 @@
 .schedule-draft-summary-warning { background: #fffaf0 !important; border-color: #fed7aa !important; }
 .schedule-draft-summary-success { background: #f0fdf4 !important; border-color: #bbf7d0 !important; }
 
+/* כללי עיצוב עבור .schedule-draft-balance-section  */
 .schedule-draft-balance-section {
   display: grid;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-heading  */
 .schedule-draft-balance-heading {
   display: flex;
   align-items: flex-end;
@@ -1069,12 +1219,14 @@
   flex-wrap: wrap;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-legend  */
 .schedule-draft-balance-legend {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-legend span  */
 .schedule-draft-balance-legend span {
   padding: 6px 10px;
   border-radius: 999px;
@@ -1092,12 +1244,14 @@
 .schedule-draft-legend-high,
 .schedule-draft-balance-cell-high { background: #fff1f2 !important; border-color: #fecdd3 !important; }
 
+/* כללי עיצוב עבור .schedule-draft-balance-table-wrapper  */
 .schedule-draft-balance-table-wrapper {
   overflow-x: auto;
   border: 1px solid #dbe5f3;
   border-radius: 16px;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-table  */
 .schedule-draft-balance-table {
   width: 100%;
   min-width: 1050px;
@@ -1106,18 +1260,21 @@
 }
 
 .schedule-draft-balance-table th,
+/* כללי עיצוב עבור .schedule-draft-balance-table td  */
 .schedule-draft-balance-table td {
   padding: 11px 10px;
   border-inline-start: 1px solid #e2e8f0;
   border-bottom: 1px solid var(--theme-border);
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-table th  */
 .schedule-draft-balance-table th {
   background: var(--theme-surface-muted);
   font-size: 0.85rem;
 }
 
 .schedule-draft-balance-table th small,
+/* כללי עיצוב עבור .schedule-draft-balance-person small  */
 .schedule-draft-balance-person small {
   display: block;
   margin-top: 3px;
@@ -1132,18 +1289,21 @@
 .schedule-draft-group-premium { background: #fff7ed !important; }
 .schedule-draft-group-holiday { background: #fef2f2 !important; }
 
+/* כללי עיצוב עבור .schedule-draft-balance-person  */
 .schedule-draft-balance-person {
   min-width: 150px;
   text-align: right;
   background: var(--theme-surface);
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .schedule-draft-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 560px) */
 @media (max-width: 560px) {
   .schedule-draft-summary-grid {
     grid-template-columns: 1fr;
@@ -1151,12 +1311,14 @@
 }
 
 /* Refined draft balance experience */
+/* כללי עיצוב עבור .schedule-draft-balance-insights  */
 .schedule-draft-balance-insights {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-insights article  */
 .schedule-draft-balance-insights article {
   position: relative;
   display: grid;
@@ -1171,6 +1333,7 @@
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-insights article > svg  */
 .schedule-draft-balance-insights article > svg {
   grid-row: 1 / span 2;
   padding: 9px;
@@ -1181,62 +1344,75 @@
   color: #2563eb;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-insights article > div  */
 .schedule-draft-balance-insights article > div {
   display: grid;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-insights strong  */
 .schedule-draft-balance-insights strong {
   font-size: 1.15rem;
   color: var(--theme-text-strong);
 }
 
 .schedule-draft-balance-insights span,
+/* כללי עיצוב עבור .schedule-draft-balance-insights small  */
 .schedule-draft-balance-insights small {
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-insights small  */
 .schedule-draft-balance-insights small {
   grid-column: 2;
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-insights article.is-balanced  */
 .schedule-draft-balance-insights article.is-balanced {
   border-color: #bbf7d0;
   background: linear-gradient(145deg, #ffffff, #f0fdf4);
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-insights article.is-balanced > svg  */
 .schedule-draft-balance-insights article.is-balanced > svg {
   background: #dcfce7;
   color: #15803d;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-insights article.needs-attention  */
 .schedule-draft-balance-insights article.needs-attention {
   border-color: #fed7aa;
   background: linear-gradient(145deg, #ffffff, #fff7ed);
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-insights article.needs-attention > svg  */
 .schedule-draft-balance-insights article.needs-attention > svg {
   background: #ffedd5;
   color: #c2410c;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-table-wrapper  */
 .schedule-draft-balance-table-wrapper {
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-table  */
 .schedule-draft-balance-table {
   overflow: hidden;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-table tbody tr  */
 .schedule-draft-balance-table tbody tr {
   transition: background-color 150ms ease, transform 150ms ease;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-table tbody tr:hover td  */
 .schedule-draft-balance-table tbody tr:hover td {
   filter: brightness(0.985);
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-value  */
 .schedule-draft-balance-value {
   display: inline-flex;
   align-items: center;
@@ -1249,6 +1425,7 @@
 }
 
 .schedule-draft-person-column,
+/* כללי עיצוב עבור .schedule-draft-balance-person  */
 .schedule-draft-balance-person {
   position: sticky;
   right: 0;
@@ -1256,20 +1433,24 @@
   box-shadow: -8px 0 18px -18px rgba(15, 23, 42, 0.5);
 }
 
+/* כללי עיצוב עבור .schedule-draft-person-column  */
 .schedule-draft-person-column {
   z-index: 4;
 }
 
 .schedule-draft-total-column,
+/* כללי עיצוב עבור .schedule-draft-total-cell  */
 .schedule-draft-total-cell {
   min-width: 116px;
   background: #f8fafc !important;
 }
 
+/* כללי עיצוב עבור .schedule-draft-total-cell  */
 .schedule-draft-total-cell {
   position: relative;
 }
 
+/* כללי עיצוב עבור .schedule-draft-total-cell strong  */
 .schedule-draft-total-cell strong {
   display: block;
   margin-bottom: 7px;
@@ -1277,6 +1458,7 @@
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור .schedule-draft-total-track  */
 .schedule-draft-total-track {
   display: block;
   width: 100%;
@@ -1286,6 +1468,7 @@
   background: rgba(148, 163, 184, 0.2);
 }
 
+/* כללי עיצוב עבור .schedule-draft-total-track > span  */
 .schedule-draft-total-track > span {
   display: block;
   height: 100%;
@@ -1295,6 +1478,7 @@
   transition: width 220ms ease;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-note  */
 .schedule-draft-balance-note {
   margin: 0;
   padding: 11px 14px;
@@ -1306,6 +1490,7 @@
   line-height: 1.6;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .schedule-draft-balance-insights {
     grid-template-columns: 1fr;
@@ -1313,6 +1498,7 @@
 }
 
 
+/* כללי עיצוב עבור .schedule-draft-balance-controls  */
 .schedule-draft-balance-controls {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) auto;
@@ -1325,28 +1511,33 @@
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-controls-copy  */
 .schedule-draft-balance-controls-copy {
   display: grid;
   gap: 0.25rem;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-controls-copy strong  */
 .schedule-draft-balance-controls-copy strong {
   color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-controls-copy span  */
 .schedule-draft-balance-controls-copy span {
   color: var(--theme-text-muted);
   font-size: 0.82rem;
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-controls-actions  */
 .schedule-draft-balance-controls-actions {
   display: flex;
   align-items: start;
   gap: 0.45rem;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-controls-actions button  */
 .schedule-draft-balance-controls-actions button {
   border: 1px solid #dbe4f0;
   border-radius: 10px;
@@ -1359,11 +1550,13 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-controls-actions button:hover  */
 .schedule-draft-balance-controls-actions button:hover {
   border-color: #9fb8e9;
   background: #f8fbff;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-toggles  */
 .schedule-draft-balance-toggles {
   grid-column: 1 / -1;
   display: flex;
@@ -1371,6 +1564,7 @@
   gap: 0.5rem;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-toggles label  */
 .schedule-draft-balance-toggles label {
   display: inline-flex;
   align-items: center;
@@ -1390,6 +1584,7 @@
     box-shadow 160ms ease;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-toggles label.is-active  */
 .schedule-draft-balance-toggles label.is-active {
   border-color: #8fb0f5;
   background: #edf4ff;
@@ -1397,12 +1592,14 @@
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.07);
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-toggles input  */
 .schedule-draft-balance-toggles input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-toggle-check  */
 .schedule-draft-balance-toggle-check {
   display: inline-grid;
   place-items: center;
@@ -1417,11 +1614,13 @@
   line-height: 1;
 }
 
+/* כללי עיצוב עבור .schedule-draft-balance-toggles label.is-active .schedule-draft-balance-toggle-check  */
 .schedule-draft-balance-toggles label.is-active .schedule-draft-balance-toggle-check {
   border-color: #2563eb;
   background: #2563eb;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .schedule-draft-balance-controls {
     grid-template-columns: 1fr;

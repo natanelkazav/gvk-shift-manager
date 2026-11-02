@@ -1,5 +1,13 @@
+/**
+ * קובץ: src/utils/auditCatalog.ts
+ * מטרה: פונקציות עזר לעיבוד וחישוב עבור יומן שינויים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AuditCategory, auditActionLabel, auditActionCategory, effectiveAuditAction.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import type { AuditLogEntry } from '../types/audit';
 
+// auditCategories — יומן שינויים.
 export const auditCategories = {
   scheduling: 'ניהול שיבוצים', availability: 'ניהול אילוצים',
   roles: 'תפקידים והרשאות', users: 'משתמשים',
@@ -7,8 +15,12 @@ export const auditCategories = {
   communications: 'עדכונים והתראות', system: 'מערכת ותחזוקה',
   other: 'אחר',
 } as const;
+/**
+ * טיפוס AuditCategory: יומן שינויים.
+ */
 export type AuditCategory = keyof typeof auditCategories;
 
+// labels — הנתון labels בהקשר הפעולה.
 const labels: Record<string, string> = {
   user_created:'יצירת משתמש',user_updated:'עדכון משתמש',user_activated:'הפעלת משתמש',
   user_deactivated:'השבתת משתמש',user_deleted:'מחיקת משתמש',
@@ -51,10 +63,21 @@ const labels: Record<string, string> = {
   system_event:'אירוע מערכת',
 };
 
+/**
+ * פעולה auditActionLabel: יומן שינויים / תווית.
+ * @param action — הנתון action בהקשר הפעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 export function auditActionLabel(action: string): string {
   return labels[action] ?? action.replace(/[._-]+/g, ' ');
 }
 
+/**
+ * פעולה auditActionCategory: יומן שינויים.
+ * @param action — הנתון action בהקשר הפעולה.
+ * @param entityType — הנתון entityType בהקשר הפעולה.
+ * @returns AuditCategory — הפלט בהתאם לחתימה.
+ */
 export function auditActionCategory(action: string, entityType = ''): AuditCategory {
   if (action === 'system_event') return 'system';
   if (/swap|exchange/.test(action)) return 'exchanges';
@@ -72,6 +95,7 @@ export function auditActionCategory(action: string, entityType = ''): AuditCateg
 
 // Display legacy records accurately before historical SQL is executed.
 // Classification is intentionally exact by entity + summary, not fuzzy text matching.
+// legacy — הנתון legacy בהקשר הפעולה.
 const legacy: Record<string,string> = {
   "activity_tracking_segment|מקטע מעקב פעילות נערך": "activity.segment.updated",
   "attendance_session|דיווח יציאה": "attendance.checked_out",
@@ -102,6 +126,11 @@ const legacy: Record<string,string> = {
   "job_type_membership|עובד צורף לתפקיד דינמי": "dynamic_job_type.member.added",
   "notification|נשלח עדכון יזום לעובדי המערכת": "notification.announcement.sent",
 };
+/**
+ * פעולה effectiveAuditAction: יומן שינויים.
+ * @param entry — רשומה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 export function effectiveAuditAction(entry: Pick<AuditLogEntry,'action'|'entityType'|'summary'>): string {
   return entry.action === 'system_event'
     ? (legacy[`${entry.entityType}|${entry.summary}`] ?? entry.action)

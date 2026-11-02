@@ -1,7 +1,17 @@
+/**
+ * קובץ: supabase/functions/update-user-email/index.ts
+ * מטרה: טיפול בבקשות HTTP לפעולת השרת update-user-email.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: jsonResponse, requiredEnv, normalizeEmail.
+ * - קריאות RPC המופעלות בקובץ: get_my_permissions.
+ * - מקורות נתונים הנזכרים בקריאות from: profiles, audit_logs.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   createClient,
 } from 'npm:@supabase/supabase-js@2';
 
+// corsHeaders — הנתון corsHeaders בהקשר הפעולה.
 const corsHeaders = {
   'Access-Control-Allow-Origin':
     '*',
@@ -19,6 +29,12 @@ const corsHeaders = {
     'POST, OPTIONS',
 };
 
+/**
+ * פעולה jsonResponse: תוצאת הפעולה.
+ * @param body — תוכן.
+ * @param status — סטטוס.
+ * @returns Response — הפלט בהתאם לחתימה.
+ */
 function jsonResponse(
   body: unknown,
   status = 200,
@@ -40,9 +56,15 @@ function jsonResponse(
   );
 }
 
+/**
+ * פעולה requiredEnv: הנתון requiredEnv בהקשר הפעולה.
+ * @param name — שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function requiredEnv(
   name: string,
 ): string {
+  // value — ערך.
   const value =
     Deno.env
       .get(
@@ -50,6 +72,7 @@ function requiredEnv(
       )
       ?.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !value.
   if (
     !value
   ) {
@@ -61,9 +84,15 @@ function requiredEnv(
   return value;
 }
 
+/**
+ * פעולה normalizeEmail: נרמול כתובת דוא״ל.
+ * @param value — ערך.
+ * @returns string | null — הפלט בהתאם לחתימה.
+ */
 function normalizeEmail(
   value: unknown,
 ): string | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value !== 'string'.
   if (
     typeof value !==
       'string'
@@ -71,11 +100,13 @@ function normalizeEmail(
     return null;
   }
 
+  // email — כתובת דוא״ל.
   const email =
     value
       .trim()
       .toLowerCase();
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !email || !email.includes( '@', ).
   if (
     !email ||
     !email.includes(
@@ -93,6 +124,7 @@ Deno.serve(
     request:
       Request,
   ): Promise<Response> => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method === 'OPTIONS'.
     if (
       request.method ===
         'OPTIONS'
@@ -106,6 +138,7 @@ Deno.serve(
       );
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר request.method !== 'POST'.
     if (
       request.method !==
         'POST'
@@ -119,17 +152,21 @@ Deno.serve(
       );
     }
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // supabaseUrl — כתובת יעד.
       const supabaseUrl =
         requiredEnv(
           'SUPABASE_URL',
         );
 
+      // anonKey — מפתח.
       const anonKey =
         requiredEnv(
           'SUPABASE_ANON_KEY',
         );
 
+      // serviceRoleKey — שירות / מפתח.
       const serviceRoleKey =
         requiredEnv(
           'SUPABASE_SERVICE_ROLE_KEY',
@@ -142,6 +179,7 @@ Deno.serve(
           )
           ?.trim();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !authorization.
       if (
         !authorization
       ) {
@@ -154,6 +192,7 @@ Deno.serve(
         );
       }
 
+      // userClient — משתמש / לקוח.
       const userClient =
         createClient(
           supabaseUrl,
@@ -176,6 +215,7 @@ Deno.serve(
           },
         );
 
+      // adminClient — לקוח.
       const adminClient =
         createClient(
           supabaseUrl,
@@ -191,6 +231,7 @@ Deno.serve(
           },
         );
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           actorData,
@@ -201,6 +242,7 @@ Deno.serve(
         await userClient.auth
           .getUser();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר actorError || !actorData.user.
       if (
         actorError ||
         !actorData.user
@@ -214,6 +256,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           permissions,
@@ -225,12 +268,14 @@ Deno.serve(
           'get_my_permissions',
         );
 
+      // עצירת הפעולה עם שגיאה כאשר permissionsError.
       if (
         permissionsError
       ) {
         throw permissionsError;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !Array.isArray( permissions, ) || !permissions.includes( 'users.manage', ).
       if (
         !Array.isArray(
           permissions,
@@ -248,13 +293,17 @@ Deno.serve(
         );
       }
 
+      // requestBody — נתוני הבקשה / תוכן.
       const requestBody =
         await request
           .json() as {
+            // userId — מזהה משתמש (אופציונלי).
             userId?: unknown;
+            // email — כתובת דוא״ל (אופציונלי).
             email?: unknown;
           };
 
+      // userId — מזהה משתמש.
       const userId =
         typeof requestBody
           .userId ===
@@ -264,11 +313,13 @@ Deno.serve(
               .trim()
           : '';
 
+      // email — כתובת דוא״ל.
       const email =
         normalizeEmail(
           requestBody.email,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !userId || !email.
       if (
         !userId ||
         !email
@@ -282,6 +333,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           targetProfile,
@@ -302,12 +354,14 @@ Deno.serve(
           )
           .maybeSingle();
 
+      // עצירת הפעולה עם שגיאה כאשר targetProfileError.
       if (
         targetProfileError
       ) {
         throw targetProfileError;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !targetProfile.
       if (
         !targetProfile
       ) {
@@ -320,6 +374,7 @@ Deno.serve(
         );
       }
 
+      // oldEmail — כתובת דוא״ל.
       const oldEmail =
         String(
           targetProfile.email,
@@ -327,6 +382,7 @@ Deno.serve(
           .trim()
           .toLowerCase();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר oldEmail === email.
       if (
         oldEmail ===
           email
@@ -344,6 +400,7 @@ Deno.serve(
         });
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           duplicateProfile,
@@ -368,12 +425,14 @@ Deno.serve(
           )
           .maybeSingle();
 
+      // עצירת הפעולה עם שגיאה כאשר duplicateProfileError.
       if (
         duplicateProfileError
       ) {
         throw duplicateProfileError;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר duplicateProfile.
       if (
         duplicateProfile
       ) {
@@ -386,6 +445,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         error:
           authUpdateError,
@@ -399,6 +459,7 @@ Deno.serve(
             },
           );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר authUpdateError.
       if (
         authUpdateError
       ) {
@@ -416,6 +477,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         error:
           profileUpdateError,
@@ -436,6 +498,7 @@ Deno.serve(
             userId,
           );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר profileUpdateError.
       if (
         profileUpdateError
       ) {
@@ -448,6 +511,7 @@ Deno.serve(
          * ניסיון rollback כדי לשמור התאמה
          * בין auth.users ל-profiles.
          */
+        // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
         const {
           error:
             rollbackError,
@@ -480,6 +544,7 @@ Deno.serve(
         );
       }
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         data:
           actorProfile,
@@ -497,6 +562,7 @@ Deno.serve(
           )
           .maybeSingle();
 
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         error:
           auditError,

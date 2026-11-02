@@ -1,3 +1,11 @@
+/**
+ * קובץ: src/services/statisticsService.ts
+ * מטרה: טעינת נתוני סטטיסטיקה ועיבודם לתצוגות סיכום והשוואה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: SupabaseErrorShape, LegacyStatisticsResponse, DispatcherAvailabilityStatisticsResponse, MorningDriverStatisticsResponse, ShiftTimeDistributionStatisticsResponse, CombinedSinglePeriodResponse, normalizeStatisticsError, isLegacyStatisticsResponse, isDispatcherAvailabilityStatisticsResponse, mergeDispatcherRows ועוד.
+ * - קריאות RPC המופעלות בקובץ: get_statistics_people, get_statistics_dashboard, get_dispatcher_availability_statistics, get_morning_driver_statistics, get_shift_time_distribution_statistics, get_payroll_statistics.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import {
   supabase,
 } from '../lib/supabase';
@@ -18,13 +26,20 @@ import type {
   ShiftTimeDistributionRow,
 } from '../types/statistics';
 
+/**
+ * חוזה הנתונים SupabaseErrorShape: שגיאה.
+ */
 interface SupabaseErrorShape {
+  // message — הודעה (אופציונלי).
   message?: unknown;
   details?: unknown;
   hint?: unknown;
   code?: unknown;
 }
 
+/**
+ * חוזה הנתונים LegacyStatisticsResponse: סטטיסטיקה / תוצאת הפעולה.
+ */
 interface LegacyStatisticsResponse
   extends Omit<
     StatisticsDashboardResponse,
@@ -37,42 +52,73 @@ interface LegacyStatisticsResponse
     | 'dispatcherShiftTimeDistribution'
     | 'morningDriverShiftTimeDistribution'
   > {
+  // filters — מסננים.
   filters: {
+    // year — שנה.
     year: number | null;
+    // month — חודש.
     month: number | null;
   };
 }
 
 
+/**
+ * חוזה הנתונים DispatcherAvailabilityStatisticsResponse: מוקדנים / אילוצים וזמינות / סטטיסטיקה / תוצאת הפעולה.
+ */
 interface DispatcherAvailabilityStatisticsResponse {
+  // summary — סיכום.
   summary: DispatcherAvailabilityStatisticsSummary;
+  // dispatcherStatistics — מוקדנים / סטטיסטיקה.
   dispatcherStatistics: DispatcherAvailabilityStatisticsRow[];
   monthlyBreakdown: DispatcherAvailabilityMonthlyRow[];
   generatedAt: string;
 }
 
+/**
+ * חוזה הנתונים MorningDriverStatisticsResponse: כונני בוקר.
+ */
 interface MorningDriverStatisticsResponse {
+  // statistics — סטטיסטיקה.
   statistics: MorningDriverStatisticsRow[];
   monthlyBreakdown: MorningDriverMonthlyBreakdownRow[];
   generatedAt: string;
 }
 
+/**
+ * חוזה הנתונים ShiftTimeDistributionStatisticsResponse: משמרת / זמן / סטטיסטיקה / תוצאת הפעולה.
+ */
 interface ShiftTimeDistributionStatisticsResponse {
   dispatchers: ShiftTimeDistributionRow[];
+  // morningDrivers — כונני בוקר.
   morningDrivers: ShiftTimeDistributionRow[];
   generatedAt: string;
 }
 
+/**
+ * חוזה הנתונים CombinedSinglePeriodResponse: תקופה / תוצאת הפעולה.
+ */
 interface CombinedSinglePeriodResponse extends LegacyStatisticsResponse {
+  // dispatcherAvailabilitySummary — מוקדנים / אילוצים וזמינות / סיכום.
   dispatcherAvailabilitySummary: DispatcherAvailabilityStatisticsSummary;
+  // dispatcherAvailabilityStatistics — מוקדנים / אילוצים וזמינות / סטטיסטיקה.
   dispatcherAvailabilityStatistics: DispatcherAvailabilityStatisticsRow[];
+  // dispatcherAvailabilityMonthlyBreakdown — מוקדנים / אילוצים וזמינות.
   dispatcherAvailabilityMonthlyBreakdown: DispatcherAvailabilityMonthlyRow[];
+  // morningDriverStatistics — כונני בוקר.
   morningDriverStatistics: MorningDriverStatisticsRow[];
+  // morningDriverMonthlyBreakdown — כונני בוקר.
   morningDriverMonthlyBreakdown: MorningDriverMonthlyBreakdownRow[];
+  // dispatcherShiftTimeDistribution — מוקדנים / משמרת / זמן.
   dispatcherShiftTimeDistribution: ShiftTimeDistributionRow[];
+  // morningDriverShiftTimeDistribution — כונני בוקר.
   morningDriverShiftTimeDistribution: ShiftTimeDistributionRow[];
 }
 
+/**
+ * פעולה normalizeStatisticsError: נרמול סטטיסטיקה / שגיאה.
+ * @param error — שגיאה.
+ * @returns Error — הפלט בהתאם לחתימה.
+ */
 function normalizeStatisticsError(
   error: unknown,
 ): Error {
@@ -81,6 +127,7 @@ function normalizeStatisticsError(
     error,
   );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error;
   }
@@ -89,9 +136,11 @@ function normalizeStatisticsError(
     typeof error === 'object' &&
     error !== null
   ) {
+    // databaseError — שגיאה.
     const databaseError =
       error as SupabaseErrorShape;
 
+    // errorParts — שגיאה.
     const errorParts = [
       typeof databaseError.message ===
           'string' &&
@@ -118,6 +167,7 @@ function normalizeStatisticsError(
         Boolean(part),
     );
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר errorParts.length > 0.
     if (errorParts.length > 0) {
       return new Error(
         errorParts.join(' | '),
@@ -130,9 +180,15 @@ function normalizeStatisticsError(
   );
 }
 
+/**
+ * פעולה isLegacyStatisticsResponse: בדיקת תנאי עבור סטטיסטיקה / תוצאת הפעולה.
+ * @param value — ערך.
+ * @returns value is LegacyStatisticsResponse — הפלט בהתאם לחתימה.
+ */
 function isLegacyStatisticsResponse(
   value: unknown,
 ): value is LegacyStatisticsResponse {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !== 'object' ||
     value === null
@@ -140,6 +196,7 @@ function isLegacyStatisticsResponse(
     return false;
   }
 
+  // response — תוצאת הפעולה.
   const response =
     value as Partial<LegacyStatisticsResponse>;
 
@@ -170,9 +227,15 @@ function isLegacyStatisticsResponse(
   );
 }
 
+/**
+ * פעולה isDispatcherAvailabilityStatisticsResponse: בדיקת תנאי עבור מוקדנים / אילוצים וזמינות / סטטיסטיקה / תוצאת הפעולה.
+ * @param value — ערך.
+ * @returns value is DispatcherAvailabilityStatisticsResponse — הפלט בהתאם לחתימה.
+ */
 function isDispatcherAvailabilityStatisticsResponse(
   value: unknown,
 ): value is DispatcherAvailabilityStatisticsResponse {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !== 'object' ||
     value === null
@@ -180,6 +243,7 @@ function isDispatcherAvailabilityStatisticsResponse(
     return false;
   }
 
+  // response — תוצאת הפעולה.
   const response =
     value as Partial<DispatcherAvailabilityStatisticsResponse>;
 
@@ -192,20 +256,29 @@ function isDispatcherAvailabilityStatisticsResponse(
   );
 }
 
+/**
+ * פעולה mergeDispatcherRows: איחוד מוקדנים / שורות.
+ * @param responses — הנתון responses בהקשר הפעולה.
+ * @returns DispatcherStatisticsRow[] — הפלט בהתאם לחתימה.
+ */
 function mergeDispatcherRows(
   responses: LegacyStatisticsResponse[],
 ): DispatcherStatisticsRow[] {
+  // rows — שורות; מיפוי לחיפוש לפי מפתח.
   const rows =
     new Map<
       string,
       DispatcherStatisticsRow
     >();
 
+  // עיבוד כל פריט מתוך responses בנפרד.
   for (const response of responses) {
+    // עיבוד כל פריט מתוך response.dispatcherStatistics בנפרד.
     for (
       const row of
         response.dispatcherStatistics
     ) {
+      // current — הנתון current בהקשר הפעולה.
       const current =
         rows.get(row.userId);
 
@@ -245,20 +318,29 @@ function mergeDispatcherRows(
     );
 }
 
+/**
+ * פעולה mergeDriverRows: איחוד כוננים / שורות.
+ * @param responses — הנתון responses בהקשר הפעולה.
+ * @returns DriverStatisticsRow[] — הפלט בהתאם לחתימה.
+ */
 function mergeDriverRows(
   responses: LegacyStatisticsResponse[],
 ): DriverStatisticsRow[] {
+  // rows — שורות; מיפוי לחיפוש לפי מפתח.
   const rows =
     new Map<
       string,
       DriverStatisticsRow
     >();
 
+  // עיבוד כל פריט מתוך responses בנפרד.
   for (const response of responses) {
+    // עיבוד כל פריט מתוך response.driverStatistics בנפרד.
     for (
       const row of
         response.driverStatistics
     ) {
+      // current — הנתון current בהקשר הפעולה.
       const current =
         rows.get(row.userId);
 
@@ -294,14 +376,24 @@ function mergeDriverRows(
     );
 }
 
+/**
+ * פעולה mergeShiftTimeDistributionRows: איחוד משמרת / זמן / שורות.
+ * @param responses — הנתון responses בהקשר הפעולה.
+ * @returns ShiftTimeDistributionRow[] — הפלט בהתאם לחתימה.
+ */
 function mergeShiftTimeDistributionRows(
   responses: ShiftTimeDistributionRow[][],
 ): ShiftTimeDistributionRow[] {
+  // rows — שורות; מיפוי לחיפוש לפי מפתח.
   const rows = new Map<string, ShiftTimeDistributionRow>();
 
+  // עיבוד כל פריט מתוך responses בנפרד.
   for (const responseRows of responses) {
+    // עיבוד כל פריט מתוך responseRows בנפרד.
     for (const row of responseRows) {
+      // key — מפתח.
       const key = `${row.userId}::${row.shiftTime}`;
+      // current — הנתון current בהקשר הפעולה.
       const current = rows.get(key);
 
       if (!current) {
@@ -320,21 +412,33 @@ function mergeShiftTimeDistributionRows(
   );
 }
 
+/**
+ * פעולה mergeResponses: איחוד הנתון mergeResponses בהקשר הפעולה.
+ * @param request — נתוני הבקשה.
+ * @param responses — הנתון responses בהקשר הפעולה.
+ * @returns StatisticsDashboardResponse — הפלט בהתאם לחתימה.
+ */
 function mergeResponses(
   request: StatisticsDashboardRequest,
   responses: CombinedSinglePeriodResponse[],
 ): StatisticsDashboardResponse {
+  // dispatcherStatistics — מוקדנים / סטטיסטיקה.
   const dispatcherStatistics =
     mergeDispatcherRows(responses);
 
+  // driverStatistics — כוננים / סטטיסטיקה.
   const driverStatistics =
     mergeDriverRows(responses);
 
+  // availabilityRows — אילוצים וזמינות / שורות; מיפוי לחיפוש לפי מפתח.
   const availabilityRows =
     new Map<string, DispatcherAvailabilityStatisticsRow>();
 
+  // עיבוד כל פריט מתוך responses בנפרד.
   for (const response of responses) {
+    // עיבוד כל פריט מתוך response.dispatcherAvailabilityStatistics בנפרד.
     for (const row of response.dispatcherAvailabilityStatistics) {
+      // current — הנתון current בהקשר הפעולה.
       const current = availabilityRows.get(row.userId);
 
       if (!current) {
@@ -360,6 +464,7 @@ function mergeResponses(
       current.holidayAvailableCount += row.holidayAvailableCount;
       current.weekendAvailableCount += row.weekendAvailableCount;
 
+      // declaredTotal — סך הכול.
       const declaredTotal =
         current.declaredAvailableCount +
         current.declaredUnavailableCount;
@@ -373,6 +478,7 @@ function mergeResponses(
     }
   }
 
+  // dispatcherAvailabilityStatistics — מוקדנים / אילוצים וזמינות / סטטיסטיקה.
   const dispatcherAvailabilityStatistics =
     Array.from(availabilityRows.values()).sort(
       (firstRow, secondRow) =>
@@ -381,12 +487,18 @@ function mergeResponses(
         firstRow.displayName.localeCompare(secondRow.displayName, 'he'),
     );
 
+  // dispatcherAvailabilityMonthlyBreakdown — מוקדנים / אילוצים וזמינות.
   const dispatcherAvailabilityMonthlyBreakdown =
     responses.flatMap(
       (response) =>
         response.dispatcherAvailabilityMonthlyBreakdown,
     );
 
+  /**
+   * פעולה availabilityTotal: אילוצים וזמינות / סך הכול.
+   * @param key — מפתח.
+   * @returns number — הפלט בהתאם לחתימה.
+   */
   const availabilityTotal = (
     key: keyof DispatcherAvailabilityStatisticsSummary,
   ): number =>
@@ -396,6 +508,7 @@ function mergeResponses(
       0,
     );
 
+  // dispatcherAvailabilitySummary — מוקדנים / אילוצים וזמינות / סיכום.
   const dispatcherAvailabilitySummary: DispatcherAvailabilityStatisticsSummary = {
     periodCount: availabilityTotal('periodCount'),
     dispatcherCount: dispatcherAvailabilityStatistics.length,
@@ -411,6 +524,7 @@ function mergeResponses(
     holidayAvailableCount: availabilityTotal('holidayAvailableCount'),
   };
 
+  // monthlyStatistics — סטטיסטיקה.
   const monthlyStatistics =
     responses
       .flatMap(
@@ -439,22 +553,28 @@ function mergeResponses(
             secondRow.month,
       );
 
+  // dispatcherMonthlyBreakdown — מוקדנים.
   const dispatcherMonthlyBreakdown =
     responses.flatMap(
       (response) =>
         response.dispatcherMonthlyBreakdown,
     );
 
+  // driverMonthlyBreakdown — כוננים.
   const driverMonthlyBreakdown =
     responses.flatMap(
       (response) =>
         response.driverMonthlyBreakdown,
     );
 
+  // morningRows — שורות; מיפוי לחיפוש לפי מפתח.
   const morningRows = new Map<string, MorningDriverStatisticsRow>();
 
+  // עיבוד כל פריט מתוך responses בנפרד.
   for (const response of responses) {
+    // עיבוד כל פריט מתוך response.morningDriverStatistics בנפרד.
     for (const row of response.morningDriverStatistics) {
+      // current — הנתון current בהקשר הפעולה.
       const current = morningRows.get(row.userId);
       if (!current) {
         morningRows.set(row.userId, { ...row });
@@ -469,23 +589,32 @@ function mergeResponses(
     }
   }
 
+  // morningDriverStatistics — כונני בוקר.
   const morningDriverStatistics = Array.from(morningRows.values())
     .sort((a, b) => b.totalShifts - a.totalShifts);
 
+  // morningDriverMonthlyBreakdown — כונני בוקר.
   const morningDriverMonthlyBreakdown = responses.flatMap(
     (response) => response.morningDriverMonthlyBreakdown,
   );
 
+  // dispatcherShiftTimeDistribution — מוקדנים / משמרת / זמן.
   const dispatcherShiftTimeDistribution =
     mergeShiftTimeDistributionRows(
       responses.map((response) => response.dispatcherShiftTimeDistribution),
     );
 
+  // morningDriverShiftTimeDistribution — כונני בוקר.
   const morningDriverShiftTimeDistribution =
     mergeShiftTimeDistributionRows(
       responses.map((response) => response.morningDriverShiftTimeDistribution),
     );
 
+  /**
+   * פעולה total: סך הכול.
+   * @param key — מפתח.
+   * @returns number — הפלט בהתאם לחתימה.
+   */
   const total = (
     key:
       keyof LegacyStatisticsResponse['summary'],
@@ -564,28 +693,43 @@ function mergeResponses(
   };
 }
 
+/**
+ * איגוד פעולות סטטיסטיקה / שירות במחלקה StatisticsService.
+ */
 class StatisticsService {
 
+  /**
+   * פעולה אסינכרונית getStatisticsPeople: שליפה או חישוב של סטטיסטיקה.
+   * הפעולה פונה ל־RPC: get_statistics_people.
+   * @returns Promise<StatisticsPersonOption[]> — הפלט בהתאם לחתימה.
+   */
   async getStatisticsPeople(): Promise<StatisticsPersonOption[]> {
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const { data, error } = await supabase.rpc(
       'get_statistics_people',
     );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeStatisticsError(error);
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !Array.isArray(data).
     if (!Array.isArray(data)) {
       return [];
     }
 
     return data.flatMap((item): StatisticsPersonOption[] => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof item !== 'object' || item === null.
       if (typeof item !== 'object' || item === null) {
         return [];
       }
 
+      // row — שורה.
       const row = item as Record<string, unknown>;
+      // userType — משתמש.
       const userType = row.userType;
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof row.userId !== 'string' || typeof row.displayName !== 'string' || (userType !== 'dispatchers' && userType !== 'drivers' && userType !.
       if (
         typeof row.userId !== 'string' ||
         typeof row.displayName !== 'string' ||
@@ -608,6 +752,12 @@ class StatisticsService {
     });
   }
 
+  /**
+   * פעולה אסינכרונית getSinglePeriod: שליפה או חישוב של תקופה.
+   * הפעולה פונה ל־RPC: get_statistics_dashboard, get_dispatcher_availability_statistics, get_morning_driver_statistics, get_shift_time_distribution_statistics.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<CombinedSinglePeriodResponse> — הפלט בהתאם לחתימה.
+   */
   private async getSinglePeriod(
     request:
       StatisticsSinglePeriodRequest,
@@ -648,28 +798,34 @@ class StatisticsService {
       ),
     ]);
 
+    // עצירת הפעולה עם שגיאה כאשר scheduleResult.error.
     if (scheduleResult.error) {
       throw normalizeStatisticsError(scheduleResult.error);
     }
 
+    // עצירת הפעולה עם שגיאה כאשר availabilityResult.error.
     if (availabilityResult.error) {
       throw normalizeStatisticsError(availabilityResult.error);
     }
 
+    // עצירת הפעולה עם שגיאה כאשר morningDriverResult.error.
     if (morningDriverResult.error) {
       throw normalizeStatisticsError(morningDriverResult.error);
     }
 
+    // עצירת הפעולה עם שגיאה כאשר shiftTimeDistributionResult.error.
     if (shiftTimeDistributionResult.error) {
       throw normalizeStatisticsError(shiftTimeDistributionResult.error);
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !isLegacyStatisticsResponse(scheduleResult.data).
     if (!isLegacyStatisticsResponse(scheduleResult.data)) {
       throw new Error(
         'התקבלה תשובה לא תקינה ממסך הסטטיסטיקות.',
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר !isDispatcherAvailabilityStatisticsResponse( availabilityResult.data, ).
     if (
       !isDispatcherAvailabilityStatisticsResponse(
         availabilityResult.data,
@@ -680,7 +836,9 @@ class StatisticsService {
       );
     }
 
+    // morningData — נתונים.
     const morningData = morningDriverResult.data as MorningDriverStatisticsResponse | null;
+    // עצירת הפעולה עם שגיאה כאשר !morningData || !Array.isArray(morningData.statistics) || !Array.isArray(morningData.monthlyBreakdown).
     if (
       !morningData ||
       !Array.isArray(morningData.statistics) ||
@@ -689,9 +847,11 @@ class StatisticsService {
       throw new Error('התקבלה תשובה לא תקינה מנתוני כונני הבוקר.');
     }
 
+    // shiftTimeData — משמרת / זמן / נתונים.
     const shiftTimeData =
       shiftTimeDistributionResult.data as ShiftTimeDistributionStatisticsResponse | null;
 
+    // עצירת הפעולה עם שגיאה כאשר !shiftTimeData || !Array.isArray(shiftTimeData.dispatchers) || !Array.isArray(shiftTimeData.morningDrivers).
     if (
       !shiftTimeData ||
       !Array.isArray(shiftTimeData.dispatchers) ||
@@ -715,20 +875,28 @@ class StatisticsService {
     };
   }
 
+  /**
+   * פעולה אסינכרונית getStatisticsDashboard: שליפה או חישוב של סטטיסטיקה / לוח בקרה.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<StatisticsDashboardResponse> — הפלט בהתאם לחתימה.
+   */
   async getStatisticsDashboard(
     request:
       StatisticsDashboardRequest,
   ): Promise<StatisticsDashboardResponse> {
+    // years — שנים.
     const years =
       Array.from(
         new Set(request.years),
       ).sort();
 
+    // months — חודשים.
     const months =
       Array.from(
         new Set(request.months),
       ).sort();
 
+    // עצירת הפעולה עם שגיאה כאשר years.some( (year) => !Number.isInteger(year) || year < 2020 || year > 2100, ).
     if (
       years.some(
         (year) =>
@@ -742,6 +910,7 @@ class StatisticsService {
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר months.some( (month) => !Number.isInteger(month) || month < 1 || month > 12, ).
     if (
       months.some(
         (month) =>
@@ -755,6 +924,7 @@ class StatisticsService {
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר years.length === 0 && months.length > 0.
     if (
       years.length === 0 &&
       months.length > 0
@@ -764,6 +934,7 @@ class StatisticsService {
       );
     }
 
+    // periods — תקופות.
     let periods:
       StatisticsSinglePeriodRequest[];
 
@@ -812,10 +983,17 @@ class StatisticsService {
     );
   }
 
+  /**
+   * פעולה אסינכרונית getPayrollStatistics: שליפה או חישוב של חישובי שכר / סטטיסטיקה.
+   * הפעולה פונה ל־RPC: get_payroll_statistics.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<PayrollStatisticsResponse> — הפלט בהתאם לחתימה.
+   */
   async getPayrollStatistics(
     request:
       StatisticsDashboardRequest,
   ): Promise<PayrollStatisticsResponse> {
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -833,12 +1011,14 @@ class StatisticsService {
       },
     );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (error) {
       throw normalizeStatisticsError(
         error,
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר typeof data !== 'object' || data === null.
     if (
       typeof data !== 'object' ||
       data === null
@@ -852,5 +1032,6 @@ class StatisticsService {
   }
 }
 
+// statisticsService — סטטיסטיקה / שירות.
 export const statisticsService =
   new StatisticsService();

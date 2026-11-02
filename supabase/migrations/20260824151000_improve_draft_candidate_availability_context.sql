@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260824151000_improve_draft_candidate_availability_context.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור טיוטה / אילוצים וזמינות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_schedule_draft_edit_context.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- =========================================================
 -- Improve dispatcher draft candidate availability context.
 --
@@ -6,20 +11,27 @@
 -- is kept separate so the UI does not present it as a user choice.
 -- =========================================================
 
+-- פונקציית מסד public.get_schedule_draft_edit_context: שליפה או חישוב של שיבוץ / טיוטה.
 create or replace function public.get_schedule_draft_edit_context(
   requested_schedule_period_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_period — יעד / תקופה.
   target_period public.schedule_periods%rowtype;
+  -- current_permissions — הרשאות.
   current_permissions text[];
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -29,10 +41,12 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'schedule.edit' =
       any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -42,19 +56,24 @@ begin
   where period.id =
     requested_schedule_period_id;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'schedule period not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_period.status not in (.
   if target_period.status not in (
     'draft'::public.schedule_period_status,
     'scheduling'::public.schedule_period_status
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'schedule period is not editable as draft';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'periodId',
       target_period.id,

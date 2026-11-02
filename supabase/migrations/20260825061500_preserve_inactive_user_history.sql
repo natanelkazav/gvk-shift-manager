@@ -1,19 +1,29 @@
+-- קובץ: supabase/migrations/20260825061500_preserve_inactive_user_history.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור משתמש / היסטוריה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.track_profile_deactivation, public.get_driver_schedule_draft, public.get_morning_driver_schedule, public.get_statistics_people, public.get_statistics_dashboard, public.get_dispatcher_availability_statistics, public.get_morning_driver_statistics, public.get_payroll_statistics.
+-- - מבני טבלאות: public.profiles.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Preserve inactive workforce history while excluding inactive users from future scheduling candidates.
 
+-- עדכון מבנה או הגדרות הטבלה public.profiles.
 alter table public.profiles
   add column if not exists deactivated_at timestamptz;
 
+-- עדכון רשומות ב־public.profiles בהתאם לקלט ולתנאים להלן.
 update public.profiles
 set deactivated_at = coalesce(deactivated_at, updated_at, now())
 where is_active = false
   and deactivated_at is null;
 
+-- פונקציית מסד public.track_profile_deactivation: פרופיל.
 create or replace function public.track_profile_deactivation()
 returns trigger
 language plpgsql
 set search_path = ''
 as $function$
 begin
+  -- הסתעפות לפי התנאי old.is_active = true and new.is_active = false.
   if old.is_active = true and new.is_active = false then
     new.deactivated_at := now();
   elsif old.is_active = false and new.is_active = true then
@@ -29,37 +39,48 @@ before update of is_active on public.profiles
 for each row execute function public.track_profile_deactivation();
 
 
+-- פונקציית מסד public.get_driver_schedule_draft: שליפה או חישוב של כוננים / שיבוץ / טיוטה.
 CREATE OR REPLACE FUNCTION public.get_driver_schedule_draft(requested_schedule_period_id uuid DEFAULT NULL::uuid, requested_year integer DEFAULT NULL::integer, requested_month integer DEFAULT NULL::integer)
  RETURNS jsonb
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_permissions — הרשאות.
   current_permissions text[];
 
   target_period
     public.driver_schedule_periods%rowtype;
 
+  -- days_json — ימים.
   days_json jsonb :=
     '[]'::jsonb;
 
   drivers_json jsonb :=
     '[]'::jsonb;
 
+  -- assigned_days_count — ימים / כמות.
   assigned_days_count integer := 0;
+  -- unassigned_days_count — ימים / כמות.
   unassigned_days_count integer := 0;
+  -- warning_count — כמות.
   warning_count integer := 0;
 begin
   current_user_id :=
     auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles
@@ -67,6 +88,7 @@ begin
       current_user_id
       and is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'user not active';
   end if;
@@ -77,6 +99,7 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'driver_schedule.view' =
       any(current_permissions)
@@ -90,10 +113,12 @@ begin
     'driver_schedule.edit_any' =
       any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_schedule_period_id.
   if requested_schedule_period_id
     is not null
   then
@@ -126,7 +151,9 @@ begin
     limit 1;
   end if;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object(
       'period',
         null,
@@ -324,6 +351,7 @@ begin
       )
     );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'period',
       jsonb_build_object(
@@ -390,32 +418,42 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.get_morning_driver_schedule: שליפה או חישוב של כונני בוקר.
 CREATE OR REPLACE FUNCTION public.get_morning_driver_schedule(requested_schedule_period_id uuid DEFAULT NULL::uuid, requested_year integer DEFAULT NULL::integer, requested_month integer DEFAULT NULL::integer)
  RETURNS jsonb
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
 
+  -- current_permissions — הרשאות.
   current_permissions text[];
 
   schedule_period
     public.morning_driver_schedule_periods%rowtype;
 
+  -- can_view_team — האם צפייה מותרת.
   can_view_team boolean;
 
+  -- can_edit — האם עריכה מותרת.
   can_edit boolean;
 
+  -- can_view_personal — האם צפייה מותרת.
   can_view_personal boolean;
 
   drivers_json jsonb;
 
+  -- assignments_json — הקצאות.
   assignments_json jsonb;
 
+  -- total_assignments — סך הכול / הקצאות.
   total_assignments integer := 0;
 
+  -- assigned_assignments — הקצאות.
   assigned_assignments integer := 0;
 
   minimum_unfilled integer := 0;
@@ -425,7 +463,9 @@ begin
   current_user_id :=
     auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not authenticated';
   end if;
@@ -451,15 +491,18 @@ begin
     'morning_driver_schedule.edit_any'
       = any(current_permissions);
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     can_view_personal
     or can_view_team
     or can_edit
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_schedule_period_id.
   if requested_schedule_period_id
     is not null
   then
@@ -491,6 +534,7 @@ begin
     limit 1;
   end if;
 
+  -- הסתעפות לפי התנאי not found.
   if not found then
     return null;
   end if;
@@ -685,6 +729,7 @@ begin
     and assignment.assigned_user_id
       is null;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'period',
       jsonb_build_object(
@@ -748,19 +793,26 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.get_statistics_people: שליפה או חישוב של סטטיסטיקה.
 create or replace function public.get_statistics_people()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
+  -- הסתעפות לפי התנאי not ('statistics.view' = any(current_permissions) or 'users.manage' = any(current_permissions)).
   if not ('statistics.view' = any(current_permissions) or 'users.manage' = any(current_permissions)) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
   return coalesce((
@@ -788,35 +840,50 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.get_statistics_dashboard: שליפה או חישוב של סטטיסטיקה / לוח בקרה.
 CREATE OR REPLACE FUNCTION public.get_statistics_dashboard(requested_year integer DEFAULT NULL::integer, requested_month integer DEFAULT NULL::integer)
  RETURNS jsonb
  LANGUAGE plpgsql
+ -- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid;
+  -- current_permissions — הרשאות.
   current_permissions text[];
 
+  -- dispatcher_statistics — מוקדנים / סטטיסטיקה.
   dispatcher_statistics jsonb;
+  -- driver_statistics — כוננים / סטטיסטיקה.
   driver_statistics jsonb;
+  -- monthly_statistics — סטטיסטיקה.
   monthly_statistics jsonb;
 
+  -- dispatcher_monthly_breakdown — מוקדנים.
   dispatcher_monthly_breakdown jsonb;
+  -- driver_monthly_breakdown — כוננים.
   driver_monthly_breakdown jsonb;
+  -- summary_statistics — סיכום / סטטיסטיקה.
   summary_statistics jsonb;
 
+  -- selected_year — נבחר / שנה.
   selected_year integer;
+  -- selected_month — נבחר / חודש.
   selected_month integer;
 begin
   current_user_id :=
     auth.uid();
 
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile_row
@@ -824,6 +891,7 @@ begin
       current_user_id
       and profile_row.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'user not active';
   end if;
@@ -834,6 +902,7 @@ begin
       array[]::text[]
     );
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'statistics.view' =
       any(current_permissions)
@@ -841,10 +910,12 @@ begin
     'users.manage' =
       any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי (.
   if (
     requested_month is not null
     and (
@@ -852,10 +923,12 @@ begin
       or requested_month > 12
     )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'statistics month is invalid';
   end if;
 
+  -- הסתעפות לפי התנאי (.
   if (
     requested_year is not null
     and (
@@ -863,14 +936,17 @@ begin
       or requested_year > 2100
     )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'statistics year is invalid';
   end if;
 
+  -- הסתעפות לפי התנאי (.
   if (
     requested_month is not null
     and requested_year is null
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception
       'statistics year is required when month is selected';
   end if;
@@ -1757,6 +1833,7 @@ begin
     )
   into summary_statistics;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'filters',
       jsonb_build_object(
@@ -1792,56 +1869,74 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.get_dispatcher_availability_statistics: שליפה או חישוב של מוקדנים / אילוצים וזמינות / סטטיסטיקה.
 create or replace function public.get_dispatcher_availability_statistics(
   requested_year integer default null,
   requested_month integer default null
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path to ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
+  -- summary_json — סיכום.
   summary_json jsonb;
+  -- dispatcher_json — מוקדנים.
   dispatcher_json jsonb;
   monthly_json jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.profiles profile
     where profile.id = current_user_id
       and profile.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'user not active';
   end if;
 
   current_permissions :=
     coalesce(public.get_my_permissions(), array[]::text[]);
 
+  -- הסתעפות לפי התנאי not (.
   if not (
     'statistics.view' = any(current_permissions)
     or 'users.manage' = any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_month is not null.
   if requested_month is not null
      and (requested_month < 1 or requested_month > 12) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics month is invalid';
   end if;
 
+  -- הסתעפות לפי התנאי requested_year is not null.
   if requested_year is not null
      and (requested_year < 2020 or requested_year > 2100) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics year is invalid';
   end if;
 
+  -- הסתעפות לפי התנאי requested_month is not null and requested_year is null.
   if requested_month is not null and requested_year is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics year is required when month is selected';
   end if;
 
@@ -2097,6 +2192,7 @@ begin
     'holidayAvailableCount', coalesce((select sum((item ->> 'holidayAvailableCount')::integer) from jsonb_array_elements(dispatcher_json) item), 0)
   ) into summary_json;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'summary', summary_json,
     'dispatcherStatistics', dispatcher_json,
@@ -2107,31 +2203,40 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.get_morning_driver_statistics: שליפה או חישוב של כונני בוקר.
 create or replace function public.get_morning_driver_statistics(
   requested_year integer default null,
   requested_month integer default null
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
+  -- הסתעפות לפי התנאי not (.
   if not (
     'statistics.view' = any(current_permissions)
     or 'users.manage' = any(current_permissions)
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'statistics', coalesce((
       select jsonb_agg(row_data order by (row_data->>'displayName'))
@@ -2211,26 +2316,36 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.get_payroll_statistics: שליפה או חישוב של חישובי שכר / סטטיסטיקה.
 create or replace function public.get_payroll_statistics(
   requested_years integer[] default null::integer[],
   requested_months integer[] default null::integer[]
 ) returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = ''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_permissions — הרשאות.
   current_permissions text[];
   dispatchers_json jsonb := '[]'::jsonb;
   drivers_json jsonb := '[]'::jsonb;
+  -- morning_drivers_json — כונני בוקר.
   morning_drivers_json jsonb := '[]'::jsonb;
+  -- projected_dispatcher_pay — מוקדנים.
   projected_dispatcher_pay numeric := 0;
+  -- projected_driver_pay — כוננים.
   projected_driver_pay numeric := 0;
+  -- projected_morning_driver_pay — כונני בוקר.
   projected_morning_driver_pay numeric := 0;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
   current_permissions := coalesce(public.get_my_permissions(), array[]::text[]);
+  -- הסתעפות לפי התנאי not ('payroll.view' = any(current_permissions)) then raise exception 'payroll view permission required'; end if;.
   if not ('payroll.view' = any(current_permissions)) then raise exception 'payroll view permission required'; end if;
 
   with dispatcher_totals as (
@@ -2313,6 +2428,7 @@ begin
   ), rows as (select *,case when hourly_rate is null then null else round(hourly_rate*scheduled_hours,2) end projected_pay from morning_totals)
   select coalesce(jsonb_agg(jsonb_build_object('userId',user_id,'displayName',display_name,'scheduleName',schedule_name,'hourlyRate',hourly_rate,'scheduledHours',scheduled_hours,'projectedPay',projected_pay) order by coalesce(schedule_name,display_name)),'[]'::jsonb),coalesce(sum(projected_pay),0) into morning_drivers_json,projected_morning_driver_pay from rows;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('dispatchers',dispatchers_json,'drivers',drivers_json,'morningDrivers',morning_drivers_json,'projectedDispatcherPay',projected_dispatcher_pay,'projectedDriverPay',projected_driver_pay,'projectedMorningDriverPay',projected_morning_driver_pay,'actualPayAvailable',false,'attendanceAvailable',false);
 end;
 $function$;

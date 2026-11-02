@@ -1,32 +1,45 @@
+-- קובץ: supabase/migrations/20260916020000_phase10_13_dynamic_statistics_payroll.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / סטטיסטיקה / חישובי שכר.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_statistics_job_types, public.get_dynamic_job_type_statistics.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 10.13: explicit per-job-type statistics, meaningful shift-time grouping,
 -- and generic projected payroll driven by the Job Type pay model/config.
 -- Existing report-only/no-scheduling Daily Report roles are opted out automatically.
+-- עדכון רשומות ב־public.job_types בהתאם לקלט ולתנאים להלן.
 update public.job_types
 set statistics_config=jsonb_set(coalesce(statistics_config,'{}'::jsonb),'{enabled}','false'::jsonb,true)
 where scheduling_strategy='none'
   and coalesce((scheduling_config->'dailyReports'->>'enabled')::boolean,false)=true;
 
+-- פונקציית מסד public.get_dynamic_statistics_job_types: שליפה או חישוב של סוגי תפקידים.
 create or replace function public.get_dynamic_statistics_job_types()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions up
     where up.user_id = current_user_id
       and up.permission_key in ('statistics.view','users.manage')
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -77,9 +90,12 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_statistics_job_types() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_statistics_job_types() to authenticated;
 
+-- פונקציית מסד public.get_dynamic_job_type_statistics: שליפה או חישוב של סוג תפקיד.
 create or replace function public.get_dynamic_job_type_statistics(
   requested_job_type_id uuid,
   requested_years integer[] default null,
@@ -88,24 +104,32 @@ create or replace function public.get_dynamic_job_type_statistics(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions up
     where up.user_id=current_user_id
       and up.permission_key in ('statistics.view','users.manage')
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -113,22 +137,30 @@ begin
   from public.job_types jt
   where jt.id=requested_job_type_id;
 
+  -- הסתעפות לפי התנאי target_job.id is null.
   if target_job.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type not found';
   end if;
+  -- הסתעפות לפי התנאי not coalesce((target_job.statistics_config->>'enabled')::boolean,false).
   if not coalesce((target_job.statistics_config->>'enabled')::boolean,false) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics disabled for this job type';
   end if;
 
+  -- הסתעפות לפי התנאי requested_years is not null and exists (.
   if requested_years is not null and exists (
     select 1 from unnest(requested_years) y where y not between 2020 and 2100
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics year is invalid';
   end if;
 
+  -- הסתעפות לפי התנאי requested_months is not null and exists (.
   if requested_months is not null and exists (
     select 1 from unnest(requested_months) m where m not between 1 and 12
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'statistics month is invalid';
   end if;
 
@@ -443,7 +475,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_job_type_statistics(uuid,integer[],integer[],uuid[]) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_job_type_statistics(uuid,integer[],integer[],uuid[]) to authenticated;
 
 

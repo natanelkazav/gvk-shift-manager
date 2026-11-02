@@ -1,3 +1,9 @@
+/**
+ * קובץ: scripts/testing/remote-smoke.mjs
+ * מטרה: בדיקות עשן מול כתובת השרת והחשבונות המוגדרים בסביבת הבדיקה.
+ * מטרות עיקריות:
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import fs from "node:fs";
 import path from "node:path";
 
@@ -30,8 +36,10 @@ import path from "node:path";
  * =========================================================
  */
 
+// REQUEST_TIMEOUT_MS — נתוני הבקשה / משך המתנה.
 const REQUEST_TIMEOUT_MS = 15_000;
 
+// SOURCE_EXTENSIONS — מקור.
 const SOURCE_EXTENSIONS =
   /\.(ts|tsx)$/;
 
@@ -42,11 +50,16 @@ const SOURCE_EXTENSIONS =
  * =========================================================
  */
 
+/**
+ * פעולה getEnvironment: שליפה או חישוב של הנתון getEnvironment בהקשר הפעולה.
+ */
 const getEnvironment = () => {
+  // supabaseUrl — כתובת יעד.
   const supabaseUrl =
     process.env
       .VITE_SUPABASE_URL;
 
+  // publishableKey — מפתח.
   const publishableKey =
     process.env
       .VITE_SUPABASE_PUBLISHABLE_KEY ??
@@ -62,6 +75,7 @@ const getEnvironment = () => {
    * אם הוא קיים בסביבת CI / Local,
    * נוכל לקרוא גם את OpenAPI catalog.
    */
+  // secretKey — מפתח.
   const secretKey =
     process.env
       .SUPABASE_SECRET_KEY;
@@ -80,11 +94,17 @@ const getEnvironment = () => {
  * =========================================================
  */
 
+/**
+ * פעולה collectSourceFiles: מקור / קבצים.
+ * @param rootDirectory — הנתון rootDirectory בהקשר הפעולה.
+ */
 const collectSourceFiles = (
   rootDirectory,
 ) => {
+  // result — תוצאה.
   const result = [];
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !fs.existsSync( rootDirectory, ).
   if (
     !fs.existsSync(
       rootDirectory,
@@ -93,9 +113,14 @@ const collectSourceFiles = (
     return result;
   }
 
+  /**
+   * פעולה walk: הנתון walk בהקשר הפעולה.
+   * @param directory — הנתון directory בהקשר הפעולה.
+   */
   const walk = (
     directory,
   ) => {
+    // entries — רשומות.
     const entries =
       fs.readdirSync(
         directory,
@@ -105,10 +130,12 @@ const collectSourceFiles = (
         },
       );
 
+    // עיבוד כל פריט מתוך entries בנפרד.
     for (
       const entry
       of entries
     ) {
+      // fullPath — נתיב.
       const fullPath =
         path.join(
           directory,
@@ -152,6 +179,10 @@ const collectSourceFiles = (
  * =========================================================
  */
 
+/**
+ * פעולה collectRemoteContracts: הנתון collectRemoteContracts בהקשר הפעולה.
+ * @param files — קבצים.
+ */
 const collectRemoteContracts = (
   files,
 ) => {
@@ -161,6 +192,7 @@ const collectRemoteContracts = (
   const edgeFunctionNames =
     new Set();
 
+  // עיבוד כל פריט מתוך files בנפרד.
   for (
     const file
     of files
@@ -179,6 +211,7 @@ const collectRemoteContracts = (
      *   "function_name",
      * )
      */
+    // עיבוד כל פריט מתוך text.matchAll( /\.rpc\(\s*["']([^"']+)["']/g, ) בנפרד.
     for (
       const match
       of text.matchAll(
@@ -198,6 +231,7 @@ const collectRemoteContracts = (
      *   "function-name",
      * )
      */
+    // עיבוד כל פריט מתוך text.matchAll( /\.functions\.invoke\(\s*["']([^"']+)["']/g, ) בנפרד.
     for (
       const match
       of text.matchAll(
@@ -223,6 +257,12 @@ const collectRemoteContracts = (
  * =========================================================
  */
 
+/**
+ * פעולה אסינכרונית fetchWithTimeout: טעינת משך המתנה.
+ * @param url — כתובת יעד.
+ * @param options — אפשרויות בחירה.
+ * @param timeoutMilliseconds — משך המתנה.
+ */
 const fetchWithTimeout = async (
   url,
   options = {},
@@ -264,6 +304,10 @@ const fetchWithTimeout = async (
  * =========================================================
  */
 
+/**
+ * פעולה printSection: הנתון printSection בהקשר הפעולה.
+ * @param title — כותרת.
+ */
 const printSection = (
   title,
 ) => {
@@ -284,6 +328,10 @@ const printSection = (
 };
 
 
+/**
+ * פעולה printSuccess: הנתון printSuccess בהקשר הפעולה.
+ * @param message — הודעה.
+ */
 const printSuccess = (
   message,
 ) => {
@@ -293,6 +341,10 @@ const printSuccess = (
 };
 
 
+/**
+ * פעולה printWarning: הנתון printWarning בהקשר הפעולה.
+ * @param message — הודעה.
+ */
 const printWarning = (
   message,
 ) => {
@@ -302,6 +354,10 @@ const printWarning = (
 };
 
 
+/**
+ * פעולה printFailure: הנתון printFailure בהקשר הפעולה.
+ * @param message — הודעה.
+ */
 const printFailure = (
   message,
 ) => {
@@ -317,6 +373,9 @@ const printFailure = (
  * =========================================================
  */
 
+/**
+ * פעולה אסינכרונית main: הנתון main בהקשר הפעולה.
+ */
 const main = async () => {
   const {
     supabaseUrl,
@@ -332,6 +391,7 @@ const main = async () => {
    * -------------------------------------------------------
    */
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !supabaseUrl || !publishableKey.
   if (
     !supabaseUrl ||
     !publishableKey
@@ -366,6 +426,7 @@ const main = async () => {
   }
 
 
+  // baseUrl — כתובת יעד.
   const baseUrl =
     supabaseUrl.replace(
       /\/$/,
@@ -373,6 +434,7 @@ const main = async () => {
     );
 
 
+  // sourceDirectory — מקור.
   const sourceDirectory =
     path.join(
       process.cwd(),
@@ -380,6 +442,7 @@ const main = async () => {
     );
 
 
+  // sourceFiles — מקור / קבצים.
   const sourceFiles =
     collectSourceFiles(
       sourceDirectory,
@@ -428,7 +491,9 @@ const main = async () => {
   );
 
 
+  // failureCount — כמות.
   let failureCount = 0;
+  // warningCount — כמות.
   let warningCount = 0;
 
 
@@ -443,7 +508,9 @@ const main = async () => {
   );
 
 
+  // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
   try {
+    // response — תוצאת הפעולה.
     const response =
       await fetchWithTimeout(
         `${baseUrl}/auth/v1/health`,
@@ -506,7 +573,9 @@ const main = async () => {
   );
 
 
+  // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
   try {
+    // response — תוצאת הפעולה.
     const response =
       await fetchWithTimeout(
         `${baseUrl}/rest/v1/profiles?select=id&limit=0`,
@@ -550,6 +619,7 @@ const main = async () => {
     } else {
       failureCount += 1;
 
+      // body — תוכן.
       const body =
         await response
           .text()
@@ -636,7 +706,9 @@ const main = async () => {
       "  A Secret API key should only be configured locally/CI, never as VITE_*.",
     );
   } else {
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // response — תוצאת הפעולה.
       const response =
         await fetchWithTimeout(
           `${baseUrl}/rest/v1/`,
@@ -660,6 +732,7 @@ const main = async () => {
       ) {
         warningCount += 1;
 
+        // body — תוכן.
         const body =
           await response
             .text()
@@ -708,6 +781,7 @@ const main = async () => {
             .sort();
 
 
+        // foundCount — כמות.
         const foundCount =
           rpcNames.size -
           missingRpcs.length;
@@ -732,6 +806,7 @@ const main = async () => {
           );
 
 
+          // עיבוד כל פריט מתוך missingRpcs בנפרד.
           for (
             const rpcName
             of missingRpcs
@@ -788,15 +863,19 @@ const main = async () => {
     );
   } else {
     const missingFunctions = [];
+    // connectivityErrors — שגיאות.
     const connectivityErrors = [];
 
 
+    // עיבוד כל פריט מתוך [...edgeFunctionNames] .sort() בנפרד.
     for (
       const functionName
       of [...edgeFunctionNames]
         .sort()
     ) {
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // response — תוצאת הפעולה.
         const response =
           await fetchWithTimeout(
             `${baseUrl}/functions/v1/${functionName}`,
@@ -833,6 +912,7 @@ const main = async () => {
     }
 
 
+    // reachableCount — כמות.
     const reachableCount =
       edgeFunctionNames.size -
       missingFunctions.length -
@@ -858,6 +938,7 @@ const main = async () => {
       );
 
 
+      // עיבוד כל פריט מתוך missingFunctions בנפרד.
       for (
         const functionName
         of missingFunctions
@@ -883,6 +964,7 @@ const main = async () => {
       );
 
 
+      // עיבוד כל פריט מתוך connectivityErrors בנפרד.
       for (
         const item
         of connectivityErrors
@@ -916,6 +998,7 @@ const main = async () => {
   );
 
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר failureCount === 0.
   if (
     failureCount === 0
   ) {

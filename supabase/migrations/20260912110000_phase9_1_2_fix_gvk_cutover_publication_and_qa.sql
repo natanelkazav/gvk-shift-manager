@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260912110000_phase9_1_2_fix_gvk_cutover_publication_and_qa.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור מעבר למנגנון הדינמי.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_pilot_qa_report.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 9.1.2
@@ -15,10 +20,15 @@ declare
   v_actor uuid;
   v_current_ym integer := extract(year from (now() at time zone 'Asia/Jerusalem'))::integer * 100
     + extract(month from (now() at time zone 'Asia/Jerusalem'))::integer;
+  -- v_map — מפת התאמה.
   v_map record;
+  -- v_draft — טיוטה.
   v_draft record;
+  -- v_publication_id — מזהה.
   v_publication_id uuid;
+  -- v_source_status — מקור / סטטוס.
   v_source_status text;
+  -- v_source_period_id — מזהה התקופה.
   v_source_period_id uuid;
 begin
   select * into v_run
@@ -27,12 +37,14 @@ begin
   order by completed_at desc nulls last, created_at desc
   limit 1;
 
+  -- הסתעפות לפי התנאי v_run.id is null.
   if v_run.id is null then
     return;
   end if;
 
   v_actor := v_run.created_by;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for v_map in
     select * from (values
       ('dispatcher'::text, v_run.dispatcher_job_type_id),
@@ -40,6 +52,7 @@ begin
       ('morning_driver'::text, v_run.morning_driver_job_type_id)
     ) x(source_kind, job_type_id)
   loop
+    -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
     for v_draft in
       select distinct on (d.year,d.month)
         d.id as draft_id,
@@ -68,6 +81,7 @@ begin
         v_draft.config_snapshot->>'sourcePeriodId'
       ),'')::uuid;
 
+      -- הסתעפות לפי התנאי v_map.source_kind='dispatcher'.
       if v_map.source_kind='dispatcher' then
         select coalesce(p.status::text,'published') into v_source_status
         from public.schedule_periods p where p.id=v_source_period_id;
@@ -80,6 +94,7 @@ begin
       end if;
       v_source_status := coalesce(v_source_status,'published');
 
+      -- הוספת רשומות ל־public.dynamic_schedule_publications בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_publications(
         job_type_id,availability_period_id,draft_id,year,month,status,config_snapshot,published_by,published_at
       ) values(
@@ -95,6 +110,7 @@ begin
         now()
       ) returning id into v_publication_id;
 
+      -- הוספת רשומות ל־public.dynamic_schedule_published_assignments בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_published_assignments(
         publication_id,source_assignment_id,slot_id,shift_date,shift_code,shift_name,start_time,end_time,
         user_id,original_user_id,engine_user_id,assignment_tier,score,reasons,manager_edited
@@ -106,6 +122,7 @@ begin
       where a.draft_id=v_draft.draft_id
       on conflict(publication_id,shift_date,shift_code,user_id) do nothing;
 
+      -- הוספת רשומות ל־public.dynamic_schedule_published_unassigned בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_published_unassigned(
         publication_id,slot_id,shift_date,shift_code,shift_name,intentionally_unassigned_count,note
       )
@@ -118,25 +135,37 @@ begin
   end loop;
 end $$;
 
+-- פונקציית מסד public.get_dynamic_pilot_qa_report: שליפה או חישוב של דינמי / דוח.
 create or replace function public.get_dynamic_pilot_qa_report()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   v_actor uuid := auth.uid();
   v_checks jsonb := '[]'::jsonb;
+  -- v_fail_count — כמות.
   v_fail_count integer := 0;
+  -- v_warn_count — כמות.
   v_warn_count integer := 0;
+  -- v_pass_count — כמות.
   v_pass_count integer := 0;
+  -- v_count — כמות.
   v_count integer := 0;
+  -- v_cutover — מעבר למנגנון הדינמי.
   v_cutover boolean := false;
+  -- v_active_job_types — סוגי תפקידים.
   v_active_job_types integer := 0;
+  -- v_active_memberships — פעיל / שיוכים לתפקיד.
   v_active_memberships integer := 0;
+  -- v_dynamic_users — דינמי / משתמשים.
   v_dynamic_users integer := 0;
   v_publications integer := 0;
+  -- v_assignments — הקצאות.
   v_assignments integer := 0;
+  -- v_pending_exchanges — ממתין.
   v_pending_exchanges integer := 0;
   v_latest_run public.gvk_legacy_migration_runs%rowtype;
   v_reconciliation jsonb := '[]'::jsonb;
@@ -144,7 +173,9 @@ declare
     + extract(month from (now() at time zone 'Asia/Jerusalem'))::integer;
   v_rec record;
 begin
+  -- הסתעפות לפי התנאי v_actor is null then raise exception 'not authenticated'; end if;.
   if v_actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(.
   if not exists(
     select 1 from public.user_permissions up
     where up.user_id=v_actor and up.permission_key='users.manage'
@@ -175,6 +206,7 @@ begin
   where status in ('pending_counterparty','pending_manager');
 
   -- 1. Cutover state.
+  -- הסתעפות לפי התנאי v_cutover.
   if v_cutover then
     v_checks := v_checks || jsonb_build_array(jsonb_build_object(
       'code','cutover_enabled','status','pass','area','cutover',
@@ -188,6 +220,7 @@ begin
   end if;
 
   -- 2. Active dynamic runtime exists.
+  -- הסתעפות לפי התנאי v_active_job_types > 0 and v_dynamic_users > 0.
   if v_active_job_types > 0 and v_dynamic_users > 0 then
     v_checks := v_checks || jsonb_build_array(jsonb_build_object(
       'code','dynamic_runtime_population','status','pass','area','memberships',
@@ -208,6 +241,7 @@ begin
   join public.profiles p on p.id=m.user_id
   join public.job_types jt on jt.id=m.job_type_id
   where p.is_active=false or jt.is_active=false;
+  -- הסתעפות לפי התנאי v_count=0.
   if v_count=0 then
     v_checks := v_checks || jsonb_build_array(jsonb_build_object(
       'code','inactive_memberships','status','pass','area','memberships','title','אין שיוכים פעילים לישויות מוקפאות',
@@ -229,6 +263,7 @@ begin
     group by m.user_id
     having count(*)>1
   ) x;
+  -- הסתעפות לפי התנאי v_count=0.
   if v_count=0 then
     v_checks := v_checks || jsonb_build_array(jsonb_build_object(
       'code','single_primary_membership','status','pass','area','memberships','title','תפקיד ראשי יחיד לכל משתמש',
@@ -248,6 +283,7 @@ begin
     on m.job_type_id=p.job_type_id
    and m.effective_month=make_date(p.year,p.month,1)
   where m.id is null;
+  -- הסתעפות לפי התנאי v_count=0.
   if v_count=0 then
     v_checks := v_checks || jsonb_build_array(jsonb_build_object(
       'code','publication_materialization','status','pass','area','configuration','title','כל הלוחות המפורסמים קשורים להגדרת חודש קפואה',
@@ -270,6 +306,7 @@ begin
   where p.status='published'
     and (p.year*100+p.month) >= v_current_ym
     and (m.user_id is null or coalesce(pr.is_active,false)=false);
+  -- הסתעפות לפי התנאי v_count=0.
   if v_count=0 then
     v_checks := v_checks || jsonb_build_array(jsonb_build_object(
       'code','assignment_membership','status','pass','area','schedule','title','כל השיבוצים החיים שייכים לחברי תפקיד פעילים',
@@ -287,6 +324,7 @@ begin
   from public.dynamic_schedule_publications p
   where not exists(select 1 from public.dynamic_schedule_published_assignments a where a.publication_id=p.id)
     and not exists(select 1 from public.dynamic_schedule_published_unassigned u where u.publication_id=p.id);
+  -- הסתעפות לפי התנאי v_count=0.
   if v_count=0 then
     v_checks := v_checks || jsonb_build_array(jsonb_build_object(
       'code','empty_publications','status','pass','area','schedule','title','אין לוחות מפורסמים ריקים',
@@ -304,6 +342,7 @@ begin
   from public.dynamic_availability_periods p
   where p.status in ('open','closed')
     and not exists(select 1 from public.dynamic_availability_slots s where s.period_id=p.id);
+  -- הסתעפות לפי התנאי v_count=0.
   if v_count=0 then
     v_checks := v_checks || jsonb_build_array(jsonb_build_object(
       'code','availability_slots','status','pass','area','availability','title','אין תקופות אילוצים פעילות ללא משמרות',
@@ -325,6 +364,7 @@ begin
       <
       (select count(*) from public.dynamic_availability_slots s where s.period_id=sub.period_id)
     );
+  -- הסתעפות לפי התנאי v_count=0.
   if v_count=0 then
     v_checks := v_checks || jsonb_build_array(jsonb_build_object(
       'code','complete_submissions','status','pass','area','availability','title','כל ההגשות הסופיות מלאות',
@@ -347,6 +387,7 @@ begin
       ra.user_id<>r.requester_user_id
       or (r.swap_type='two_way' and (ca.id is null or ca.user_id<>r.counterparty_user_id))
     );
+  -- הסתעפות לפי התנאי v_count=0.
   if v_count=0 then
     v_checks := v_checks || jsonb_build_array(jsonb_build_object(
       'code','pending_exchange_ownership','status','pass','area','exchanges','title','בקשות חילוף ממתינות עקביות עם השיבוצים',
@@ -367,8 +408,10 @@ begin
   order by completed_at desc nulls last, created_at desc
   limit 1;
 
+  -- הסתעפות לפי התנאי v_latest_run.id is not null.
   if v_latest_run.id is not null then
     -- Dispatcher months.
+    -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
     for v_rec in
       select 'dispatcher'::text as source, sp.year, sp.month,
              count(ss.id)::integer as legacy_count,
@@ -423,6 +466,7 @@ begin
     from jsonb_array_elements(v_reconciliation) item
     where coalesce((item->>'matches')::boolean,false)=false;
 
+    -- הסתעפות לפי התנאי v_count=0.
     if v_count=0 then
       v_checks := v_checks || jsonb_build_array(jsonb_build_object(
         'code','gvk_live_reconciliation','status','pass','area','migration','title','התאמת לוחות GVK החיים עברה',
@@ -441,6 +485,7 @@ begin
     )); v_warn_count := v_warn_count + 1;
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'generatedAt',now(),
     'readyForFullQa',v_fail_count=0,
@@ -460,7 +505,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_pilot_qa_report() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_pilot_qa_report() to authenticated;
 
 

@@ -1,5 +1,12 @@
+-- קובץ: supabase/migrations/20260902090000_phase8_3b_generic_period_workflow.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור תקופה / תהליך עבודה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_period_workflow, public.set_dynamic_period_status, public.publish_dynamic_schedule_draft, public.save_dynamic_availability_shadow_submission.
+-- - מבני טבלאות: public.dynamic_schedule_publications, public.dynamic_schedule_published_assignments.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
+-- הגדרת מבנה הטבלה public.dynamic_schedule_publications והאילוצים המופיעים בהמשך.
 create table if not exists public.dynamic_schedule_publications (
   id uuid primary key default gen_random_uuid(),
   job_type_id uuid not null references public.job_types(id) on delete restrict,
@@ -15,6 +22,7 @@ create table if not exists public.dynamic_schedule_publications (
   unique(job_type_id, year, month)
 );
 
+-- הגדרת מבנה הטבלה public.dynamic_schedule_published_assignments והאילוצים המופיעים בהמשך.
 create table if not exists public.dynamic_schedule_published_assignments (
   id uuid primary key default gen_random_uuid(),
   publication_id uuid not null references public.dynamic_schedule_publications(id) on delete cascade,
@@ -33,16 +41,23 @@ create table if not exists public.dynamic_schedule_published_assignments (
   unique(publication_id, shift_date, shift_code, user_id)
 );
 
+-- הגדרת האינדקס dynamic_schedule_publications_job_month_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists dynamic_schedule_publications_job_month_idx
   on public.dynamic_schedule_publications(job_type_id, year, month);
+-- הגדרת האינדקס dynamic_schedule_published_assignments_publication_date_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists dynamic_schedule_published_assignments_publication_date_idx
   on public.dynamic_schedule_published_assignments(publication_id, shift_date);
 
+-- עדכון מבנה או הגדרות הטבלה public.dynamic_schedule_publications.
 alter table public.dynamic_schedule_publications enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.dynamic_schedule_published_assignments.
 alter table public.dynamic_schedule_published_assignments enable row level security;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.dynamic_schedule_publications from anon, authenticated;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.dynamic_schedule_published_assignments from anon, authenticated;
 
+-- פונקציית מסד public.get_dynamic_period_workflow: שליפה או חישוב של דינמי / תקופה / תהליך עבודה.
 create or replace function public.get_dynamic_period_workflow(
   requested_job_type_id uuid,
   requested_year integer,
@@ -50,29 +65,43 @@ create or replace function public.get_dynamic_period_workflow(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
+  -- target_period — יעד / תקופה.
   target_period public.dynamic_availability_periods%rowtype;
+  -- latest_draft — טיוטה.
   latest_draft public.dynamic_schedule_shadow_drafts%rowtype;
   publication public.dynamic_schedule_publications%rowtype;
+  -- member_count — כמות.
   member_count integer := 0;
+  -- slot_count — כמות.
   slot_count integer := 0;
+  -- submission_count — כמות.
   submission_count integer := 0;
+  -- submitted_count — הוגש / כמות.
   submitted_count integer := 0;
+  -- assignment_count — הקצאה / כמות.
   assignment_count integer := 0;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.user_permissions up
     where up.user_id=current_user_id and up.permission_key in ('users.view','users.manage')
   ) then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי requested_month not between 1 and 12 then raise exception 'invalid month'; end if;.
   if requested_month not between 1 and 12 then raise exception 'invalid month'; end if;
 
   select * into target_job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי target_job.id is null then raise exception 'job type not found'; end if;.
   if target_job.id is null then raise exception 'job type not found'; end if;
 
   select count(*) into member_count
@@ -84,6 +113,7 @@ begin
   from public.dynamic_availability_periods
   where job_type_id=target_job.id and year=requested_year and month=requested_month;
 
+  -- הסתעפות לפי התנאי target_period.id is not null.
   if target_period.id is not null then
     select count(*) into slot_count from public.dynamic_availability_slots where period_id=target_period.id;
     select count(*), count(*) filter (where status='submitted')
@@ -100,11 +130,13 @@ begin
   from public.dynamic_schedule_publications
   where job_type_id=target_job.id and year=requested_year and month=requested_month;
 
+  -- הסתעפות לפי התנאי publication.id is not null.
   if publication.id is not null then
     select count(*) into assignment_count
     from public.dynamic_schedule_published_assignments where publication_id=publication.id;
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'jobTypeId', target_job.id,
     'jobTypeName', target_job.name,
@@ -130,6 +162,7 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.set_dynamic_period_status: קביעת קבוצה ייחודית / דינמי / תקופה / סטטוס.
 create or replace function public.set_dynamic_period_status(
   requested_job_type_id uuid,
   requested_year integer,
@@ -138,23 +171,31 @@ create or replace function public.set_dynamic_period_status(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid();
+  -- target_period — יעד / תקופה.
   target_period public.dynamic_availability_periods%rowtype;
+  -- next_status — סטטוס.
   next_status text;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
   select * into target_period from public.dynamic_availability_periods
   where job_type_id=requested_job_type_id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי target_period.id is null then raise exception 'dynamic period not found'; end if;.
   if target_period.id is null then raise exception 'dynamic period not found'; end if;
 
+  -- הסתעפות לפי התנאי requested_action='open' and target_period.status in ('shadow','draft','closed').
   if requested_action='open' and target_period.status in ('shadow','draft','closed') then
     next_status:='open';
   elsif requested_action='close' and target_period.status='open' then
@@ -165,49 +206,66 @@ begin
   ) then
     next_status:='archived';
   else
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid period transition from % using %', target_period.status, requested_action;
   end if;
 
+  -- עדכון רשומות ב־public.dynamic_availability_periods בהתאם לקלט ולתנאים להלן.
   update public.dynamic_availability_periods
   set status=next_status, updated_at=now()
   where id=target_period.id;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('periodId',target_period.id,'status',next_status,'action',requested_action);
 end;
 $function$;
 
+-- פונקציית מסד public.publish_dynamic_schedule_draft: פרסום דינמי / שיבוץ / טיוטה.
 create or replace function public.publish_dynamic_schedule_draft(
   requested_draft_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid();
+  -- target_draft — יעד / טיוטה.
   target_draft public.dynamic_schedule_shadow_drafts%rowtype;
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
+  -- target_period — יעד / תקופה.
   target_period public.dynamic_availability_periods%rowtype;
+  -- v_publication_id — מזהה.
   v_publication_id uuid;
   inserted_assignments integer:=0;
   unfilled integer:=0;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
   select * into target_draft from public.dynamic_schedule_shadow_drafts where id=requested_draft_id;
+  -- הסתעפות לפי התנאי target_draft.id is null then raise exception 'draft not found'; end if;.
   if target_draft.id is null then raise exception 'draft not found'; end if;
   select * into target_job from public.job_types where id=target_draft.job_type_id;
   select * into target_period from public.dynamic_availability_periods where id=target_draft.availability_period_id;
 
+  -- הסתעפות לפי התנאי target_period.status <> 'closed' then raise exception 'availability period must be closed before publishing'; end if;.
   if target_period.status <> 'closed' then raise exception 'availability period must be closed before publishing'; end if;
+  -- הסתעפות לפי התנאי target_draft.status not in ('generated','incomplete') then raise exception 'draft is not ready for publishing'; end if;.
   if target_draft.status not in ('generated','incomplete') then raise exception 'draft is not ready for publishing'; end if;
   unfilled:=coalesce((target_draft.metrics->>'unfilledRequiredPositions')::integer,0);
+  -- הסתעפות לפי התנאי unfilled>0 then raise exception 'draft has % unfilled required positions',unfilled; end if;.
   if unfilled>0 then raise exception 'draft has % unfilled required positions',unfilled; end if;
 
+  -- הוספת רשומות ל־public.dynamic_schedule_publications בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_schedule_publications(
     job_type_id,availability_period_id,draft_id,year,month,status,config_snapshot,published_by,published_at,updated_at
   ) values(
@@ -219,8 +277,10 @@ begin
     config_snapshot=excluded.config_snapshot,published_by=excluded.published_by,published_at=now(),updated_at=now()
   returning id into v_publication_id;
 
+  -- מחיקת הרשומות שנבחרו מתוך public.dynamic_schedule_published_assignments בהתאם לקלט ולתנאים להלן.
   delete from public.dynamic_schedule_published_assignments where publication_id=v_publication_id;
 
+  -- הוספת רשומות ל־public.dynamic_schedule_published_assignments בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_schedule_published_assignments(
     publication_id,source_assignment_id,slot_id,shift_date,shift_code,shift_name,start_time,end_time,user_id,
     assignment_tier,score,reasons
@@ -232,11 +292,13 @@ begin
   where a.draft_id=target_draft.id;
   get diagnostics inserted_assignments = row_count;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('publicationId',v_publication_id,'published',true,'assignmentCount',inserted_assignments);
 end;
 $function$;
 
 -- Closed periods are immutable in the generic workflow. Shadow/draft remain writable for old QA tools.
+-- פונקציית מסד public.save_dynamic_availability_shadow_submission: שמירת דינמי / אילוצים וזמינות / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.save_dynamic_availability_shadow_submission(
   requested_job_type_id uuid,
   requested_year integer,
@@ -246,27 +308,39 @@ create or replace function public.save_dynamic_availability_shadow_submission(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid();
   job public.job_types%rowtype;
+  -- period — תקופה.
   period public.dynamic_availability_periods%rowtype;
+  -- submission_id — מזהה.
   submission_id uuid;
+  -- entry_item — רשומה / פריט.
   entry_item jsonb;
   allowed_statuses jsonb;
+  -- requested_status — סטטוס.
   requested_status text;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage') then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id;
+  -- הסתעפות לפי התנאי job.id is null then raise exception 'job type not found'; end if;.
   if job.id is null then raise exception 'job type not found'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.job_type_memberships m where m.job_type_id=job.id and m.user_id=requested_user_id) then .
   if not exists(select 1 from public.job_type_memberships m where m.job_type_id=job.id and m.user_id=requested_user_id) then raise exception 'user is not a member of this job type'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי period.id is null then raise exception 'shadow period not materialized'; end if;.
   if period.id is null then raise exception 'shadow period not materialized'; end if;
+  -- הסתעפות לפי התנאי period.status in ('closed','archived') then raise exception 'availability period is closed'; end if;.
   if period.status in ('closed','archived') then raise exception 'availability period is closed'; end if;
 
+  -- הוספת רשומות ל־public.dynamic_availability_submissions בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_availability_submissions(period_id,user_id,status,min_shifts,target_shifts,max_shifts,max_nights,max_weekends,max_holidays,note,submitted_at)
   values(period.id,requested_user_id,coalesce(requested_payload->>'submissionStatus','draft'),
     nullif(requested_payload->>'minimum','')::integer,nullif(requested_payload->>'target','')::integer,nullif(requested_payload->>'maximum','')::integer,
@@ -279,24 +353,35 @@ begin
   returning id into submission_id;
 
   allowed_statuses:=coalesce(job.availability_config->'statuses','["available","unavailable"]'::jsonb);
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for entry_item in select value from jsonb_array_elements(coalesce(requested_payload->'entries','[]'::jsonb)) loop
     requested_status:=entry_item->>'status';
+    -- הסתעפות לפי התנאי not (allowed_statuses ? requested_status) then raise exception 'availability status % is not enabled for this job type',.
     if not (allowed_statuses ? requested_status) then raise exception 'availability status % is not enabled for this job type',requested_status; end if;
+    -- הסתעפות לפי התנאי not exists(select 1 from public.dynamic_availability_slots s where s.id=(entry_item->>'slotId')::uuid and s.period_id=pe.
     if not exists(select 1 from public.dynamic_availability_slots s where s.id=(entry_item->>'slotId')::uuid and s.period_id=period.id) then raise exception 'slot does not belong to period'; end if;
+    -- הוספת רשומות ל־public.dynamic_availability_entries בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_availability_entries(submission_id,slot_id,availability_status,note)
     values(submission_id,(entry_item->>'slotId')::uuid,requested_status,nullif(trim(coalesce(entry_item->>'note','')),''))
     on conflict(submission_id,slot_id) do update set availability_status=excluded.availability_status,note=excluded.note,updated_at=now();
   end loop;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('saved',true,'mode','shadow','submissionId',submission_id);
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_period_workflow(uuid,integer,integer) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.set_dynamic_period_status(uuid,integer,integer,text) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.publish_dynamic_schedule_draft(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_period_workflow(uuid,integer,integer) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.set_dynamic_period_status(uuid,integer,integer,text) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.publish_dynamic_schedule_draft(uuid) to authenticated;
 
 commit;

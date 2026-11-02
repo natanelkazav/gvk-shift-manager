@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/dashboard/DashboardHeader.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור לוח בקרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DashboardHeaderProps, formatCurrentDate, formatCurrentTime, DashboardHeader.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   RefreshCw,
 } from 'lucide-react';
@@ -12,7 +19,11 @@ import type {
   UserProfile,
 } from '../../types/auth';
 
+/**
+ * חוזה הנתונים DashboardHeaderProps: לוח בקרה / מאפייני הרכיב.
+ */
 interface DashboardHeaderProps {
+  // profile — פרופיל.
   profile:
     UserProfile | null;
 
@@ -22,6 +33,11 @@ interface DashboardHeaderProps {
     () => Promise<void>;
 }
 
+/**
+ * פעולה formatCurrentDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param date — תאריך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatCurrentDate(
   date: Date,
 ): string {
@@ -45,6 +61,11 @@ function formatCurrentDate(
   );
 }
 
+/**
+ * פעולה formatCurrentTime: עיצוב ערך לתצוגה עבור זמן.
+ * @param date — תאריך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatCurrentTime(
   date: Date,
 ): string {
@@ -68,11 +89,16 @@ function formatCurrentTime(
   );
 }
 
+/**
+ * פעולה DashboardHeader: לוח בקרה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DashboardHeader({
   profile,
   isRefreshing,
   onRefresh,
 }: DashboardHeaderProps) {
+  // מצב מקומי: now — הנתון now בהקשר הפעולה; setNow מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     now,
     setNow,
@@ -82,8 +108,10 @@ function DashboardHeader({
         new Date(),
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(
     () => {
+      // intervalId — מרווח זמן / מזהה.
       const intervalId =
         window.setInterval(
           () => {
@@ -103,6 +131,7 @@ function DashboardHeader({
     [],
   );
 
+  // displayName — שם תצוגה.
   const displayName =
     profile
       ?.displayName
@@ -112,6 +141,7 @@ function DashboardHeader({
       ?.trim() ||
     'משתמש';
 
+  // ערך מחושב formattedDate — תאריך; נשמר בין רינדורים עד שינוי התלויות.
   const formattedDate =
     useMemo(
       () =>
@@ -123,6 +153,7 @@ function DashboardHeader({
       ],
     );
 
+  // ערך מחושב formattedTime — זמן; נשמר בין רינדורים עד שינוי התלויות.
   const formattedTime =
     useMemo(
       () =>

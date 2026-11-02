@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260914173000_phase10_6_8_daily_on_call_operational_window.sql
+-- מטרה: הגדרת חלון הפעילות של כוננות יומית לצורכי חישוב ותצוגה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.dynamic_resolve_assignment_local_interval, public.get_my_dynamic_runtime_context.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 10.6.8 - Configurable operational window for daily on-call roles
 -- Daily on-call remains a day-based scheduling unit. Admin-defined start/end hours
 -- are private operational metadata used when the system needs a real time interval,
@@ -5,6 +10,7 @@
 
 begin;
 
+-- פונקציית מסד public.dynamic_resolve_assignment_local_interval: דינמי / הקצאה / מרווח זמן.
 create or replace function public.dynamic_resolve_assignment_local_interval(
   requested_shift_date date,
   requested_start_time time,
@@ -43,22 +49,32 @@ as $function$
   from resolved;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.dynamic_resolve_assignment_local_interval(date,time,time,text,jsonb) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_resolve_assignment_local_interval(date,time,time,text,jsonb) to authenticated;
 
+-- פונקציית מסד public.get_my_dynamic_runtime_context: שליפה או חישוב של דינמי.
 create or replace function public.get_my_dynamic_runtime_context()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_month — חודש.
   current_month date := date_trunc('month', now() at time zone 'Asia/Jerusalem')::date;
+  -- can_manage — האם פעולת ניהול מותרת.
   can_manage boolean := false;
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -358,7 +374,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_runtime_context() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_runtime_context() to authenticated;
 
 

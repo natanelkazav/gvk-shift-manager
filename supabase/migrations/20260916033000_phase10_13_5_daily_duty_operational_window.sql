@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260916033000_phase10_13_5_daily_duty_operational_window.sql
+-- מטרה: עדכון חלון הפעילות המשויך ליום כוננות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_schedule_calendar_workspace, public.get_my_dynamic_runtime_context.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 10.13.5 - Daily-duty operational window is the real responsibility interval
 -- A daily on-call assignment belongs to the date on which it STARTS.
 -- Example: 14:00 -> 06:00 means 14:00 on shift_date through 06:00 next day.
@@ -5,27 +10,35 @@
 
 begin;
 
+-- פונקציית מסד public.get_dynamic_schedule_calendar_workspace: שליפה או חישוב של דינמי / שיבוץ / לוח שנה.
 create or replace function public.get_dynamic_schedule_calendar_workspace(
   requested_year integer,
   requested_month integer
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $function$
 declare
   actor uuid := auth.uid();
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי actor is null.
   if actor is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי requested_year not between 2020 and 2100 or requested_month not between 1 and 12.
   if requested_year not between 2020 and 2100 or requested_month not between 1 and 12 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid year or month';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.job_types jt
@@ -44,6 +57,7 @@ begin
         or public.has_dynamic_job_type_permission('rotation.generate', jt.id, actor)
       )
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -449,22 +463,32 @@ end;
 $function$;
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_schedule_calendar_workspace(integer, integer) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_schedule_calendar_workspace(integer, integer) to authenticated;
 
+-- פונקציית מסד public.get_my_dynamic_runtime_context: שליפה או חישוב של דינמי.
 create or replace function public.get_my_dynamic_runtime_context()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- current_month — חודש.
   current_month date := date_trunc('month', now() at time zone 'Asia/Jerusalem')::date;
+  -- can_manage — האם פעולת ניהול מותרת.
   can_manage boolean := false;
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -765,7 +789,9 @@ end;
 $function$;
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_runtime_context() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_runtime_context() to authenticated;
 
 commit;

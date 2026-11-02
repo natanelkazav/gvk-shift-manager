@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/shifts/DynamicAllSchedulesCalendar.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור דינמי / לוח שנה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AssignmentFilter, ScheduleDisplayMode, DynamicAllSchedulesCalendarProps, DynamicAllSchedulesCalendar.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   ChevronDown,
@@ -21,20 +28,40 @@ import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import { dynamicShiftDisplayName } from '../../utils/dynamicShiftDisplayName';
 
+/**
+ * טיפוס AssignmentFilter: הקצאה / סינון.
+ */
 type AssignmentFilter = 'all' | 'assigned' | 'unassigned';
+/**
+ * טיפוס ScheduleDisplayMode: שיבוץ / מצב פעולה.
+ */
 type ScheduleDisplayMode = 'calendar' | 'list';
 
+/**
+ * חוזה הנתונים DynamicAllSchedulesCalendarProps: דינמי / לוח שנה / מאפייני הרכיב.
+ */
 interface DynamicAllSchedulesCalendarProps {
   workspace: DynamicScheduleCalendarWorkspace;
+  // displayMode — מצב פעולה (אופציונלי).
   displayMode?: ScheduleDisplayMode;
+  // defaultAssignmentFilter — הקצאה / סינון (אופציונלי).
   defaultAssignmentFilter?: AssignmentFilter;
+  // currentUserId — המשתמש הנוכחי הנוכחי (אופציונלי).
   currentUserId?: string | null;
+  // onChanged — פונקציית דיווח על שינוי (אופציונלי).
   onChanged?: () => void | Promise<void>;
 }
 
+// ROLE_TONE_COUNT — כמות.
 const ROLE_TONE_COUNT = 8;
+// UNASSIGNED_VALUE — ערך.
 const UNASSIGNED_VALUE = '__unassigned__';
 
+/**
+ * פעולה availabilityLabel: אילוצים וזמינות / תווית.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const availabilityLabel = (status: 'available' | 'unavailable' | 'preferred' | 'avoid' | null): string => {
   switch (status) {
     case 'preferred': return 'מעדיף';
@@ -45,21 +72,41 @@ const availabilityLabel = (status: 'available' | 'unavailable' | 'preferred' | '
   }
 };
 
+/**
+ * פעולה publishedCandidateLabel: פורסם / תווית.
+ * @param displayName — שם תצוגה.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const publishedCandidateLabel = (displayName: string, status: 'available' | 'unavailable' | 'preferred' | 'avoid' | null): string =>
   `${displayName} · ${availabilityLabel(status)}`;
 
+/**
+ * פעולה matchesAssignmentFilter: הקצאה / סינון.
+ * @param slot — הנתון slot בהקשר הפעולה.
+ * @param filter — סינון.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 const matchesAssignmentFilter = (
   slot: DynamicScheduleCalendarSlot,
   filter: AssignmentFilter,
 ): boolean => {
+  // hasAssigned — הנתון hasAssigned בהקשר הפעולה.
   const hasAssigned = slot.assignments.length > 0;
+  // hasUnassigned — הנתון hasUnassigned בהקשר הפעולה.
   const hasUnassigned = slot.unassignedCount > 0 || !hasAssigned;
   if (filter === 'assigned') return hasAssigned;
   if (filter === 'unassigned') return hasUnassigned;
   return true;
 };
 
+/**
+ * פעולה formatScheduleDate: עיצוב ערך לתצוגה עבור שיבוץ / תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const formatScheduleDate = (value: string): string => {
+  // date — תאריך.
   const date = new Date(`${value}T12:00:00`);
   return new Intl.DateTimeFormat('he-IL', {
     weekday: 'long',
@@ -68,6 +115,10 @@ const formatScheduleDate = (value: string): string => {
   }).format(date);
 };
 
+/**
+ * פעולה DynamicAllSchedulesCalendar: דינמי / לוח שנה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicAllSchedulesCalendar({
   workspace,
   displayMode = 'calendar',
@@ -75,21 +126,36 @@ function DynamicAllSchedulesCalendar({
   currentUserId = null,
   onChanged,
 }: DynamicAllSchedulesCalendarProps) {
+  // holidayLabels — חג.
   const holidayLabels = useCalendarHolidays(workspace.year, workspace.month);
+  // מצב מקומי: selectedJobTypeIds — מזהה סוג התפקיד; setSelectedJobTypeIds מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedJobTypeIds, setSelectedJobTypeIds] = useState<string[]>([]);
+  // מצב מקומי: assignmentFilter — הקצאה / סינון; setAssignmentFilter מעדכנת אותו ומפעילה רינדור לפי React.
   const [assignmentFilter, setAssignmentFilter] = useState<AssignmentFilter>(defaultAssignmentFilter);
+  // מצב מקומי: selectedAssigneeId — נבחר / מזהה; setSelectedAssigneeId מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedAssigneeId, setSelectedAssigneeId] = useState('all');
+  // מצב מקומי: filtersOpen — מסננים; setFiltersOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // מצב מקומי: selectedSlot — נבחר; setSelectedSlot מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedSlot, setSelectedSlot] = useState<DynamicScheduleCalendarSlot | null>(null);
+  // מצב מקומי: editor — הנתון editor בהקשר הפעולה; setEditor מעדכנת אותו ומפעילה רינדור לפי React.
   const [editor, setEditor] = useState<DynamicPublishedEditorWorkspace | null>(null);
+  // מצב מקומי: historyEditor — היסטוריה; setHistoryEditor מעדכנת אותו ומפעילה רינדור לפי React.
   const [historyEditor, setHistoryEditor] = useState<DynamicHistoricalSlotEditorWorkspace | null>(null);
+  // מצב מקומי: editorLoading — טעינה; setEditorLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [editorLoading, setEditorLoading] = useState(false);
+  // מצב מקומי: editorError — שגיאה; setEditorError מעדכנת אותו ומפעילה רינדור לפי React.
   const [editorError, setEditorError] = useState<string | null>(null);
+  // מצב מקומי: saving — שמירה; setSaving מעדכנת אותו ומפעילה רינדור לפי React.
   const [saving, setSaving] = useState(false);
+  // מצב מקומי: assignmentSelection — הקצאה / בחירה; setAssignmentSelection מעדכנת אותו ומפעילה רינדור לפי React.
   const [assignmentSelection, setAssignmentSelection] = useState<Record<string, string>>({});
+  // מצב מקומי: emptySelection — בחירה; setEmptySelection מעדכנת אותו ומפעילה רינדור לפי React.
   const [emptySelection, setEmptySelection] = useState('');
+  // מצב מקומי: changeReason — הנתון changeReason בהקשר הפעולה; setChangeReason מעדכנת אותו ומפעילה רינדור לפי React.
   const [changeReason, setChangeReason] = useState('');
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [defaultAssignmentFilter, workspace.year, workspace.month, workspace.jobTypes].
   useEffect(() => {
     setSelectedJobTypeIds(workspace.jobTypes.map((jobType) => jobType.id));
     setAssignmentFilter(defaultAssignmentFilter);
@@ -97,14 +163,18 @@ function DynamicAllSchedulesCalendar({
     setSelectedSlot(null);
   }, [defaultAssignmentFilter, workspace.year, workspace.month, workspace.jobTypes]);
 
+  // ערך מחושב roleToneById — מזהה; נשמר בין רינדורים עד שינוי התלויות.
   const roleToneById = useMemo(() => new Map(
     workspace.jobTypes.map((jobType, index) => [jobType.id, index % ROLE_TONE_COUNT]),
   ), [workspace.jobTypes]);
 
+  // allRolesSelected — נבחר.
   const allRolesSelected = workspace.jobTypes.length > 0
     && selectedJobTypeIds.length === workspace.jobTypes.length;
 
+  // ערך מחושב visibleAssignees — הנתון visibleAssignees בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const visibleAssignees = useMemo(() => {
+    // byId — מזהה; מיפוי לחיפוש לפי מפתח.
     const byId = new Map<string, { userId: string; displayName: string; scheduleName?: string | null }>();
     workspace.slots.forEach((slot) => {
       if (!selectedJobTypeIds.includes(slot.jobTypeId)) return;
@@ -117,12 +187,14 @@ function DynamicAllSchedulesCalendar({
     ));
   }, [selectedJobTypeIds, workspace.slots]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [selectedAssigneeId, visibleAssignees].
   useEffect(() => {
     if (selectedAssigneeId !== 'all' && !visibleAssignees.some((assignee) => assignee.userId === selectedAssigneeId)) {
       setSelectedAssigneeId('all');
     }
   }, [selectedAssigneeId, visibleAssignees]);
 
+  // ערך מחושב filteredSlots — הנתון filteredSlots בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const filteredSlots = useMemo(() => workspace.slots
     .filter((slot) => (
       selectedJobTypeIds.includes(slot.jobTypeId)
@@ -136,9 +208,12 @@ function DynamicAllSchedulesCalendar({
       || a.shiftName.localeCompare(b.shiftName, 'he')
     )), [assignmentFilter, selectedAssigneeId, selectedJobTypeIds, workspace.slots]);
 
+  // ערך מחושב slotsByDate — תאריך; נשמר בין רינדורים עד שינוי התלויות.
   const slotsByDate = useMemo(() => {
+    // map — מפת התאמה; מיפוי לחיפוש לפי מפתח.
     const map = new Map<string, DynamicScheduleCalendarSlot[]>();
     filteredSlots.forEach((slot) => {
+      // current — הנתון current בהקשר הפעולה.
       const current = map.get(slot.shiftDate) ?? [];
       current.push(slot);
       map.set(slot.shiftDate, current);
@@ -146,29 +221,46 @@ function DynamicAllSchedulesCalendar({
     return map;
   }, [filteredSlots]);
 
+  // ערך מחושב groupedSlots — הנתון groupedSlots בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const groupedSlots = useMemo(() => Array.from(slotsByDate.entries()), [slotsByDate]);
 
+  // ערך מחושב summary — סיכום; נשמר בין רינדורים עד שינוי התלויות.
   const summary = useMemo(() => ({
     shifts: filteredSlots.length,
     assignments: filteredSlots.reduce((sum, slot) => sum + slot.assignments.length, 0),
     unassigned: filteredSlots.reduce((sum, slot) => sum + slot.unassignedCount, 0),
   }), [filteredSlots]);
 
+  // ערך מחושב selectedEditorSlot — נבחר; נשמר בין רינדורים עד שינוי התלויות.
   const selectedEditorSlot = useMemo(() => {
     if (!selectedSlot?.sourceSlotId || !editor) return null;
     return editor.slots.find((slot) => slot.slotId === selectedSlot.sourceSlotId) ?? null;
   }, [editor, selectedSlot]);
 
+  /**
+   * פעולה toggleJobType: החלפת בחירה עבור סוג תפקיד.
+   * @param jobTypeId — מזהה סוג התפקיד.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const toggleJobType = (jobTypeId: string): void => {
     setSelectedJobTypeIds((current) => current.includes(jobTypeId)
       ? current.filter((id) => id !== jobTypeId)
       : [...current, jobTypeId]);
   };
 
+  /**
+   * פעולה selectAllJobTypes: בחירת סוגי תפקידים.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const selectAllJobTypes = (): void => {
     setSelectedJobTypeIds(allRolesSelected ? [] : workspace.jobTypes.map((jobType) => jobType.id));
   };
 
+  /**
+   * פעולה אסינכרונית openSlot: פתיחת הנתון openSlot בהקשר הפעולה.
+   * @param slot — הנתון slot בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const openSlot = async (slot: DynamicScheduleCalendarSlot): Promise<void> => {
     setSelectedSlot(slot);
     setEditor(null);
@@ -179,9 +271,11 @@ function DynamicAllSchedulesCalendar({
     setChangeReason('');
 
     setEditorLoading(true);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       if (slot.periodSource === 'publication') {
         if (!slot.sourceSlotId) return;
+        // data — נתונים.
         const data = await dynamicSchedulingService.getPublishedScheduleEditor(slot.sourcePeriodId);
         setEditor(data);
         const matchingSlot = data.slots.find((candidate) => candidate.slotId === slot.sourceSlotId);
@@ -191,6 +285,7 @@ function DynamicAllSchedulesCalendar({
           ));
         }
       } else {
+        // data — נתונים.
         const data = await dynamicSchedulingService.getHistoricalSlotEditor({
           historicalPeriodId: slot.sourcePeriodId,
           workDate: slot.shiftDate,
@@ -210,6 +305,10 @@ function DynamicAllSchedulesCalendar({
     }
   };
 
+  /**
+   * פעולה אסינכרונית saveSlotChanges: שמירת הנתון saveSlotChanges בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const saveSlotChanges = async (): Promise<void> => {
     if (!selectedSlot || !editor || !selectedEditorSlot || !editor.editable) return;
 
@@ -222,7 +321,9 @@ function DynamicAllSchedulesCalendar({
 
     setSaving(true);
     setEditorError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // עיבוד כל פריט מתוך changes בנפרד.
       for (const { assignment, selected } of changes) {
         await dynamicSchedulingService.setPublishedScheduleAssignment({
           publicationId: editor.publicationId,
@@ -259,6 +360,10 @@ function DynamicAllSchedulesCalendar({
     }
   };
 
+  /**
+   * פעולה אסינכרונית saveHistoricalChanges: שמירת נתונים היסטוריים.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const saveHistoricalChanges = async (): Promise<void> => {
     if (!selectedSlot || !historyEditor || !historyEditor.editable) return;
 
@@ -271,7 +376,9 @@ function DynamicAllSchedulesCalendar({
 
     setSaving(true);
     setEditorError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // עיבוד כל פריט מתוך changes בנפרד.
       for (const { assignment, selected } of changes) {
         await dynamicSchedulingService.setHistoricalAssignment({
           historicalPeriodId: historyEditor.historicalPeriodId,
@@ -301,19 +408,28 @@ function DynamicAllSchedulesCalendar({
     }
   };
 
+  // hasPendingChanges — ממתין.
   const hasPendingChanges = Boolean(selectedEditorSlot && (
     selectedEditorSlot.assignments.some((assignment) =>
       (assignmentSelection[assignment.id] ?? assignment.userId) !== assignment.userId)
     || emptySelection
   ));
 
+  // hasPendingHistoricalChanges — ממתין / נתונים היסטוריים.
   const hasPendingHistoricalChanges = Boolean(historyEditor?.assignments.some((assignment) =>
     (assignmentSelection[assignment.id] ?? assignment.userId ?? UNASSIGNED_VALUE)
       !== (assignment.userId ?? UNASSIGNED_VALUE)));
 
+  /**
+   * פעולה renderSlotCard: בניית תצוגה עבור הנתון renderSlotCard בהקשר הפעולה.
+   * @param slot — הנתון slot בהקשר הפעולה.
+   * @param key — מפתח.
+   */
   const renderSlotCard = (slot: DynamicScheduleCalendarSlot, key: string) => {
+    // isUnassigned — הנתון isUnassigned בהקשר הפעולה.
     const isUnassigned = slot.unassignedCount > 0 || slot.assignments.length === 0;
     const tone = roleToneById.get(slot.jobTypeId) ?? 0;
+    // isMine — הנתון isMine בהקשר הפעולה.
     const isMine = selectedAssigneeId === 'all' && Boolean(currentUserId)
       && slot.assignments.some((assignment) => assignment.userId === currentUserId);
     return (
@@ -479,8 +595,10 @@ function DynamicAllSchedulesCalendar({
               </div>
               <div className="dynamic-all-schedules-list-rows">
                 {slots.map((slot, index) => {
+                  // isUnassigned — הנתון isUnassigned בהקשר הפעולה.
                   const isUnassigned = slot.unassignedCount > 0 || slot.assignments.length === 0;
                   const tone = roleToneById.get(slot.jobTypeId) ?? 0;
+                  // isMine — הנתון isMine בהקשר הפעולה.
                   const isMine = selectedAssigneeId === 'all' && Boolean(currentUserId)
                     && slot.assignments.some((assignment) => assignment.userId === currentUserId);
                   return (

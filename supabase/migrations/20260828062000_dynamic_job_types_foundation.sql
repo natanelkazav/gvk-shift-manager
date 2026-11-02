@@ -1,9 +1,15 @@
+-- קובץ: supabase/migrations/20260828062000_dynamic_job_types_foundation.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סוגי תפקידים.
+-- מטרות עיקריות:
+-- - מבני טבלאות: public.scheduling_feature_flags, public.schedule_groups, public.job_types, public.schedule_group_shift_templates, public.schedule_group_day_rules, public.schedule_shift_pay_segments, public.job_type_shift_eligibility, public.job_type_capabilities, public.job_type_default_permissions, public.job_type_memberships, public.job_type_ai_suggestions.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 1: Dynamic scheduling/job-type foundation.
 -- ADDITIVE ONLY. No existing scheduling table, enum, RPC, role or profile column is changed.
 -- The feature flag remains disabled until later phases are explicitly enabled.
 
+-- הגדרת מבנה הטבלה public.scheduling_feature_flags והאילוצים המופיעים בהמשך.
 create table if not exists public.scheduling_feature_flags (
   key text primary key,
   enabled boolean not null default false,
@@ -14,6 +20,7 @@ create table if not exists public.scheduling_feature_flags (
   constraint scheduling_feature_flags_config_object check (jsonb_typeof(config) = 'object')
 );
 
+-- הגדרת מבנה הטבלה public.schedule_groups והאילוצים המופיעים בהמשך.
 create table if not exists public.schedule_groups (
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
@@ -29,6 +36,7 @@ create table if not exists public.schedule_groups (
   constraint schedule_groups_config_object check (jsonb_typeof(config) = 'object')
 );
 
+-- הגדרת מבנה הטבלה public.job_types והאילוצים המופיעים בהמשך.
 create table if not exists public.job_types (
   id uuid primary key default gen_random_uuid(),
   schedule_group_id uuid not null references public.schedule_groups(id) on delete restrict,
@@ -59,6 +67,7 @@ create table if not exists public.job_types (
 
 -- One shift template is one reusable shift definition in a schedule group.
 -- day_kind is deliberately text in Phase 1 so new day categories do not require enum migrations.
+-- הגדרת מבנה הטבלה public.schedule_group_shift_templates והאילוצים המופיעים בהמשך.
 create table if not exists public.schedule_group_shift_templates (
   id uuid primary key default gen_random_uuid(),
   schedule_group_id uuid not null references public.schedule_groups(id) on delete cascade,
@@ -82,6 +91,7 @@ create table if not exists public.schedule_group_shift_templates (
 );
 
 -- Allows a holiday/day category to inherit another template family, have custom templates, or have no work.
+-- הגדרת מבנה הטבלה public.schedule_group_day_rules והאילוצים המופיעים בהמשך.
 create table if not exists public.schedule_group_day_rules (
   id uuid primary key default gen_random_uuid(),
   schedule_group_id uuid not null references public.schedule_groups(id) on delete cascade,
@@ -101,6 +111,7 @@ create table if not exists public.schedule_group_day_rules (
 );
 
 -- Pay can change inside a shift (e.g. Friday 14-16 at 100%, 16-22 at 200%).
+-- הגדרת מבנה הטבלה public.schedule_shift_pay_segments והאילוצים המופיעים בהמשך.
 create table if not exists public.schedule_shift_pay_segments (
   id uuid primary key default gen_random_uuid(),
   shift_template_id uuid not null references public.schedule_group_shift_templates(id) on delete cascade,
@@ -117,6 +128,7 @@ create table if not exists public.schedule_shift_pay_segments (
 );
 
 -- Job types can share the same schedule-group shift pool while differing in eligibility.
+-- הגדרת מבנה הטבלה public.job_type_shift_eligibility והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_shift_eligibility (
   job_type_id uuid not null references public.job_types(id) on delete cascade,
   shift_template_id uuid not null references public.schedule_group_shift_templates(id) on delete cascade,
@@ -128,6 +140,7 @@ create table if not exists public.job_type_shift_eligibility (
   constraint job_type_shift_eligibility_metadata_object check (jsonb_typeof(metadata) = 'object')
 );
 
+-- הגדרת מבנה הטבלה public.job_type_capabilities והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_capabilities (
   job_type_id uuid not null references public.job_types(id) on delete cascade,
   capability_key text not null,
@@ -144,6 +157,7 @@ create table if not exists public.job_type_capabilities (
 
 -- Text keys intentionally reference the existing permission registry logically rather than by FK,
 -- because migration history for the current permission tables is incomplete.
+-- הגדרת מבנה הטבלה public.job_type_default_permissions והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_default_permissions (
   job_type_id uuid not null references public.job_types(id) on delete cascade,
   permission_key text not null,
@@ -155,6 +169,7 @@ create table if not exists public.job_type_default_permissions (
 );
 
 -- Shadow membership only. Existing profiles.role remains the production source of truth in Phase 1.
+-- הגדרת מבנה הטבלה public.job_type_memberships והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_memberships (
   user_id uuid primary key references public.profiles(id) on delete cascade,
   job_type_id uuid not null references public.job_types(id) on delete restrict,
@@ -167,6 +182,7 @@ create table if not exists public.job_type_memberships (
 );
 
 -- AI suggestions are drafts only; no suggestion grants permissions or changes scheduling by itself.
+-- הגדרת מבנה הטבלה public.job_type_ai_suggestions והאילוצים המופיעים בהמשך.
 create table if not exists public.job_type_ai_suggestions (
   id uuid primary key default gen_random_uuid(),
   job_type_id uuid references public.job_types(id) on delete cascade,
@@ -187,6 +203,7 @@ create table if not exists public.job_type_ai_suggestions (
 -- Reuse the project's existing updated_at trigger function.
 do $$
 declare
+  -- table_name — שם.
   table_name text;
 begin
   foreach table_name in array array[
@@ -203,23 +220,36 @@ begin
 end $$;
 
 -- Foundation is backend-only for now. RLS is enabled and no authenticated policies are added.
+-- עדכון מבנה או הגדרות הטבלה public.scheduling_feature_flags.
 alter table public.scheduling_feature_flags enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.schedule_groups.
 alter table public.schedule_groups enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.job_types.
 alter table public.job_types enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.schedule_group_shift_templates.
 alter table public.schedule_group_shift_templates enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.schedule_group_day_rules.
 alter table public.schedule_group_day_rules enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.schedule_shift_pay_segments.
 alter table public.schedule_shift_pay_segments enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.job_type_shift_eligibility.
 alter table public.job_type_shift_eligibility enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.job_type_capabilities.
 alter table public.job_type_capabilities enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.job_type_default_permissions.
 alter table public.job_type_default_permissions enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.job_type_memberships.
 alter table public.job_type_memberships enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.job_type_ai_suggestions.
 alter table public.job_type_ai_suggestions enable row level security;
 
+-- הוספת רשומות ל־public.scheduling_feature_flags בהתאם לקלט ולתנאים להלן.
 insert into public.scheduling_feature_flags (key, enabled, config)
 values ('dynamic_job_types', false, '{"phase":1,"mode":"shadow"}'::jsonb)
 on conflict (key) do update set enabled = false, config = excluded.config;
 
 -- Seed schedule groups. These rows DO NOT drive the current production scheduling engine yet.
+-- הוספת רשומות ל־public.schedule_groups בהתאם לקלט ולתנאים להלן.
 insert into public.schedule_groups (code, name, description, legacy_kind)
 values
   ('dispatch_center', 'מוקד', 'מערך המשמרות הקיים של המוקדנים', 'dispatcher'),
@@ -227,6 +257,7 @@ values
   ('morning_on_call', 'כוננות בוקר', 'מערך כונני הבוקר הקיים', 'morning_driver')
 on conflict (code) do update set name = excluded.name, description = excluded.description, legacy_kind = excluded.legacy_kind;
 
+-- הוספת רשומות ל־public.job_types בהתאם לקלט ולתנאים להלן.
 insert into public.job_types (
   schedule_group_id, code, name, description, legacy_role, employment_scope, pay_model,
   availability_config, statistics_config, ai_config
@@ -253,6 +284,7 @@ on conflict (code) do update set
 
 -- Seed the known dispatcher shift pool. Other legacy pools are intentionally left as config-only
 -- until their current production rules are mapped and verified in Phase 2.
+-- הוספת רשומות ל־public.schedule_group_shift_templates בהתאם לקלט ולתנאים להלן.
 insert into public.schedule_group_shift_templates
   (schedule_group_id, code, name, day_kind, start_time, end_time, sort_order, required_workers)
 select g.id, v.code, v.name, v.day_kind, v.start_time::time, v.end_time::time, v.sort_order, 1
@@ -273,6 +305,7 @@ on conflict (schedule_group_id, code) do update set
   end_time=excluded.end_time, sort_order=excluded.sort_order;
 
 -- Holiday behavior for the dispatcher schedule group mirrors the current production rules.
+-- הוספת רשומות ל־public.schedule_group_day_rules בהתאם לקלט ולתנאים להלן.
 insert into public.schedule_group_day_rules (schedule_group_id, day_kind, behavior, inherit_day_kind)
 select g.id, v.day_kind, v.behavior, v.inherit_day_kind
 from public.schedule_groups g
@@ -285,6 +318,7 @@ where g.code = 'dispatch_center'
 on conflict (schedule_group_id, day_kind) do update set behavior=excluded.behavior, inherit_day_kind=excluded.inherit_day_kind;
 
 -- Current legacy users are shadow-mapped. This does not alter profiles.role or current permissions.
+-- הוספת רשומות ל־public.job_type_memberships בהתאם לקלט ולתנאים להלן.
 insert into public.job_type_memberships (user_id, job_type_id, source)
 select p.id, jt.id, 'legacy_seed'
 from public.profiles p
@@ -293,6 +327,7 @@ where p.role::text in ('dispatcher','on_call','morning_driver')
 on conflict (user_id) do nothing;
 
 -- Seed capabilities only as descriptive configuration; no current feature reads these rows yet.
+-- הוספת רשומות ל־public.job_type_capabilities בהתאם לקלט ולתנאים להלן.
 insert into public.job_type_capabilities (job_type_id, capability_key, enabled, source)
 select jt.id, capability_key, true, 'seed'
 from public.job_types jt

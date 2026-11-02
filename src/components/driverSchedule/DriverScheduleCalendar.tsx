@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/driverSchedule/DriverScheduleCalendar.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כוננים / שיבוץ / לוח שנה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DriverScheduleCalendarProps, DriverCalendarFilter, getDriverDisplayName, getAssignmentSourceLabel, getPreviousMonth, getNextMonth, DriverScheduleCalendar.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   AlertTriangle,
   ChevronLeft,
@@ -29,34 +36,46 @@ import type {
 
 import '../../styles/driverScheduleCalendar.css';
 
+/**
+ * חוזה הנתונים DriverScheduleCalendarProps: כוננים / שיבוץ / לוח שנה / מאפייני הרכיב.
+ */
 interface DriverScheduleCalendarProps {
+  // data — נתונים.
   data:
     DriverScheduleData | null;
 
+  // viewedYear — שנה.
   viewedYear:
     number;
 
+  // viewedMonth — חודש.
   viewedMonth:
     number;
 
+  // currentUserId — המשתמש הנוכחי הנוכחי.
   currentUserId:
     string | null;
 
+  // canViewTeamSchedule — האם צפייה מותרת.
   canViewTeamSchedule:
     boolean;
 
+  // canEditSchedule — האם עריכה מותרת.
   canEditSchedule:
     boolean;
 
+  // canEditPublishedSchedule — האם עריכה מותרת.
   canEditPublishedSchedule:
     boolean;
 
   showManagementDetails:
     boolean;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading:
     boolean;
 
+  // onLoadMonth — חודש.
   onLoadMonth: (
     year: number,
     month: number,
@@ -65,23 +84,29 @@ interface DriverScheduleCalendarProps {
   canTransferMyDuties:
     boolean;
 
+  // onSelectTransferDay — יום.
   onSelectTransferDay: (
     day:
       DriverScheduleDay,
   ) => void;
 
+  // onSelectEditDay — יום.
   onSelectEditDay: (
     day:
       DriverScheduleDay,
   ) => void;
 }
 
+/**
+ * טיפוס DriverCalendarFilter: כוננים / לוח שנה / סינון.
+ */
 type DriverCalendarFilter =
   | 'all'
   | 'mine'
   | 'warnings'
   | 'unassigned';
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -97,6 +122,12 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+/**
+ * פעולה getDriverDisplayName: שליפה או חישוב של שם תצוגה.
+ * @param day — יום.
+ * @param currentUserId — המשתמש הנוכחי הנוכחי.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getDriverDisplayName(
   day:
     DriverScheduleDay,
@@ -104,6 +135,7 @@ function getDriverDisplayName(
   currentUserId:
     string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר currentUserId && day.assignedUserId === currentUserId.
   if (
     currentUserId &&
     day.assignedUserId ===
@@ -118,6 +150,11 @@ function getDriverDisplayName(
   );
 }
 
+/**
+ * פעולה getAssignmentSourceLabel: שליפה או חישוב של מקור השיבוץ.
+ * @param day — יום.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getAssignmentSourceLabel(
   day:
     DriverScheduleDay,
@@ -142,13 +179,22 @@ function getAssignmentSourceLabel(
   }
 }
 
+/**
+ * פעולה getPreviousMonth: שליפה או חישוב של חודש.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns { year: number; month: number; } — הפלט בהתאם לחתימה.
+ */
 function getPreviousMonth(
   year: number,
   month: number,
 ): {
+  // year — שנה.
   year: number;
+  // month — חודש.
   month: number;
 } {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר month === 1.
   if (month === 1) {
     return {
       year:
@@ -167,13 +213,22 @@ function getPreviousMonth(
   };
 }
 
+/**
+ * פעולה getNextMonth: שליפה או חישוב של חודש.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @returns { year: number; month: number; } — הפלט בהתאם לחתימה.
+ */
 function getNextMonth(
   year: number,
   month: number,
 ): {
+  // year — שנה.
   year: number;
+  // month — חודש.
   month: number;
 } {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר month === 12.
   if (month === 12) {
     return {
       year:
@@ -192,6 +247,10 @@ function getNextMonth(
   };
 }
 
+/**
+ * פעולה DriverScheduleCalendar: כוננים / שיבוץ / לוח שנה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DriverScheduleCalendar({
   data,
   viewedYear,
@@ -207,17 +266,20 @@ function DriverScheduleCalendar({
   onSelectTransferDay,
   onSelectEditDay,
 }: DriverScheduleCalendarProps) {
+  // holidayLabels — חג.
   const holidayLabels =
     useCalendarHolidays(
       viewedYear,
       viewedMonth,
     );
 
+  // canViewAllDrivers — האם צפייה מותרת.
   const canViewAllDrivers =
     canViewTeamSchedule ||
     canEditSchedule ||
     showManagementDetails;
 
+  // מצב מקומי: selectedDriverId — נבחר / כוננים / מזהה; setSelectedDriverId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedDriverId,
     setSelectedDriverId,
@@ -228,6 +290,7 @@ function DriverScheduleCalendar({
         : 'mine',
     );
 
+  // מצב מקומי: calendarFilter — לוח שנה / סינון; setCalendarFilter מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     calendarFilter,
     setCalendarFilter,
@@ -238,23 +301,28 @@ function DriverScheduleCalendar({
         : 'mine',
     );
 
+  // period — תקופה.
   const period =
     data?.period ??
     null;
 
+  // displayedYear — שנה.
   const displayedYear =
     period?.year ??
     viewedYear;
 
+  // displayedMonth — חודש.
   const displayedMonth =
     period?.month ??
     viewedMonth;
 
 
+  // scheduleDrivers — שיבוץ.
   const scheduleDrivers =
     data?.drivers ??
     [];
 
+// ערך מחושב scheduleDaysByDate — שיבוץ / ימים / תאריך; נשמר בין רינדורים עד שינוי התלויות.
 const scheduleDaysByDate =
   useMemo(() => {
     return new Map(
@@ -267,11 +335,18 @@ const scheduleDaysByDate =
     );
   }, [data?.days]);
 
+  /**
+   * פעולה אסינכרונית loadMonth: טעינת חודש.
+   * @param year — שנה.
+   * @param month — חודש.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const loadMonth =
     async (
       year: number,
       month: number,
     ): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading.
       if (isLoading) {
         return;
       }
@@ -282,8 +357,13 @@ const scheduleDaysByDate =
       );
     };
 
+  /**
+   * פעולה handlePreviousMonth: טיפול באירוע עבור חודש.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handlePreviousMonth =
     (): void => {
+      // previousMonth — חודש.
       const previousMonth =
         getPreviousMonth(
           displayedYear,
@@ -296,8 +376,13 @@ const scheduleDaysByDate =
       );
     };
 
+  /**
+   * פעולה handleNextMonth: טיפול באירוע עבור חודש.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleNextMonth =
     (): void => {
+      // nextMonth — חודש.
       const nextMonth =
         getNextMonth(
           displayedYear,
@@ -310,6 +395,10 @@ const scheduleDaysByDate =
       );
     };
 
+  /**
+   * פעולה handleCurrentMonth: טיפול באירוע עבור חודש.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleCurrentMonth =
     (): void => {
       const now =
@@ -321,11 +410,17 @@ const scheduleDaysByDate =
       );
     };
 
+  /**
+   * פעולה shouldShowDay: יום.
+   * @param day — יום.
+   * @returns boolean — הפלט בהתאם לחתימה.
+   */
   const shouldShowDay =
     (
       day:
         DriverScheduleDay,
     ): boolean => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר selectedDriverId !== 'all' && selectedDriverId !== 'mine' && day.assignedUserId !== selectedDriverId.
       if (
         selectedDriverId !==
           'all' &&
@@ -337,6 +432,7 @@ const scheduleDaysByDate =
         return false;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר selectedDriverId === 'mine' && day.assignedUserId !== currentUserId.
       if (
         selectedDriverId ===
           'mine' &&
@@ -380,16 +476,19 @@ const scheduleDaysByDate =
     };
 
 
+  // isTransferableMonth — חודש.
   const isTransferableMonth =
     (() => {
       const now =
         new Date();
 
+      // currentPeriodValue — תקופה / ערך.
       const currentPeriodValue =
         now.getFullYear() *
           12 +
         now.getMonth();
 
+      // displayedPeriodValue — תקופה / ערך.
       const displayedPeriodValue =
         displayedYear *
           12 +
@@ -405,6 +504,11 @@ const scheduleDaysByDate =
       );
     })();
 
+  /**
+   * פעולה canEditDay: בדיקת אפשרות פעולה עבור האם עריכה מותרת.
+   * @param day — יום.
+   * @returns boolean — הפלט בהתאם לחתימה.
+   */
   const canEditDay =
     (
       day:
@@ -419,11 +523,17 @@ const scheduleDaysByDate =
       );
     };
 
+  /**
+   * פעולה canTransferDay: בדיקת אפשרות פעולה עבור יום.
+   * @param day — יום.
+   * @returns boolean — הפלט בהתאם לחתימה.
+   */
   const canTransferDay =
     (
       day:
         DriverScheduleDay,
     ): boolean => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canTransferMyDuties || !currentUserId || !isTransferableMonth || period?.status !== 'published' || day.assignedUserId !== currentUserId || .
       if (
         !canTransferMyDuties ||
         !currentUserId ||
@@ -437,6 +547,7 @@ const scheduleDaysByDate =
         return false;
       }
 
+      // todayKey — מפתח.
       const todayKey =
         new Intl.DateTimeFormat(
           'en-CA',
@@ -660,11 +771,13 @@ const scheduleDaysByDate =
         getDayClassName={(
           context,
         ) => {
+          // day — יום.
           const day =
             scheduleDaysByDate.get(
               context.date,
             );
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !day.
           if (!day) {
             return null;
           }
@@ -723,15 +836,18 @@ const scheduleDaysByDate =
             ? (
                 context,
               ) => {
+                // day — יום.
                 const day =
                   scheduleDaysByDate.get(
                     context.date,
                   );
 
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !day.
                 if (!day) {
                   return;
                 }
 
+                // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canEditDay( day, ).
                 if (
                   canEditDay(
                     day,
@@ -758,11 +874,13 @@ const scheduleDaysByDate =
         renderDayContent={(
           context,
         ) => {
+          // day — יום.
           const day =
             scheduleDaysByDate.get(
               context.date,
             );
 
+          // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !day || !shouldShowDay( day, ).
           if (
             !day ||
             !shouldShowDay(
@@ -772,6 +890,7 @@ const scheduleDaysByDate =
             return null;
           }
 
+          // isMyDuty — הנתון isMyDuty בהקשר הפעולה.
           const isMyDuty =
             Boolean(
               currentUserId &&

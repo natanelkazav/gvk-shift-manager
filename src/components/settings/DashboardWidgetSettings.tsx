@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/settings/DashboardWidgetSettings.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור לוח בקרה / הגדרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DashboardWidgetSettings.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { Eye, LoaderCircle, Plus, Save, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { dashboardWidgetService } from '../../services/dashboardWidgetService';
@@ -8,14 +15,24 @@ import type {
 } from '../../types/dashboardWidgets';
 import { Button } from '../ui';
 
+/**
+ * פעולה DashboardWidgetSettings: לוח בקרה / הגדרות.
+ */
 function DashboardWidgetSettings() {
+  // מצב מקומי: data — נתונים; setData מעדכנת אותו ומפעילה רינדור לפי React.
   const [data, setData] = useState<SettingsPayload | null>(null);
+  // מצב מקומי: widgets — הנתון widgets בהקשר הפעולה; setWidgets מעדכנת אותו ומפעילה רינדור לפי React.
   const [widgets, setWidgets] = useState<DashboardWidgetPreference[]>([]);
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy, setBusy] = useState(true);
+  // מצב מקומי: message — הודעה; setMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [message, setMessage] = useState<string | null>(null);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
+    // active — פעיל.
     let active = true;
     void dashboardWidgetService.getSettings()
       .then((result) => {
@@ -28,8 +45,12 @@ function DashboardWidgetSettings() {
     return () => { active = false; };
   }, []);
 
+  // ערך מחושב available — הנתון available בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const available = useMemo(() => data?.jobTypes ?? [], [data?.jobTypes]);
 
+  /**
+   * פעולה add: הוספת הנתון add בהקשר הפעולה.
+   */
   const add = () => {
     if (!available.length) return;
     setWidgets((current) => [
@@ -38,15 +59,29 @@ function DashboardWidgetSettings() {
     ]);
   };
 
+  /**
+   * פעולה update: עדכון הנתון update בהקשר הפעולה.
+   * @param index — מיקום באוסף.
+   * @param patch — הנתון patch בהקשר הפעולה.
+   */
   const update = (index: number, patch: Partial<DashboardWidgetPreference>) => {
     setWidgets((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
   };
 
+  /**
+   * פעולה remove: הסרת הנתון remove בהקשר הפעולה.
+   * @param index — מיקום באוסף.
+   */
   const remove = (index: number) => setWidgets((current) => current.filter((_, itemIndex) => itemIndex !== index));
 
+  /**
+   * פעולה אסינכרונית save: שמירת הנתון save בהקשר הפעולה.
+   */
   const save = async () => {
     setBusy(true); setError(null); setMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await dashboardWidgetService.saveSettings(widgets);
       setData(result); setWidgets(result.widgets);
       setMessage('הגדרות לוח הבקרה נשמרו.');

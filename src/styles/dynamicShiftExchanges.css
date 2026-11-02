@@ -1,3 +1,8 @@
+/*
+ * קובץ: src/styles/dynamicShiftExchanges.css
+ * מטרה: הגדרת עיצוב ופריסה עבור החלפת משמרות.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
 .dynamic-exchanges { display: grid; gap: 18px; }
 .dynamic-exchange-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
 .dynamic-exchange-header h1 { display:flex; align-items:center; gap:9px; margin:0 0 6px; }
@@ -31,6 +36,7 @@
 @media (max-width: 850px) { .dynamic-exchange-header { flex-direction:column; }.dynamic-exchange-form-grid { grid-template-columns:1fr; }.dynamic-exchange-flow { grid-template-columns:1fr; }.dynamic-exchange-flow > svg { transform:rotate(-90deg); margin:auto; } }
 
 .dynamic-exchange-month-picker,
+/* כללי עיצוב עבור .dynamic-exchange-month-fixed  */
 .dynamic-exchange-month-fixed {
   display: grid;
   gap: 6px;
@@ -38,11 +44,13 @@
 }
 
 .dynamic-exchange-month-picker > span,
+/* כללי עיצוב עבור .dynamic-exchange-month-fixed > span  */
 .dynamic-exchange-month-fixed > span {
   font-weight: 700;
   color: var(--text-primary);
 }
 
+/* כללי עיצוב עבור .dynamic-exchange-month-picker select  */
 .dynamic-exchange-month-picker select {
   width: min(100%, 320px);
   min-height: 44px;
@@ -54,6 +62,7 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .dynamic-exchange-month-fixed strong  */
 .dynamic-exchange-month-fixed strong {
   width: fit-content;
   padding: 9px 13px;
@@ -62,6 +71,7 @@
   border: 1px solid var(--border-color);
 }
 
+/* כללי עיצוב עבור .dynamic-exchange-no-shifts  */
 .dynamic-exchange-no-shifts {
   margin: 10px 0 0;
   padding: 10px 12px;

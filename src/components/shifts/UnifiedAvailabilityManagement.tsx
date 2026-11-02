@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/shifts/UnifiedAvailabilityManagement.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: UnifiedAvailabilityManagementProps, AvailabilityCategoryId, AvailabilityCategoryViewModel, getStatusLabel, getStatusClassName, formatDeadline, UnifiedAvailabilityManagement.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   ArrowLeft,
   CalendarClock,
@@ -38,37 +45,55 @@ import {
   CardBody,
 } from '../ui';
 
+/**
+ * חוזה הנתונים UnifiedAvailabilityManagementProps: אילוצים וזמינות / מאפייני הרכיב.
+ */
 interface UnifiedAvailabilityManagementProps {
+  // year — שנה.
   year: number;
 
+  // month — חודש.
   month: number;
 }
 
+/**
+ * טיפוס AvailabilityCategoryId: אילוצים וזמינות / מזהה.
+ */
 type AvailabilityCategoryId =
   | 'dispatchers'
   | 'morning-drivers'
   | 'drivers';
 
+/**
+ * חוזה הנתונים AvailabilityCategoryViewModel: אילוצים וזמינות.
+ */
 interface AvailabilityCategoryViewModel {
+  // id — מזהה.
   id:
     AvailabilityCategoryId;
 
+  // title — כותרת.
   title: string;
 
   description: string;
 
   route: string;
+  // periodId — מזהה התקופה.
   periodId: string | null;
+  // actionLabel — תווית.
   actionLabel: string;
   
   icon:
     typeof Headphones;
 
+  // className — שם.
   className: string;
 
+  // status — סטטוס.
   status:
     string;
 
+  // statusClassName — סטטוס / שם.
   statusClassName:
     string;
 
@@ -78,13 +103,16 @@ interface AvailabilityCategoryViewModel {
   submissions:
     string;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading:
     boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 }
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -100,6 +128,11 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+/**
+ * פעולה getStatusLabel: שליפה או חישוב של סטטוס / תווית.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getStatusLabel(
   status:
     string | null,
@@ -124,6 +157,11 @@ function getStatusLabel(
   }
 }
 
+/**
+ * פעולה getStatusClassName: שליפה או חישוב של סטטוס / שם.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getStatusClassName(
   status:
     string | null,
@@ -148,19 +186,27 @@ function getStatusClassName(
   }
 }
 
+/**
+ * פעולה formatDeadline: עיצוב ערך לתצוגה עבור הנתון formatDeadline בהקשר הפעולה.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDeadline(
   value:
     string | null | undefined,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (
     !value
   ) {
     return 'לא נקבע';
   }
 
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -198,6 +244,10 @@ function formatDeadline(
 
 
 
+/**
+ * פעולה UnifiedAvailabilityManagement: אילוצים וזמינות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function UnifiedAvailabilityManagement({
   year,
   month,
@@ -236,6 +286,7 @@ function UnifiedAvailabilityManagement({
   } =
     useMorningDriverAvailabilityPeriods();
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ loadDriverPeriods, loadMorningDriverPeriods, ].
   useEffect(
     () => {
       void Promise.all([
@@ -250,6 +301,7 @@ function UnifiedAvailabilityManagement({
     ],
   );
 
+  // ערך מחושב dispatcherPeriod — מוקדנים / תקופה; נשמר בין רינדורים עד שינוי התלויות.
   const dispatcherPeriod =
     useMemo(
       () =>
@@ -273,6 +325,7 @@ function UnifiedAvailabilityManagement({
       ],
     );
 
+  // ערך מחושב driverPeriod — כוננים / תקופה; נשמר בין רינדורים עד שינוי התלויות.
   const driverPeriod =
     useMemo(
       () =>
@@ -296,6 +349,7 @@ function UnifiedAvailabilityManagement({
       ],
     );
 
+  // ערך מחושב morningDriverPeriod — כונני בוקר; נשמר בין רינדורים עד שינוי התלויות.
   const morningDriverPeriod =
     useMemo(
       () =>
@@ -319,8 +373,10 @@ function UnifiedAvailabilityManagement({
       ],
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ dispatcherPeriod, loadPeriodSubmissions, resetDispatcherSubmissions, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !dispatcherPeriod.
       if (
         !dispatcherPeriod
       ) {
@@ -340,12 +396,14 @@ function UnifiedAvailabilityManagement({
     ],
   );
 
+  // dispatcherSubmissionSummary — מוקדנים / סיכום.
   const dispatcherSubmissionSummary =
     dispatcherSubmissionsState
       .data
       ?.summary ??
     null;
 
+  // availabilityCategories — אילוצים וזמינות.
   const availabilityCategories:
     AvailabilityCategoryViewModel[] = [
       {
@@ -523,6 +581,11 @@ function UnifiedAvailabilityManagement({
       },
     ];
 
+    /**
+     * פעולה handleOpenCategory: טיפול באירוע עבור הנתון handleOpenCategory בהקשר הפעולה.
+     * @param route — הנתון route בהקשר הפעולה.
+     * @returns void — הפלט בהתאם לחתימה.
+     */
     const handleOpenCategory =
       (
         route: string,
@@ -532,6 +595,12 @@ function UnifiedAvailabilityManagement({
         );
       };
 
+    /**
+     * פעולה handleOpenSubmissions: טיפול באירוע עבור הנתון handleOpenSubmissions בהקשר הפעולה.
+     * @param route — הנתון route בהקשר הפעולה.
+     * @param periodId — מזהה התקופה.
+     * @returns void — הפלט בהתאם לחתימה.
+     */
     const handleOpenSubmissions =
       (
         route: string,
@@ -708,6 +777,7 @@ function UnifiedAvailabilityManagement({
                     !category.periodId
                   }
                   onClick={() => {
+                    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !category.periodId.
                     if (
                       !category.periodId
                     ) {

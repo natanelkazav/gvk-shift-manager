@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/components/driverAvailability/DriverAvailabilityManagementPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור כוננים / אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DriverAvailabilityManagementPanelProps, DriverSubmissionView, formatDate, formatDateTime, getSubmissionLabel, getAvailabilityLabel, DriverAvailabilityManagementPanel.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarDays,
   CheckCircle2,
@@ -33,38 +40,54 @@ import type {
   DriverAvailabilitySubmission,
 } from '../../types/driverAvailability';
 
+/**
+ * חוזה הנתונים DriverAvailabilityManagementPanelProps: כוננים / אילוצים וזמינות / מאפייני הרכיב.
+ */
 interface DriverAvailabilityManagementPanelProps {
+  // data — נתונים.
   data:
     DriverAvailabilityManagementData | null;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 
   onRefresh:
     () => void;
 
+  // onOpenPeriod — תקופה.
   onOpenPeriod:
     () => void;
 
+  // onClosePeriod — פונקציית סגירת התצוגה.
   onClosePeriod:
     () => void;
 
+  // onReopenPeriod — תקופה.
   onReopenPeriod:
     () => void;
 
+  // onDeletePeriod — תקופה.
   onDeletePeriod:
     () => void;
 
+  // onPrepareSchedule — שיבוץ.
   onPrepareSchedule:
     () => void;
 
+  // onGoToSchedule — שיבוץ.
   onGoToSchedule:
     () => void;
 }
 
+/**
+ * חוזה הנתונים DriverSubmissionView: כוננים.
+ */
 interface DriverSubmissionView {
+  // driver — כוננים.
   driver:
     DriverAvailabilityManagerDriver;
 
@@ -72,6 +95,7 @@ interface DriverSubmissionView {
     DriverAvailabilitySubmission | null;
 }
 
+// hebrewMonths — חודשים.
 const hebrewMonths = [
   'ינואר',
   'פברואר',
@@ -87,14 +111,21 @@ const hebrewMonths = [
   'דצמבר',
 ];
 
+/**
+ * פעולה formatDate: עיצוב ערך לתצוגה עבור תאריך.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDate(
   value: string,
 ): string {
+  // date — תאריך.
   const date =
     new Date(
       `${value}T12:00:00`,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -112,17 +143,25 @@ function formatDate(
   ).format(date);
 }
 
+/**
+ * פעולה formatDateTime: עיצוב ערך לתצוגה עבור תאריך / זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDateTime(
   value:
     string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return 'לא הוגדר';
   }
 
+  // date — תאריך.
   const date =
     new Date(value);
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -140,10 +179,16 @@ function formatDateTime(
   ).format(date);
 }
 
+/**
+ * פעולה getSubmissionLabel: שליפה או חישוב של תווית.
+ * @param submission — הנתון submission בהקשר הפעולה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getSubmissionLabel(
   submission:
     DriverAvailabilitySubmission | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !submission.
   if (!submission) {
     return 'טרם התחיל';
   }
@@ -160,6 +205,11 @@ function getSubmissionLabel(
   }
 }
 
+/**
+ * פעולה getAvailabilityLabel: שליפה או חישוב של אילוצים וזמינות / תווית.
+ * @param status — סטטוס.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getAvailabilityLabel(
   status:
     DriverAvailabilityStatus | null,
@@ -176,6 +226,10 @@ function getAvailabilityLabel(
   }
 }
 
+/**
+ * פעולה DriverAvailabilityManagementPanel: כוננים / אילוצים וזמינות.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DriverAvailabilityManagementPanel({
   data,
   isLoading,
@@ -188,6 +242,7 @@ function DriverAvailabilityManagementPanel({
   onPrepareSchedule,
   onGoToSchedule,
 }: DriverAvailabilityManagementPanelProps) {
+  // ערך מחושב submissionsByUserId — מזהה משתמש; נשמר בין רינדורים עד שינוי התלויות.
   const submissionsByUserId =
     useMemo(
       () =>
@@ -207,15 +262,18 @@ function DriverAvailabilityManagementPanel({
       ],
     );
 
+  // ערך מחושב entriesByDayAndUser — רשומות / יום / משתמש; נשמר בין רינדורים עד שינוי התלויות.
   const entriesByDayAndUser =
     useMemo(
       () => {
+        // entriesMap — רשומות / מפת התאמה; מיפוי לחיפוש לפי מפתח.
         const entriesMap =
           new Map<
             string,
             DriverAvailabilityEntry
           >();
 
+        // עיבוד כל פריט מתוך data?.entries ?? [] בנפרד.
         for (
           const entry
           of data?.entries ?? []
@@ -233,6 +291,7 @@ function DriverAvailabilityManagementPanel({
       ],
     );
 
+  // ערך מחושב submissionViews — הנתון submissionViews בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const submissionViews =
     useMemo<
       DriverSubmissionView[]
@@ -258,6 +317,7 @@ function DriverAvailabilityManagementPanel({
       ],
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isLoading.
   if (isLoading) {
     return (
       <section className="driver-availability-management-panel">
@@ -281,6 +341,7 @@ function DriverAvailabilityManagementPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error.
   if (error) {
     return (
       <section className="driver-availability-management-panel">
@@ -320,6 +381,7 @@ function DriverAvailabilityManagementPanel({
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !data.
   if (!data) {
     return (
       <section className="driver-availability-management-panel">
@@ -343,6 +405,7 @@ function DriverAvailabilityManagementPanel({
     );
   }
 
+  // periodTitle — תקופה / כותרת.
   const periodTitle =
     data.period.title ??
     `${
@@ -629,11 +692,13 @@ function DriverAvailabilityManagementPanel({
 
                     {data.drivers.map(
                       (driver) => {
+                        // entry — רשומה.
                         const entry =
                           entriesByDayAndUser.get(
                             `${day.id}:${driver.id}`,
                           );
 
+                        // status — סטטוס.
                         const status =
                           entry
                             ?.availabilityStatus ??

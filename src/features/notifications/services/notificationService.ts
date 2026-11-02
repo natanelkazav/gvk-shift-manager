@@ -1,3 +1,11 @@
+/**
+ * קובץ: src/features/notifications/services/notificationService.ts
+ * מטרה: מימוש שכבת השירות עבור התראות / שירות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: CreateNotificationRequest, NotificationDeliveryResult, MyNotification, NotificationInsertRow, NotificationDatabaseRow, NotificationRecipientDatabaseRow, ValidatedCreateRequest, validateCreateRequest, parseNotificationInsertRow, parseDeliveryResult ועוד.
+ * - מקורות נתונים הנזכרים בקריאות from: notifications, notification_recipients.
+ * - ריכוז הפנייה למקור הנתונים ועיבוד התשובה בהתאם לפונקציות להלן.
+ */
 import {
   FunctionsHttpError,
 } from '@supabase/supabase-js';
@@ -11,7 +19,11 @@ import type {
   NotificationType,
 } from '../types/notificationTypes';
 
+/**
+ * חוזה הנתונים CreateNotificationRequest: התראות / נתוני הבקשה.
+ */
 export interface CreateNotificationRequest {
+  // userIds — מזהה משתמש.
   userIds:
     string[];
 
@@ -21,18 +33,23 @@ export interface CreateNotificationRequest {
   priority:
     NotificationPriority;
 
+  // title — כותרת.
   title:
     string;
 
+  // body — תוכן.
   body:
     string;
 
+  // url — כתובת יעד (אופציונלי).
   url?:
     string;
 
+  // data — נתונים (אופציונלי).
   data?:
     Record<string, unknown>;
 
+  // source — מקור (אופציונלי).
   source?:
     string;
 
@@ -40,16 +57,21 @@ export interface CreateNotificationRequest {
     string;
 }
 
+/**
+ * חוזה הנתונים NotificationDeliveryResult: התראות / תוצאה.
+ */
 export interface NotificationDeliveryResult {
   success:
     boolean;
 
+  // notificationId — התראות / מזהה.
   notificationId:
     string;
 
   sentBy:
     string;
 
+  // totalRecipients — סך הכול.
   totalRecipients:
     number;
 
@@ -62,6 +84,7 @@ export interface NotificationDeliveryResult {
   recipientsWithoutDevices:
     number;
 
+  // totalDevices — סך הכול.
   totalDevices:
     number;
 
@@ -72,10 +95,15 @@ export interface NotificationDeliveryResult {
     number;
 }
 
+/**
+ * חוזה הנתונים MyNotification: התראות.
+ */
 export interface MyNotification {
+  // recipientId — מזהה.
   recipientId:
     string;
 
+  // notificationId — התראות / מזהה.
   notificationId:
     string;
 
@@ -85,18 +113,23 @@ export interface MyNotification {
   priority:
     string;
 
+  // source — מקור.
   source:
     string;
 
+  // title — כותרת.
   title:
     string;
 
+  // body — תוכן.
   body:
     string;
 
+  // url — כתובת יעד.
   url:
     string | null;
 
+  // data — נתונים.
   data:
     Record<string, unknown>;
 
@@ -112,6 +145,7 @@ export interface MyNotification {
   deliveredAt:
     string | null;
 
+  // createdAt — מועד יצירה.
   createdAt:
     string;
 
@@ -119,12 +153,20 @@ export interface MyNotification {
     string;
 }
 
+/**
+ * חוזה הנתונים NotificationInsertRow: התראות / שורה.
+ */
 interface NotificationInsertRow {
+  // id — מזהה.
   id:
     string;
 }
 
+/**
+ * חוזה הנתונים NotificationDatabaseRow: התראות / שורה.
+ */
 interface NotificationDatabaseRow {
+  // id — מזהה.
   id:
     string;
 
@@ -134,21 +176,27 @@ interface NotificationDatabaseRow {
   priority:
     string;
 
+  // source — מקור.
   source:
     string;
 
+  // title — כותרת.
   title:
     string;
 
+  // body — תוכן.
   body:
     string;
 
+  // url — כתובת יעד.
   url:
     string | null;
 
+  // data — נתונים.
   data:
     Record<string, unknown> | null;
 
+  // created_at — מועד יצירה.
   created_at:
     string;
 
@@ -156,10 +204,15 @@ interface NotificationDatabaseRow {
     string;
 }
 
+/**
+ * חוזה הנתונים NotificationRecipientDatabaseRow: התראות / שורה.
+ */
 interface NotificationRecipientDatabaseRow {
+  // id — מזהה.
   id:
     string;
 
+  // notification_id — התראות / מזהה.
   notification_id:
     string;
 
@@ -175,25 +228,34 @@ interface NotificationRecipientDatabaseRow {
   delivered_at:
     string | null;
 
+  // notification — התראות.
   notification:
     NotificationDatabaseRow |
     NotificationDatabaseRow[] |
     null;
 }
 
+/**
+ * חוזה הנתונים ValidatedCreateRequest: נתוני הבקשה.
+ */
 interface ValidatedCreateRequest {
+  // userIds — מזהה משתמש.
   userIds:
     string[];
 
+  // title — כותרת.
   title:
     string;
 
+  // body — תוכן.
   body:
     string;
 
+  // url — כתובת יעד.
   url:
     string | null;
 
+  // source — מקור.
   source:
     string;
 
@@ -201,10 +263,16 @@ interface ValidatedCreateRequest {
     string | null;
 }
 
+/**
+ * פעולה validateCreateRequest: בדיקת תקינות של נתוני הבקשה.
+ * @param request — נתוני הבקשה.
+ * @returns ValidatedCreateRequest — הפלט בהתאם לחתימה.
+ */
 function validateCreateRequest(
   request:
     CreateNotificationRequest,
 ): ValidatedCreateRequest {
+  // userIds — מזהה משתמש.
   const userIds =
     Array.from(
       new Set(
@@ -221,6 +289,7 @@ function validateCreateRequest(
       ),
     );
 
+  // עצירת הפעולה עם שגיאה כאשר userIds.length === 0.
   if (
     userIds.length ===
     0
@@ -230,9 +299,11 @@ function validateCreateRequest(
     );
   }
 
+  // title — כותרת.
   const title =
     request.title.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !title.
   if (
     !title
   ) {
@@ -241,6 +312,7 @@ function validateCreateRequest(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר title.length > 120.
   if (
     title.length >
     120
@@ -250,9 +322,11 @@ function validateCreateRequest(
     );
   }
 
+  // body — תוכן.
   const body =
     request.body.trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !body.
   if (
     !body
   ) {
@@ -261,6 +335,7 @@ function validateCreateRequest(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר body.length > 500.
   if (
     body.length >
     500
@@ -270,11 +345,13 @@ function validateCreateRequest(
     );
   }
 
+  // url — כתובת יעד.
   const url =
     request.url
       ?.trim() ||
     null;
 
+  // עצירת הפעולה עם שגיאה כאשר url && !url.startsWith('/').
   if (
     url &&
     !url.startsWith('/')
@@ -284,6 +361,7 @@ function validateCreateRequest(
     );
   }
 
+  // source — מקור.
   const source =
     request.source
       ?.trim() ||
@@ -302,6 +380,7 @@ function validateCreateRequest(
         expiresAt,
       );
 
+    // עצירת הפעולה עם שגיאה כאשר Number.isNaN( parsedExpiration.getTime(), ).
     if (
       Number.isNaN(
         parsedExpiration.getTime(),
@@ -312,6 +391,7 @@ function validateCreateRequest(
       );
     }
 
+    // עצירת הפעולה עם שגיאה כאשר parsedExpiration.getTime() <= Date.now().
     if (
       parsedExpiration.getTime() <=
       Date.now()
@@ -337,10 +417,16 @@ function validateCreateRequest(
   };
 }
 
+/**
+ * פעולה parseNotificationInsertRow: פענוח קלט עבור התראות / שורה.
+ * @param value — ערך.
+ * @returns NotificationInsertRow — הפלט בהתאם לחתימה.
+ */
 function parseNotificationInsertRow(
   value:
     unknown,
 ): NotificationInsertRow {
+  // עצירת הפעולה עם שגיאה כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !==
       'object' ||
@@ -352,11 +438,14 @@ function parseNotificationInsertRow(
     );
   }
 
+  // row — שורה.
   const row =
     value as {
+      // id — מזהה (אופציונלי).
       id?: unknown;
     };
 
+  // עצירת הפעולה עם שגיאה כאשר typeof row.id !== 'string'.
   if (
     typeof row.id !==
       'string'
@@ -372,10 +461,16 @@ function parseNotificationInsertRow(
   };
 }
 
+/**
+ * פעולה parseDeliveryResult: פענוח קלט עבור תוצאה.
+ * @param value — ערך.
+ * @returns NotificationDeliveryResult — הפלט בהתאם לחתימה.
+ */
 function parseDeliveryResult(
   value:
     unknown,
 ): NotificationDeliveryResult {
+  // עצירת הפעולה עם שגיאה כאשר typeof value !== 'object' || value === null.
   if (
     typeof value !==
       'object' ||
@@ -387,12 +482,15 @@ function parseDeliveryResult(
     );
   }
 
+  // result — תוצאה.
   const result =
     value as
       Partial<NotificationDeliveryResult> & {
+        // error — שגיאה (אופציונלי).
         error?: unknown;
       };
 
+  // עצירת הפעולה עם שגיאה כאשר typeof result.error === 'string' && result.error.trim().
   if (
     typeof result.error ===
       'string' &&
@@ -403,6 +501,7 @@ function parseDeliveryResult(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר typeof result.success !== 'boolean' || typeof result.notificationId !== 'string' || typeof result.sentBy !== 'string' || typeof result.total.
   if (
     typeof result.success !==
       'boolean' ||
@@ -463,17 +562,26 @@ function parseDeliveryResult(
   };
 }
 
+/**
+ * פעולה אסינכרונית getFunctionErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns Promise<string> — הפלט בהתאם לחתימה.
+ */
 async function getFunctionErrorMessage(
   error:
     FunctionsHttpError,
 ): Promise<string> {
+  // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
   try {
+    // responseBody — תוצאת הפעולה / תוכן.
     const responseBody =
       await error.context
         .json() as {
+          // error — שגיאה (אופציונלי).
           error?: unknown;
         };
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof responseBody.error === 'string' && responseBody.error.trim().
     if (
       typeof responseBody.error ===
         'string' &&
@@ -491,8 +599,13 @@ async function getFunctionErrorMessage(
   );
 }
 
+/**
+ * פעולה אסינכרונית getAuthenticatedUserId: אימות המשתמש באמצעות auth.getUser ושליפת מזהה המשתמש מהתשובה.
+ * @returns Promise<string> — הפלט בהתאם לחתימה.
+ */
 async function getAuthenticatedUserId():
   Promise<string> {
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const {
     data,
     error,
@@ -500,12 +613,14 @@ async function getAuthenticatedUserId():
     await supabase.auth
       .getUser();
 
+  // עצירת הפעולה עם שגיאה כאשר error.
   if (
     error
   ) {
     throw error;
   }
 
+  // עצירת הפעולה עם שגיאה כאשר !data.user.
   if (
     !data.user
   ) {
@@ -517,12 +632,18 @@ async function getAuthenticatedUserId():
   return data.user.id;
 }
 
+/**
+ * פעולה extractNotificationRow: התראות / שורה.
+ * @param value — ערך.
+ * @returns NotificationDatabaseRow | null — הפלט בהתאם לחתימה.
+ */
 function extractNotificationRow(
   value:
     NotificationRecipientDatabaseRow[
       'notification'
     ],
 ): NotificationDatabaseRow | null {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Array.isArray( value, ).
   if (
     Array.isArray(
       value,
@@ -537,15 +658,22 @@ function extractNotificationRow(
   return value;
 }
 
+/**
+ * פעולה mapMyNotification: מיפוי מפת התאמה / התראות.
+ * @param row — שורה.
+ * @returns MyNotification | null — הפלט בהתאם לחתימה.
+ */
 function mapMyNotification(
   row:
     NotificationRecipientDatabaseRow,
 ): MyNotification | null {
+  // notification — התראות.
   const notification =
     extractNotificationRow(
       row.notification,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !notification.
   if (
     !notification
   ) {
@@ -601,6 +729,11 @@ function mapMyNotification(
   };
 }
 
+/**
+ * פעולה isNotificationActive: בדיקת תנאי עבור התראות / פעיל.
+ * @param notification — התראות.
+ * @returns boolean — הפלט בהתאם לחתימה.
+ */
 function isNotificationActive(
   notification:
     MyNotification,
@@ -619,19 +752,30 @@ function isNotificationActive(
   );
 }
 
+/**
+ * איגוד פעולות התראות / שירות במחלקה NotificationService.
+ */
 class NotificationService {
+  /**
+   * פעולה אסינכרונית createNotification: יצירת התראות.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<NotificationDeliveryResult> — הפלט בהתאם לחתימה.
+   */
   async createNotification(
     request:
       CreateNotificationRequest,
   ): Promise<NotificationDeliveryResult> {
+    // validatedRequest — נתוני הבקשה.
     const validatedRequest =
       validateCreateRequest(
         request,
       );
 
+    // authenticatedUserId — מזהה משתמש.
     const authenticatedUserId =
       await getAuthenticatedUserId();
 
+    // notificationInsert — התראות.
     const notificationInsert = {
       type:
         request.type,
@@ -669,6 +813,7 @@ class NotificationService {
       ),
     };
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data:
         notificationData,
@@ -688,12 +833,14 @@ class NotificationService {
         )
         .single();
 
+    // עצירת הפעולה עם שגיאה כאשר notificationError.
     if (
       notificationError
     ) {
       throw notificationError;
     }
 
+    // notification — התראות.
     const notification =
       parseNotificationInsertRow(
         notificationData,
@@ -713,6 +860,7 @@ class NotificationService {
           }),
         );
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       error:
         recipientsError,
@@ -725,9 +873,11 @@ class NotificationService {
           recipients,
         );
 
+    // עצירת הפעולה עם שגיאה כאשר recipientsError.
     if (
       recipientsError
     ) {
+      // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
       const {
         error:
           cleanupError,
@@ -759,6 +909,7 @@ class NotificationService {
       throw recipientsError;
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data:
         deliveryData,
@@ -777,9 +928,11 @@ class NotificationService {
           },
         );
 
+    // עצירת הפעולה עם שגיאה כאשר deliveryError.
     if (
       deliveryError
     ) {
+      // עצירת הפעולה עם שגיאה כאשר deliveryError instanceof FunctionsHttpError.
       if (
         deliveryError instanceof
           FunctionsHttpError
@@ -802,11 +955,17 @@ class NotificationService {
     );
   }
 
+  /**
+   * פעולה אסינכרונית getMyNotifications: שליפה או חישוב של התראות.
+   * @returns Promise<MyNotification[]> — הפלט בהתאם לחתימה.
+   */
   async getMyNotifications():
     Promise<MyNotification[]> {
+    // authenticatedUserId — מזהה משתמש.
     const authenticatedUserId =
       await getAuthenticatedUserId();
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       data,
       error,
@@ -842,6 +1001,7 @@ class NotificationService {
           authenticatedUserId,
         );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (
       error
     ) {
@@ -885,8 +1045,13 @@ class NotificationService {
       );
   }
 
+  /**
+   * פעולה אסינכרונית getUnreadCount: שליפה או חישוב של כמות.
+   * @returns Promise<number> — הפלט בהתאם לחתימה.
+   */
   async getUnreadCount():
     Promise<number> {
+    // notifications — התראות.
     const notifications =
       await this
         .getMyNotifications();
@@ -899,13 +1064,20 @@ class NotificationService {
     ).length;
   }
 
+  /**
+   * פעולה אסינכרונית markAsRead: הנתון markAsRead בהקשר הפעולה.
+   * @param recipientId — מזהה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   async markAsRead(
     recipientId:
       string,
   ): Promise<void> {
+    // normalizedRecipientId — מזהה.
     const normalizedRecipientId =
       recipientId.trim();
 
+    // עצירת הפעולה עם שגיאה כאשר !normalizedRecipientId.
     if (
       !normalizedRecipientId
     ) {
@@ -914,6 +1086,7 @@ class NotificationService {
       );
     }
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       error,
     } =
@@ -938,6 +1111,7 @@ class NotificationService {
           false,
         );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (
       error
     ) {
@@ -945,11 +1119,17 @@ class NotificationService {
     }
   }
 
+  /**
+   * פעולה אסינכרונית markAllAsRead: הנתון markAllAsRead בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   async markAllAsRead():
     Promise<void> {
+    // authenticatedUserId — מזהה משתמש.
     const authenticatedUserId =
       await getAuthenticatedUserId();
 
+    // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
     const {
       error,
     } =
@@ -974,6 +1154,7 @@ class NotificationService {
           false,
         );
 
+    // עצירת הפעולה עם שגיאה כאשר error.
     if (
       error
     ) {
@@ -982,5 +1163,6 @@ class NotificationService {
   }
 }
 
+// notificationService — התראות / שירות.
 export const notificationService =
   new NotificationService();

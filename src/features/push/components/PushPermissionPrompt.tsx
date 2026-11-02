@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/features/push/components/PushPermissionPrompt.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור התראות Push / הרשאות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: PushPermissionPrompt.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   Bell,
   BellOff,
@@ -17,9 +24,13 @@ import {
   usePushStatusContext,
 } from '../context/usePushStatusContext';
 
+// SESSION_STORAGE_KEY — סשן / מפתח.
 const SESSION_STORAGE_KEY =
   'push-permission-dismissed';
 
+/**
+ * פעולה PushPermissionPrompt: התראות Push / הרשאות.
+ */
 function PushPermissionPrompt() {
   const {
     state,
@@ -30,6 +41,7 @@ function PushPermissionPrompt() {
   } =
     usePushStatusContext();
 
+  // מצב מקומי: isDismissed — הנתון isDismissed בהקשר הפעולה; setIsDismissed מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isDismissed,
     setIsDismissed,
@@ -42,11 +54,16 @@ function PushPermissionPrompt() {
         'true',
     );
 
+  /**
+   * פעולה אסינכרונית handleEnablePush: טיפול באירוע עבור התראות Push.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleEnablePush =
     async (): Promise<void> => {
       const success =
         await enablePush();
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !success.
       if (
         !success
       ) {
@@ -62,6 +79,10 @@ function PushPermissionPrompt() {
       );
     };
 
+  /**
+   * פעולה handleDismiss: טיפול באירוע עבור הנתון handleDismiss בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const handleDismiss =
     (): void => {
       sessionStorage.setItem(
@@ -76,6 +97,7 @@ function PushPermissionPrompt() {
       );
     };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isDismissed || state.isLoading || ( !shouldPrompt && !shouldShowBlockedMessage ).
   if (
     isDismissed ||
     state.isLoading ||

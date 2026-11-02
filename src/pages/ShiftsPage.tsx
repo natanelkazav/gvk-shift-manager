@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/ShiftsPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור משמרות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: SchedulingHubView, ScheduleDisplayMode, ShiftsPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   CalendarClock,
   CalendarDays,
@@ -24,30 +31,56 @@ import type {
 } from '../types/dynamicShiftsWorkspace';
 import '../styles/dynamicShiftsWorkspace.css';
 
+// HEBREW_MONTHS — חודשים.
 const HEBREW_MONTHS = [
   'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר',
 ];
 
+/**
+ * טיפוס SchedulingHubView: הנתון SchedulingHubView בהקשר הפעולה.
+ */
 type SchedulingHubView = 'schedules' | 'management';
+/**
+ * טיפוס ScheduleDisplayMode: שיבוץ / מצב פעולה.
+ */
 type ScheduleDisplayMode = 'calendar' | 'list';
 
+/**
+ * פעולה getCurrentMonth: שליפה או חישוב של חודש.
+ * @returns { year: number; month: number } — הפלט בהתאם לחתימה.
+ */
 const getCurrentMonth = (): { year: number; month: number } => {
   const now = new Date();
   return { year: now.getFullYear(), month: now.getMonth() + 1 };
 };
 
+/**
+ * פעולה moveMonth: חודש.
+ * @param year — שנה.
+ * @param month — חודש.
+ * @param delta — הנתון delta בהקשר הפעולה.
+ * @returns { year: number; month: number } — הפלט בהתאם לחתימה.
+ */
 const moveMonth = (year: number, month: number, delta: number): { year: number; month: number } => {
+  // date — תאריך.
   const date = new Date(year, month - 1 + delta, 1);
   return { year: date.getFullYear(), month: date.getMonth() + 1 };
 };
 
+/**
+ * פעולה getRoleStage: שליפה או חישוב של הנתון getRoleStage בהקשר הפעולה.
+ * @param role — הנתון role בהקשר הפעולה.
+ * @returns { label: string; detail: string; tone: 'empty' | 'open' | 'draft' | 'published' | 'closed'; } — הפלט בהתאם לחתימה.
+ */
 const getRoleStage = (role: DynamicShiftsWorkspaceRole): {
+  // label — תווית.
   label: string;
   detail: string;
   tone: 'empty' | 'open' | 'draft' | 'published' | 'closed';
 } => {
   const { workflow } = role;
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר workflow.publication?.status === 'published'.
   if (workflow.publication?.status === 'published') {
     return {
       label: 'לוח פעיל',
@@ -55,6 +88,7 @@ const getRoleStage = (role: DynamicShiftsWorkspaceRole): {
       tone: 'published',
     };
   }
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר workflow.draft.
   if (workflow.draft) {
     const effectiveUnfilled = Number(
       workflow.draft.metrics?.effectiveUnfilledRequiredPositions
@@ -67,9 +101,11 @@ const getRoleStage = (role: DynamicShiftsWorkspaceRole): {
       tone: 'draft',
     };
   }
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר workflow.period?.status === 'closed'.
   if (workflow.period?.status === 'closed') {
     return { label: 'האילוצים נסגרו', detail: 'אפשר ליצור טיוטת שיבוץ', tone: 'closed' };
   }
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר workflow.period?.status === 'open'.
   if (workflow.period?.status === 'open') {
     return {
       label: 'אילוצים פתוחים',
@@ -77,38 +113,57 @@ const getRoleStage = (role: DynamicShiftsWorkspaceRole): {
       tone: 'open',
     };
   }
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר workflow.period.
   if (workflow.period) {
     return { label: 'החודש בהכנה', detail: 'תקופת האילוצים נוצרה וטרם נפתחה', tone: 'empty' };
   }
   return { label: 'טרם נפתח חודש', detail: 'אפשר להתחיל את מחזור השיבוץ', tone: 'empty' };
 };
 
+/**
+ * פעולה ShiftsPage: משמרות.
+ */
 function ShiftsPage() {
   const { profile } = useAuth();
+  // ערך מחושב initial — הנתון initial בהקשר הפעולה; נשמר בין רינדורים עד שינוי התלויות.
   const initial = useMemo(getCurrentMonth, []);
   const [searchParams, setSearchParams] = useSearchParams();
+  // מצב מקומי: year — שנה; setYear מעדכנת אותו ומפעילה רינדור לפי React.
   const [year, setYear] = useState(() => Number(searchParams.get('year')) || initial.year);
+  // מצב מקומי: month — חודש; setMonth מעדכנת אותו ומפעילה רינדור לפי React.
   const [month, setMonth] = useState(() => Number(searchParams.get('month')) || initial.month);
+  // מצב מקומי: hubView — הנתון hubView בהקשר הפעולה; setHubView מעדכנת אותו ומפעילה רינדור לפי React.
   const [hubView, setHubView] = useState<SchedulingHubView>(() => (
     searchParams.get('view') === 'management' ? 'management' : 'schedules'
   ));
+  // מצב מקומי: displayMode — מצב פעולה; setDisplayMode מעדכנת אותו ומפעילה רינדור לפי React.
   const [displayMode, setDisplayMode] = useState<ScheduleDisplayMode>(() => (
     searchParams.get('mode') === 'list' || searchParams.get('view') === 'boards' ? 'list' : 'calendar'
   ));
+  // מצב מקומי: workspace — הנתון workspace בהקשר הפעולה; setWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspace, setWorkspace] = useState<DynamicShiftsManagementWorkspace | null>(null);
+  // מצב מקומי: selectedJobTypeId — מזהה סוג התפקיד; setSelectedJobTypeId מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedJobTypeId, setSelectedJobTypeId] = useState<string | null>(() => searchParams.get('jobType'));
+  // מצב מקומי: calendarWorkspace — לוח שנה; setCalendarWorkspace מעדכנת אותו ומפעילה רינדור לפי React.
   const [calendarWorkspace, setCalendarWorkspace] = useState<DynamicScheduleCalendarWorkspace | null>(null);
+  // מצב מקומי: calendarLoading — לוח שנה / טעינה; setCalendarLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [calendarLoading, setCalendarLoading] = useState(false);
+  // מצב מקומי: calendarError — לוח שנה / שגיאה; setCalendarError מעדכנת אותו ומפעילה רינדור לפי React.
   const [calendarError, setCalendarError] = useState<string | null>(null);
+  // מצב מקומי: loading — טעינה; setLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [loading, setLoading] = useState(true);
+  // מצב מקומי: refreshing — הנתון refreshing בהקשר הפעולה; setRefreshing מעדכנת אותו ומפעילה רינדור לפי React.
   const [refreshing, setRefreshing] = useState(false);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
 
   const loadManagement = useCallback(async (background = false): Promise<void> => {
     if (background) setRefreshing(true);
     else setLoading(true);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // data — נתונים.
       const data = await dynamicSchedulingService.getShiftsManagementWorkspace(year, month);
       const schedulingRoles = data.roles.filter((role) => role.jobType.schedulingStrategy !== 'none');
       setWorkspace({ ...data, roles: schedulingRoles });
@@ -125,11 +180,14 @@ function ShiftsPage() {
     }
   }, [year, month]);
 
+  // loadCalendarWorkspace — לוח שנה.
   const loadCalendarWorkspace = useCallback(async (): Promise<void> => {
     if (hubView !== 'schedules') return;
     setCalendarLoading(true);
     setCalendarError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // data — נתונים.
       const data = await dynamicSchedulingService.getScheduleCalendarWorkspace(year, month);
       setCalendarWorkspace(data);
     } catch (loadError) {
@@ -140,15 +198,19 @@ function ShiftsPage() {
     }
   }, [hubView, month, year]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [hubView, loadManagement].
   useEffect(() => {
     if (hubView === 'management') void loadManagement();
   }, [hubView, loadManagement]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [loadCalendarWorkspace].
   useEffect(() => {
     void loadCalendarWorkspace();
   }, [loadCalendarWorkspace]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [year, month, hubView, displayMode, selectedJobTypeId, searchParams, setSearchParams].
   useEffect(() => {
+    // next — הנתון next בהקשר הפעולה.
     const next = new URLSearchParams(searchParams);
     next.set('year', String(year));
     next.set('month', String(month));
@@ -161,11 +223,19 @@ function ShiftsPage() {
     }
   }, [year, month, hubView, displayMode, selectedJobTypeId, searchParams, setSearchParams]);
 
+  // selectedRole — נבחר.
   const selectedRole = workspace?.roles.find((role) => role.jobType.id === selectedJobTypeId) ?? null;
 
+  /**
+   * פעולה changeMonth: חודש.
+   * @param delta — הנתון delta בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const changeMonth = (delta: number): void => {
+    // next — הנתון next בהקשר הפעולה.
     const next = moveMonth(year, month, delta);
     if (hubView === 'schedules') {
+      // current — הנתון current בהקשר הפעולה.
       const current = getCurrentMonth();
       if ((next.year * 100 + next.month) > (current.year * 100 + current.month)) return;
     }
@@ -173,7 +243,12 @@ function ShiftsPage() {
     setMonth(next.month);
   };
 
+  /**
+   * פעולה openSchedulesView: פתיחת הנתון openSchedulesView בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const openSchedulesView = (): void => {
+    // current — הנתון current בהקשר הפעולה.
     const current = getCurrentMonth();
     if ((year * 100 + month) > (current.year * 100 + current.month)) {
       setYear(current.year);
@@ -309,6 +384,7 @@ function ShiftsPage() {
                 <div className="dynamic-management-role-selector" role="listbox" aria-label="בחירת תפקיד לניהול">
                   {workspace.roles.map((role) => {
                     const stage = getRoleStage(role);
+                    // selected — נבחר.
                     const selected = role.jobType.id === selectedJobTypeId;
                     return (
                       <button

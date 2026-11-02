@@ -1,9 +1,16 @@
+/*
+ * קובץ: src/styles/dashboard.css
+ * מטרה: הגדרת עיצוב ופריסה עבור לוח בקרה.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .dashboard-page  */
 .dashboard-page {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
+/* כללי עיצוב עבור .dashboard-hero  */
 .dashboard-hero {
   display: flex;
   align-items: center;
@@ -21,12 +28,14 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* כללי עיצוב עבור .dashboard-hero-content  */
 .dashboard-hero-content {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .dashboard-hero-eyebrow  */
 .dashboard-hero-eyebrow {
   color: var(--color-primary-700);
   font-size: var(--font-size-sm);
@@ -34,18 +43,22 @@
 }
 
 .dashboard-hero h1,
+/* כללי עיצוב עבור .dashboard-hero p  */
 .dashboard-hero p {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .dashboard-hero h1  */
 .dashboard-hero h1 {
   font-size: clamp(1.5rem, 4vw, 2.2rem);
 }
 
+/* כללי עיצוב עבור .dashboard-hero p  */
 .dashboard-hero p {
   color: var(--color-gray-600);
 }
 
+/* כללי עיצוב עבור .dashboard-hero-side  */
 .dashboard-hero-side {
   display: flex;
   align-items: flex-end;
@@ -53,6 +66,7 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dashboard-live-time  */
 .dashboard-live-time {
   direction: ltr;
   color: var(--color-gray-900);
@@ -60,6 +74,7 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* כללי עיצוב עבור .dashboard-refresh-button  */
 .dashboard-refresh-button {
   display: inline-flex;
   align-items: center;
@@ -73,15 +88,18 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .dashboard-refresh-button:hover:not(:disabled)  */
 .dashboard-refresh-button:hover:not(:disabled) {
   background: var(--color-gray-100);
 }
 
+/* כללי עיצוב עבור .dashboard-refresh-button:disabled  */
 .dashboard-refresh-button:disabled {
   cursor: wait;
   opacity: 0.65;
 }
 
+/* כללי עיצוב עבור .dashboard-error  */
 .dashboard-error {
   display: flex;
   align-items: center;
@@ -93,10 +111,12 @@
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .dashboard-error span  */
 .dashboard-error span {
   flex: 1;
 }
 
+/* כללי עיצוב עבור .dashboard-error button  */
 .dashboard-error button {
   width: 32px;
   height: 32px;
@@ -107,10 +127,12 @@
   color: inherit;
 }
 
+/* כללי עיצוב עבור .dashboard-error button:hover  */
 .dashboard-error button:hover {
   background: rgb(153 27 27 / 8%);
 }
 
+/* כללי עיצוב עבור .dashboard-grid  */
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(
@@ -120,6 +142,7 @@
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dashboard-card  */
 .dashboard-card {
   display: flex;
   min-width: 0;
@@ -131,6 +154,7 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* כללי עיצוב עבור .dashboard-card-header  */
 .dashboard-card-header {
   display: flex;
   align-items: center;
@@ -141,6 +165,7 @@
   background: var(--color-gray-50);
 }
 
+/* כללי עיצוב עבור .dashboard-card-title-wrap  */
 .dashboard-card-title-wrap {
   display: flex;
   align-items: center;
@@ -148,6 +173,7 @@
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dashboard-card-icon  */
 .dashboard-card-icon {
   display: grid;
   width: 36px;
@@ -159,26 +185,31 @@
   color: var(--color-primary-700);
 }
 
+/* כללי עיצוב עבור .dashboard-card h2  */
 .dashboard-card h2 {
   margin: 0;
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .dashboard-card-badge  */
 .dashboard-card-badge {
   flex: 0 0 auto;
 }
 
+/* כללי עיצוב עבור .dashboard-card-body  */
 .dashboard-card-body {
   flex: 1;
   padding: 18px;
 }
 
+/* כללי עיצוב עבור .dashboard-card-footer  */
 .dashboard-card-footer {
   padding: 14px 18px;
   border-top: 1px solid var(--color-gray-200);
   background: var(--color-gray-50);
 }
 
+/* כללי עיצוב עבור .dashboard-skeleton  */
 .dashboard-skeleton {
   display: flex;
   flex-direction: column;
@@ -186,12 +217,14 @@
 }
 
 .dashboard-skeleton-hero,
+/* כללי עיצוב עבור .dashboard-skeleton-card  */
 .dashboard-skeleton-card {
   overflow: hidden;
   border-radius: 16px;
   background: var(--color-white);
 }
 
+/* כללי עיצוב עבור .dashboard-skeleton-hero  */
 .dashboard-skeleton-hero {
   display: flex;
   min-height: 160px;
@@ -200,6 +233,7 @@
   padding: 24px;
 }
 
+/* כללי עיצוב עבור .dashboard-skeleton-grid  */
 .dashboard-skeleton-grid {
   display: grid;
   grid-template-columns: repeat(
@@ -209,6 +243,7 @@
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dashboard-skeleton-card  */
 .dashboard-skeleton-card {
   display: flex;
   min-height: 180px;
@@ -217,6 +252,7 @@
   padding: 18px;
 }
 
+/* כללי עיצוב עבור .dashboard-skeleton span  */
 .dashboard-skeleton span {
   display: block;
   height: 18px;
@@ -236,18 +272,22 @@
     infinite;
 }
 
+/* כללי עיצוב עבור .dashboard-skeleton span:nth-child(1)  */
 .dashboard-skeleton span:nth-child(1) {
   width: 34%;
 }
 
+/* כללי עיצוב עבור .dashboard-skeleton span:nth-child(2)  */
 .dashboard-skeleton span:nth-child(2) {
   width: 62%;
 }
 
+/* כללי עיצוב עבור .dashboard-skeleton span:nth-child(3)  */
 .dashboard-skeleton span:nth-child(3) {
   width: 48%;
 }
 
+/* כללי עיצוב עבור .dashboard-spin  */
 .dashboard-spin {
   animation:
     dashboard-spin
@@ -256,12 +296,14 @@
     infinite;
 }
 
+/* הגדרת שלבי האנימציה @keyframes dashboard-spin */
 @keyframes dashboard-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* הגדרת שלבי האנימציה @keyframes dashboard-shimmer */
 @keyframes dashboard-shimmer {
   to {
     background-position:
@@ -269,6 +311,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 800px) */
 @media (max-width: 800px) {
   .dashboard-hero {
     align-items: stretch;
@@ -289,6 +332,7 @@
     justify-content: center;
   }
 }
+/* כללי עיצוב עבור .dashboard-status-badge  */
 .dashboard-status-badge {
   display: inline-flex;
   align-items: center;
@@ -300,28 +344,33 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .dashboard-status-active  */
 .dashboard-status-active {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .dashboard-status-idle  */
 .dashboard-status-idle {
   background: var(--color-gray-200);
   color: var(--color-gray-600);
 }
 
 .dashboard-assignment-details,
+/* כללי עיצוב עבור .dashboard-duty-content  */
 .dashboard-duty-content {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dashboard-assignment-main  */
 .dashboard-assignment-main {
   color: var(--color-gray-900);
   font-size: 1.3rem;
 }
 
+/* כללי עיצוב עבור .dashboard-person-row  */
 .dashboard-person-row {
   display: flex;
   align-items: center;
@@ -332,31 +381,37 @@
   color: var(--color-gray-600);
 }
 
+/* כללי עיצוב עבור .dashboard-person-row > div  */
 .dashboard-person-row > div {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
+/* כללי עיצוב עבור .dashboard-person-row small  */
 .dashboard-person-row small {
   color: var(--color-gray-500);
 }
 
+/* כללי עיצוב עבור .dashboard-person-row strong  */
 .dashboard-person-row strong {
   color: var(--color-gray-900);
 }
 
+/* כללי עיצוב עבור .dashboard-empty-text  */
 .dashboard-empty-text {
   margin: 0;
   color: var(--color-gray-500);
 }
 
+/* כללי עיצוב עבור .dashboard-progress-card  */
 .dashboard-progress-card {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dashboard-progress-summary  */
 .dashboard-progress-summary {
   display: flex;
   align-items: flex-end;
@@ -364,16 +419,19 @@
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dashboard-progress-summary strong  */
 .dashboard-progress-summary strong {
   color: var(--color-primary-700);
   font-size: 2rem;
 }
 
+/* כללי עיצוב עבור .dashboard-progress-summary span  */
 .dashboard-progress-summary span {
   color: var(--color-gray-600);
   font-size: var(--font-size-sm);
 }
 
+/* כללי עיצוב עבור .dashboard-progress-track  */
 .dashboard-progress-track {
   height: 12px;
   overflow: hidden;
@@ -381,6 +439,7 @@
   background: var(--color-gray-200);
 }
 
+/* כללי עיצוב עבור .dashboard-progress-track > span  */
 .dashboard-progress-track > span {
   display: block;
   height: 100%;
@@ -389,6 +448,7 @@
   transition: width var(--transition-normal);
 }
 
+/* כללי עיצוב עבור .dashboard-duty-shifts  */
 .dashboard-duty-shifts {
   display: flex;
   flex-direction: column;
@@ -396,6 +456,7 @@
   padding-top: 4px;
 }
 
+/* כללי עיצוב עבור .dashboard-duty-shifts-heading  */
 .dashboard-duty-shifts-heading {
   display: flex;
   align-items: center;
@@ -403,6 +464,7 @@
   color: var(--color-gray-700);
 }
 
+/* כללי עיצוב עבור .dashboard-duty-shift-row  */
 .dashboard-duty-shift-row {
   display: flex;
   align-items: center;
@@ -413,11 +475,13 @@
   background: var(--color-gray-100);
 }
 
+/* כללי עיצוב עבור .dashboard-duty-shift-row span  */
 .dashboard-duty-shift-row span {
   color: var(--color-gray-600);
   font-size: var(--font-size-sm);
 }
 
+/* כללי עיצוב עבור .dashboard-manager-summary  */
 .dashboard-manager-summary {
   display: grid;
   grid-template-columns: repeat(
@@ -427,6 +491,7 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dashboard-manager-summary > div  */
 .dashboard-manager-summary > div {
   display: flex;
   align-items: center;
@@ -437,16 +502,19 @@
   background: var(--color-gray-100);
 }
 
+/* כללי עיצוב עבור .dashboard-manager-summary span  */
 .dashboard-manager-summary span {
   color: var(--color-gray-600);
   font-size: var(--font-size-sm);
 }
 
+/* כללי עיצוב עבור .dashboard-manager-summary strong  */
 .dashboard-manager-summary strong {
   color: var(--color-gray-900);
   font-size: 1.3rem;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 560px) */
 @media (max-width: 560px) {
   .dashboard-progress-summary {
     align-items: flex-start;
@@ -462,6 +530,7 @@
     flex-direction: column;
   }
 }
+/* כללי עיצוב עבור .dashboard-morning-driver-partners  */
 .dashboard-morning-driver-partners {
   display: flex;
   flex-direction: column;
@@ -471,12 +540,14 @@
   background: var(--color-gray-100);
 }
 
+/* כללי עיצוב עבור .dashboard-morning-driver-partner-list  */
 .dashboard-morning-driver-partner-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dashboard-morning-driver-partner  */
 .dashboard-morning-driver-partner {
   display: inline-flex;
   align-items: center;
@@ -490,12 +561,14 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .dashboard-morning-driver-summary  */
 .dashboard-morning-driver-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dashboard-morning-driver-summary > div  */
 .dashboard-morning-driver-summary > div {
   display: flex;
   flex-direction: column;
@@ -505,23 +578,27 @@
   background: var(--color-gray-100);
 }
 
+/* כללי עיצוב עבור .dashboard-morning-driver-summary strong  */
 .dashboard-morning-driver-summary strong {
   color: var(--color-primary-700);
   font-size: 1.6rem;
 }
 
+/* כללי עיצוב עבור .dashboard-morning-driver-summary span  */
 .dashboard-morning-driver-summary span {
   color: var(--color-gray-600);
   font-size: var(--font-size-sm);
 }
 
 /* Phase 8.7 - generic Job Type dashboard */
+/* כללי עיצוב עבור .dynamic-dashboard-stack  */
 .dynamic-dashboard-stack {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-intro .dashboard-card-body  */
 .dynamic-dashboard-intro .dashboard-card-body {
   display: flex;
   align-items: center;
@@ -529,15 +606,18 @@
 }
 
 .dynamic-dashboard-intro h2,
+/* כללי עיצוב עבור .dynamic-dashboard-intro p  */
 .dynamic-dashboard-intro p {
   margin: 0;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-intro p  */
 .dynamic-dashboard-intro p {
   margin-top: 4px;
   color: var(--color-gray-600);
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-intro-icon  */
 .dynamic-dashboard-intro-icon {
   display: grid;
   width: 46px;
@@ -549,12 +629,14 @@
   color: var(--color-primary-700);
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-role-grid  */
 .dynamic-dashboard-role-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-role-meta  */
 .dynamic-dashboard-role-meta {
   display: block;
   margin-top: 3px;
@@ -562,17 +644,20 @@
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-role-body  */
 .dynamic-dashboard-role-body {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-description  */
 .dynamic-dashboard-description {
   margin: 0;
   color: var(--color-gray-600);
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-fact  */
 .dynamic-dashboard-fact {
   display: flex;
   align-items: flex-start;
@@ -582,12 +667,14 @@
   background: var(--color-gray-50);
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-fact > svg  */
 .dynamic-dashboard-fact > svg {
   flex: 0 0 auto;
   margin-top: 2px;
   color: var(--color-primary-700);
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-fact > div  */
 .dynamic-dashboard-fact > div {
   display: flex;
   min-width: 0;
@@ -595,17 +682,20 @@
   gap: 3px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-fact span  */
 .dynamic-dashboard-fact span {
   color: var(--color-gray-600);
   font-size: 0.86rem;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-actions  */
 .dynamic-dashboard-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-actions a  */
 .dynamic-dashboard-actions a {
   display: inline-flex;
   min-height: 36px;
@@ -619,16 +709,19 @@
   text-decoration: none;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-actions a:hover  */
 .dynamic-dashboard-actions a:hover {
   background: var(--color-gray-100);
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-managed-grid  */
 .dynamic-dashboard-managed-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-managed-role  */
 .dynamic-dashboard-managed-role {
   display: flex;
   flex-direction: column;
@@ -638,11 +731,13 @@
   border-radius: 12px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-managed-role span  */
 .dynamic-dashboard-managed-role span {
   color: var(--color-gray-600);
   font-size: 0.82rem;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 900px) */
 @media (max-width: 900px) {
   .dynamic-dashboard-role-grid,
   .dynamic-dashboard-managed-grid {
@@ -651,6 +746,7 @@
 }
 
 /* Phase 10.6.7 - cross Job Type dashboard context */
+/* כללי עיצוב עבור .dynamic-dashboard-parallel  */
 .dynamic-dashboard-parallel {
   display: grid;
   gap: 9px;
@@ -660,12 +756,14 @@
   background: var(--color-white);
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-parallel-heading  */
 .dynamic-dashboard-parallel-heading {
   display: flex;
   align-items: flex-start;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-parallel-heading > svg  */
 .dynamic-dashboard-parallel-heading > svg {
   flex: 0 0 auto;
   margin-top: 2px;
@@ -673,6 +771,7 @@
 }
 
 .dynamic-dashboard-parallel-heading > div,
+/* כללי עיצוב עבור .dynamic-dashboard-parallel-row > div  */
 .dynamic-dashboard-parallel-row > div {
   display: grid;
   gap: 2px;
@@ -680,16 +779,19 @@
 }
 
 .dynamic-dashboard-parallel-heading span,
+/* כללי עיצוב עבור .dynamic-dashboard-parallel-row span  */
 .dynamic-dashboard-parallel-row span {
   color: var(--color-gray-600);
   font-size: 0.8rem;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-parallel-list  */
 .dynamic-dashboard-parallel-list {
   display: grid;
   gap: 7px;
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-parallel-row  */
 .dynamic-dashboard-parallel-row {
   display: flex;
   align-items: center;
@@ -700,6 +802,7 @@
   background: var(--color-gray-50);
 }
 
+/* כללי עיצוב עבור .dynamic-dashboard-parallel-row bdi  */
 .dynamic-dashboard-parallel-row bdi {
   flex: 0 0 auto;
   color: var(--color-gray-600);
@@ -743,16 +846,19 @@
 .dynamic-manager-staffing-time { display:flex; align-items:center; gap:6px; white-space:nowrap; }
 .dynamic-manager-staffing-empty { color:var(--theme-text-muted); padding:10px 0; }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .dashboard-hero  */
 :root[data-theme='dark'] .dashboard-hero {
   border-color: var(--theme-border);
   background: linear-gradient(135deg, rgb(37 99 235 / 22%), rgb(17 24 39 / 98%));
 }
 
 :root[data-theme='dark'] .dashboard-hero h1,
+/* כללי עיצוב עבור :root[data-theme='dark'] .dashboard-live-time  */
 :root[data-theme='dark'] .dashboard-live-time {
   color: var(--theme-text-strong);
 }
 
+/* כללי עיצוב עבור :root[data-theme='dark'] .dashboard-hero p  */
 :root[data-theme='dark'] .dashboard-hero p {
   color: var(--theme-text-secondary);
 }

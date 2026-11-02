@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260901223000_dynamic_legacy_import_completed_months_only.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / ייבוא / חודשים.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.preview_dynamic_legacy_import, public.import_dynamic_legacy_history.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 8.2C.3 - Historical import cutoff
@@ -5,54 +10,76 @@ begin;
 -- The current month remains in the legacy system until the controlled cutover.
 -- The cutoff uses Israel local time so month boundaries match the application's business calendar.
 
+-- פונקציית מסד public.preview_dynamic_legacy_import: דינמי / ייבוא.
 create or replace function public.preview_dynamic_legacy_import(
   requested_job_type_id uuid,
   requested_source_kind text
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- periods_count — תקופות / כמות.
   periods_count integer := 0;
+  -- assignments_count — הקצאות / כמות.
   assignments_count integer := 0;
+  -- availability_count — אילוצים וזמינות / כמות.
   availability_count integer := 0;
+  -- imported_periods — תקופות.
   imported_periods integer := 0;
+  -- imported_assignments — הקצאות.
   imported_assignments integer := 0;
+  -- imported_availability — אילוצים וזמינות.
   imported_availability integer := 0;
   expected_role text;
+  -- period_details — תקופה.
   period_details jsonb := '[]'::jsonb;
+  -- user_details — משתמש.
   user_details jsonb := '[]'::jsonb;
   issues jsonb := '[]'::jsonb;
+  -- referenced_users — משתמשים.
   referenced_users integer := 0;
+  -- missing_profiles — פרופילים.
   missing_profiles integer := 0;
   role_mismatches integer := 0;
   current_ym integer := extract(year from (now() at time zone 'Asia/Jerusalem'))::integer * 100
     + extract(month from (now() at time zone 'Asia/Jerusalem'))::integer;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions up
     where up.user_id = current_user_id
       and up.permission_key = 'users.manage'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_source_kind not in ('dispatcher','on_call','morning_driver').
   if requested_source_kind not in ('dispatcher','on_call','morning_driver') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid source kind';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (select 1 from public.job_types where id = requested_job_type_id).
   if not exists (select 1 from public.job_types where id = requested_job_type_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type not found';
   end if;
 
+  -- הסתעפות לפי התנאי requested_source_kind = 'dispatcher'.
   if requested_source_kind = 'dispatcher' then
     expected_role := 'dispatcher';
 
@@ -316,16 +343,20 @@ begin
     'message','החודש הנוכחי אינו נכלל בייבוא היסטוריה; הוא יטופל בנפרד בעת המעבר למערכת הדינמית'
   ));
 
+  -- הסתעפות לפי התנאי periods_count = 0.
   if periods_count = 0 then
     issues := issues || jsonb_build_array(jsonb_build_object('severity','warning','code','no_periods','message','לא נמצאו תקופות מפורסמות או ארכיוניות במערכת המקור'));
   end if;
+  -- הסתעפות לפי התנאי missing_profiles > 0.
   if missing_profiles > 0 then
     issues := issues || jsonb_build_array(jsonb_build_object('severity','error','code','missing_profiles','message',missing_profiles::text || ' משתמשים שמופיעים בהיסטוריה אינם קיימים עוד בטבלת המשתמשים'));
   end if;
+  -- הסתעפות לפי התנאי role_mismatches > 0.
   if role_mismatches > 0 then
     issues := issues || jsonb_build_array(jsonb_build_object('severity','warning','code','role_mismatch','message',role_mismatches::text || ' משתמשים היסטוריים קיימים אך ה-role הישן שלהם השתנה'));
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'sourceKind', requested_source_kind,
     'expectedLegacyRole', expected_role,
@@ -352,50 +383,68 @@ end;
 $function$;
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.preview_dynamic_legacy_import(uuid,text) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.preview_dynamic_legacy_import(uuid,text) to authenticated;
 
+-- פונקציית מסד public.import_dynamic_legacy_history: ייבוא ייבוא / דינמי / היסטוריה.
 create or replace function public.import_dynamic_legacy_history(
   requested_job_type_id uuid,
   requested_source_kind text
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- batch_id — מזהה.
   batch_id uuid;
+  -- periods_added — תקופות.
   periods_added integer := 0;
+  -- assignments_added — הקצאות.
   assignments_added integer := 0;
+  -- availability_added — אילוצים וזמינות.
   availability_added integer := 0;
   current_ym integer := extract(year from (now() at time zone 'Asia/Jerusalem'))::integer * 100
     + extract(month from (now() at time zone 'Asia/Jerusalem'))::integer;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions up
     where up.user_id = current_user_id
       and up.permission_key = 'users.manage'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_source_kind not in ('dispatcher','on_call','morning_driver').
   if requested_source_kind not in ('dispatcher','on_call','morning_driver') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid source kind';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1 from public.job_types where id = requested_job_type_id
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type not found';
   end if;
 
+  -- הוספת רשומות ל־public.dynamic_legacy_import_batches בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_legacy_import_batches(
     job_type_id,
     source_kind,
@@ -410,7 +459,9 @@ begin
   )
   returning id into batch_id;
 
+  -- הסתעפות לפי התנאי requested_source_kind = 'dispatcher'.
   if requested_source_kind = 'dispatcher' then
+    -- הוספת רשומות ל־public.dynamic_historical_periods בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_historical_periods(
       job_type_id,
       source_kind,
@@ -437,6 +488,7 @@ begin
 
     get diagnostics periods_added = row_count;
 
+    -- הוספת רשומות ל־public.dynamic_historical_assignments בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_historical_assignments(
       historical_period_id,
       source_kind,
@@ -474,6 +526,7 @@ begin
 
     -- Map the current availability model to the imported schedule period by month.
     -- The source payload keeps both the availability entry and its slot for auditability.
+    -- הוספת רשומות ל־public.dynamic_historical_availability בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_historical_availability(
       historical_period_id,
       source_kind,
@@ -516,6 +569,7 @@ begin
     get diagnostics availability_added = row_count;
 
   elsif requested_source_kind = 'on_call' then
+    -- הוספת רשומות ל־public.dynamic_historical_periods בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_historical_periods(
       job_type_id,source_kind,source_period_id,year,month,source_status,imported_batch_id,source_payload
     )
@@ -526,6 +580,7 @@ begin
     on conflict(job_type_id,source_kind,source_period_id) do nothing;
     get diagnostics periods_added = row_count;
 
+    -- הוספת רשומות ל־public.dynamic_historical_assignments בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_historical_assignments(
       historical_period_id,source_kind,source_record_id,work_date,original_user_id,assigned_user_id,is_intentionally_unassigned,source_payload
     )
@@ -543,6 +598,7 @@ begin
     get diagnostics assignments_added = row_count;
 
   else
+    -- הוספת רשומות ל־public.dynamic_historical_periods בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_historical_periods(
       job_type_id,source_kind,source_period_id,year,month,source_status,imported_batch_id,source_payload
     )
@@ -553,6 +609,7 @@ begin
     on conflict(job_type_id,source_kind,source_period_id) do nothing;
     get diagnostics periods_added = row_count;
 
+    -- הוספת רשומות ל־public.dynamic_historical_assignments בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_historical_assignments(
       historical_period_id,source_kind,source_record_id,work_date,starts_at,ends_at,shift_code,assigned_user_id,is_intentionally_unassigned,source_payload
     )
@@ -577,6 +634,7 @@ begin
     on conflict(historical_period_id,source_kind,source_record_id) do nothing;
     get diagnostics assignments_added = row_count;
 
+    -- הוספת רשומות ל־public.dynamic_historical_availability בהתאם לקלט ולתנאים להלן.
     insert into public.dynamic_historical_availability(
       historical_period_id,source_kind,source_record_id,user_id,work_date,status,note,source_payload
     )
@@ -596,6 +654,7 @@ begin
     get diagnostics availability_added = row_count;
   end if;
 
+  -- עדכון רשומות ב־public.dynamic_legacy_import_batches בהתאם לקלט ולתנאים להלן.
   update public.dynamic_legacy_import_batches
   set status='completed',
       imported_periods=periods_added,
@@ -604,6 +663,7 @@ begin
       completed_at=now()
   where id=batch_id;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(
     user_id,action,entity_type,entity_id,summary,actor_user_id,metadata
   )
@@ -623,6 +683,7 @@ begin
     )
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'batchId',batch_id,
     'periodsImported',periods_added,
@@ -631,7 +692,9 @@ begin
     'idempotent',true
   );
 exception when others then
+  -- הסתעפות לפי התנאי batch_id is not null.
   if batch_id is not null then
+    -- עדכון רשומות ב־public.dynamic_legacy_import_batches בהתאם לקלט ולתנאים להלן.
     update public.dynamic_legacy_import_batches
     set status='failed',
         completed_at=now(),
@@ -643,7 +706,9 @@ end;
 $function$;
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.import_dynamic_legacy_history(uuid,text) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.import_dynamic_legacy_history(uuid,text) to authenticated;
 
 commit;

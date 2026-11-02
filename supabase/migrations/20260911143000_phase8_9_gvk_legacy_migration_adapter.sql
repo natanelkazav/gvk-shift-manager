@@ -1,3 +1,9 @@
+-- קובץ: supabase/migrations/20260911143000_phase8_9_gvk_legacy_migration_adapter.sql
+-- מטרה: הגדרת מתאם להעברת נתוני GVK הוותיקים למודל הדינמי.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.preview_gvk_legacy_migration, public.run_gvk_legacy_migration.
+-- - מבני טבלאות: public.gvk_legacy_migration_runs.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 8.9: GVK-only Legacy Migration Adapter.
@@ -6,6 +12,7 @@ begin;
 -- The administrator explicitly maps each GVK legacy source to any active dynamic job type.
 -- This migration is additive and does not enable cutover or delete legacy data.
 
+-- הגדרת מבנה הטבלה public.gvk_legacy_migration_runs והאילוצים המופיעים בהמשך.
 create table if not exists public.gvk_legacy_migration_runs (
   id uuid primary key default gen_random_uuid(),
   dispatcher_job_type_id uuid not null references public.job_types(id) on delete restrict,
@@ -18,42 +25,57 @@ create table if not exists public.gvk_legacy_migration_runs (
   completed_at timestamptz
 );
 
+-- עדכון מבנה או הגדרות הטבלה public.gvk_legacy_migration_runs.
 alter table public.gvk_legacy_migration_runs enable row level security;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.gvk_legacy_migration_runs from anon, authenticated;
 
+-- פונקציית מסד public.preview_gvk_legacy_migration: הנתון preview_gvk_legacy_migration בהקשר הפעולה.
 create or replace function public.preview_gvk_legacy_migration(requested_mappings jsonb)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   v_actor uuid := auth.uid();
+  -- requested_dispatcher_job_type_id — מזהה סוג התפקיד.
   requested_dispatcher_job_type_id uuid := nullif(requested_mappings->>'dispatcher','')::uuid;
+  -- requested_on_call_job_type_id — מזהה סוג התפקיד.
   requested_on_call_job_type_id uuid := nullif(requested_mappings->>'on_call','')::uuid;
+  -- requested_morning_driver_job_type_id — כונני בוקר.
   requested_morning_driver_job_type_id uuid := nullif(requested_mappings->>'morning_driver','')::uuid;
   v_current_ym integer := extract(year from (now() at time zone 'Asia/Jerusalem'))::integer * 100
     + extract(month from (now() at time zone 'Asia/Jerusalem'))::integer;
   v_blockers jsonb := '[]'::jsonb;
   v_warnings jsonb := '[]'::jsonb;
+  -- v_result — תוצאה.
   v_result jsonb;
 begin
+  -- הסתעפות לפי התנאי v_actor is null and current_user not in ('postgres','supabase_admin','service_role').
   if v_actor is null and current_user not in ('postgres','supabase_admin','service_role') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
+  -- הסתעפות לפי התנאי v_actor is not null and not exists(.
   if v_actor is not null and not exists(
     select 1 from public.user_permissions up
     where up.user_id=v_actor and up.permission_key='users.manage'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_dispatcher_job_type_id is null.
   if requested_dispatcher_job_type_id is null
      or requested_on_call_job_type_id is null
      or requested_morning_driver_job_type_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'GVK adapter requires mappings for dispatcher, on_call and morning_driver';
   end if;
 
+  -- הסתעפות לפי התנאי requested_dispatcher_job_type_id = requested_on_call_job_type_id.
   if requested_dispatcher_job_type_id = requested_on_call_job_type_id
      or requested_dispatcher_job_type_id = requested_morning_driver_job_type_id
      or requested_on_call_job_type_id = requested_morning_driver_job_type_id then
@@ -63,6 +85,7 @@ begin
     ));
   end if;
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1 from (values
       (requested_dispatcher_job_type_id),
@@ -81,6 +104,7 @@ begin
   -- We do not auto-convert an unfinished live workflow. A published/archived
   -- schedule is stable and can be copied safely; an open/draft workflow must
   -- be finished or restarted in the dynamic system.
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1 from public.schedule_periods p
     where (p.year*100+p.month) >= v_current_ym
@@ -92,6 +116,7 @@ begin
     ));
   end if;
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1 from public.driver_schedule_periods p
     where (p.year*100+p.month) >= v_current_ym
@@ -103,6 +128,7 @@ begin
     ));
   end if;
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1 from public.morning_driver_schedule_periods p
     where (p.year*100+p.month) >= v_current_ym
@@ -115,6 +141,7 @@ begin
   end if;
 
   -- Existing dynamic publications are intentionally not overwritten.
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
     from public.dynamic_schedule_publications dp
@@ -167,42 +194,62 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.preview_gvk_legacy_migration(jsonb) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.preview_gvk_legacy_migration(jsonb) to authenticated;
 
+-- פונקציית מסד public.run_gvk_legacy_migration: הנתון run_gvk_legacy_migration בהקשר הפעולה.
 create or replace function public.run_gvk_legacy_migration(requested_mappings jsonb)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   v_actor uuid := auth.uid();
+  -- requested_dispatcher_job_type_id — מזהה סוג התפקיד.
   requested_dispatcher_job_type_id uuid := nullif(requested_mappings->>'dispatcher','')::uuid;
+  -- requested_on_call_job_type_id — מזהה סוג התפקיד.
   requested_on_call_job_type_id uuid := nullif(requested_mappings->>'on_call','')::uuid;
+  -- requested_morning_driver_job_type_id — כונני בוקר.
   requested_morning_driver_job_type_id uuid := nullif(requested_mappings->>'morning_driver','')::uuid;
   v_preview jsonb;
+  -- v_run_id — מזהה.
   v_run_id uuid;
   v_current_ym integer := extract(year from (now() at time zone 'Asia/Jerusalem'))::integer * 100
     + extract(month from (now() at time zone 'Asia/Jerusalem'))::integer;
+  -- v_source — מקור.
   v_source text;
+  -- v_job_type_id — מזהה סוג התפקיד.
   v_job_type_id uuid;
   v_job public.job_types%rowtype;
+  -- v_period — תקופה.
   v_period record;
+  -- v_dynamic_period_id — מזהה התקופה.
   v_dynamic_period_id uuid;
+  -- v_draft_id — טיוטה / מזהה.
   v_draft_id uuid;
+  -- v_publication_id — מזהה.
   v_publication_id uuid;
   v_hist jsonb;
+  -- v_members_added — חברי התפקיד.
   v_members_added integer := 0;
+  -- v_live_periods_added — תקופות.
   v_live_periods_added integer := 0;
+  -- v_live_assignments_added — הקצאות.
   v_live_assignments_added integer := 0;
   v_unassigned_added integer := 0;
+  -- v_history — היסטוריה.
   v_history jsonb := '{}'::jsonb;
+  -- v_result — תוצאה.
   v_result jsonb;
 begin
   -- SQL editor execution has no JWT. In that trusted context, select one active
   -- users.manage actor for audit records and seed the JWT claim so existing
   -- idempotent history-import RPCs can be reused unchanged.
+  -- הסתעפות לפי התנאי v_actor is null and current_user in ('postgres','supabase_admin','service_role').
   if v_actor is null and current_user in ('postgres','supabase_admin','service_role') then
     select up.user_id into v_actor
     from public.user_permissions up
@@ -210,20 +257,27 @@ begin
     where up.permission_key='users.manage'
     order by p.created_at
     limit 1;
+    -- הסתעפות לפי התנאי v_actor is null then raise exception 'no active users.manage actor found'; end if;.
     if v_actor is null then raise exception 'no active users.manage actor found'; end if;
     perform set_config('request.jwt.claim.sub',v_actor::text,true);
   end if;
 
+  -- הסתעפות לפי התנאי v_actor is null then raise exception 'not authenticated'; end if;.
   if v_actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=v_actor and up.permission_key='users.manage').
   if not exists(select 1 from public.user_permissions up where up.user_id=v_actor and up.permission_key='users.manage') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
   v_preview := public.preview_gvk_legacy_migration(requested_mappings);
+  -- הסתעפות לפי התנאי coalesce((v_preview->>'ready')::boolean,false)=false.
   if coalesce((v_preview->>'ready')::boolean,false)=false then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'migration preview contains blockers: %', v_preview->'blockers';
   end if;
 
+  -- הוספת רשומות ל־public.gvk_legacy_migration_runs בהתאם לקלט ולתנאים להלן.
   insert into public.gvk_legacy_migration_runs(
     dispatcher_job_type_id,on_call_job_type_id,morning_driver_job_type_id,status,created_by
   ) values(
@@ -231,6 +285,7 @@ begin
   ) returning id into v_run_id;
 
   -- Copy role memberships first. Existing dynamic membership metadata wins.
+  -- הוספת רשומות ל־public.job_type_memberships בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_memberships(user_id,job_type_id,is_primary,source,metadata)
   select p.id,requested_dispatcher_job_type_id,false,'legacy_cutover',
          jsonb_build_object('employmentScope',case when jt.employment_scope='flexible' then 'full_time' else jt.employment_scope end,'legacyRole','dispatcher')
@@ -244,6 +299,7 @@ begin
   on conflict(user_id,job_type_id) do nothing;
   get diagnostics v_members_added = row_count;
 
+  -- הוספת רשומות ל־public.job_type_memberships בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_memberships(user_id,job_type_id,is_primary,source,metadata)
   select p.id,requested_on_call_job_type_id,false,'legacy_cutover',
          jsonb_build_object('employmentScope',case when jt.employment_scope='flexible' then 'full_time' else jt.employment_scope end,'legacyRole','on_call')
@@ -258,6 +314,7 @@ begin
   get diagnostics v_live_periods_added = row_count;
   v_members_added := v_members_added + v_live_periods_added;
 
+  -- הוספת רשומות ל־public.job_type_memberships בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_memberships(user_id,job_type_id,is_primary,source,metadata)
   select p.id,requested_morning_driver_job_type_id,false,'legacy_cutover',
          jsonb_build_object('employmentScope',case when jt.employment_scope='flexible' then 'full_time' else jt.employment_scope end,'legacyRole','morning_driver')
@@ -292,17 +349,21 @@ begin
   loop
     select * into v_job from public.job_types where id=v_job_type_id;
 
+    -- הסתעפות לפי התנאי v_source='dispatcher'.
     if v_source='dispatcher' then
+      -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
       for v_period in
         select p.id source_period_id,p.year,p.month,p.status::text source_status
         from public.schedule_periods p
         where p.status::text in ('published','archived') and (p.year*100+p.month)>=v_current_ym
         order by p.year,p.month
       loop
+        -- הסתעפות לפי התנאי exists(select 1 from public.dynamic_schedule_publications dp where dp.job_type_id=v_job.id and dp.year=v_period.year and.
         if exists(select 1 from public.dynamic_schedule_publications dp where dp.job_type_id=v_job.id and dp.year=v_period.year and dp.month=v_period.month) then
           continue;
         end if;
 
+        -- הוספת רשומות ל־public.dynamic_availability_periods בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_availability_periods(
           schedule_group_id,job_type_id,year,month,title,status,config_snapshot,source,created_by
         ) values(
@@ -314,6 +375,7 @@ begin
         on conflict(job_type_id,year,month) do update set updated_at=now()
         returning id into v_dynamic_period_id;
 
+        -- הוספת רשומות ל־public.dynamic_availability_slots בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_availability_slots(
           period_id,shift_date,shift_code,shift_name,start_time,end_time,source_day_kind,effective_day_kind,min_workers,target_workers,max_workers,metadata
         )
@@ -326,6 +388,7 @@ begin
         on conflict(period_id,shift_date,shift_code) do update set
           start_time=excluded.start_time,end_time=excluded.end_time,metadata=excluded.metadata;
 
+        -- הוספת רשומות ל־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_schedule_shadow_drafts(
           job_type_id,availability_period_id,year,month,status,feasibility_snapshot,rules_snapshot,metrics,created_by
         ) values(
@@ -333,6 +396,7 @@ begin
           jsonb_build_object('source','legacy_cutover'),jsonb_build_object('legacyCutover',true,'sourcePeriodId',v_period.source_period_id),v_actor
         ) returning id into v_draft_id;
 
+        -- הוספת רשומות ל־public.dynamic_schedule_shadow_assignments בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_schedule_shadow_assignments(
           draft_id,slot_id,user_id,original_user_id,engine_user_id,assignment_tier,score,reasons
         )
@@ -342,6 +406,7 @@ begin
         where s.period_id=v_period.source_period_id and s.assigned_user_id is not null
         on conflict(draft_id,slot_id,user_id) do nothing;
 
+        -- הוספת רשומות ל־public.dynamic_schedule_draft_slot_overrides בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_schedule_draft_slot_overrides(draft_id,slot_id,intentionally_unassigned_count,note,updated_by)
         select v_draft_id,sl.id,1,'יובא כמשמרת לא מאוישת מהמערכת הישנה',v_actor
         from public.schedule_shifts s
@@ -352,16 +417,19 @@ begin
       end loop;
 
     elsif v_source='on_call' then
+      -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
       for v_period in
         select p.id source_period_id,p.year,p.month,p.status::text source_status
         from public.driver_schedule_periods p
         where p.status::text in ('published','archived') and (p.year*100+p.month)>=v_current_ym
         order by p.year,p.month
       loop
+        -- הסתעפות לפי התנאי exists(select 1 from public.dynamic_schedule_publications dp where dp.job_type_id=v_job.id and dp.year=v_period.year and.
         if exists(select 1 from public.dynamic_schedule_publications dp where dp.job_type_id=v_job.id and dp.year=v_period.year and dp.month=v_period.month) then
           continue;
         end if;
 
+        -- הוספת רשומות ל־public.dynamic_availability_periods בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_availability_periods(
           schedule_group_id,job_type_id,year,month,title,status,config_snapshot,source,created_by
         ) values(
@@ -373,6 +441,7 @@ begin
         on conflict(job_type_id,year,month) do update set updated_at=now()
         returning id into v_dynamic_period_id;
 
+        -- הוספת רשומות ל־public.dynamic_availability_slots בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_availability_slots(
           period_id,shift_date,shift_code,shift_name,start_time,end_time,source_day_kind,effective_day_kind,min_workers,target_workers,max_workers,metadata
         )
@@ -381,6 +450,7 @@ begin
         from public.driver_schedule_days d where d.period_id=v_period.source_period_id
         on conflict(period_id,shift_date,shift_code) do update set metadata=excluded.metadata;
 
+        -- הוספת רשומות ל־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_schedule_shadow_drafts(
           job_type_id,availability_period_id,year,month,status,feasibility_snapshot,rules_snapshot,metrics,created_by
         ) values(
@@ -388,6 +458,7 @@ begin
           jsonb_build_object('source','legacy_cutover'),jsonb_build_object('legacyCutover',true,'sourcePeriodId',v_period.source_period_id),v_actor
         ) returning id into v_draft_id;
 
+        -- הוספת רשומות ל־public.dynamic_schedule_shadow_assignments בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_schedule_shadow_assignments(
           draft_id,slot_id,user_id,original_user_id,engine_user_id,assignment_tier,score,reasons
         )
@@ -397,6 +468,7 @@ begin
         where d.period_id=v_period.source_period_id and d.assigned_user_id is not null
         on conflict(draft_id,slot_id,user_id) do nothing;
 
+        -- הוספת רשומות ל־public.dynamic_schedule_draft_slot_overrides בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_schedule_draft_slot_overrides(draft_id,slot_id,intentionally_unassigned_count,note,updated_by)
         select v_draft_id,sl.id,1,'יובא ככוננות לא מאוישת מהמערכת הישנה',v_actor
         from public.driver_schedule_days d
@@ -406,16 +478,19 @@ begin
       end loop;
 
     else
+      -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
       for v_period in
         select p.id source_period_id,p.year,p.month,p.status::text source_status
         from public.morning_driver_schedule_periods p
         where p.status::text in ('published','archived') and (p.year*100+p.month)>=v_current_ym
         order by p.year,p.month
       loop
+        -- הסתעפות לפי התנאי exists(select 1 from public.dynamic_schedule_publications dp where dp.job_type_id=v_job.id and dp.year=v_period.year and.
         if exists(select 1 from public.dynamic_schedule_publications dp where dp.job_type_id=v_job.id and dp.year=v_period.year and dp.month=v_period.month) then
           continue;
         end if;
 
+        -- הוספת רשומות ל־public.dynamic_availability_periods בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_availability_periods(
           schedule_group_id,job_type_id,year,month,title,status,config_snapshot,source,created_by
         ) values(
@@ -427,6 +502,7 @@ begin
         on conflict(job_type_id,year,month) do update set updated_at=now()
         returning id into v_dynamic_period_id;
 
+        -- הוספת רשומות ל־public.dynamic_availability_slots בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_availability_slots(
           period_id,shift_date,shift_code,shift_name,start_time,end_time,source_day_kind,effective_day_kind,min_workers,target_workers,max_workers,metadata
         )
@@ -440,6 +516,7 @@ begin
         on conflict(period_id,shift_date,shift_code) do update set
           start_time=excluded.start_time,end_time=excluded.end_time,metadata=excluded.metadata;
 
+        -- הוספת רשומות ל־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_schedule_shadow_drafts(
           job_type_id,availability_period_id,year,month,status,feasibility_snapshot,rules_snapshot,metrics,created_by
         ) values(
@@ -447,6 +524,7 @@ begin
           jsonb_build_object('source','legacy_cutover'),jsonb_build_object('legacyCutover',true,'sourcePeriodId',v_period.source_period_id),v_actor
         ) returning id into v_draft_id;
 
+        -- הוספת רשומות ל־public.dynamic_schedule_shadow_assignments בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_schedule_shadow_assignments(
           draft_id,slot_id,user_id,original_user_id,engine_user_id,assignment_tier,score,reasons
         )
@@ -457,6 +535,7 @@ begin
         where a.schedule_period_id=v_period.source_period_id and a.assigned_user_id is not null
         on conflict(draft_id,slot_id,user_id) do nothing;
 
+        -- הוספת רשומות ל־public.dynamic_schedule_draft_slot_overrides בהתאם לקלט ולתנאים להלן.
         insert into public.dynamic_schedule_draft_slot_overrides(draft_id,slot_id,intentionally_unassigned_count,note,updated_by)
         select v_draft_id,sl.id,1,'יובא ככוננות בוקר לא מאוישת מהמערכת הישנה',v_actor
         from public.morning_driver_schedule_assignments a
@@ -468,6 +547,7 @@ begin
     end if;
 
     -- Publish every legacy-cutover draft that does not yet have a publication.
+    -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
     for v_period in
       select d.id draft_id,d.availability_period_id,d.year,d.month,
              dap.config_snapshot,
@@ -486,6 +566,7 @@ begin
         and not exists(select 1 from public.dynamic_schedule_publications dp where dp.job_type_id=v_job.id and dp.year=d.year and dp.month=d.month)
       order by d.year,d.month
     loop
+      -- הוספת רשומות ל־public.dynamic_schedule_publications בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_publications(
         job_type_id,availability_period_id,draft_id,year,month,status,config_snapshot,published_by,published_at
       ) values(
@@ -495,6 +576,7 @@ begin
       ) returning id into v_publication_id;
       v_live_periods_added := v_live_periods_added + 1;
 
+      -- הוספת רשומות ל־public.dynamic_schedule_published_assignments בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_published_assignments(
         publication_id,source_assignment_id,slot_id,shift_date,shift_code,shift_name,start_time,end_time,
         user_id,original_user_id,engine_user_id,assignment_tier,score,reasons,manager_edited
@@ -508,6 +590,7 @@ begin
       get diagnostics v_unassigned_added = row_count;
       v_live_assignments_added := v_live_assignments_added + v_unassigned_added;
 
+      -- הוספת רשומות ל־public.dynamic_schedule_published_unassigned בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_published_unassigned(
         publication_id,slot_id,shift_date,shift_code,shift_name,intentionally_unassigned_count,note
       )
@@ -532,16 +615,20 @@ begin
     'message','נתוני GVK הועתקו לתפקידי היעד שנבחרו. המערכת הישנה נשארה ללא שינוי, ו-Cutover לא הופעל.'
   );
 
+  -- עדכון רשומות ב־public.gvk_legacy_migration_runs בהתאם לקלט ולתנאים להלן.
   update public.gvk_legacy_migration_runs
   set status='completed',result=v_result,completed_at=now()
   where id=v_run_id;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(user_id,action,entity_type,entity_id,summary,actor_user_id,metadata)
   values(v_actor,'gvk.legacy_migration.completed','system',v_run_id,'הושלמה העברת נתוני GVK Legacy לתפקידי Job Type דינמיים שנבחרו',v_actor,v_result);
 
   return v_result;
 exception when others then
+  -- הסתעפות לפי התנאי v_run_id is not null.
   if v_run_id is not null then
+    -- עדכון רשומות ב־public.gvk_legacy_migration_runs בהתאם לקלט ולתנאים להלן.
     update public.gvk_legacy_migration_runs
     set status='failed',result=jsonb_build_object('error',sqlerrm),completed_at=now()
     where id=v_run_id;
@@ -550,7 +637,9 @@ exception when others then
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.run_gvk_legacy_migration(jsonb) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.run_gvk_legacy_migration(jsonb) to authenticated;
 
 commit;

@@ -1,20 +1,38 @@
+/**
+ * קובץ: src/components/dashboard/AttendanceClockCards.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור נוכחות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AttendanceClockCards.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import { Clock3, LogIn, LogOut, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { attendanceService } from '../../services/attendanceService';
 import type { AttendanceRoleWorkspace } from '../../types/attendance';
 import { Button } from '../ui';
 
+/**
+ * פעולה time: זמן.
+ * @param value — ערך.
+ */
 const time = (value: string) => new Intl.DateTimeFormat('he-IL', {
   hour: '2-digit',
   minute: '2-digit',
 }).format(new Date(value));
 
+/**
+ * פעולה AttendanceClockCards: נוכחות.
+ */
 export default function AttendanceClockCards() {
+  // מצב מקומי: roles — הנתון roles בהקשר הפעולה; setRoles מעדכנת אותו ומפעילה רינדור לפי React.
   const [roles, setRoles] = useState<AttendanceRoleWorkspace[]>([]);
+  // מצב מקומי: busy — הנתון busy בהקשר הפעולה; setBusy מעדכנת אותו ומפעילה רינדור לפי React.
   const [busy, setBusy] = useState<string | null>(null);
+  // מצב מקומי: error — שגיאה; setError מעדכנת אותו ומפעילה רינדור לפי React.
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       setRoles(await attendanceService.getMyWorkspace());
     } catch (loadError) {
@@ -22,19 +40,27 @@ export default function AttendanceClockCards() {
     }
   }, []);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [load].
   useEffect(() => {
     void load();
   }, [load]);
 
   if (!roles.length) return null;
 
+  /**
+   * פעולה אסינכרונית act: הנתון act בהקשר הפעולה.
+   * @param role — הנתון role בהקשר הפעולה.
+   * @param action — הנתון action בהקשר הפעולה.
+   */
   const act = async (role: AttendanceRoleWorkspace, action: 'in' | 'out') => {
     setBusy(role.jobTypeId);
     setError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await attendanceService.clock(role.jobTypeId, action, role.config.requireLocation !== false);
       await load();
     } catch (actionError) {
+      // message — הודעה.
       const message = actionError instanceof GeolocationPositionError
         ? 'לא ניתן לקבל מיקום. יש לאפשר הרשאת מיקום ל־צוות GVK.'
         : actionError instanceof Error
@@ -49,7 +75,9 @@ export default function AttendanceClockCards() {
   return (
     <div className="attendance-dashboard-grid">
       {roles.map((role) => {
+        // hasOpenSession — סשן.
         const hasOpenSession = Boolean(role.openSession);
+        // isBusy — הנתון isBusy בהקשר הפעולה.
         const isBusy = busy === role.jobTypeId;
 
         return (

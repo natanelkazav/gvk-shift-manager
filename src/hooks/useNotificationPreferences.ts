@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useNotificationPreferences.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור התראות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: NotificationPreferencesState, UseNotificationPreferencesResult, getErrorMessage, useNotificationPreferences.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useState,
@@ -9,16 +16,23 @@ import {
   type UpdateNotificationPreferencesRequest,
 } from '../services/notificationPreferencesService';
 
+/**
+ * חוזה הנתונים NotificationPreferencesState: התראות / מצב.
+ */
 interface NotificationPreferencesState {
+  // data — נתונים.
   data:
     NotificationPreferences | null;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading:
     boolean;
 
+  // isSaving — האם שמירה מתבצעת.
   isSaving:
     boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 
@@ -26,7 +40,11 @@ interface NotificationPreferencesState {
     boolean;
 }
 
+/**
+ * חוזה הנתונים UseNotificationPreferencesResult: התראות / תוצאה.
+ */
 interface UseNotificationPreferencesResult {
+  // state — מצב.
   state:
     NotificationPreferencesState;
 
@@ -38,9 +56,11 @@ interface UseNotificationPreferencesResult {
       UpdateNotificationPreferencesRequest,
   ) => Promise<NotificationPreferences>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 
+  // clearSavedState — מצב.
   clearSavedState:
     () => void;
 
@@ -48,6 +68,7 @@ interface UseNotificationPreferencesResult {
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   NotificationPreferencesState = {
     data:
@@ -66,9 +87,15 @@ const initialState:
       false,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
@@ -78,8 +105,13 @@ function getErrorMessage(
   return 'אירעה שגיאה בניהול הגדרות ההתראות.';
 }
 
+/**
+ * פעולה useNotificationPreferences: חיבור מצב או הקשר עבור התראות.
+ * @returns UseNotificationPreferencesResult — הפלט בהתאם לחתימה.
+ */
 export function useNotificationPreferences():
   UseNotificationPreferencesResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -108,7 +140,9 @@ export function useNotificationPreferences():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await notificationPreferencesService
               .getMyPreferences();
@@ -133,6 +167,7 @@ export function useNotificationPreferences():
         } catch (
           error
         ) {
+          // normalizedError — שגיאה.
           const normalizedError =
             getErrorMessage(
               error,
@@ -184,7 +219,9 @@ export function useNotificationPreferences():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await notificationPreferencesService
               .updateMyPreferences(
@@ -211,6 +248,7 @@ export function useNotificationPreferences():
         } catch (
           error
         ) {
+          // normalizedError — שגיאה.
           const normalizedError =
             getErrorMessage(
               error,
@@ -239,6 +277,7 @@ export function useNotificationPreferences():
       [],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback(
       (): void => {
@@ -256,6 +295,7 @@ export function useNotificationPreferences():
       [],
     );
 
+  // clearSavedState — מצב.
   const clearSavedState =
     useCallback(
       (): void => {

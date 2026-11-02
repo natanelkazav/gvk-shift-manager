@@ -1,12 +1,19 @@
+-- קובץ: supabase/migrations/20260915170000_phase10_6_11_assignment_change_push.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור הקצאה / התראות Push.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.create_dynamic_assignment_change_notification, public.create_dynamic_exchange_approval_notification, public.get_my_pending_operational_push_notifications, public.mark_my_operational_push_dispatched.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 10.6.11
 -- Push notifications for approved Dynamic shift exchanges and current-month
 -- Dynamic published-assignment changes.
 
 begin;
 
+-- פונקציית מסד public.create_dynamic_assignment_change_notification: יצירת דינמי / הקצאה / התראות.
 create or replace function public.create_dynamic_assignment_change_notification()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -14,22 +21,30 @@ declare
   actor uuid := auth.uid();
   publication public.dynamic_schedule_publications%rowtype;
   job public.job_types%rowtype;
+  -- old_user — משתמש.
   old_user uuid;
+  -- new_user — משתמש.
   new_user uuid;
+  -- shift_date_value — תאריך המשמרת.
   shift_date_value date;
+  -- shift_name_value — משמרת / שם / ערך.
   shift_name_value text;
   start_time_value time;
   end_time_value time;
+  -- notification_id — התראות / מזהה.
   notification_id uuid;
+  -- recipient_count — כמות.
   recipient_count integer := 0;
   is_swap_change boolean := false;
 begin
   -- Publishing a schedule also inserts assignments. Only notify INSERTs that are
   -- explicit post-publication manager/user edits.
+  -- הסתעפות לפי התנאי tg_op = 'INSERT' and not coalesce(new.manager_edited, false) and new.user_edited_by is null.
   if tg_op = 'INSERT' and not coalesce(new.manager_edited, false) and new.user_edited_by is null then
     return new;
   end if;
 
+  -- הסתעפות לפי התנאי tg_op = 'UPDATE' and new.user_id is not distinct from old.user_id.
   if tg_op = 'UPDATE' and new.user_id is not distinct from old.user_id then
     return new;
   end if;
@@ -38,11 +53,13 @@ begin
   from public.dynamic_schedule_publications p
   where p.id = coalesce(new.publication_id, old.publication_id);
 
+  -- הסתעפות לפי התנאי publication.id is null or publication.status <> 'published'.
   if publication.id is null or publication.status <> 'published' then
     return coalesce(new, old);
   end if;
 
   -- Per product rule: assignment-change Push is only for the current month.
+  -- הסתעפות לפי התנאי publication.year <> extract(year from (now() at time zone 'Asia/Jerusalem'))::integer.
   if publication.year <> extract(year from (now() at time zone 'Asia/Jerusalem'))::integer
      or publication.month <> extract(month from (now() at time zone 'Asia/Jerusalem'))::integer then
     return coalesce(new, old);
@@ -53,6 +70,7 @@ begin
   where jt.id = publication.job_type_id
     and jt.legacy_role is null;
 
+  -- הסתעפות לפי התנאי job.id is null.
   if job.id is null then
     return coalesce(new, old);
   end if;
@@ -67,6 +85,7 @@ begin
   -- Manager-approved exchanges update the assignments before the request row is
   -- marked approved. The exchange trigger below sends one dedicated notification
   -- to both parties, so suppress the generic assignment-change notification here.
+  -- הסתעפות לפי התנאי tg_op = 'UPDATE'.
   if tg_op = 'UPDATE' then
     select exists (
       select 1
@@ -76,16 +95,19 @@ begin
         and (r.requester_assignment_id = old.id or r.counterparty_assignment_id = old.id)
     ) into is_swap_change;
 
+    -- הסתעפות לפי התנאי is_swap_change.
     if is_swap_change then
       return new;
     end if;
   end if;
 
   actor := coalesce(actor, new.user_edited_by, old.user_edited_by);
+  -- הסתעפות לפי התנאי actor is null.
   if actor is null then
     return coalesce(new, old);
   end if;
 
+  -- הוספת רשומות ל־public.notifications בהתאם לקלט ולתנאים להלן.
   insert into public.notifications(
     type, priority, source, title, body, url, data, created_by, expires_at
   ) values (
@@ -123,6 +145,7 @@ begin
     now() + interval '90 days'
   ) returning id into notification_id;
 
+  -- הוספת רשומות ל־public.notification_recipients בהתאם לקלט ולתנאים להלן.
   insert into public.notification_recipients(notification_id,user_id)
   select notification_id, candidate.user_id
   from (
@@ -136,7 +159,9 @@ begin
 
   get diagnostics recipient_count = row_count;
 
+  -- הסתעפות לפי התנאי recipient_count = 0.
   if recipient_count = 0 then
+    -- מחיקת הרשומות שנבחרו מתוך public.notifications בהתאם לקלט ולתנאים להלן.
     delete from public.notifications where id = notification_id;
   end if;
 
@@ -153,18 +178,24 @@ on public.dynamic_schedule_published_assignments
 for each row execute function public.create_dynamic_assignment_change_notification();
 
 
+-- פונקציית מסד public.create_dynamic_exchange_approval_notification: יצירת דינמי / התראות.
 create or replace function public.create_dynamic_exchange_approval_notification()
 returns trigger
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   actor uuid;
+  -- job_name — שם.
   job_name text;
+  -- notification_id — התראות / מזהה.
   notification_id uuid;
+  -- recipient_count — כמות.
   recipient_count integer := 0;
 begin
+  -- הסתעפות לפי התנאי tg_op <> 'UPDATE'.
   if tg_op <> 'UPDATE'
      or new.status <> 'approved'
      or old.status = 'approved' then
@@ -172,6 +203,7 @@ begin
   end if;
 
   actor := coalesce(new.manager_user_id, auth.uid());
+  -- הסתעפות לפי התנאי actor is null then return new; end if;.
   if actor is null then return new; end if;
 
   select jt.name into job_name
@@ -179,8 +211,10 @@ begin
   where jt.id = new.job_type_id
     and jt.legacy_role is null;
 
+  -- הסתעפות לפי התנאי job_name is null then return new; end if;.
   if job_name is null then return new; end if;
 
+  -- הוספת רשומות ל־public.notifications בהתאם לקלט ולתנאים להלן.
   insert into public.notifications(
     type, priority, source, title, body, url, data, created_by, expires_at
   ) values (
@@ -205,6 +239,7 @@ begin
     now() + interval '90 days'
   ) returning id into notification_id;
 
+  -- הוספת רשומות ל־public.notification_recipients בהתאם לקלט ולתנאים להלן.
   insert into public.notification_recipients(notification_id,user_id)
   select notification_id, candidate.user_id
   from (
@@ -218,7 +253,9 @@ begin
 
   get diagnostics recipient_count = row_count;
 
+  -- הסתעפות לפי התנאי recipient_count = 0.
   if recipient_count = 0 then
+    -- מחיקת הרשומות שנבחרו מתוך public.notifications בהתאם לקלט ולתנאים להלן.
     delete from public.notifications where id = notification_id;
   end if;
 
@@ -235,15 +272,18 @@ on public.dynamic_shift_exchange_requests
 for each row execute function public.create_dynamic_exchange_approval_notification();
 
 
+-- פונקציית מסד public.get_my_pending_operational_push_notifications: שליפה או חישוב של ממתין / התראות Push / התראות.
 create or replace function public.get_my_pending_operational_push_notifications()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   actor uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
 
   return coalesce((
@@ -257,17 +297,21 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.mark_my_operational_push_dispatched: התראות Push.
 create or replace function public.mark_my_operational_push_dispatched(requested_notification_id uuid)
 returns void
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   actor uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
 
+  -- עדכון רשומות ב־public.notifications בהתאם לקלט ולתנאים להלן.
   update public.notifications n
   set data = jsonb_set(
     jsonb_set(coalesce(n.data,'{}'::jsonb), '{pushPending}', 'false'::jsonb, true),
@@ -281,9 +325,13 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_pending_operational_push_notifications() from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.mark_my_operational_push_dispatched(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_pending_operational_push_notifications() to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.mark_my_operational_push_dispatched(uuid) to authenticated;
 
 commit;

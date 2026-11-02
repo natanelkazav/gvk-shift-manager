@@ -1,3 +1,7 @@
+-- קובץ: supabase/migrations/20260901124500_phase8_2a_work_structure_model.sql
+-- מטרה: הרחבת מודל מבנה העבודה המשמש להגדרת תפקיד ושיבוצו.
+-- מטרות עיקריות:
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 8.2A refinement: role work structure is explicitly either shifts or on-call.
@@ -52,6 +56,7 @@ with normalized as (
   where jt.scheduling_config ? 'shiftPattern'
     and not (jt.scheduling_config #> '{shiftPattern}' ? 'workMode')
 )
+-- עדכון רשומות ב־public.job_types בהתאם לקלט ולתנאים להלן.
 update public.job_types jt
 set scheduling_config = normalized.scheduling_config
 from normalized

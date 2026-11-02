@@ -1,51 +1,78 @@
+-- קובץ: supabase/migrations/20260901213000_dynamic_legacy_import_detailed_preview.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / ייבוא.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.preview_dynamic_legacy_import.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
+-- פונקציית מסד public.preview_dynamic_legacy_import: דינמי / ייבוא.
 create or replace function public.preview_dynamic_legacy_import(
   requested_job_type_id uuid,
   requested_source_kind text
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- periods_count — תקופות / כמות.
   periods_count integer := 0;
+  -- assignments_count — הקצאות / כמות.
   assignments_count integer := 0;
+  -- availability_count — אילוצים וזמינות / כמות.
   availability_count integer := 0;
+  -- imported_periods — תקופות.
   imported_periods integer := 0;
+  -- imported_assignments — הקצאות.
   imported_assignments integer := 0;
+  -- imported_availability — אילוצים וזמינות.
   imported_availability integer := 0;
   expected_role text;
+  -- period_details — תקופה.
   period_details jsonb := '[]'::jsonb;
+  -- user_details — משתמש.
   user_details jsonb := '[]'::jsonb;
   issues jsonb := '[]'::jsonb;
+  -- referenced_users — משתמשים.
   referenced_users integer := 0;
+  -- missing_profiles — פרופילים.
   missing_profiles integer := 0;
   role_mismatches integer := 0;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions up
     where up.user_id = current_user_id
       and up.permission_key = 'users.manage'
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
+  -- הסתעפות לפי התנאי requested_source_kind not in ('dispatcher','on_call','morning_driver').
   if requested_source_kind not in ('dispatcher','on_call','morning_driver') then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid source kind';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (select 1 from public.job_types where id = requested_job_type_id).
   if not exists (select 1 from public.job_types where id = requested_job_type_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'job type not found';
   end if;
 
+  -- הסתעפות לפי התנאי requested_source_kind = 'dispatcher'.
   if requested_source_kind = 'dispatcher' then
     expected_role := 'dispatcher';
 
@@ -279,16 +306,20 @@ begin
   join public.dynamic_historical_periods p on p.id=a.historical_period_id
   where p.job_type_id=requested_job_type_id and a.source_kind=requested_source_kind;
 
+  -- הסתעפות לפי התנאי periods_count = 0.
   if periods_count = 0 then
     issues := issues || jsonb_build_array(jsonb_build_object('severity','warning','code','no_periods','message','לא נמצאו תקופות מפורסמות או ארכיוניות במערכת המקור'));
   end if;
+  -- הסתעפות לפי התנאי missing_profiles > 0.
   if missing_profiles > 0 then
     issues := issues || jsonb_build_array(jsonb_build_object('severity','error','code','missing_profiles','message',missing_profiles::text || ' משתמשים שמופיעים בהיסטוריה אינם קיימים עוד בטבלת המשתמשים'));
   end if;
+  -- הסתעפות לפי התנאי role_mismatches > 0.
   if role_mismatches > 0 then
     issues := issues || jsonb_build_array(jsonb_build_object('severity','warning','code','role_mismatch','message',role_mismatches::text || ' משתמשים היסטוריים קיימים אך ה-role הישן שלהם השתנה'));
   end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'sourceKind', requested_source_kind,
     'expectedLegacyRole', expected_role,
@@ -314,7 +345,9 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.preview_dynamic_legacy_import(uuid,text) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.preview_dynamic_legacy_import(uuid,text) to authenticated;
 
 commit;

@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/pages/MorningDriverAvailabilityPage.tsx
+ * מטרה: מימוש מסך המשתמש עבור כונני בוקר.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: CreatePeriodFormState, createInitialFormState, formatDateTime, getPeriodLabel, MorningDriverAvailabilityPage.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   ArrowRight,
   CalendarDays,
@@ -54,14 +61,22 @@ import type {
 import '../styles/morningDriverAvailability.css';
 import '../styles/morningDriverAvailabilityManagement.css';
 
+/**
+ * חוזה הנתונים CreatePeriodFormState: תקופה / מצב.
+ */
 interface CreatePeriodFormState {
+  // year — שנה.
   year: string;
+  // month — חודש.
   month: string;
+  // title — כותרת.
   title: string;
   instructions: string;
+  // submissionDeadline — מועד אחרון להגשת אילוצים.
   submissionDeadline: string;
 }
 
+// HEBREW_MONTHS — חודשים.
 const HEBREW_MONTHS = [
   'ינואר',
   'פברואר',
@@ -77,6 +92,7 @@ const HEBREW_MONTHS = [
   'דצמבר',
 ] as const;
 
+// STATUS_LABELS — סטטוס.
 const STATUS_LABELS:
   Record<
     MorningDriverAvailabilityPeriodStatus,
@@ -95,11 +111,17 @@ const STATUS_LABELS:
       'בארכיון',
   };
 
+/**
+ * פעולה createInitialFormState: יצירת מצב.
+ * @returns CreatePeriodFormState — הפלט בהתאם לחתימה.
+ */
 function createInitialFormState():
   CreatePeriodFormState {
+  // currentDate — תאריך.
   const currentDate =
     new Date();
 
+  // targetDate — יעד / תאריך.
   const targetDate =
     new Date(
       currentDate.getFullYear(),
@@ -129,19 +151,27 @@ function createInitialFormState():
   };
 }
 
+/**
+ * פעולה formatDateTime: עיצוב ערך לתצוגה עבור תאריך / זמן.
+ * @param value — ערך.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function formatDateTime(
   value:
     string | null,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !value.
   if (!value) {
     return 'לא הוגדר';
   }
 
+  // date — תאריך.
   const date =
     new Date(
       value,
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( date.getTime(), ).
   if (
     Number.isNaN(
       date.getTime(),
@@ -164,10 +194,16 @@ function formatDateTime(
   );
 }
 
+/**
+ * פעולה getPeriodLabel: שליפה או חישוב של תקופה / תווית.
+ * @param period — תקופה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getPeriodLabel(
   period:
     MorningDriverAvailabilityPeriodListItem,
 ): string {
+  // monthLabel — חודש / תווית.
   const monthLabel =
     HEBREW_MONTHS[
       period.month - 1
@@ -179,6 +215,9 @@ function getPeriodLabel(
   return `${monthLabel} ${period.year}`;
 }
 
+/**
+ * פעולה MorningDriverAvailabilityPage: כונני בוקר.
+ */
 function MorningDriverAvailabilityPage() {
   const navigate = useNavigate();
   const {
@@ -221,12 +260,14 @@ function MorningDriverAvailabilityPage() {
   } =
     useMorningDriverSchedule();
 
+  // מצב מקומי: isCreateDialogOpen — הנתון isCreateDialogOpen בהקשר הפעולה; setIsCreateDialogOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     isCreateDialogOpen,
     setIsCreateDialogOpen,
   ] =
     useState(false);
 
+  // מצב מקומי: formState — מצב; setFormState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     formState,
     setFormState,
@@ -235,6 +276,7 @@ function MorningDriverAvailabilityPage() {
       createInitialFormState,
     );
 
+  // מצב מקומי: formError — שגיאה; setFormError מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     formError,
     setFormError,
@@ -243,22 +285,27 @@ function MorningDriverAvailabilityPage() {
       null,
     );
 
+  // canSubmit — הנתון canSubmit בהקשר הפעולה.
   const canSubmit =
     hasPermission(
       'morning_driver_availability.view',
     );
 
+  // canManage — האם פעולת ניהול מותרת.
   const canManage =
     hasPermission(
       'morning_driver_availability.manage',
     );
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [ canManage, loadPeriods, ].
   useEffect(
     () => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !canManage.
       if (!canManage) {
         return undefined;
       }
 
+      // timeoutId — משך המתנה / מזהה.
       const timeoutId =
         window.setTimeout(
           () => {
@@ -279,6 +326,7 @@ function MorningDriverAvailabilityPage() {
     ],
   );
 
+  // ערך מחושב sortedPeriods — תקופות; נשמר בין רינדורים עד שינוי התלויות.
   const sortedPeriods =
     useMemo(
       () =>
@@ -298,6 +346,7 @@ function MorningDriverAvailabilityPage() {
       ],
     );
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר canSubmit && !canManage.
   if (
     canSubmit &&
     !canManage
@@ -309,6 +358,10 @@ function MorningDriverAvailabilityPage() {
     );
   }
 
+  /**
+   * פעולה openCreateDialog: פתיחת הנתון openCreateDialog בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const openCreateDialog =
     (): void => {
       setFormState(
@@ -326,8 +379,13 @@ function MorningDriverAvailabilityPage() {
       );
     };
 
+  /**
+   * פעולה closeCreateDialog: סגירת הנתון closeCreateDialog בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const closeCreateDialog =
     (): void => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר state.isCreating.
       if (
         state.isCreating
       ) {
@@ -343,6 +401,11 @@ function MorningDriverAvailabilityPage() {
       );
     };
 
+  /**
+   * פעולה אסינכרונית handleCreatePeriod: טיפול באירוע עבור תקופה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleCreatePeriod =
     async (
       event:
@@ -350,16 +413,19 @@ function MorningDriverAvailabilityPage() {
     ): Promise<void> => {
       event.preventDefault();
 
+      // year — שנה.
       const year =
         Number(
           formState.year,
         );
 
+      // month — חודש.
       const month =
         Number(
           formState.month,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !Number.isInteger( year, ) || year < 2020 || year > 2100.
       if (
         !Number.isInteger(
           year,
@@ -374,6 +440,7 @@ function MorningDriverAvailabilityPage() {
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !Number.isInteger( month, ) || month < 1 || month > 12.
       if (
         !Number.isInteger(
           month,
@@ -388,6 +455,7 @@ function MorningDriverAvailabilityPage() {
         return;
       }
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !formState .submissionDeadline.
       if (
         !formState
           .submissionDeadline
@@ -405,6 +473,7 @@ function MorningDriverAvailabilityPage() {
             .submissionDeadline,
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר Number.isNaN( deadline.getTime(), ).
       if (
         Number.isNaN(
           deadline.getTime(),
@@ -421,6 +490,7 @@ function MorningDriverAvailabilityPage() {
         null,
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await createPeriod({
           year,
@@ -451,6 +521,11 @@ function MorningDriverAvailabilityPage() {
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleOpenPeriod: טיפול באירוע עבור תקופה.
+   * @param period — תקופה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleOpenPeriod =
     async (
       period:
@@ -462,10 +537,12 @@ function MorningDriverAvailabilityPage() {
           'בפתיחה תיווצר רשומת הגשה לכל כונן בוקר פעיל.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await openPeriod(
           period.id,
@@ -477,6 +554,11 @@ function MorningDriverAvailabilityPage() {
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleDeletePeriod: טיפול באירוע עבור תקופה.
+   * @param period — תקופה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleDeletePeriod =
     async (
       period:
@@ -488,10 +570,12 @@ function MorningDriverAvailabilityPage() {
           'הפעולה תמחק את התקופה ואת כל המשמרות שנוצרו עבורה.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await deletePeriod(
           period.id,
@@ -504,11 +588,17 @@ function MorningDriverAvailabilityPage() {
     };
 
 
+  /**
+   * פעולה אסינכרונית handleOpenManagement: טיפול באירוע עבור הנתון handleOpenManagement בהקשר הפעולה.
+   * @param period — תקופה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleOpenManagement =
     async (
       period:
         MorningDriverAvailabilityPeriodListItem,
     ): Promise<void> => {
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await loadManagement(
           period.id,
@@ -520,10 +610,15 @@ function MorningDriverAvailabilityPage() {
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleCloseManagement: טיפול באירוע עבור הנתון handleCloseManagement בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleCloseManagement =
     async (): Promise<void> => {
       resetManagement();
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await loadPeriods();
       } catch {
@@ -533,10 +628,16 @@ function MorningDriverAvailabilityPage() {
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleClosePeriod: טיפול באירוע עבור תקופה.
+   * @param force — הנתון force בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleClosePeriod =
     async (
       force: boolean,
     ): Promise<void> => {
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await closePeriod(
           force,
@@ -550,8 +651,13 @@ function MorningDriverAvailabilityPage() {
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleReopenManagementPeriod: טיפול באירוע עבור תקופה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleReopenManagementPeriod =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !managementState.data.
       if (
         !managementState.data
       ) {
@@ -563,10 +669,12 @@ function MorningDriverAvailabilityPage() {
           'לפתוח מחדש את חודש האילוצים? כונני הבוקר יוכלו שוב לערוך ולהגיש.',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await reopenPeriod(
           managementState.data.period.id,
@@ -582,8 +690,13 @@ function MorningDriverAvailabilityPage() {
       }
     };
 
+  /**
+   * פעולה אסינכרונית handleDeleteManagementPeriod: טיפול באירוע עבור תקופה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handleDeleteManagementPeriod =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !managementState.data.
       if (
         !managementState.data
       ) {
@@ -595,10 +708,12 @@ function MorningDriverAvailabilityPage() {
           'למחוק את חודש אילוצי כונני הבוקר ואת כל הנתונים שנשמרו בו?',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await deletePeriod(
           managementState.data.period.id,
@@ -611,8 +726,13 @@ function MorningDriverAvailabilityPage() {
       }
     };
 
+  /**
+   * פעולה אסינכרונית handlePrepareMorningDriverSchedule: טיפול באירוע עבור כונני בוקר.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const handlePrepareMorningDriverSchedule =
     async (): Promise<void> => {
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !managementState.data || scheduleState.isCreating.
       if (
         !managementState.data ||
         scheduleState.isCreating
@@ -625,10 +745,12 @@ function MorningDriverAvailabilityPage() {
           'ליצור טיוטת לוח כונני בוקר מהאילוצים הסגורים?',
         );
 
+      // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !confirmed.
       if (!confirmed) {
         return;
       }
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
         await createMorningDriverScheduleDraft(
           managementState.data.period.id,
@@ -904,14 +1026,17 @@ function MorningDriverAvailabilityPage() {
             (
               period,
             ) => {
+              // isOpening — האם המצב פתוח.
               const isOpening =
                 state.openingPeriodId ===
                 period.id;
 
+              // isDeleting — הנתון isDeleting בהקשר הפעולה.
               const isDeleting =
                 state.deletingPeriodId ===
                 period.id;
 
+              // isBusy — הנתון isBusy בהקשר הפעולה.
               const isBusy =
                 isOpening ||
                 isDeleting;
@@ -1249,6 +1374,7 @@ function MorningDriverAvailabilityPage() {
                     onChange={(
                       event,
                     ) => {
+                      // nextMonth — חודש.
                       const nextMonth =
                         Number(
                           event.target.value,

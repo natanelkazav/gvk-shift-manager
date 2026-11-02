@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useAssignmentCandidates.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור הקצאה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: AssignmentCandidatesStatistics, UseAssignmentCandidatesResult, getErrorMessage, calculateStatistics, useAssignmentCandidates.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useMemo,
@@ -9,20 +16,33 @@ import type {
   AssignmentCandidatesState,
 } from '../types/assignmentCandidates';
 
+/**
+ * חוזה הנתונים AssignmentCandidatesStatistics: הקצאה / סטטיסטיקה.
+ */
 interface AssignmentCandidatesStatistics {
+  // totalShifts — סך הכול / משמרות.
   totalShifts: number;
+  // noAvailableShifts — משמרות.
   noAvailableShifts: number;
+  // singleAvailableShifts — משמרות.
   singleAvailableShifts: number;
+  // multipleAvailableShifts — משמרות.
   multipleAvailableShifts: number;
 }
 
+/**
+ * חוזה הנתונים UseAssignmentCandidatesResult: הקצאה / תוצאה.
+ */
 interface UseAssignmentCandidatesResult {
+  // state — מצב.
   state:
     AssignmentCandidatesState;
 
+  // selectedPeriodId — מזהה התקופה.
   selectedPeriodId:
     string | null;
 
+  // statistics — סטטיסטיקה.
   statistics:
     AssignmentCandidatesStatistics;
 
@@ -33,10 +53,12 @@ interface UseAssignmentCandidatesResult {
   reset:
     () => void;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   AssignmentCandidatesState = {
     data: null,
@@ -44,9 +66,15 @@ const initialState:
     error: null,
   };
 
+/**
+ * פעולה getErrorMessage: שליפה או חישוב של הודעת שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function getErrorMessage(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (error instanceof Error) {
     return error.message;
   }
@@ -54,6 +82,11 @@ function getErrorMessage(
   return 'אירעה שגיאה בלתי צפויה בטעינת נתוני ההכנה לשיבוץ.';
 }
 
+/**
+ * פעולה calculateStatistics: חישוב סטטיסטיקה.
+ * @param shifts — משמרות.
+ * @returns AssignmentCandidatesStatistics — הפלט בהתאם לחתימה.
+ */
 function calculateStatistics(
   shifts:
     AssignmentCandidateShift[],
@@ -85,8 +118,13 @@ function calculateStatistics(
   };
 }
 
+/**
+ * פעולה useAssignmentCandidates: חיבור מצב או הקשר עבור הקצאה.
+ * @returns UseAssignmentCandidatesResult — הפלט בהתאם לחתימה.
+ */
 export function useAssignmentCandidates():
   UseAssignmentCandidatesResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -95,6 +133,7 @@ export function useAssignmentCandidates():
       initialState,
     );
 
+  // מצב מקומי: selectedPeriodId — מזהה התקופה; setSelectedPeriodId מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     selectedPeriodId,
     setSelectedPeriodId,
@@ -108,9 +147,11 @@ export function useAssignmentCandidates():
       async (
         periodId: string,
       ): Promise<void> => {
+        // normalizedPeriodId — מזהה התקופה.
         const normalizedPeriodId =
           periodId.trim();
 
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !normalizedPeriodId.
         if (!normalizedPeriodId) {
           setState({
             data: null,
@@ -134,7 +175,9 @@ export function useAssignmentCandidates():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await assignmentCandidatesService
               .getAssignmentCandidates(
@@ -158,6 +201,7 @@ export function useAssignmentCandidates():
       [],
     );
 
+  // ערך מחושב statistics — סטטיסטיקה; נשמר בין רינדורים עד שינוי התלויות.
   const statistics =
     useMemo(
       () =>
@@ -174,6 +218,7 @@ export function useAssignmentCandidates():
       setState(initialState);
     }, []);
 
+  // clearError — שגיאה.
   const clearError =
     useCallback((): void => {
       setState(

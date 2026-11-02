@@ -1,3 +1,9 @@
+/*
+ * קובץ: src/styles/shifts.css
+ * מטרה: הגדרת עיצוב ופריסה עבור משמרות.
+ * מטרות עיקריות: הגדרת כללי העיצוב, המצבים וההתאמות למסכים המופיעים בקובץ.
+ */
+/* כללי עיצוב עבור .shifts-workspace-tabs  */
 .shifts-workspace-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -5,12 +11,14 @@
   margin-block-end: 20px;
 }
 
+/* כללי עיצוב עבור .shifts-workspace-tab  */
 .shifts-workspace-tab {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
+/* כללי עיצוב עבור .shifts-placeholder  */
 .shifts-placeholder {
   min-height: 240px;
   display: flex;
@@ -20,21 +28,25 @@
   text-align: right;
 }
 
+/* כללי עיצוב עבור .shifts-placeholder h2  */
 .shifts-placeholder h2 {
   margin: 0 0 8px;
 }
 
+/* כללי עיצוב עבור .shifts-placeholder p  */
 .shifts-placeholder p {
   margin: 0;
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .unified-schedule-workspace  */
 .unified-schedule-workspace {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-toolbar  */
 .unified-schedule-toolbar {
   display: flex;
   align-items: center;
@@ -42,18 +54,21 @@
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-month-navigation  */
 .unified-schedule-month-navigation {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-navigation-button  */
 .unified-schedule-navigation-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-current-month  */
 .unified-schedule-current-month {
   display: flex;
   min-width: 130px;
@@ -62,23 +77,27 @@
   justify-content: center;
 }
 
+/* כללי עיצוב עבור .unified-schedule-current-month strong  */
 .unified-schedule-current-month strong {
   color: var(--theme-text-strong);
   font-size: 1rem;
 }
 
+/* כללי עיצוב עבור .unified-schedule-current-month span  */
 .unified-schedule-current-month span {
   margin-block-start: 2px;
   color: var(--theme-text-muted);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .unified-schedule-filters  */
 .unified-schedule-filters {
   margin: 20px 0 0;
   padding: 0;
   border: 0;
 }
 
+/* כללי עיצוב עבור .unified-schedule-filters legend  */
 .unified-schedule-filters legend {
   margin-block-end: 10px;
   color: var(--theme-text);
@@ -86,12 +105,14 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .unified-schedule-filter-options  */
 .unified-schedule-filter-options {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-filter  */
 .unified-schedule-filter {
   display: inline-flex;
   align-items: center;
@@ -110,6 +131,7 @@
     box-shadow 150ms ease;
 }
 
+/* כללי עיצוב עבור .unified-schedule-filter:hover  */
 .unified-schedule-filter:hover {
   background: var(--theme-surface-muted);
   box-shadow:
@@ -117,6 +139,7 @@
     rgba(15, 23, 42, 0.08);
 }
 
+/* כללי עיצוב עבור .unified-schedule-filter input  */
 .unified-schedule-filter input {
   width: 16px;
   height: 16px;
@@ -124,23 +147,28 @@
   accent-color: #2563eb;
 }
 
+/* כללי עיצוב עבור .unified-schedule-filter-dispatcher  */
 .unified-schedule-filter-dispatcher {
   border-color: #93c5fd;
 }
 
+/* כללי עיצוב עבור .unified-schedule-filter-morning_driver  */
 .unified-schedule-filter-morning_driver {
   border-color: #fcd34d;
 }
 
+/* כללי עיצוב עבור .unified-schedule-filter-on_call  */
 .unified-schedule-filter-on_call {
   border-color: #86efac;
 }
 
+/* כללי עיצוב עבור .unified-calendar-empty-day  */
 .unified-calendar-empty-day {
   color: #94a3b8;
   font-size: 0.6rem;
 }
 
+/* כללי עיצוב עבור .unified-calendar-entry  */
 .unified-calendar-entry {
   display: grid;
   grid-template-columns:
@@ -155,32 +183,38 @@
   line-height: 1.25;
 }
 
+/* כללי עיצוב עבור .unified-calendar-entry-dispatcher  */
 .unified-calendar-entry-dispatcher {
   border-color: #2563eb;
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .unified-calendar-entry-morning_driver  */
 .unified-calendar-entry-morning_driver {
   border-color: #d97706;
   background: #fffbeb;
 }
 
+/* כללי עיצוב עבור .unified-calendar-entry-on_call  */
 .unified-calendar-entry-on_call {
   border-color: #16a34a;
   background: #f0fdf4;
 }
 
+/* כללי עיצוב עבור .unified-calendar-entry-unassigned  */
 .unified-calendar-entry-unassigned {
   border-color: #dc2626;
   background: #fef2f2;
 }
 
+/* כללי עיצוב עבור .unified-calendar-entry-category  */
 .unified-calendar-entry-category {
   color: var(--theme-text-secondary);
   font-size: 0.54rem;
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .unified-calendar-entry-name  */
 .unified-calendar-entry-name {
   min-width: 0;
   overflow: hidden;
@@ -190,6 +224,7 @@
   white-space: nowrap;
 }
 
+/* כללי עיצוב עבור .unified-calendar-entry-time  */
 .unified-calendar-entry-time {
   grid-column:
     1 / -1;
@@ -197,6 +232,7 @@
   font-size: 0.54rem;
 }
 
+/* כללי עיצוב עבור .unified-calendar-more  */
 .unified-calendar-more {
   display: block;
   padding: 3px 5px;
@@ -205,6 +241,7 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .unified-schedule-message  */
 .unified-schedule-message {
   padding: 12px 16px;
   border: 1px solid;
@@ -212,40 +249,47 @@
   font-size: 0.75rem;
 }
 
+/* כללי עיצוב עבור .unified-schedule-message strong  */
 .unified-schedule-message strong {
   display: block;
   margin-block-end: 6px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-message ul  */
 .unified-schedule-message ul {
   margin: 0;
   padding-inline-start: 20px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-message-error  */
 .unified-schedule-message-error {
   border-color: #fca5a5;
   background: #fef2f2;
   color: #991b1b;
 }
 
+/* כללי עיצוב עבור .unified-schedule-message-warning  */
 .unified-schedule-message-warning {
   border-color: #fcd34d;
   background: #fffbeb;
   color: #92400e;
 }
 
+/* כללי עיצוב עבור .unified-schedule-loading  */
 .unified-schedule-loading {
   padding: 36px;
   color: var(--theme-text-muted);
   text-align: center;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-details  */
 .unified-schedule-day-details {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry  */
 .unified-schedule-day-entry {
   display: flex;
   flex-direction: column;
@@ -257,18 +301,22 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry-dispatcher  */
 .unified-schedule-day-entry-dispatcher {
   border-inline-start-color: #2563eb;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry-morning_driver  */
 .unified-schedule-day-entry-morning_driver {
   border-inline-start-color: #d97706;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry-on_call  */
 .unified-schedule-day-entry-on_call {
   border-inline-start-color: #16a34a;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry-header  */
 .unified-schedule-day-entry-header {
   display: flex;
   align-items: center;
@@ -276,12 +324,14 @@
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry-category  */
 .unified-schedule-day-entry-category {
   color: var(--theme-text-secondary);
   font-size: 0.7rem;
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry-status  */
 .unified-schedule-day-entry-status {
   padding: 3px 7px;
   border-radius: 999px;
@@ -291,16 +341,19 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry strong  */
 .unified-schedule-day-entry strong {
   color: var(--theme-text-strong);
   font-size: 0.9rem;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry span  */
 .unified-schedule-day-entry span {
   color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry p  */
 .unified-schedule-day-entry p {
   margin: 0;
   padding-block-start: 6px;
@@ -309,6 +362,7 @@
   font-size: 0.72rem;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 760px) */
 @media (max-width: 760px) {
   .unified-schedule-toolbar {
     align-items: stretch;
@@ -336,6 +390,7 @@
   }
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .shifts-workspace-tabs {
     display: grid;
@@ -361,24 +416,28 @@
     min-width: 0;
   }
 }
+/* כללי עיצוב עבור .unified-availability-management  */
 .unified-availability-management {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .unified-availability-header h2  */
 .unified-availability-header h2 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 1.1rem;
 }
 
+/* כללי עיצוב עבור .unified-availability-header p  */
 .unified-availability-header p {
   margin: 6px 0 0;
   color: var(--theme-text-muted);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .unified-availability-grid  */
 .unified-availability-grid {
   display: grid;
   grid-template-columns:
@@ -389,6 +448,7 @@
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .unified-availability-card  */
 .unified-availability-card {
   position: relative;
   overflow: hidden;
@@ -396,21 +456,25 @@
     4px solid transparent;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-dispatchers  */
 .unified-availability-card-dispatchers {
   border-block-start-color:
     #2563eb;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-morning-drivers  */
 .unified-availability-card-morning-drivers {
   border-block-start-color:
     #d97706;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-drivers  */
 .unified-availability-card-drivers {
   border-block-start-color:
     #16a34a;
 }
 
+/* כללי עיצוב עבור .unified-availability-card .card-body  */
 .unified-availability-card .card-body {
   display: flex;
   min-height: 260px;
@@ -418,12 +482,14 @@
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-content  */
 .unified-availability-card-content {
   display: flex;
   align-items: flex-start;
   gap: 13px;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-icon  */
 .unified-availability-card-icon {
   display: flex;
   width: 44px;
@@ -436,16 +502,19 @@
   color: var(--theme-text);
 }
 
+/* כללי עיצוב עבור .unified-availability-card-text  */
 .unified-availability-card-text {
   min-width: 0;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-text h3  */
 .unified-availability-card-text h3 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-text p  */
 .unified-availability-card-text p {
   margin: 7px 0 0;
   color: var(--theme-text-muted);
@@ -453,6 +522,7 @@
   line-height: 1.65;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-status  */
 .unified-availability-card-status {
   display: flex;
   align-items: center;
@@ -464,17 +534,20 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .unified-availability-status-label  */
 .unified-availability-status-label {
   color: var(--theme-text-muted);
   font-size: 0.68rem;
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-status strong  */
 .unified-availability-card-status strong {
   color: var(--theme-text);
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-action  */
 .unified-availability-card-action {
   display: inline-flex;
   width: 100%;
@@ -484,6 +557,7 @@
   margin-block-start: auto;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1000px) */
 @media (max-width: 1000px) {
   .unified-availability-grid {
     grid-template-columns:
@@ -494,6 +568,7 @@
     min-height: auto;
   }
 }
+/* כללי עיצוב עבור .unified-availability-card-details  */
 .unified-availability-card-details {
   display: flex;
   flex-direction: column;
@@ -501,6 +576,7 @@
   margin: 0;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-details > div  */
 .unified-availability-card-details > div {
   display: grid;
   grid-template-columns:
@@ -514,6 +590,7 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .unified-availability-card-details dt  */
 .unified-availability-card-details dt {
   display: inline-flex;
   align-items: center;
@@ -523,6 +600,7 @@
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-details dd  */
 .unified-availability-card-details dd {
   margin: 0;
   color: var(--theme-text-strong);
@@ -531,6 +609,7 @@
   text-align: left;
 }
 
+/* כללי עיצוב עבור .unified-availability-status-badge  */
 .unified-availability-status-badge {
   display: inline-flex;
   align-items: center;
@@ -541,31 +620,37 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .unified-availability-status-open  */
 .unified-availability-status-open {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .unified-availability-status-closed  */
 .unified-availability-status-closed {
   background: #e2e8f0;
   color: var(--theme-text);
 }
 
+/* כללי עיצוב עבור .unified-availability-status-draft  */
 .unified-availability-status-draft {
   background: #fef3c7;
   color: #92400e;
 }
 
+/* כללי עיצוב עבור .unified-availability-status-archived  */
 .unified-availability-status-archived {
   background: #ede9fe;
   color: #5b21b6;
 }
 
+/* כללי עיצוב עבור .unified-availability-status-missing  */
 .unified-availability-status-missing {
   background: var(--theme-surface-soft);
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .unified-availability-card-error  */
 .unified-availability-card-error {
   padding: 10px 12px;
   border: 1px solid #fca5a5;
@@ -576,6 +661,7 @@
   line-height: 1.5;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 520px) */
 @media (max-width: 520px) {
   .unified-availability-card-details > div {
     grid-template-columns: 1fr;
@@ -586,24 +672,28 @@
     text-align: right;
   }
 }
+/* כללי עיצוב עבור .unified-period-management  */
 .unified-period-management {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .unified-period-header h2  */
 .unified-period-header h2 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 1.1rem;
 }
 
+/* כללי עיצוב עבור .unified-period-header p  */
 .unified-period-header p {
   margin: 6px 0 0;
   color: var(--theme-text-muted);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .unified-period-grid  */
 .unified-period-grid {
   display: grid;
   grid-template-columns:
@@ -614,27 +704,32 @@
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .unified-period-card  */
 .unified-period-card {
   overflow: hidden;
   border-block-start:
     4px solid transparent;
 }
 
+/* כללי עיצוב עבור .unified-period-card-dispatchers  */
 .unified-period-card-dispatchers {
   border-block-start-color:
     #2563eb;
 }
 
+/* כללי עיצוב עבור .unified-period-card-morning-drivers  */
 .unified-period-card-morning-drivers {
   border-block-start-color:
     #d97706;
 }
 
+/* כללי עיצוב עבור .unified-period-card-drivers  */
 .unified-period-card-drivers {
   border-block-start-color:
     #16a34a;
 }
 
+/* כללי עיצוב עבור .unified-period-card .card-body  */
 .unified-period-card .card-body {
   display: flex;
   min-height: 410px;
@@ -642,12 +737,14 @@
   gap: 18px;
 }
 
+/* כללי עיצוב עבור .unified-period-card-heading  */
 .unified-period-card-heading {
   display: flex;
   align-items: flex-start;
   gap: 13px;
 }
 
+/* כללי עיצוב עבור .unified-period-card-icon  */
 .unified-period-card-icon {
   display: flex;
   width: 44px;
@@ -660,12 +757,14 @@
   color: var(--theme-text);
 }
 
+/* כללי עיצוב עבור .unified-period-card-heading h3  */
 .unified-period-card-heading h3 {
   margin: 0;
   color: var(--theme-text-strong);
   font-size: 0.95rem;
 }
 
+/* כללי עיצוב עבור .unified-period-card-heading p  */
 .unified-period-card-heading p {
   margin: 7px 0 0;
   color: var(--theme-text-muted);
@@ -673,6 +772,7 @@
   line-height: 1.65;
 }
 
+/* כללי עיצוב עבור .unified-period-card-status  */
 .unified-period-card-status {
   display: flex;
   flex-direction: column;
@@ -680,6 +780,7 @@
   margin: 0;
 }
 
+/* כללי עיצוב עבור .unified-period-card-status > div  */
 .unified-period-card-status > div {
   display: flex;
   align-items: center;
@@ -691,12 +792,14 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .unified-period-card-status dt  */
 .unified-period-card-status dt {
   color: var(--theme-text-muted);
   font-size: 0.68rem;
   font-weight: 700;
 }
 
+/* כללי עיצוב עבור .unified-period-card-status dd  */
 .unified-period-card-status dd {
   margin: 0;
   color: var(--theme-text);
@@ -704,6 +807,7 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .unified-period-card-actions  */
 .unified-period-card-actions {
   display: flex;
   flex-direction: column;
@@ -711,6 +815,7 @@
   margin-block-start: auto;
 }
 
+/* כללי עיצוב עבור .unified-period-card-actions .button  */
 .unified-period-card-actions .button {
   display: inline-flex;
   width: 100%;
@@ -719,6 +824,7 @@
   gap: 8px;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 1100px) */
 @media (max-width: 1100px) {
   .unified-period-grid {
     grid-template-columns:
@@ -729,6 +835,7 @@
     min-height: auto;
   }
 }
+/* כללי עיצוב עבור .unified-availability-card-actions  */
 .unified-availability-card-actions {
   display: flex;
   flex-direction: column;
@@ -736,10 +843,12 @@
   margin-block-start: auto;
 }
 
+/* כללי עיצוב עבור .unified-availability-card-actions .unified-availability-card-action  */
 .unified-availability-card-actions .unified-availability-card-action {
   width: 100%;
 }
 
+/* כללי עיצוב עבור .unified-availability-details-placeholder  */
 .unified-availability-details-placeholder {
   display: flex;
   min-height: 180px;
@@ -752,14 +861,17 @@
   text-align: center;
 }
 
+/* כללי עיצוב עבור .unified-availability-details-placeholder p  */
 .unified-availability-details-placeholder p {
   margin: 0;
   line-height: 1.6;
 }
 
+/* כללי עיצוב עבור .unified-availability-details-placeholder strong  */
 .unified-availability-details-placeholder strong {
   color: var(--theme-text-strong);
 }
+/* כללי עיצוב עבור .unified-period-status-badge  */
 .unified-period-status-badge {
   display: inline-flex;
   align-items: center;
@@ -771,31 +883,37 @@
   font-weight: 800;
 }
 
+/* כללי עיצוב עבור .unified-period-status-open  */
 .unified-period-status-open {
   background: #dbeafe;
   color: #1d4ed8;
 }
 
+/* כללי עיצוב עבור .unified-period-status-ready  */
 .unified-period-status-ready {
   background: #dcfce7;
   color: #166534;
 }
 
+/* כללי עיצוב עבור .unified-period-status-draft  */
 .unified-period-status-draft {
   background: #fef3c7;
   color: #92400e;
 }
 
+/* כללי עיצוב עבור .unified-period-status-missing  */
 .unified-period-status-missing {
   background: var(--theme-surface-soft);
   color: var(--theme-text-muted);
 }
 
+/* כללי עיצוב עבור .unified-period-status-archived  */
 .unified-period-status-archived {
   background: #ede9fe;
   color: #5b21b6;
 }
 
+/* כללי עיצוב עבור .unified-period-recommendation  */
 .unified-period-recommendation {
   display: flex;
   flex-direction: column;
@@ -806,17 +924,20 @@
   background: #eff6ff;
 }
 
+/* כללי עיצוב עבור .unified-period-recommendation strong  */
 .unified-period-recommendation strong {
   color: #1e3a8a;
   font-size: 0.7rem;
 }
 
+/* כללי עיצוב עבור .unified-period-recommendation span  */
 .unified-period-recommendation span {
   color: #1e40af;
   font-size: 0.72rem;
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .unified-period-recommendation small  */
 .unified-period-recommendation small {
   padding-block-start: 6px;
   border-block-start: 1px solid #bfdbfe;
@@ -825,6 +946,7 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .unified-period-error  */
 .unified-period-error {
   padding: 10px 12px;
   border: 1px solid #fca5a5;
@@ -835,11 +957,13 @@
   line-height: 1.5;
 }
 
+/* כללי עיצוב עבור .unified-period-empty  */
 .unified-period-empty {
   padding: 36px;
   color: var(--theme-text-muted);
   text-align: center;
 }
+/* כללי עיצוב עבור .unified-schedule-display-mode  */
 .unified-schedule-display-mode {
   display: flex;
   flex-wrap: wrap;
@@ -847,12 +971,14 @@
   margin-block-start: 16px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-list  */
 .unified-schedule-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-list-entry  */
 .unified-schedule-list-entry {
   display: flex;
   align-items: center;
@@ -865,6 +991,7 @@
   background: var(--theme-surface);
 }
 
+/* כללי עיצוב עבור .unified-schedule-list-entry > div:first-child  */
 .unified-schedule-list-entry > div:first-child {
   display: flex;
   min-width: 0;
@@ -872,34 +999,41 @@
   gap: 5px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-list-entry strong  */
 .unified-schedule-list-entry strong {
   color: var(--theme-text-strong);
   font-size: 0.88rem;
 }
 
+/* כללי עיצוב עבור .unified-schedule-list-entry span  */
 .unified-schedule-list-entry span {
   color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .unified-schedule-list-entry-dispatcher  */
 .unified-schedule-list-entry-dispatcher {
   border-inline-start-color: #2563eb;
 }
 
+/* כללי עיצוב עבור .unified-schedule-list-entry-morning_driver  */
 .unified-schedule-list-entry-morning_driver {
   border-inline-start-color: #d97706;
 }
 
+/* כללי עיצוב עבור .unified-schedule-list-entry-on_call  */
 .unified-schedule-list-entry-on_call {
   border-inline-start-color: #16a34a;
 }
 
+/* כללי עיצוב עבור .unified-schedule-day-entry-actions  */
 .unified-schedule-day-entry-actions {
   display: flex;
   justify-content: flex-start;
   padding-block-start: 4px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-message-success  */
 .unified-schedule-message-success {
   display: flex;
   align-items: center;
@@ -909,12 +1043,14 @@
   color: #166534;
 }
 
+/* כללי עיצוב עבור .unified-schedule-edit-form  */
 .unified-schedule-edit-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-edit-summary  */
 .unified-schedule-edit-summary {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -925,22 +1061,26 @@
   background: var(--theme-surface-muted);
 }
 
+/* כללי עיצוב עבור .unified-schedule-edit-summary span  */
 .unified-schedule-edit-summary span {
   color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
+/* כללי עיצוב עבור .unified-schedule-edit-summary strong  */
 .unified-schedule-edit-summary strong {
   color: var(--theme-text-strong);
   font-size: 0.78rem;
 }
 
+/* כללי עיצוב עבור .unified-schedule-edit-field  */
 .unified-schedule-edit-field {
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
 
+/* כללי עיצוב עבור .unified-schedule-edit-field > span  */
 .unified-schedule-edit-field > span {
   color: var(--theme-text);
   font-size: 0.75rem;
@@ -948,6 +1088,7 @@
 }
 
 .unified-schedule-edit-field select,
+/* כללי עיצוב עבור .unified-schedule-edit-field textarea  */
 .unified-schedule-edit-field textarea {
   width: 100%;
   padding: 10px 12px;
@@ -958,11 +1099,13 @@
   font: inherit;
 }
 
+/* כללי עיצוב עבור .unified-schedule-edit-loading  */
 .unified-schedule-edit-loading {
   color: var(--theme-text-muted);
   font-size: 0.72rem;
 }
 
+/* התאמת הפריסה לתנאי המסך @media (max-width: 640px) */
 @media (max-width: 640px) {
   .unified-schedule-display-mode {
     display: grid;

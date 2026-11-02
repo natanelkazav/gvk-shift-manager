@@ -1,3 +1,11 @@
+/**
+ * קובץ: src/components/users/dynamic/DynamicJobTypesPanel.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סוגי תפקידים.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DynamicJobTypesPanelProps, PermissionBlueprintItem, RoleConfigDifference, FutureMonthDataStatus, fetchFutureMonthDataStatus, DynamicJobTypesPanel.
+ * - קריאות RPC המופעלות בקובץ: get_dynamic_job_type_period_summary.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
 import {
   Bot,
   BriefcaseBusiness,
@@ -46,18 +54,24 @@ import { dailyReportService } from '../../../services/dailyReportService';
 import type { DailyReportAdminUser } from '../../../types/dailyReports';
 import { Button, Input, Modal, Textarea } from '../../ui';
 
+/**
+ * חוזה הנתונים DynamicJobTypesPanelProps: סוגי תפקידים.
+ */
 interface DynamicJobTypesPanelProps {
+  // canManage — האם פעולת ניהול מותרת.
   canManage: boolean;
 }
 
 
 
+// employmentScopeLabels — הנתון employmentScopeLabels בהקשר הפעולה.
 const employmentScopeLabels: Record<EmploymentScope, string> = {
   full_time: 'משרה מלאה',
   part_time: 'משרה חלקית',
   flexible: 'גמיש',
 };
 
+// payModelLabels — הנתון payModelLabels בהקשר הפעולה.
 const payModelLabels: Record<JobPayModel, string> = {
   hourly: 'שעתי',
   per_shift: 'פר משמרת',
@@ -66,27 +80,44 @@ const payModelLabels: Record<JobPayModel, string> = {
   none: 'ללא חישוב',
 };
 
+// schedulingStrategyLabels — שיטת שיבוץ.
 const schedulingStrategyLabels: Record<DynamicSchedulingStrategy, string> = {
   none: 'ללא שיבוצים',
   availability_optimizer: 'אילוצים + אופטימיזציה חודשית',
   monthly_rotation_constraints: 'סבב חודשי + אילוצים',
 };
 
+// ROTATION_EXCHANGE_OPTION — סבב כוננויות.
 const ROTATION_EXCHANGE_OPTION = 'monthly_rotation_exchange' as const;
+/**
+ * פעולה isRotationExchange: בדיקת תנאי עבור סבב כוננויות.
+ * @param config — תצורה.
+ */
 const isRotationExchange = (config: DynamicSchedulingConfig) => config.rotationExchangeEnabled === true;
 
+/**
+ * פעולה getIsraelMonth: שליפה או חישוב של חודש.
+ * @param offsetMonths — מיקום תחילת התוצאות / חודשים.
+ * @returns { year: number; month: number } — הפלט בהתאם לחתימה.
+ */
 const getIsraelMonth = (offsetMonths = 0): { year: number; month: number } => {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Jerusalem',
     year: 'numeric',
     month: '2-digit',
   }).formatToParts(new Date());
+  // year — שנה.
   const year = Number(parts.find((part) => part.type === 'year')?.value);
+  // month — חודש.
   const month = Number(parts.find((part) => part.type === 'month')?.value);
   const shifted = new Date(Date.UTC(year, month - 1 + offsetMonths, 1));
   return { year: shifted.getUTCFullYear(), month: shifted.getUTCMonth() + 1 };
 };
 
+/**
+ * פעולה defaultSchedulingConfig: תצורה.
+ * @returns DynamicSchedulingConfig — הפלט בהתאם לחתימה.
+ */
 const defaultSchedulingConfig = (): DynamicSchedulingConfig => ({
   scheduleChangeMode: 'none',
   rotationExchangeEnabled: false,
@@ -123,6 +154,11 @@ const defaultSchedulingConfig = (): DynamicSchedulingConfig => ({
   weights: { coverage: 1000, proportionalFairness: 100, preference: 30, targetOptional: 15 },
 });
 
+/**
+ * פעולה makeWorkShift: משמרת.
+ * @param prefix — הנתון prefix בהקשר הפעולה.
+ * @param index — מיקום באוסף.
+ */
 const makeWorkShift = (prefix: string, index: number) => ({
   id: `${prefix}-${Date.now()}-${index}`,
   name: `משמרת ${index + 1}`,
@@ -132,6 +168,12 @@ const makeWorkShift = (prefix: string, index: number) => ({
   premium200Hours: 0,
 });
 
+/**
+ * פעולה getShiftDurationHours: שליפה או חישוב של משמרת / משך / שעות.
+ * @param startTime — שעת התחלה.
+ * @param endTime — שעת סיום.
+ * @returns number — הפלט בהתאם לחתימה.
+ */
 const getShiftDurationHours = (startTime: string, endTime: string): number => {
   const [startHour = 0, startMinute = 0] = startTime.split(':').map(Number);
   const [endHour = 0, endMinute = 0] = endTime.split(':').map(Number);
@@ -141,17 +183,26 @@ const getShiftDurationHours = (startTime: string, endTime: string): number => {
   return Math.max(0, (end - start) / 60);
 };
 
+/**
+ * פעולה normalizeWorkDay: נרמול יום.
+ * @param dayKey — יום / מפתח.
+ * @param value — ערך.
+ * @returns DynamicWorkDayDefinition — הפלט בהתאם לחתימה.
+ */
 const normalizeWorkDay = (
   dayKey: 'weekday' | 'friday' | 'saturday' | 'holiday',
   value: unknown,
 ): DynamicWorkDayDefinition => {
+  // source — מקור.
   const source = (value ?? {}) as Record<string, unknown>;
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר typeof source.works === 'boolean' && Array.isArray(source.shifts).
   if (typeof source.works === 'boolean' && Array.isArray(source.shifts)) {
     return {
       works: source.works,
       applyToHolidayEve: dayKey === 'friday' ? source.applyToHolidayEve === true : undefined,
       applyToHolidayEnd: dayKey === 'saturday' ? source.applyToHolidayEnd === true : undefined,
       shifts: source.shifts.map((item, index) => {
+        // shift — משמרת.
         const shift = (item ?? {}) as Record<string, unknown>;
         return {
           id: String(shift.id ?? `${dayKey}-${index + 1}`),
@@ -166,6 +217,7 @@ const normalizeWorkDay = (
   }
 
   // Backward compatibility with Phase 8.2A, which stored one start/end range per day.
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר source.startTime || source.endTime.
   if (source.startTime || source.endTime) {
     return {
       works: true,
@@ -188,7 +240,13 @@ const normalizeWorkDay = (
   };
 };
 
+/**
+ * פעולה normalizeShiftPattern: נרמול משמרת.
+ * @param value — ערך.
+ * @returns DynamicShiftPatternDefinition — הפלט בהתאם לחתימה.
+ */
 const normalizeShiftPattern = (value: unknown): DynamicShiftPatternDefinition => {
+  // source — מקור.
   const source = (value ?? {}) as Record<string, unknown>;
   return {
     enabled: source.enabled !== false,
@@ -217,6 +275,11 @@ const normalizeShiftPattern = (value: unknown): DynamicShiftPatternDefinition =>
   };
 };
 
+/**
+ * פעולה emptyForm: הנתון emptyForm בהקשר הפעולה.
+ * @param scheduleGroupId — שיבוץ / קבוצה / מזהה.
+ * @returns SaveDynamicJobTypeInput — הפלט בהתאם לחתימה.
+ */
 const emptyForm = (scheduleGroupId: string): SaveDynamicJobTypeInput => ({
   scheduleGroupId,
   code: '',
@@ -259,6 +322,11 @@ const emptyForm = (scheduleGroupId: string): SaveDynamicJobTypeInput => ({
   defaultPermissions: [],
 });
 
+/**
+ * פעולה toForm: המרה עבור הנתון toForm בהקשר הפעולה.
+ * @param jobType — סוג תפקיד.
+ * @returns SaveDynamicJobTypeInput — הפלט בהתאם לחתימה.
+ */
 const toForm = (jobType: DynamicJobType): SaveDynamicJobTypeInput => ({
   id: jobType.id,
   legacyRole: jobType.legacyRole,
@@ -307,7 +375,13 @@ const toForm = (jobType: DynamicJobType): SaveDynamicJobTypeInput => ({
   defaultPermissions: jobType.defaultPermissions,
 });
 
+/**
+ * פעולה deriveAutomaticCapabilities: יכולות תפקיד.
+ * @param input — קלט.
+ * @returns string[] — הפלט בהתאם לחתימה.
+ */
 const deriveAutomaticCapabilities = (input: SaveDynamicJobTypeInput): string[] => {
+  // capabilities — יכולות תפקיד; אוסף ערכים ייחודיים.
   const capabilities = new Set(input.capabilities);
 
   if (input.schedulingStrategy !== 'none') {
@@ -348,15 +422,23 @@ const deriveAutomaticCapabilities = (input: SaveDynamicJobTypeInput): string[] =
 };
 
 
+/**
+ * טיפוס PermissionBlueprintItem: הרשאות / פריט.
+ */
 type PermissionBlueprintItem = {
+  // permissionKey — מפתח ההרשאה.
   permissionKey: string;
+  // featureKey — מפתח.
   featureKey: string;
   audience: 'member' | 'manager';
+  // label — תווית.
   label: string;
   description: string;
+  // defaultEnabled — האם האפשרות מופעלת (אופציונלי).
   defaultEnabled?: boolean;
 };
 
+// permissionFeatureLabels — הרשאות.
 const permissionFeatureLabels: Record<string, string> = {
   schedule: 'שיבוץ ולוחות',
   availability: 'אילוצים',
@@ -370,6 +452,7 @@ const permissionFeatureLabels: Record<string, string> = {
   activity_tracking: 'מעקב פעילות',
 };
 
+// permissionBlueprint — הרשאות.
 const permissionBlueprint: PermissionBlueprintItem[] = [
   { permissionKey: 'schedule.view_own', featureKey: 'schedule', audience: 'member', label: 'צפייה במשמרות שלי', description: 'צפייה בלוח האישי של התפקיד.' },
   { permissionKey: 'schedule.view_others', featureKey: 'schedule', audience: 'member', label: 'הצגת משמרות/כוננויות של משתמשים אחרים', description: 'מאפשר לעובד לראות בלוח החודשי וברשימה את השיבוצים של עובדים אחרים באותו תפקיד.', defaultEnabled: false },
@@ -406,6 +489,11 @@ const permissionBlueprint: PermissionBlueprintItem[] = [
   { permissionKey: 'activity_tracking.edit_team', featureKey: 'activity_tracking', audience: 'manager', label: 'עריכת מקטעי פעילות', description: 'תיקון מקטעי פעילות עם תיעוד.', defaultEnabled: false },
 ];
 
+/**
+ * פעולה derivePermissionFeatures: הרשאות.
+ * @param input — קלט.
+ * @returns string[] — הפלט בהתאם לחתימה.
+ */
 const derivePermissionFeatures = (input: SaveDynamicJobTypeInput): string[] => {
   const features = new Set<string>();
   if (input.schedulingStrategy !== 'none') {
@@ -422,34 +510,68 @@ const derivePermissionFeatures = (input: SaveDynamicJobTypeInput): string[] => {
   return Array.from(features);
 };
 
+/**
+ * פעולה derivePermissionBlueprint: הרשאות.
+ * @param input — קלט.
+ * @returns PermissionBlueprintItem[] — הפלט בהתאם לחתימה.
+ */
 const derivePermissionBlueprint = (input: SaveDynamicJobTypeInput): PermissionBlueprintItem[] => {
   const features = new Set(derivePermissionFeatures(input));
   return permissionBlueprint.filter((item) => features.has(item.featureKey));
 };
 
+/**
+ * טיפוס RoleConfigDifference: תצורה.
+ */
 type RoleConfigDifference = { label: string; current: string; upcoming: string; impact: string };
 
+/**
+ * פעולה describeRoleConfigDifferences: תצורה.
+ * @param current — הנתון current בהקשר הפעולה.
+ * @param upcoming — הנתון upcoming בהקשר הפעולה.
+ * @returns RoleConfigDifference[] — הפלט בהתאם לחתימה.
+ */
 const describeRoleConfigDifferences = (
   current: SaveDynamicJobTypeInput,
   upcoming: SaveDynamicJobTypeInput,
 ): RoleConfigDifference[] => {
   const differences: RoleConfigDifference[] = [];
+  /**
+   * פעולה add: הוספת הנתון add בהקשר הפעולה.
+   * @param label — תווית.
+   * @param before — הנתון before בהקשר הפעולה.
+   * @param after — הנתון after בהקשר הפעולה.
+   * @param impact — הנתון impact בהקשר הפעולה.
+   */
   const add = (label: string, before: unknown, after: unknown, impact: string) => {
     if (before !== after) differences.push({ label, current: String(before), upcoming: String(after), impact });
   };
+  /**
+   * פעולה strategyName: שיטת שיבוץ / שם.
+   * @param form — הנתון form בהקשר הפעולה.
+   */
   const strategyName = (form: SaveDynamicJobTypeInput) =>
     form.schedulingStrategy === 'monthly_rotation_constraints' && isRotationExchange(form.schedulingConfig)
       ? 'סבב חודשי + אילוצים וחילופים'
       : schedulingStrategyLabels[form.schedulingStrategy];
   add('שיטת שיבוץ', strategyName(current), strategyName(upcoming),
     'משפיע על יצירת שיבוצים ועל תהליך האילוצים והחילופים בחודש התחולה.');
+  // workModeLabels — מצב פעולה.
   const workModeLabels: Record<string, string> = {
     none: 'ללא שיבוץ', shifts: 'משמרות', on_call_daily: 'כוננות יומית', on_call_hourly: 'כוננות שעתית',
   };
+  /**
+   * פעולה workMode: מצב פעולה.
+   * @param form — הנתון form בהקשר הפעולה.
+   */
   const workMode = (form: SaveDynamicJobTypeInput) =>
     workModeLabels[form.schedulingConfig.shiftPattern?.workMode ?? 'shifts'] ?? 'לא מוגדר';
   add('מבנה עבודה', workMode(current), workMode(upcoming),
     'משפיע על סוג יחידות השיבוץ שייווצרו בחודש התחולה.');
+  /**
+   * פעולה changeModeLabel: מצב פעולה / תווית.
+   * @param mode — מצב פעולה.
+   */
   const changeModeLabel = (mode: DynamicScheduleChangeMode | undefined) =>
     ({ none: 'ללא שינוי עצמי', self_edit: 'עריכה עצמית של השיבוץ', shift_exchange: 'מערכת חילופי משמרות וכוננויות' })[mode ?? 'none'] ?? 'לא מוגדר';
   add('ניהול שינויים', changeModeLabel(current.schedulingConfig.scheduleChangeMode),
@@ -462,8 +584,14 @@ const describeRoleConfigDifferences = (
     'משפיע על אופן חישוב השכר לתפקיד בחודש התחולה.');
   add('היקף העסקה', employmentScopeLabels[current.employmentScope], employmentScopeLabels[upcoming.employmentScope],
     'עשוי להשפיע על כללי השיבוץ ויעדי העובדים.');
+  /**
+   * פעולה addon: הנתון addon בהקשר הפעולה.
+   * @param form — הנתון form בהקשר הפעולה.
+   * @param key — מפתח.
+   */
   const addon = (form: SaveDynamicJobTypeInput, key: 'activityTracking' | 'dailyReports' | 'attendance') =>
     form.schedulingConfig[key]?.enabled ? 'פעיל' : 'כבוי';
+  // עיבוד כל פריט מתוך [ ['activityTracking', 'מעקב פעילות'], ['dailyReports', 'דיווח יומי'], ['attendance', 'נוכחות'], ] as const בנפרד.
   for (const [key, label] of [
     ['activityTracking', 'מעקב פעילות'], ['dailyReports', 'דיווח יומי'], ['attendance', 'נוכחות'],
   ] as const) {
@@ -473,38 +601,64 @@ const describeRoleConfigDifferences = (
   return differences;
 };
 
+/**
+ * טיפוס FutureMonthDataStatus: חודש / נתונים / סטטוס.
+ */
 type FutureMonthDataStatus = {
+  // periods — תקופות.
   periods: number;
+  // openPeriods — תקופות.
   openPeriods: number;
   drafts: number;
   publications: number;
 };
 
+/**
+ * פעולה futureMonthName: חודש / שם.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 const futureMonthName = (): string => {
   const { year, month } = getIsraelMonth(1);
   return new Intl.DateTimeFormat('he-IL', { month: 'long', year: 'numeric', timeZone: 'Asia/Jerusalem' })
     .format(new Date(Date.UTC(year, month - 1, 15)));
 };
 
+/**
+ * פעולה אסינכרונית fetchFutureMonthDataStatus: טעינת חודש / נתונים / סטטוס.
+ * הפעולה פונה ל־RPC: get_dynamic_job_type_period_summary.
+ * @param jobTypeId — מזהה סוג התפקיד.
+ * @returns Promise<FutureMonthDataStatus> — הפלט בהתאם לחתימה.
+ */
 async function fetchFutureMonthDataStatus(jobTypeId: string): Promise<FutureMonthDataStatus> {
   const { year, month } = getIsraelMonth(1);
+  // פירוק תוצאת הפעולה האסינכרונית לשדות הנתונים והשגיאה המוגדרים להלן.
   const { data, error } = await supabase.rpc('get_dynamic_job_type_period_summary', {
     requested_job_type_id: jobTypeId,
     requested_year: year,
     requested_month: month,
   });
   if (error) throw error;
+  // עצירת הפעולה עם שגיאה כאשר !data || typeof data !== 'object' || Array.isArray(data).
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     throw new Error('לא התקבלה תשובה תקינה מבדיקת נתוני החודש הבא.');
   }
+  // summary — סיכום.
   const summary = data as Record<string, unknown>;
+  /**
+   * פעולה count: כמות.
+   * @param key — מפתח.
+   * @returns number — הפלט בהתאם לחתימה.
+   */
   const count = (key: string): number => {
+    // value — ערך.
     const value = summary[key];
+    // עצירת הפעולה עם שגיאה כאשר typeof value !== 'number' || !Number.isInteger(value) || value < 0.
     if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
       throw new Error('התקבלה תשובה לא תקינה מבדיקת נתוני החודש הבא.');
     }
     return value;
   };
+  // עצירת הפעולה עם שגיאה כאשר summary.jobTypeId !== jobTypeId || summary.year !== year || summary.month !== month.
   if (summary.jobTypeId !== jobTypeId || summary.year !== year || summary.month !== month) {
     throw new Error('התקבלו נתונים עבור תפקיד או חודש אחר.');
   }
@@ -516,10 +670,18 @@ async function fetchFutureMonthDataStatus(jobTypeId: string): Promise<FutureMont
   };
 }
 
+/**
+ * פעולה DynamicJobTypesPanel: סוגי תפקידים.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [state, setState] = useState<{
+    // isLoading — האם טעינה מתבצעת.
     isLoading: boolean;
+    // data — נתונים.
     data: DynamicSchedulingAdminData | null;
+    // error — שגיאה.
     error: string | null;
   }>({
     isLoading: true,
@@ -527,53 +689,100 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     error: null,
   });
 
+  // מצב מקומי: isModalOpen — הנתון isModalOpen בהקשר הפעולה; setIsModalOpen מעדכנת אותו ומפעילה רינדור לפי React.
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // מצב מקומי: form — הנתון form בהקשר הפעולה; setForm מעדכנת אותו ומפעילה רינדור לפי React.
   const [form, setForm] = useState<SaveDynamicJobTypeInput | null>(null);
+  // מצב מקומי: isSaving — האם שמירה מתבצעת; setIsSaving מעדכנת אותו ומפעילה רינדור לפי React.
   const [isSaving, setIsSaving] = useState(false);
+  // מצב מקומי: effectiveTiming — הנתון effectiveTiming בהקשר הפעולה; setEffectiveTiming מעדכנת אותו ומפעילה רינדור לפי React.
   const [effectiveTiming, setEffectiveTiming] = useState<'current' | 'next'>('current');
+  // מצב מקומי: futureMonthData — חודש / נתונים; setFutureMonthData מעדכנת אותו ומפעילה רינדור לפי React.
   const [futureMonthData, setFutureMonthData] = useState<FutureMonthDataStatus | null>(null);
+  // מצב מקומי: futureMonthDataError — חודש / נתונים / שגיאה; setFutureMonthDataError מעדכנת אותו ומפעילה רינדור לפי React.
   const [futureMonthDataError, setFutureMonthDataError] = useState<string | null>(null);
+  // מצב מקומי: futureMonthDataLoading — חודש / נתונים / טעינה; setFutureMonthDataLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [futureMonthDataLoading, setFutureMonthDataLoading] = useState(false);
+  // מצב מקומי: futureRoleChanges — הנתון futureRoleChanges בהקשר הפעולה; setFutureRoleChanges מעדכנת אותו ומפעילה רינדור לפי React.
   const [futureRoleChanges, setFutureRoleChanges] = useState<Record<string, RoleConfigDifference[]>>({});
+  // מצב מקומי: futureChangesLoading — טעינה; setFutureChangesLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [futureChangesLoading, setFutureChangesLoading] = useState(false);
+  // מצב מקומי: showRoleComparisonDetails — הנתון showRoleComparisonDetails בהקשר הפעולה; setShowRoleComparisonDetails מעדכנת אותו ומפעילה רינדור לפי React.
   const [showRoleComparisonDetails, setShowRoleComparisonDetails] = useState(false);
+  // מצב מקומי: loadedRoleSnapshot — הנתון loadedRoleSnapshot בהקשר הפעולה; setLoadedRoleSnapshot מעדכנת אותו ומפעילה רינדור לפי React.
   const [loadedRoleSnapshot, setLoadedRoleSnapshot] = useState<string | null>(null);
+  // מצב מקומי: currentRoleBaseline — הנתון currentRoleBaseline בהקשר הפעולה; setCurrentRoleBaseline מעדכנת אותו ומפעילה רינדור לפי React.
   const [currentRoleBaseline, setCurrentRoleBaseline] = useState<SaveDynamicJobTypeInput | null>(null);
+  // מצב מקומי: roleEditorTab — הנתון roleEditorTab בהקשר הפעולה; setRoleEditorTab מעדכנת אותו ומפעילה רינדור לפי React.
   const [roleEditorTab, setRoleEditorTab] = useState<'general' | 'scheduling' | 'addons' | 'permissions'>('general');
+  // מצב מקומי: isLoadingEffectiveConfig — האם טעינה מתבצעת; setIsLoadingEffectiveConfig מעדכנת אותו ומפעילה רינדור לפי React.
   const [isLoadingEffectiveConfig, setIsLoadingEffectiveConfig] = useState(false);
+  // מצב מקומי: formError — שגיאה; setFormError מעדכנת אותו ומפעילה רינדור לפי React.
   const [formError, setFormError] = useState<string | null>(null);
+  // מצב מקומי: testingJobType — סוג תפקיד; setTestingJobType מעדכנת אותו ומפעילה רינדור לפי React.
   const [testingJobType, setTestingJobType] = useState<DynamicJobType | null>(null);
+  // מצב מקומי: workspaceJobType — סוג תפקיד; setWorkspaceJobType מעדכנת אותו ומפעילה רינדור לפי React.
   const [workspaceJobType, setWorkspaceJobType] = useState<DynamicJobType | null>(null);
+  // מצב מקומי: ruleProposal — כלל; setRuleProposal מעדכנת אותו ומפעילה רינדור לפי React.
   const [ruleProposal, setRuleProposal] = useState('');
+  // מצב מקומי: ruleProposalStatus — כלל / סטטוס; setRuleProposalStatus מעדכנת אותו ומפעילה רינדור לפי React.
   const [ruleProposalStatus, setRuleProposalStatus] = useState<string | null>(null);
+  // מצב מקומי: showAdvancedSchedulingRules — כללים; setShowAdvancedSchedulingRules מעדכנת אותו ומפעילה רינדור לפי React.
   const [showAdvancedSchedulingRules, setShowAdvancedSchedulingRules] = useState(false);
+  // מצב מקומי: jobTypeActionId — סוג תפקיד; setJobTypeActionId מעדכנת אותו ומפעילה רינדור לפי React.
   const [jobTypeActionId, setJobTypeActionId] = useState<string | null>(null);
+  // מצב מקומי: jobTypeActionError — סוג תפקיד; setJobTypeActionError מעדכנת אותו ומפעילה רינדור לפי React.
   const [jobTypeActionError, setJobTypeActionError] = useState<string | null>(null);
+  // מצב מקומי: membershipJobType — סוג תפקיד; setMembershipJobType מעדכנת אותו ומפעילה רינדור לפי React.
   const [membershipJobType, setMembershipJobType] = useState<DynamicJobType | null>(null);
+  // מצב מקומי: membershipData — שיוך לתפקיד / נתונים; setMembershipData מעדכנת אותו ומפעילה רינדור לפי React.
   const [membershipData, setMembershipData] = useState<DynamicMembershipAdminData | null>(null);
+  // מצב מקומי: membershipLoading — שיוך לתפקיד / טעינה; setMembershipLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [membershipLoading, setMembershipLoading] = useState(false);
+  // מצב מקומי: membershipSavingUserId — מזהה משתמש; setMembershipSavingUserId מעדכנת אותו ומפעילה רינדור לפי React.
   const [membershipSavingUserId, setMembershipSavingUserId] = useState<string | null>(null);
+  // מצב מקומי: membershipDrafts — שיוך לתפקיד; setMembershipDrafts מעדכנת אותו ומפעילה רינדור לפי React.
   const [membershipDrafts, setMembershipDrafts] = useState<Record<string, {
     employmentScope: DynamicMemberEmploymentScope;
+    // partTimeDefinition — זמן.
     partTimeDefinition: DynamicMembershipAdminUser['partTimeDefinition'];
   }>>({});
 
+  // מצב מקומי: membershipError — שיוך לתפקיד / שגיאה; setMembershipError מעדכנת אותו ומפעילה רינדור לפי React.
   const [membershipError, setMembershipError] = useState<string | null>(null);
+  // מצב מקומי: showMembershipPicker — שיוך לתפקיד; setShowMembershipPicker מעדכנת אותו ומפעילה רינדור לפי React.
   const [showMembershipPicker, setShowMembershipPicker] = useState(false);
+  // מצב מקומי: permissionEditorLoading — הרשאות / טעינה; setPermissionEditorLoading מעדכנת אותו ומפעילה רינדור לפי React.
   const [permissionEditorLoading, setPermissionEditorLoading] = useState(false);
+  // מצב מקומי: permissionEditorError — הרשאות / שגיאה; setPermissionEditorError מעדכנת אותו ומפעילה רינדור לפי React.
   const [permissionEditorError, setPermissionEditorError] = useState<string | null>(null);
+  // מצב מקומי: memberPermissionKeys — מפתחות ההרשאות; setMemberPermissionKeys מעדכנת אותו ומפעילה רינדור לפי React.
   const [memberPermissionKeys, setMemberPermissionKeys] = useState<string[]>([]);
+  // מצב מקומי: managerPermissionKeys — מפתחות ההרשאות; setManagerPermissionKeys מעדכנת אותו ומפעילה רינדור לפי React.
   const [managerPermissionKeys, setManagerPermissionKeys] = useState<string[]>([]);
+  // מצב מקומי: dashboardContextJobTypeIds — מזהה סוג התפקיד; setDashboardContextJobTypeIds מעדכנת אותו ומפעילה רינדור לפי React.
   const [dashboardContextJobTypeIds, setDashboardContextJobTypeIds] = useState<string[]>([]);
+  // מצב מקומי: managerSavingUserId — מזהה משתמש; setManagerSavingUserId מעדכנת אותו ומפעילה רינדור לפי React.
   const [managerSavingUserId, setManagerSavingUserId] = useState<string | null>(null);
+  // מצב מקומי: selectedMembershipUserIds — מזהה משתמש; setSelectedMembershipUserIds מעדכנת אותו ומפעילה רינדור לפי React.
   const [selectedMembershipUserIds, setSelectedMembershipUserIds] = useState<string[]>([]);
+  // מצב מקומי: membershipBulkSaving — שיוך לתפקיד / שמירה; setMembershipBulkSaving מעדכנת אותו ומפעילה רינדור לפי React.
   const [membershipBulkSaving, setMembershipBulkSaving] = useState(false);
+  // מצב מקומי: legacySourceKind — מקור; setLegacySourceKind מעדכנת אותו ומפעילה רינדור לפי React.
   const [legacySourceKind, setLegacySourceKind] = useState<DynamicLegacySourceKind>('dispatcher');
+  // מצב מקומי: legacyPreview — הנתון legacyPreview בהקשר הפעולה; setLegacyPreview מעדכנת אותו ומפעילה רינדור לפי React.
   const [legacyPreview, setLegacyPreview] = useState<DynamicLegacyImportPreview | null>(null);
+  // מצב מקומי: legacyImporting — הנתון legacyImporting בהקשר הפעולה; setLegacyImporting מעדכנת אותו ומפעילה רינדור לפי React.
   const [legacyImporting, setLegacyImporting] = useState(false);
+  // מצב מקומי: legacyImportMessage — ייבוא / הודעה; setLegacyImportMessage מעדכנת אותו ומפעילה רינדור לפי React.
   const [legacyImportMessage, setLegacyImportMessage] = useState<string | null>(null);
+  // מצב מקומי: dailyReportAdminUsers — דוחות פעילות יומיים; setDailyReportAdminUsers מעדכנת אותו ומפעילה רינדור לפי React.
   const [dailyReportAdminUsers, setDailyReportAdminUsers] = useState<DailyReportAdminUser[]>([]);
 
+  /**
+   * פעולה אסינכרונית loadData: טעינת נתונים.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const loadData = async (): Promise<void> => {
     setState((current) => ({
       ...current,
@@ -581,7 +790,9 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
       error: null,
     }));
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // data — נתונים.
       const data = await dynamicSchedulingService.getAdminData();
       setState({ isLoading: false, data, error: null });
     } catch (error) {
@@ -593,12 +804,15 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [].
   useEffect(() => {
+    // isCancelled — הנתון isCancelled בהקשר הפעולה.
     let isCancelled = false;
 
     void dynamicSchedulingService
       .getAdminData()
       .then((data) => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
         if (isCancelled) {
           return;
         }
@@ -610,6 +824,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
         });
       })
       .catch((error: unknown) => {
+        // טיפול במקרה מיוחד ויציאה מוקדמת כאשר isCancelled.
         if (isCancelled) {
           return;
         }
@@ -626,14 +841,18 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     };
   }, []);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [state.data].
   useEffect(() => {
     const roles = state.data?.jobTypes;
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !roles?.length.
     if (!roles?.length) {
       setFutureRoleChanges({});
       return;
     }
     let cancelled = false;
+    // currentMonth — חודש.
     const currentMonth = getIsraelMonth();
+    // nextMonth — חודש.
     const nextMonth = getIsraelMonth(1);
     setFutureChangesLoading(true);
     void Promise.allSettled(roles.map(async (role) => {
@@ -645,6 +864,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     })).then((results) => {
       if (cancelled) return;
       const changes: Record<string, RoleConfigDifference[]> = {};
+      // עיבוד כל פריט מתוך results בנפרד.
       for (const result of results) {
         if (result.status === 'fulfilled' && result.value.changes.length) {
           changes[result.value.id] = result.value.changes;
@@ -657,7 +877,9 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     return () => { cancelled = true; };
   }, [state.data]);
 
+  // תופעת לוואי לאחר רינדור בהתאם לתלויות [isModalOpen, form?.id, effectiveTiming].
   useEffect(() => {
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !isModalOpen || !form?.id || effectiveTiming !== 'next'.
     if (!isModalOpen || !form?.id || effectiveTiming !== 'next') {
       setFutureMonthData(null);
       setFutureMonthDataError(null);
@@ -678,9 +900,15 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     return () => { cancelled = true; };
   }, [isModalOpen, form?.id, effectiveTiming]);
 
+  /**
+   * פעולה אסינכרונית loadPermissionEditor: טעינת הרשאות.
+   * @param jobTypeId — מזהה סוג התפקיד.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const loadPermissionEditor = async (jobTypeId: string): Promise<void> => {
     setPermissionEditorLoading(true);
     setPermissionEditorError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       const [editor, dashboardContextPolicy] = await Promise.all([
         dynamicPermissionEngineService.getJobTypeEditor(jobTypeId),
@@ -696,8 +924,13 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה openCreate: פתיחת הנתון openCreate בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const openCreate = (): void => {
     if (!canManage) return;
+    // nextForm — הנתון nextForm בהקשר הפעולה.
     const nextForm = emptyForm('');
     const defaults = permissionBlueprint;
     setEffectiveTiming('current');
@@ -715,6 +948,12 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     void dailyReportService.getAdminOptions().then((data) => setDailyReportAdminUsers(data.users)).catch(() => setDailyReportAdminUsers([]));
   };
 
+  /**
+   * פעולה openEdit: פתיחת הנתון openEdit בהקשר הפעולה.
+   * @param jobType — סוג תפקיד.
+   * @param timing — הנתון timing בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const openEdit = (jobType: DynamicJobType, timing: 'current' | 'next' = 'current'): void => {
     if (!canManage) return;
     setEffectiveTiming(timing);
@@ -729,6 +968,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     void dailyReportService.getAdminOptions().then((data) => setDailyReportAdminUsers(data.users)).catch(() => setDailyReportAdminUsers([]));
     void loadPermissionEditor(jobType.id);
     if (timing === 'next') {
+      // target — יעד.
       const target = getIsraelMonth(1);
       setIsLoadingEffectiveConfig(true);
       void dynamicSchedulingService.getEffectiveJobType(jobType.id, target.year, target.month)
@@ -743,9 +983,14 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית submitRuleProposal: הגשת כלל.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const submitRuleProposal = async (): Promise<void> => {
     if (!form?.id || !ruleProposal.trim() || !canManage) return;
     setRuleProposalStatus(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.submitSchedulingRuleProposal(form.id, ruleProposal.trim());
       setRuleProposal('');
@@ -755,6 +1000,11 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית switchEffectiveTiming: הנתון switchEffectiveTiming בהקשר הפעולה.
+   * @param timing — הנתון timing בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const switchEffectiveTiming = async (timing: 'current' | 'next'): Promise<void> => {
     if (timing === effectiveTiming || isLoadingEffectiveConfig || isSaving) return;
     if (form && loadedRoleSnapshot !== null && JSON.stringify(form) !== loadedRoleSnapshot &&
@@ -762,17 +1012,22 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     setEffectiveTiming(timing);
     if (!form?.id) return;
 
+    // target — יעד.
     const target = getIsraelMonth(timing === 'next' ? 1 : 0);
     setIsLoadingEffectiveConfig(true);
     setFormError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // effectiveJobType — סוג תפקיד.
       const effectiveJobType = await dynamicSchedulingService.getEffectiveJobType(
         form.id,
         target.year,
         target.month,
       );
       if (timing === 'next') {
+        // currentMonth — חודש.
         const currentMonth = getIsraelMonth(0);
+        // currentJobType — סוג תפקיד הנוכחי.
         const currentJobType = await dynamicSchedulingService.getEffectiveJobType(
           form.id, currentMonth.year, currentMonth.month,
         );
@@ -792,15 +1047,22 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית submit: הגשת הנתון submit בהקשר הפעולה.
+   * @param event — אירוע.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const submit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
     if (!form || !canManage || isLoadingEffectiveConfig) return;
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !form.name.trim().
     if (!form.name.trim()) {
       setFormError('יש להזין שם לתפקיד.');
       return;
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !form.code.trim().
     if (!form.code.trim()) {
       setFormError('יש להזין קוד פנימי לתפקיד.');
       return;
@@ -809,16 +1071,21 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     setIsSaving(true);
     setFormError(null);
 
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // effectiveTarget — יעד.
       const effectiveTarget = getIsraelMonth(form.id && effectiveTiming === 'next' ? 1 : 0);
       // Preserve an absent legacy preference if the user did not change its default.
       // The UI interprets an absent value as true; don't silently write it on unrelated edits.
+      // sourceAvailability — מקור / אילוצים וזמינות.
       const sourceAvailability = currentRoleBaseline?.availabilityConfig;
+      // availabilityForSave — אילוצים וזמינות.
       const availabilityForSave = { ...form.availabilityConfig };
       if (form.id && sourceAvailability?.showEmployeePreferences === undefined &&
           form.availabilityConfig.showEmployeePreferences === true) {
         delete availabilityForSave.showEmployeePreferences;
       }
+      // savedJobTypeId — מזהה סוג התפקיד.
       const savedJobTypeId = await dynamicSchedulingService.saveJobType({
         ...form,
         availabilityConfig: availabilityForSave,
@@ -860,9 +1127,16 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית setJobTypeActive: קביעת סוג תפקיד.
+   * @param jobType — סוג תפקיד.
+   * @param isActive — האם הרשומה פעילה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const setJobTypeActive = async (jobType: DynamicJobType, isActive: boolean): Promise<void> => {
     if (!canManage || jobTypeActionId) return;
 
+    // actionLabel — תווית.
     const actionLabel = isActive ? 'להפעיל מחדש' : 'להקפיא';
     const confirmed = window.confirm(
       isActive
@@ -873,6 +1147,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
     setJobTypeActionId(jobType.id);
     setJobTypeActionError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.setJobTypeActive(jobType.id, isActive);
       await loadData();
@@ -885,6 +1160,11 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית deleteJobType: מחיקת סוג תפקיד.
+   * @param jobType — סוג תפקיד.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const deleteJobType = async (jobType: DynamicJobType): Promise<void> => {
     if (!canManage || jobTypeActionId) return;
 
@@ -895,6 +1175,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
     setJobTypeActionId(jobType.id);
     setJobTypeActionError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.deleteJobType(jobType.id);
       await loadData();
@@ -905,6 +1186,11 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית openMemberships: פתיחת שיוכים לתפקיד.
+   * @param jobType — סוג תפקיד.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const openMemberships = async (jobType: DynamicJobType): Promise<void> => {
     setMembershipJobType(jobType);
     setMembershipDrafts({});
@@ -914,7 +1200,9 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     setLegacyImportMessage(null);
     setShowMembershipPicker(false);
     setSelectedMembershipUserIds([]);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // data — נתונים.
       const data = await dynamicSchedulingService.getJobTypeMembershipAdmin(jobType.id);
       setMembershipData(data);
     } catch (error) {
@@ -924,15 +1212,24 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית saveMembership: שמירת שיוך לתפקיד.
+   * @param user — משתמש.
+   * @param patch — הנתון patch בהקשר הפעולה.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const saveMembership = async (user: DynamicMembershipAdminUser, patch: {
     isMember?: boolean; employmentScope?: DynamicMemberEmploymentScope | null;
+    // partTimeDefinition — זמן (אופציונלי).
     partTimeDefinition?: DynamicMembershipAdminUser['partTimeDefinition'];
   }): Promise<void> => {
     if (!membershipJobType) return;
+    // isMember — הנתון isMember בהקשר הפעולה.
     const isMember = patch.isMember ?? user.isMember;
     const scope = patch.employmentScope ?? user.employmentScope ?? (membershipJobType.employmentScope === 'flexible' ? 'full_time' : membershipJobType.employmentScope);
     setMembershipSavingUserId(user.userId);
     setMembershipError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicSchedulingService.saveJobTypeMembership(
         membershipJobType.id, user.userId, isMember, scope as DynamicMemberEmploymentScope, patch.partTimeDefinition ?? user.partTimeDefinition ?? {},
@@ -953,6 +1250,12 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
   };
 
 
+  /**
+   * פעולה updateMembershipDraft: עדכון שיוך לתפקיד / טיוטה.
+   * @param user — משתמש.
+   * @param patch — הנתון patch בהקשר הפעולה.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const updateMembershipDraft = (
     user: DynamicMembershipAdminUser,
     patch: Partial<{ employmentScope: DynamicMemberEmploymentScope; partTimeDefinition: DynamicMembershipAdminUser['partTimeDefinition'] }>,
@@ -966,7 +1269,13 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }));
   };
 
+  /**
+   * פעולה אסינכרונית saveMembershipDraft: שמירת שיוך לתפקיד / טיוטה.
+   * @param user — משתמש.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const saveMembershipDraft = async (user: DynamicMembershipAdminUser): Promise<void> => {
+    // draft — טיוטה.
     const draft = membershipDrafts[user.userId];
     if (!draft) return;
     await saveMembership(user, draft);
@@ -974,6 +1283,10 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     // saveMembership catches failures, so clear only after a refreshed value matches.
   };
 
+  /**
+   * פעולה closeMemberships: סגירת שיוכים לתפקיד.
+   * @returns void — הפלט בהתאם לחתימה.
+   */
   const closeMemberships = (): void => {
     if (membershipSavingUserId || membershipBulkSaving || legacyImporting) return;
     if (Object.keys(membershipDrafts).length > 0 &&
@@ -982,16 +1295,23 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     setMembershipJobType(null);
   };
 
+  /**
+   * פעולה אסינכרונית toggleJobTypeManager: החלפת בחירה עבור סוג תפקיד.
+   * @param user — משתמש.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const toggleJobTypeManager = async (user: DynamicMembershipAdminUser): Promise<void> => {
     if (!membershipJobType || !canManage) return;
     setManagerSavingUserId(user.userId);
     setMembershipError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       await dynamicPermissionEngineService.setJobTypeManager(
         membershipJobType.id,
         user.userId,
         !user.isJobTypeManager,
       );
+      // membership — שיוך לתפקיד.
       const membership = await dynamicSchedulingService.getJobTypeMembershipAdmin(membershipJobType.id);
       setMembershipData(membership);
     } catch (error) {
@@ -1001,9 +1321,14 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית addSelectedMemberships: הוספת נבחר / שיוכים לתפקיד.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const addSelectedMemberships = async (): Promise<void> => {
     if (!membershipJobType || selectedMembershipUserIds.length === 0) return;
 
+    // selectedUsers — נבחר / משתמשים.
     const selectedUsers = (membershipData?.users ?? []).filter(
       (user) => selectedMembershipUserIds.includes(user.userId) && !user.isMember,
     );
@@ -1011,12 +1336,14 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
     setMembershipBulkSaving(true);
     setMembershipError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       const defaultScope: DynamicMemberEmploymentScope =
         membershipJobType.employmentScope === 'flexible'
           ? 'full_time'
           : (membershipJobType.employmentScope as DynamicMemberEmploymentScope);
 
+      // עיבוד כל פריט מתוך selectedUsers בנפרד.
       for (const user of selectedUsers) {
         await dynamicSchedulingService.saveJobTypeMembership(
           membershipJobType.id,
@@ -1045,11 +1372,16 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית previewLegacyImport: ייבוא.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const previewLegacyImport = async (): Promise<void> => {
     if (!membershipJobType) return;
     setLegacyImporting(true);
     setMembershipError(null);
     setLegacyImportMessage(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
       setLegacyPreview(await dynamicSchedulingService.previewLegacyImport(membershipJobType.id, legacySourceKind));
     } catch (error) {
@@ -1059,13 +1391,19 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  /**
+   * פעולה אסינכרונית runLegacyImport: ייבוא.
+   * @returns Promise<void> — הפלט בהתאם לחתימה.
+   */
   const runLegacyImport = async (): Promise<void> => {
     if (!membershipJobType || !legacyPreview) return;
     const confirmed = window.confirm('הייבוא יעתיק את נתוני העבר למערכת הדינמית. נתוני המערכת הישנה לא יימחקו או ישתנו. להמשיך?');
     if (!confirmed) return;
     setLegacyImporting(true);
     setMembershipError(null);
+    // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
     try {
+      // result — תוצאה.
       const result = await dynamicSchedulingService.importLegacyHistory(membershipJobType.id, legacySourceKind);
       setLegacyImportMessage(`הייבוא הושלם: ${result.periodsImported} תקופות, ${result.assignmentsImported} שיבוצים ו-${result.availabilityImported} רשומות אילוצים חדשות.`);
       setLegacyPreview(await dynamicSchedulingService.previewLegacyImport(membershipJobType.id, legacySourceKind));
@@ -1076,6 +1414,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     }
   };
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר state.isLoading.
   if (state.isLoading) {
     return (
       <div className="dynamic-job-types-loading">
@@ -1085,6 +1424,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
     );
   }
 
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר state.error || !state.data.
   if (state.error || !state.data) {
     return (
       <div className="users-error" role="alert">
@@ -1294,8 +1634,11 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
               {!membershipLoading ? (membershipData?.users ?? []).filter((user) => user.isMember).length ? (
                 (membershipData?.users ?? []).filter((user) => user.isMember).map((user) => {
+                  // draft — טיוטה.
                   const draft = membershipDrafts[user.userId];
+                  // selectedScope — נבחר.
                   const selectedScope = draft?.employmentScope ?? user.employmentScope ?? 'full_time';
+                  // selectedDefinition — נבחר.
                   const selectedDefinition = draft?.partTimeDefinition ?? user.partTimeDefinition ?? {};
                   const dirty = Boolean(draft) && (
                     selectedScope !== (user.employmentScope ?? 'full_time') ||
@@ -1336,6 +1679,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                       <div className="dynamic-membership-part-time">
                         <div className="dynamic-part-time-days">
                           {['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'].map((label,index)=>{
+                            // days — ימים.
                             const days = selectedDefinition?.days ?? [];
                             return <label key={label}><input type="checkbox" checked={days.includes(index)} disabled={membershipSavingUserId===user.userId}
                               onChange={(event)=>updateMembershipDraft(user,{partTimeDefinition:{...selectedDefinition,days:event.target.checked?[...days,index].sort((a,b)=>a-b):days.filter((day)=>day!==index)}})}/>{label}</label>;
@@ -1649,9 +1993,13 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                 <select
                   value={form.schedulingStrategy === 'monthly_rotation_constraints' && isRotationExchange(form.schedulingConfig) ? ROTATION_EXCHANGE_OPTION : form.schedulingStrategy}
                   onChange={(event) => {
+                    // selectedRotationExchange — נבחר / סבב כוננויות.
                     const selectedRotationExchange = event.target.value === ROTATION_EXCHANGE_OPTION;
+                    // schedulingStrategy — שיטת שיבוץ.
                     const schedulingStrategy = (selectedRotationExchange ? 'monthly_rotation_constraints' : event.target.value) as DynamicSchedulingStrategy;
+                    // hasScheduling — הנתון hasScheduling בהקשר הפעולה.
                     const hasScheduling = schedulingStrategy !== 'none';
+                    // schedulingCapabilities — יכולות תפקיד; אוסף ערכים ייחודיים.
                     const schedulingCapabilities = new Set(form.capabilities);
                     if (hasScheduling) {
                       schedulingCapabilities.add('availability');
@@ -1750,7 +2098,9 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                       {['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','שבת'].map((label, index) => (
                         <label className="dynamic-choice-chip" key={label}>
                           <input type="checkbox" checked={(form.schedulingConfig.employmentDefinition?.partTimeDays ?? []).includes(index)} onChange={(event) => {
+                            // current — הנתון current בהקשר הפעולה.
                             const current = form.schedulingConfig.employmentDefinition ?? { fullTimeDays:[0,1,2,3,4], partTimeDays:[], partTimeStartTime:'08:00', partTimeEndTime:'17:00' };
+                            // days — ימים.
                             const days = event.target.checked ? [...current.partTimeDays, index] : current.partTimeDays.filter((day) => day !== index);
                             setForm({ ...form, schedulingConfig: { ...form.schedulingConfig, employmentDefinition: { ...current, partTimeDays: days } } });
                           }} />
@@ -1775,9 +2125,13 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
               {(() => {
                 const pattern = normalizeShiftPattern(form.schedulingConfig.shiftPattern);
+                // dayDefinitions — יום.
                 const dayDefinitions: Array<{
+                  // key — מפתח.
                   key: 'weekday' | 'friday' | 'saturday' | 'holiday';
+                  // label — תווית.
                   label: string;
+                  // noWorkLabel — תווית.
                   noWorkLabel: string;
                 }> = [
                   { key: 'weekday', label: 'ימי חול', noWorkLabel: 'לא עובד בימי חול' },
@@ -1786,6 +2140,11 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                   { key: 'holiday', label: 'חגים', noWorkLabel: 'לא עובד בחגים' },
                 ];
 
+                /**
+                 * פעולה updatePattern: עדכון הנתון updatePattern בהקשר הפעולה.
+                 * @param nextPattern — הנתון nextPattern בהקשר הפעולה.
+                 * @returns void — הפלט בהתאם לחתימה.
+                 */
                 const updatePattern = (nextPattern: DynamicShiftPatternDefinition): void => {
                   setForm({
                     ...form,
@@ -1796,6 +2155,12 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                   });
                 };
 
+                /**
+                 * פעולה updateDay: עדכון יום.
+                 * @param dayKey — יום / מפתח.
+                 * @param nextDay — יום.
+                 * @returns void — הפלט בהתאם לחתימה.
+                 */
                 const updateDay = (
                   dayKey: 'weekday' | 'friday' | 'saturday' | 'holiday',
                   nextDay: DynamicWorkDayDefinition,
@@ -1917,6 +2282,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
                     <div className="dynamic-work-pattern-days">
                       {dayDefinitions.map(({ key, label, noWorkLabel }) => {
+                        // day — יום.
                         const day = pattern[key];
                         return (
                           <div className={`dynamic-work-day-card${day.works ? ' is-active' : ''}`} key={key}>
@@ -2090,8 +2456,10 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                                               step="0.25"
                                               value={shift.premium200Hours || ''}
                                               onChange={(event) => {
+                                                // duration — משך.
                                                 const duration = getShiftDurationHours(shift.startTime, shift.endTime);
                                                 const requested = Number(event.target.value);
+                                                // premium200Hours — שעות.
                                                 const premium200Hours = Number.isFinite(requested)
                                                   ? Math.min(Math.max(0, requested), duration)
                                                   : 0;
@@ -2193,6 +2561,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                         ['preferred', 'מעדיף'],
                         ['avoid', 'מעדיף שלא'],
                       ].map(([key, label]) => {
+                        // status — סטטוס.
                         const status = key as 'available' | 'unavailable' | 'preferred' | 'avoid';
                         const checked = form.availabilityConfig.statuses.includes(status);
                         return (
@@ -2310,8 +2679,10 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                           ['maxEnabled', 'defaultMax', 'מקסימום'],
                         ].map(([enabledKey, valueKey, label]) => {
                           const capacity = form.availabilityConfig.monthlyCapacity;
+                          // enabled — האם האפשרות מופעלת.
                           const enabled =
                             capacity[enabledKey as 'minEnabled' | 'targetEnabled' | 'maxEnabled'];
+                          // value — ערך.
                           const value =
                             capacity[valueKey as 'defaultMin' | 'defaultTarget' | 'defaultMax'];
                           return (
@@ -2373,11 +2744,13 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                         ['maxHolidaysEnabled', 'defaultMaxHolidays', 'מקסימום חגים'],
                       ].map(([enabledKey, valueKey, label]) => {
                         const limits = form.availabilityConfig.limits;
+                        // enabled — האם האפשרות מופעלת.
                         const enabled =
                           limits[
                             enabledKey as
                               'maxNightsEnabled' | 'maxWeekendsEnabled' | 'maxHolidaysEnabled'
                           ];
+                        // value — ערך.
                         const value =
                           limits[
                             valueKey as
@@ -2502,6 +2875,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                     type="checkbox"
                     checked={form.schedulingConfig.rules.balanceNights.enabled && form.schedulingConfig.rules.balanceWeekends.enabled && form.schedulingConfig.rules.balanceHolidays.enabled}
                     onChange={(event) => {
+                      // enabled — האם האפשרות מופעלת.
                       const enabled = event.target.checked;
                       setForm({ ...form, schedulingConfig: { ...form.schedulingConfig, rules: { ...form.schedulingConfig.rules, balanceNights: { ...form.schedulingConfig.rules.balanceNights, enabled }, balanceWeekends: { ...form.schedulingConfig.rules.balanceWeekends, enabled }, balanceHolidays: { ...form.schedulingConfig.rules.balanceHolidays, enabled } } } });
                     }}
@@ -2575,6 +2949,7 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                       ['balanceWeekends', 'איזון סופי שבוע'],
                       ['balanceHolidays', 'איזון חגים'],
                     ].map(([key, label]) => {
+                      // rule — כלל.
                       const rule = form.schedulingConfig.rules[key as 'balanceNights' | 'balanceWeekends' | 'balanceHolidays'];
                       return (
                         <label className="dynamic-choice-chip" key={key}>
@@ -2627,7 +3002,9 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
                           const checked = form.schedulingConfig.dailyReports?.recipientUserIds.includes(user.userId) ?? false;
                           return <label className="dynamic-dashboard-context-option" key={user.userId}>
                             <input type="checkbox" checked={checked} onChange={(event) => {
+                              // current — הנתון current בהקשר הפעולה.
                               const current = form.schedulingConfig.dailyReports?.recipientUserIds ?? [];
+                              // recipientUserIds — מזהי נמעני ההודעה.
                               const recipientUserIds = event.target.checked ? Array.from(new Set([...current, user.userId])) : current.filter((id) => id !== user.userId);
                               setForm({ ...form, schedulingConfig: { ...form.schedulingConfig, dailyReports: { ...form.schedulingConfig.dailyReports!, recipientUserIds } } });
                             }} />
@@ -2680,8 +3057,11 @@ function DynamicJobTypesPanel({ canManage }: DynamicJobTypesPanelProps) {
 
                 <div className="dynamic-permission-columns">
                   {(['member', 'manager'] as const).map((audience) => {
+                    // items — פריטים.
                     const items = derivePermissionBlueprint(form).filter((item) => item.audience === audience);
+                    // selected — נבחר.
                     const selected = audience === 'member' ? memberPermissionKeys : managerPermissionKeys;
+                    // setSelected — קבוצה ייחודית / נבחר.
                     const setSelected = audience === 'member' ? setMemberPermissionKeys : setManagerPermissionKeys;
                     return (
                       <section key={audience} className="dynamic-permission-column">

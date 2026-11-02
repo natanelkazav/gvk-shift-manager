@@ -1,3 +1,8 @@
+-- קובץ: supabase/migrations/20260914124500_phase10_5_14_member_view_others_permission.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור הרשאות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_my_dynamic_self_edit_workspace, public.update_my_dynamic_published_assignment.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 10.5.14 · Member permission for viewing/editing other members' assignments.
@@ -5,6 +10,7 @@ begin;
 -- own published assignment while only explicitly-authorized roles can expose the
 -- full team schedule to members.
 
+-- הוספת רשומות ל־public.dynamic_permission_manifest בהתאם לקלט ולתנאים להלן.
 insert into public.dynamic_permission_manifest
   (feature_key, permission_key, audience, label, description, default_enabled, sort_order)
 values
@@ -28,6 +34,7 @@ do $$
 declare
   job record;
 begin
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for job in
     select id
     from public.job_types
@@ -41,6 +48,7 @@ $$;
 -- Preserve the behavior of roles that already intentionally use self-edit:
 -- they previously exposed the whole role schedule to members. The new toggle is
 -- created as ON for those existing roles, and can now be disabled explicitly.
+-- עדכון רשומות ב־public.job_type_permission_settings בהתאם לקלט ולתנאים להלן.
 update public.job_type_permission_settings s
 set enabled = true,
     source = 'migration',
@@ -52,28 +60,41 @@ where s.job_type_id = jt.id
   and jt.legacy_role is null
   and coalesce(jt.scheduling_config #>> '{scheduleChangeMode}', 'none') = 'self_edit';
 
+-- פונקציית מסד public.get_my_dynamic_self_edit_workspace: שליפה או חישוב של דינמי.
 create or replace function public.get_my_dynamic_self_edit_workspace(
   requested_publication_id uuid
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_publication — יעד.
   target_publication public.dynamic_schedule_publications%rowtype;
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
+  -- current_month — חודש.
   current_month date := date_trunc('month', (now() at time zone 'Asia/Jerusalem')::date)::date;
+  -- publication_month — חודש.
   publication_month date;
+  -- change_mode — מצב פעולה.
   change_mode text;
   editable boolean := false;
   reason text := null;
+  -- can_view_others — האם צפייה מותרת.
   can_view_others boolean := false;
+  -- members_json — חברי התפקיד.
   members_json jsonb;
+  -- assignments_json — הקצאות.
   assignments_json jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -81,10 +102,13 @@ begin
   from public.dynamic_schedule_publications
   where id = requested_publication_id;
 
+  -- הסתעפות לפי התנאי target_publication.id is null.
   if target_publication.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'publication not found';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.job_type_memberships m
@@ -93,6 +117,7 @@ begin
       and m.user_id = current_user_id
       and p.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -101,7 +126,9 @@ begin
   where id = target_publication.job_type_id
     and legacy_role is null;
 
+  -- הסתעפות לפי התנאי target_job.id is null.
   if target_job.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'dynamic job type not found';
   end if;
 
@@ -111,11 +138,15 @@ begin
     'none'
   );
 
+  -- הסתעפות לפי התנאי change_mode <> 'self_edit'.
   if change_mode <> 'self_edit' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'self edit is not enabled for this role';
   end if;
 
+  -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('schedule.self_edit', target_job.id, current_user_id).
   if not public.has_dynamic_job_type_permission('schedule.self_edit', target_job.id, current_user_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -127,6 +158,7 @@ begin
 
   publication_month := make_date(target_publication.year, target_publication.month, 1);
 
+  -- הסתעפות לפי התנאי target_publication.status <> 'published'.
   if target_publication.status <> 'published' then
     editable := false;
     reason := 'לוח זה אינו פתוח לעריכה משום שהוא בארכיון.';
@@ -175,6 +207,7 @@ begin
   where a.publication_id = target_publication.id
     and (can_view_others or a.user_id = current_user_id);
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'publicationId', target_publication.id,
     'jobTypeId', target_job.id,
@@ -190,6 +223,7 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.update_my_dynamic_published_assignment: עדכון דינמי / פורסם / הקצאה.
 create or replace function public.update_my_dynamic_published_assignment(
   requested_publication_id uuid,
   requested_assignment_id uuid,
@@ -197,21 +231,33 @@ create or replace function public.update_my_dynamic_published_assignment(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
+  -- target_publication — יעד.
   target_publication public.dynamic_schedule_publications%rowtype;
+  -- target_job — יעד.
   target_job public.job_types%rowtype;
+  -- target_assignment — יעד / הקצאה.
   target_assignment public.dynamic_schedule_published_assignments%rowtype;
+  -- current_month — חודש.
   current_month date := date_trunc('month', (now() at time zone 'Asia/Jerusalem')::date)::date;
+  -- publication_month — חודש.
   publication_month date;
+  -- change_mode — מצב פעולה.
   change_mode text;
+  -- can_view_others — האם צפייה מותרת.
   can_view_others boolean := false;
+  -- old_user_id — מזהה משתמש.
   old_user_id uuid;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -220,14 +266,19 @@ begin
   where id = requested_publication_id
   for update;
 
+  -- הסתעפות לפי התנאי target_publication.id is null.
   if target_publication.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'publication not found';
   end if;
 
+  -- הסתעפות לפי התנאי target_publication.status <> 'published'.
   if target_publication.status <> 'published' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'published schedule is not editable';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.job_type_memberships m
@@ -236,6 +287,7 @@ begin
       and m.user_id = current_user_id
       and p.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -244,7 +296,9 @@ begin
   where id = target_publication.job_type_id
     and legacy_role is null;
 
+  -- הסתעפות לפי התנאי target_job.id is null.
   if target_job.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'dynamic job type not found';
   end if;
 
@@ -254,11 +308,15 @@ begin
     'none'
   );
 
+  -- הסתעפות לפי התנאי change_mode <> 'self_edit'.
   if change_mode <> 'self_edit' then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'self edit is not enabled for this role';
   end if;
 
+  -- הסתעפות לפי התנאי not public.has_dynamic_job_type_permission('schedule.self_edit', target_job.id, current_user_id).
   if not public.has_dynamic_job_type_permission('schedule.self_edit', target_job.id, current_user_id) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -269,10 +327,13 @@ begin
   );
 
   publication_month := make_date(target_publication.year, target_publication.month, 1);
+  -- הסתעפות לפי התנאי publication_month not in (current_month, (current_month + interval '1 month')::date).
   if publication_month not in (current_month, (current_month + interval '1 month')::date) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'only current month or next published month can be edited';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.job_type_memberships m
@@ -281,6 +342,7 @@ begin
       and m.user_id = requested_user_id
       and p.is_active = true
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'requested user is not an active member of this role';
   end if;
 
@@ -290,21 +352,28 @@ begin
     and publication_id = target_publication.id
   for update;
 
+  -- הסתעפות לפי התנאי target_assignment.id is null.
   if target_assignment.id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'assignment not found';
   end if;
 
   -- Without the new permission a member may only change an assignment that is
   -- currently theirs. With the permission enabled they can intentionally manage
   -- another member's assignment, which is required for on-call roles.
+  -- הסתעפות לפי התנאי not can_view_others and target_assignment.user_id <> current_user_id.
   if not can_view_others and target_assignment.user_id <> current_user_id then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed to edit another user''s assignment';
   end if;
 
+  -- הסתעפות לפי התנאי target_assignment.user_id = requested_user_id.
   if target_assignment.user_id = requested_user_id then
+    -- הרכבת תוצאת הפעולה והחזרתה לקורא.
     return jsonb_build_object('saved', true, 'changed', false, 'assignmentId', target_assignment.id);
   end if;
 
+  -- הסתעפות לפי התנאי exists (.
   if exists (
     select 1
     from public.dynamic_schedule_published_assignments a
@@ -314,17 +383,20 @@ begin
       and a.user_id = requested_user_id
       and a.id <> target_assignment.id
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'requested user is already assigned to this shift';
   end if;
 
   old_user_id := target_assignment.user_id;
 
+  -- עדכון רשומות ב־public.dynamic_schedule_published_assignments בהתאם לקלט ולתנאים להלן.
   update public.dynamic_schedule_published_assignments
   set user_id = requested_user_id,
       user_edited_by = current_user_id,
       user_edited_at = now()
   where id = target_assignment.id;
 
+  -- הוספת רשומות ל־public.audit_logs בהתאם לקלט ולתנאים להלן.
   insert into public.audit_logs(action, actor_user_id, entity_type, entity_id, summary, metadata)
   values(
     'system_event',
@@ -347,6 +419,7 @@ begin
     )
   );
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'saved', true,
     'changed', true,
@@ -357,9 +430,13 @@ begin
 end;
 $function$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_my_dynamic_self_edit_workspace(uuid) from public;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.update_my_dynamic_published_assignment(uuid, uuid, uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_my_dynamic_self_edit_workspace(uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.update_my_dynamic_published_assignment(uuid, uuid, uuid) to authenticated;
 
 commit;

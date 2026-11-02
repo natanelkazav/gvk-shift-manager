@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/services/pushTestService.ts
+ * מטרה: שליחת בקשת בדיקה להתראות Push והצגת תוצאת הבדיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: SendTestPushRequest, SendTestPushResponse, validateRequest, mapDeliveryResult, PushTestService.
+ * - ריכוז פעולות העיבוד והחישוב בהתאם לפונקציות להלן.
+ */
 import {
   notificationService,
   type NotificationDeliveryResult,
@@ -8,30 +15,43 @@ import {
   NotificationType,
 } from '../features/notifications/types/notificationTypes';
 
+/**
+ * חוזה הנתונים SendTestPushRequest: התראות Push / נתוני הבקשה.
+ */
 export interface SendTestPushRequest {
+  // targetUserId — מזהה משתמש היעד.
   targetUserId:
     string;
 
+  // title — כותרת.
   title:
     string;
 
+  // body — תוכן.
   body:
     string;
 
+  // url — כתובת יעד (אופציונלי).
   url?:
     string;
 }
 
+/**
+ * חוזה הנתונים SendTestPushResponse: התראות Push / תוצאת הפעולה.
+ */
 export interface SendTestPushResponse {
   success:
     boolean;
 
+  // targetUserId — מזהה משתמש היעד.
   targetUserId:
     string;
 
+  // notificationId — התראות / מזהה.
   notificationId:
     string;
 
+  // totalRecipients — סך הכול.
   totalRecipients:
     number;
 
@@ -44,6 +64,7 @@ export interface SendTestPushResponse {
   recipientsWithoutDevices:
     number;
 
+  // totalDevices — סך הכול.
   totalDevices:
     number;
 
@@ -54,26 +75,37 @@ export interface SendTestPushResponse {
     number;
 }
 
+/**
+ * פעולה validateRequest: בדיקת תקינות של נתוני הבקשה.
+ * @param request — נתוני הבקשה.
+ * @returns { targetUserId: string; title: string; body: string; url: string; } — הפלט בהתאם לחתימה.
+ */
 function validateRequest(
   request:
     SendTestPushRequest,
 ): {
+  // targetUserId — מזהה משתמש היעד.
   targetUserId:
     string;
 
+  // title — כותרת.
   title:
     string;
 
+  // body — תוכן.
   body:
     string;
 
+  // url — כתובת יעד.
   url:
     string;
 } {
+  // targetUserId — מזהה משתמש היעד.
   const targetUserId =
     request.targetUserId
       .trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !targetUserId.
   if (
     !targetUserId
   ) {
@@ -82,10 +114,12 @@ function validateRequest(
     );
   }
 
+  // title — כותרת.
   const title =
     request.title
       .trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !title.
   if (
     !title
   ) {
@@ -94,6 +128,7 @@ function validateRequest(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר title.length > 120.
   if (
     title.length >
     120
@@ -103,10 +138,12 @@ function validateRequest(
     );
   }
 
+  // body — תוכן.
   const body =
     request.body
       .trim();
 
+  // עצירת הפעולה עם שגיאה כאשר !body.
   if (
     !body
   ) {
@@ -115,6 +152,7 @@ function validateRequest(
     );
   }
 
+  // עצירת הפעולה עם שגיאה כאשר body.length > 500.
   if (
     body.length >
     500
@@ -124,11 +162,13 @@ function validateRequest(
     );
   }
 
+  // url — כתובת יעד.
   const url =
     request.url
       ?.trim() ||
     '/';
 
+  // עצירת הפעולה עם שגיאה כאשר !url.startsWith( '/', ).
   if (
     !url.startsWith(
       '/',
@@ -150,6 +190,12 @@ function validateRequest(
   };
 }
 
+/**
+ * פעולה mapDeliveryResult: מיפוי מפת התאמה / תוצאה.
+ * @param targetUserId — מזהה משתמש היעד.
+ * @param result — תוצאה.
+ * @returns SendTestPushResponse — הפלט בהתאם לחתימה.
+ */
 function mapDeliveryResult(
   targetUserId:
     string,
@@ -189,16 +235,26 @@ function mapDeliveryResult(
   };
 }
 
+/**
+ * איגוד פעולות התראות Push / שירות במחלקה PushTestService.
+ */
 class PushTestService {
+  /**
+   * פעולה אסינכרונית sendTestPush: שליחת התראות Push.
+   * @param request — נתוני הבקשה.
+   * @returns Promise<SendTestPushResponse> — הפלט בהתאם לחתימה.
+   */
   async sendTestPush(
     request:
       SendTestPushRequest,
   ): Promise<SendTestPushResponse> {
+    // validatedRequest — נתוני הבקשה.
     const validatedRequest =
       validateRequest(
         request,
       );
 
+    // deliveryResult — תוצאה.
     const deliveryResult =
       await notificationService
         .createNotification({
@@ -242,5 +298,6 @@ class PushTestService {
   }
 }
 
+// pushTestService — התראות Push / שירות.
 export const pushTestService =
   new PushTestService();

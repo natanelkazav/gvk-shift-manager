@@ -1,7 +1,13 @@
+-- קובץ: supabase/migrations/20260915023000_phase10_8_1_5_export_raw_published_slots.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור ייצוא / פורסם.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_schedule_export_workspace.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 -- Phase 10.8.1.5
 -- Excel export must use concrete published slots, not the UI calendar's logical
 -- de-duplication. This keeps parallel/morning duties and unassigned slots intact.
 
+-- פונקציית מסד public.get_dynamic_schedule_export_workspace: שליפה או חישוב של דינמי / שיבוץ / ייצוא.
 create or replace function public.get_dynamic_schedule_export_workspace(
   requested_year integer,
   requested_month integer,
@@ -9,31 +15,42 @@ create or replace function public.get_dynamic_schedule_export_workspace(
 )
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path = public
 as $$
 declare
   actor uuid := auth.uid();
+  -- month_start — חודש.
   month_start date;
+  -- month_end — חודש.
   month_end date;
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי actor is null then raise exception 'not authenticated'; end if;.
   if actor is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי requested_year < 2020 or requested_year > 2100 or requested_month < 1 or requested_month > 12.
   if requested_year < 2020 or requested_year > 2100 or requested_month < 1 or requested_month > 12 then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'invalid month';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (select 1 from public.profiles p where p.id = actor and p.is_active = true).
   if not exists (select 1 from public.profiles p where p.id = actor and p.is_active = true) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'inactive user';
   end if;
 
   -- Export is an administrative operation. Keep the same broad gate used by the
   -- settings/export surface while the per-job-type data remains Dynamic-only.
+  -- הסתעפות לפי התנאי not (.
   if not (
     exists (select 1 from public.profiles p where p.id = actor and p.role = 'admin')
     or public.current_user_has_permission('users.manage')
     or public.current_user_has_permission('schedule.export')
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'permission denied';
   end if;
 
@@ -143,5 +160,7 @@ begin
 end;
 $$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_schedule_export_workspace(integer, integer, uuid[]) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_schedule_export_workspace(integer, integer, uuid[]) to authenticated;

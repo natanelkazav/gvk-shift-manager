@@ -1,19 +1,40 @@
+/**
+ * קובץ: src/features/statistics/components/StatisticsTrendChart.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור סטטיסטיקה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: TrendPoint, StatisticsTrendChartProps, StatisticsTrendChart.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
+/**
+ * חוזה הנתונים TrendPoint: הנתון TrendPoint בהקשר הפעולה.
+ */
 interface TrendPoint {
+  // label — תווית.
   label: string;
+  // value — ערך.
   value: number;
 }
 
+/**
+ * חוזה הנתונים StatisticsTrendChartProps: סטטיסטיקה / מאפייני הרכיב.
+ */
 interface StatisticsTrendChartProps {
+  // title — כותרת.
   title: string;
   description?: string;
   points: TrendPoint[];
 }
 
+/**
+ * פעולה StatisticsTrendChart: סטטיסטיקה.
+ * פרמטר מפורק — שדות הקלט נגישים מקומית בשמות המוגדרים בחתימה.
+ */
 function StatisticsTrendChart({
   title,
   description,
   points,
 }: StatisticsTrendChartProps) {
+  // maximumValue — ערך.
   const maximumValue =
     Math.max(
       1,
@@ -22,13 +43,17 @@ function StatisticsTrendChart({
       ),
     );
 
+  // width — רוחב.
   const width = 640;
+  // height — גובה.
   const height = 220;
   const horizontalPadding = 42;
   const verticalPadding = 28;
+  // chartWidth — רוחב.
   const chartWidth =
     width -
     horizontalPadding * 2;
+  // chartHeight — גובה.
   const chartHeight =
     height -
     verticalPadding * 2;

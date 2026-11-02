@@ -1,3 +1,10 @@
+/**
+ * קובץ: src/hooks/useMyDriverAvailability.ts
+ * מטרה: ניהול מצב ותופעות לוואי באמצעות React עבור כוננים / אילוצים וזמינות.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: EditableDriverAvailabilityEntry, MyDriverAvailabilityState, UseMyDriverAvailabilityResult, normalizeMyDriverAvailabilityError, createDraftEntries, useMyDriverAvailability.
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 import {
   useCallback,
   useMemo,
@@ -16,56 +23,81 @@ import type {
   SaveDriverAvailabilityResponse,
 } from '../types/driverAvailability';
 
+/**
+ * חוזה הנתונים EditableDriverAvailabilityEntry: כוננים / אילוצים וזמינות / רשומה.
+ */
 interface EditableDriverAvailabilityEntry {
+  // dayId — מזהה היום.
   dayId: string;
 
+  // availabilityStatus — מצב הזמינות.
   availabilityStatus:
     DriverAvailabilityStatus | null;
 
+  // note — הערה.
   note:
     string;
 }
 
+/**
+ * חוזה הנתונים MyDriverAvailabilityState: כוננים / אילוצים וזמינות / מצב.
+ */
 interface MyDriverAvailabilityState {
+  // data — נתונים.
   data:
     DriverAvailabilityPersonalData | null;
+  // isSubmitting — האם הגשה מתבצעת.
   isSubmitting: boolean;
 
+  // lastSubmitResult — תוצאה.
   lastSubmitResult:
     SubmitDriverAvailabilityResponse | null;
+  // selectedPeriodId — מזהה התקופה.
   selectedPeriodId:
     string | null;
 
+  // draftEntries — טיוטה / רשומות.
   draftEntries:
     Record<
       string,
       EditableDriverAvailabilityEntry
     >;
 
+  // isLoading — האם טעינה מתבצעת.
   isLoading: boolean;
 
+  // isSaving — האם שמירה מתבצעת.
   isSaving: boolean;
 
   isDirty: boolean;
 
+  // error — שגיאה.
   error:
     string | null;
 
+  // lastSaveResult — תוצאה.
   lastSaveResult:
     SaveDriverAvailabilityResponse | null;
 }
 
+/**
+ * חוזה הנתונים UseMyDriverAvailabilityResult: כוננים / אילוצים וזמינות / תוצאה.
+ */
 interface UseMyDriverAvailabilityResult {
+  // state — מצב.
   state:
     MyDriverAvailabilityState;
 
+  // draftEntries — טיוטה / רשומות.
   draftEntries:
     EditableDriverAvailabilityEntry[];
 
+  // loadMyAvailability — אילוצים וזמינות.
   loadMyAvailability: (
     periodId?:
       string | null,
   ) => Promise<DriverAvailabilityPersonalData | null>;
+  // submitMyAvailability — אילוצים וזמינות.
   submitMyAvailability:
   () => Promise<SubmitDriverAvailabilityResponse>;
   setDayStatus: (
@@ -82,9 +114,11 @@ interface UseMyDriverAvailabilityResult {
     note: string,
   ) => void;
 
+  // saveMyAvailability — אילוצים וזמינות.
   saveMyAvailability:
     () => Promise<SaveDriverAvailabilityResponse>;
 
+  // clearError — שגיאה.
   clearError:
     () => void;
 
@@ -92,6 +126,7 @@ interface UseMyDriverAvailabilityResult {
     () => void;
 }
 
+// initialState — מצב.
 const initialState:
   MyDriverAvailabilityState = {
     data: null,
@@ -115,18 +150,26 @@ const initialState:
       null,
   };
 
+/**
+ * פעולה normalizeMyDriverAvailabilityError: נרמול כוננים / אילוצים וזמינות / שגיאה.
+ * @param error — שגיאה.
+ * @returns string — הפלט בהתאם לחתימה.
+ */
 function normalizeMyDriverAvailabilityError(
   error: unknown,
 ): string {
+  // טיפול במקרה מיוחד ויציאה מוקדמת כאשר error instanceof Error.
   if (
     error instanceof Error
   ) {
+    // normalizedMessage — הודעה.
     const normalizedMessage =
       error.message
         .trim()
         .toLowerCase();
         
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'not authenticated', ).
     if (
       normalizedMessage.includes(
         'not authenticated',
@@ -135,6 +178,7 @@ function normalizeMyDriverAvailabilityError(
       return 'לא נמצאה התחברות פעילה. יש להתחבר מחדש.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'user not active', ).
     if (
       normalizedMessage.includes(
         'user not active',
@@ -143,6 +187,7 @@ function normalizeMyDriverAvailabilityError(
       return 'המשתמש אינו פעיל.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'not allowed', ).
     if (
       normalizedMessage.includes(
         'not allowed',
@@ -151,6 +196,7 @@ function normalizeMyDriverAvailabilityError(
       return 'אין לך הרשאה לצפות או להגיש אילוצי כוננים.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability period not found', ).
     if (
       normalizedMessage.includes(
         'driver availability period not found',
@@ -159,6 +205,7 @@ function normalizeMyDriverAvailabilityError(
       return 'תקופת אילוצי הכוננים לא נמצאה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability period id is required', ).
     if (
       normalizedMessage.includes(
         'driver availability period id is required',
@@ -167,6 +214,7 @@ function normalizeMyDriverAvailabilityError(
       return 'מזהה תקופת אילוצי הכוננים חסר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability period is not open', ).
     if (
       normalizedMessage.includes(
         'driver availability period is not open',
@@ -175,6 +223,7 @@ function normalizeMyDriverAvailabilityError(
       return 'לא ניתן לשמור אילוצים משום שהחודש אינו פתוח להגשה.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability submission deadline has passed', ).
     if (
       normalizedMessage.includes(
         'driver availability submission deadline has passed',
@@ -183,6 +232,7 @@ function normalizeMyDriverAvailabilityError(
       return 'המועד האחרון להגשת אילוצי הכוננים כבר עבר.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability was already submitted', ).
     if (
       normalizedMessage.includes(
         'driver availability was already submitted',
@@ -191,6 +241,7 @@ function normalizeMyDriverAvailabilityError(
       return 'האילוצים כבר הוגשו ולא ניתן לערוך אותם כרגע.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'one or more driver availability entries are invalid', ).
     if (
       normalizedMessage.includes(
         'one or more driver availability entries are invalid',
@@ -199,6 +250,7 @@ function normalizeMyDriverAvailabilityError(
       return 'אחד או יותר מסימוני הזמינות אינם תקינים.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'duplicate driver availability entries', ).
     if (
       normalizedMessage.includes(
         'duplicate driver availability entries',
@@ -207,6 +259,7 @@ function normalizeMyDriverAvailabilityError(
       return 'קיימים מספר סימונים לאותו יום.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'one or more driver availability day ids are missing', ).
     if (
       normalizedMessage.includes(
         'one or more driver availability day ids are missing',
@@ -215,6 +268,7 @@ function normalizeMyDriverAvailabilityError(
       return 'חסר מזהה יום באחד מסימוני הזמינות.';
     }
 
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'לא התקבלה תשובה בעת שמירת אילוצי הכוננים', ).
     if (
       normalizedMessage.includes(
         'לא התקבלה תשובה בעת שמירת אילוצי הכוננים',
@@ -222,6 +276,7 @@ function normalizeMyDriverAvailabilityError(
     ) {
       return 'לא התקבלה תשובה תקינה בעת שמירת אילוצי הכוננים.';
     }
+    // טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'all driver availability days must be marked before submission', ).
     if (
   normalizedMessage.includes(
     'all driver availability days must be marked before submission',
@@ -230,6 +285,7 @@ function normalizeMyDriverAvailabilityError(
   return 'יש לסמן את כל ימי החודש לפני הגשת האילוצים.';
 }
 
+// טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'driver availability draft was not found', ).
 if (
   normalizedMessage.includes(
     'driver availability draft was not found',
@@ -238,6 +294,7 @@ if (
   return 'לא נמצאה טיוטת אילוצים שמורה. יש לשמור לפני ההגשה.';
 }
 
+// טיפול במקרה מיוחד ויציאה מוקדמת כאשר normalizedMessage.includes( 'לא התקבלה תשובה בעת הגשת אילוצי הכוננים', ).
 if (
   normalizedMessage.includes(
     'לא התקבלה תשובה בעת הגשת אילוצי הכוננים',
@@ -252,6 +309,11 @@ if (
   return 'לא ניתן היה לבצע את הפעולה באילוצי הכוננים.';
 }
 
+/**
+ * פעולה createDraftEntries: יצירת טיוטה / רשומות.
+ * @param data — נתונים.
+ * @returns Record< string, EditableDriverAvailabilityEntry > — הפלט בהתאם לחתימה.
+ */
 function createDraftEntries(
   data:
     DriverAvailabilityPersonalData,
@@ -259,6 +321,7 @@ function createDraftEntries(
   string,
   EditableDriverAvailabilityEntry
 > {
+  // existingEntriesByDayId — מזהה היום; מיפוי לחיפוש לפי מפתח.
   const existingEntriesByDayId =
     new Map(
       data.entries.map(
@@ -272,6 +335,7 @@ function createDraftEntries(
   return Object.fromEntries(
     data.days.map(
       (day) => {
+        // existingEntry — רשומה.
         const existingEntry =
           existingEntriesByDayId.get(
             day.id,
@@ -299,8 +363,13 @@ function createDraftEntries(
   );
 }
 
+/**
+ * פעולה useMyDriverAvailability: חיבור מצב או הקשר עבור כוננים / אילוצים וזמינות.
+ * @returns UseMyDriverAvailabilityResult — הפלט בהתאם לחתימה.
+ */
 export function useMyDriverAvailability():
   UseMyDriverAvailabilityResult {
+  // מצב מקומי: state — מצב; setState מעדכנת אותו ומפעילה רינדור לפי React.
   const [
     state,
     setState,
@@ -309,6 +378,7 @@ export function useMyDriverAvailability():
       initialState,
     );
 
+  // ערך מחושב draftEntries — טיוטה / רשומות; נשמר בין רינדורים עד שינוי התלויות.
   const draftEntries =
     useMemo(
       () =>
@@ -320,12 +390,14 @@ export function useMyDriverAvailability():
       ],
     );
 
+  // loadMyAvailability — אילוצים וזמינות.
   const loadMyAvailability =
     useCallback(
       async (
         periodId:
           string | null = null,
       ): Promise<DriverAvailabilityPersonalData | null> => {
+        // normalizedPeriodId — מזהה התקופה.
         const normalizedPeriodId =
           periodId?.trim() ||
           null;
@@ -348,7 +420,9 @@ export function useMyDriverAvailability():
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // data — נתונים.
           const data =
             await driverAvailabilityService
               .getMyAvailability(
@@ -391,6 +465,7 @@ export function useMyDriverAvailability():
 
           return data;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeMyDriverAvailabilityError(
               error,
@@ -429,6 +504,7 @@ export function useMyDriverAvailability():
       [],
     );
 
+  // setDayStatus — קבוצה ייחודית / יום / סטטוס.
   const setDayStatus =
     useCallback(
       (
@@ -438,16 +514,19 @@ export function useMyDriverAvailability():
       ): void => {
         setState(
           (currentState) => {
+            // currentEntry — רשומה.
             const currentEntry =
               currentState
                 .draftEntries[
                 dayId
               ];
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentEntry.
             if (!currentEntry) {
               return currentState;
             }
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר currentEntry .availabilityStatus === status.
             if (
               currentEntry
                 .availabilityStatus ===
@@ -492,6 +571,7 @@ export function useMyDriverAvailability():
           (
             currentState,
           ) => {
+            // updatedEntries — רשומות.
             const updatedEntries =
               Object.fromEntries(
                 Object.entries(
@@ -538,16 +618,20 @@ export function useMyDriverAvailability():
       [],
     );
 
+// submitMyAvailability — אילוצים וזמינות.
 const submitMyAvailability =
   useCallback(
     async (): Promise<SubmitDriverAvailabilityResponse> => {
+      // periodId — מזהה התקופה.
       const periodId =
         state.data
           ?.period
           ?.id ??
         state.selectedPeriodId;
 
+      // עצירת הפעולה עם שגיאה כאשר !periodId.
       if (!periodId) {
+        // missingPeriodError — תקופה / שגיאה.
         const missingPeriodError =
           new Error(
             'Driver availability period id is required.',
@@ -567,7 +651,9 @@ const submitMyAvailability =
         throw missingPeriodError;
       }
 
+      // עצירת הפעולה עם שגיאה כאשר state.isDirty.
       if (state.isDirty) {
+        // unsavedChangesError — שגיאה.
         const unsavedChangesError =
           new Error(
             'Driver availability contains unsaved changes.',
@@ -585,6 +671,7 @@ const submitMyAvailability =
         throw unsavedChangesError;
       }
 
+      // unmarkedDays — ימים.
       const unmarkedDays =
         Object.values(
           state.draftEntries,
@@ -594,7 +681,9 @@ const submitMyAvailability =
             null,
         ).length;
 
+      // עצירת הפעולה עם שגיאה כאשר unmarkedDays > 0.
       if (unmarkedDays > 0) {
+        // unmarkedDaysError — ימים / שגיאה.
         const unmarkedDaysError =
           new Error(
             'All driver availability days must be marked before submission.',
@@ -627,13 +716,16 @@ const submitMyAvailability =
         }),
       );
 
+      // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
       try {
+        // result — תוצאה.
         const result =
           await driverAvailabilityService
             .submitMyAvailability(
               periodId,
             );
 
+        // refreshedData — נתונים.
         const refreshedData =
           await driverAvailabilityService
             .getMyAvailability(
@@ -671,6 +763,7 @@ const submitMyAvailability =
 
         return result;
       } catch (error) {
+        // normalizedError — שגיאה.
         const normalizedError =
           normalizeMyDriverAvailabilityError(
             error,
@@ -701,6 +794,7 @@ const submitMyAvailability =
       state.selectedPeriodId,
     ],
   );
+  // setDayNote — קבוצה ייחודית / יום / הערה.
   const setDayNote =
     useCallback(
       (
@@ -709,16 +803,19 @@ const submitMyAvailability =
       ): void => {
         setState(
           (currentState) => {
+            // currentEntry — רשומה.
             const currentEntry =
               currentState
                 .draftEntries[
                 dayId
               ];
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר !currentEntry.
             if (!currentEntry) {
               return currentState;
             }
 
+            // טיפול במקרה מיוחד ויציאה מוקדמת כאשר currentEntry.note === note.
             if (
               currentEntry.note ===
               note
@@ -755,16 +852,20 @@ const submitMyAvailability =
       [],
     );
 
+  // saveMyAvailability — אילוצים וזמינות.
   const saveMyAvailability =
     useCallback(
       async (): Promise<SaveDriverAvailabilityResponse> => {
+        // periodId — מזהה התקופה.
         const periodId =
           state.data
             ?.period
             ?.id ??
           state.selectedPeriodId;
 
+        // עצירת הפעולה עם שגיאה כאשר !periodId.
         if (!periodId) {
+          // missingPeriodError — תקופה / שגיאה.
           const missingPeriodError =
             new Error(
               'Driver availability period id is required.',
@@ -784,6 +885,7 @@ const submitMyAvailability =
           throw missingPeriodError;
         }
 
+        // entries — רשומות.
         const entries:
           SaveDriverAvailabilityEntryInput[] =
             Object.values(
@@ -793,6 +895,7 @@ const submitMyAvailability =
                 (
                   entry,
                 ): entry is EditableDriverAvailabilityEntry & {
+                  // availabilityStatus — מצב הזמינות.
                   availabilityStatus:
                     DriverAvailabilityStatus;
                 } =>
@@ -830,7 +933,9 @@ const submitMyAvailability =
           }),
         );
 
+        // הפעלת הפעולות בתוך גבול טיפול בשגיאות; כשל מועבר לבלוק catch להלן.
         try {
+          // result — תוצאה.
           const result =
             await driverAvailabilityService
               .saveMyAvailability({
@@ -839,6 +944,7 @@ const submitMyAvailability =
                 entries,
               });
 
+          // refreshedData — נתונים.
           const refreshedData =
             await driverAvailabilityService
               .getMyAvailability(
@@ -876,6 +982,7 @@ const submitMyAvailability =
 
           return result;
         } catch (error) {
+          // normalizedError — שגיאה.
           const normalizedError =
             normalizeMyDriverAvailabilityError(
               error,
@@ -906,6 +1013,7 @@ const submitMyAvailability =
       ],
     );
 
+  // clearError — שגיאה.
   const clearError =
     useCallback(
       (): void => {

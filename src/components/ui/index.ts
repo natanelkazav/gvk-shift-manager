@@ -1,3 +1,9 @@
+/**
+ * קובץ: src/components/ui/index.ts
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור מיקום באוסף.
+ * מטרות עיקריות:
+ * - ריכוז ההגדרות והלוגיקה המפורטות בהמשך הקובץ.
+ */
 export { default as Badge } from './Badge';
 export { default as Button } from './Button';
 

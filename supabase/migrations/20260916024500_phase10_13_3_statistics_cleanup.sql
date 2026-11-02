@@ -1,28 +1,40 @@
+-- קובץ: supabase/migrations/20260916024500_phase10_13_3_statistics_cleanup.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סטטיסטיקה.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_statistics_job_types.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 10.13.3
 -- Active Statistics intentionally shows only active Job Types whose statistics feature is enabled.
 -- Frozen/inactive roles keep their historical data but are not offered in the live Statistics picker.
 
+-- פונקציית מסד public.get_dynamic_statistics_job_types: שליפה או חישוב של סוגי תפקידים.
 create or replace function public.get_dynamic_statistics_job_types()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי current_user_id is null.
   if current_user_id is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
+  -- הסתעפות לפי התנאי not exists (.
   if not exists (
     select 1
     from public.user_permissions up
     where up.user_id = current_user_id
       and up.permission_key in ('statistics.view','users.manage')
   ) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -69,7 +81,9 @@ end;
 $function$;
 
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_statistics_job_types() from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_statistics_job_types() to authenticated;
 
 commit;

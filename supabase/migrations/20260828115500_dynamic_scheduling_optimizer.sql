@@ -1,17 +1,27 @@
+-- קובץ: supabase/migrations/20260828115500_dynamic_scheduling_optimizer.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור דינמי / מיטוב שיבוץ.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_scheduling_admin, public.save_dynamic_job_type, public.analyze_dynamic_schedule_feasibility, public.dynamic_shadow_candidate_allowed, public.create_dynamic_schedule_shadow_draft, public.get_dynamic_schedule_shadow_draft, public.submit_dynamic_scheduling_rule_proposal.
+-- - מבני טבלאות: public.job_types, public.scheduling_rule_registry, public.dynamic_schedule_shadow_drafts, public.dynamic_schedule_shadow_targets, public.dynamic_schedule_shadow_assignments.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
 -- Phase 5: Generic scheduling / optimization engine foundation.
 -- SHADOW ONLY. No production schedule or availability flow is replaced.
 
+-- עדכון מבנה או הגדרות הטבלה public.job_types.
 alter table public.job_types
   add column if not exists scheduling_config jsonb not null default '{}'::jsonb;
 
+-- עדכון מבנה או הגדרות הטבלה public.job_types.
 alter table public.job_types
   drop constraint if exists job_types_scheduling_config_object;
+-- עדכון מבנה או הגדרות הטבלה public.job_types.
 alter table public.job_types
   add constraint job_types_scheduling_config_object
   check (jsonb_typeof(scheduling_config) = 'object');
 
+-- הגדרת מבנה הטבלה public.scheduling_rule_registry והאילוצים המופיעים בהמשך.
 create table if not exists public.scheduling_rule_registry (
   rule_key text primary key,
   name text not null,
@@ -26,6 +36,7 @@ create table if not exists public.scheduling_rule_registry (
   constraint scheduling_rule_registry_schema_object check (jsonb_typeof(parameter_schema)='object')
 );
 
+-- הוספת רשומות ל־public.scheduling_rule_registry בהתאם לקלט ולתנאים להלן.
 insert into public.scheduling_rule_registry(rule_key,name,description,category,supported_severities,parameter_schema)
 values
 ('no_overlap','מניעת חפיפת משמרות','אותו עובד לא יכול להיות משובץ לשתי משמרות חופפות.','rest',array['hard']::text[],'{}'::jsonb),
@@ -43,6 +54,7 @@ on conflict (rule_key) do update set
   name=excluded.name,description=excluded.description,category=excluded.category,
   supported_severities=excluded.supported_severities,parameter_schema=excluded.parameter_schema,is_active=true,updated_at=now();
 
+-- הגדרת מבנה הטבלה public.dynamic_schedule_shadow_drafts והאילוצים המופיעים בהמשך.
 create table if not exists public.dynamic_schedule_shadow_drafts (
   id uuid primary key default gen_random_uuid(),
   job_type_id uuid not null references public.job_types(id) on delete restrict,
@@ -62,6 +74,7 @@ create table if not exists public.dynamic_schedule_shadow_drafts (
   )
 );
 
+-- הגדרת מבנה הטבלה public.dynamic_schedule_shadow_targets והאילוצים המופיעים בהמשך.
 create table if not exists public.dynamic_schedule_shadow_targets (
   draft_id uuid not null references public.dynamic_schedule_shadow_drafts(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -79,6 +92,7 @@ create table if not exists public.dynamic_schedule_shadow_targets (
   )
 );
 
+-- הגדרת מבנה הטבלה public.dynamic_schedule_shadow_assignments והאילוצים המופיעים בהמשך.
 create table if not exists public.dynamic_schedule_shadow_assignments (
   id uuid primary key default gen_random_uuid(),
   draft_id uuid not null references public.dynamic_schedule_shadow_drafts(id) on delete cascade,
@@ -93,19 +107,30 @@ create table if not exists public.dynamic_schedule_shadow_assignments (
   constraint dynamic_schedule_shadow_assignment_reasons_array check (jsonb_typeof(reasons)='array')
 );
 
+-- הגדרת האינדקס dynamic_schedule_shadow_assignments_draft_slot_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists dynamic_schedule_shadow_assignments_draft_slot_idx on public.dynamic_schedule_shadow_assignments(draft_id,slot_id);
+-- הגדרת האינדקס dynamic_schedule_shadow_assignments_draft_user_idx עבור העמודות והתנאים המפורטים בפקודה.
 create index if not exists dynamic_schedule_shadow_assignments_draft_user_idx on public.dynamic_schedule_shadow_assignments(draft_id,user_id);
 
+-- עדכון מבנה או הגדרות הטבלה public.scheduling_rule_registry.
 alter table public.scheduling_rule_registry enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.dynamic_schedule_shadow_drafts.
 alter table public.dynamic_schedule_shadow_drafts enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.dynamic_schedule_shadow_targets.
 alter table public.dynamic_schedule_shadow_targets enable row level security;
+-- עדכון מבנה או הגדרות הטבלה public.dynamic_schedule_shadow_assignments.
 alter table public.dynamic_schedule_shadow_assignments enable row level security;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.scheduling_rule_registry from anon, authenticated;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.dynamic_schedule_shadow_drafts from anon, authenticated;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.dynamic_schedule_shadow_targets from anon, authenticated;
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on public.dynamic_schedule_shadow_assignments from anon, authenticated;
 
 -- Default rule configuration for seeded roles. Still configuration only.
+-- עדכון רשומות ב־public.job_types בהתאם לקלט ולתנאים להלן.
 update public.job_types
 set scheduling_config = jsonb_build_object(
   'minimumMode','soft',
@@ -126,19 +151,26 @@ where code in ('dispatcher','on_call','morning_driver')
   and scheduling_config='{}'::jsonb;
 
 -- Admin payload now exposes scheduling configuration and rule registry.
+-- פונקציית מסד public.get_dynamic_scheduling_admin: שליפה או חישוב של דינמי.
 create or replace function public.get_dynamic_scheduling_admin()
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
+  -- current_user_id — המשתמש הנוכחי הנוכחי.
   current_user_id uuid := auth.uid();
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.profiles p where p.id=current_user_id and p.is_active=true) then raise exception 'user n.
   if not exists(select 1 from public.profiles p where p.id=current_user_id and p.is_active=true) then raise exception 'user not active'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.vi.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.view','users.manage')) then raise exception 'not allowed'; end if;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'featureEnabled',coalesce((select enabled from public.scheduling_feature_flags where key='dynamic_job_types'),false),
     'featureMode',coalesce((select config->>'mode' from public.scheduling_feature_flags where key='dynamic_job_types'),'shadow'),
@@ -171,19 +203,26 @@ end;
 $function$;
 
 -- Job type save now persists scheduling_config as part of the same reviewed configuration.
+-- פונקציית מסד public.save_dynamic_job_type: שמירת סוג תפקיד.
 create or replace function public.save_dynamic_job_type(requested_payload jsonb)
 returns uuid
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid(); target_id uuid; target_group_id uuid; target_code text; target_name text; target_description text;
+  -- target_scope — יעד.
   target_scope text; target_pay_model text; target_is_active boolean; target_pay_config jsonb; target_availability_config jsonb;
+  -- target_scheduling_config — יעד / תצורה.
   target_scheduling_config jsonb; target_statistics_config jsonb; capability_value jsonb; permission_value jsonb;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.profiles p where p.id=current_user_id and p.is_active=true) then raise exception 'user n.
   if not exists(select 1 from public.profiles p where p.id=current_user_id and p.is_active=true) then raise exception 'user not active'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage') then raise exception 'not allowed'; end if;
   target_id:=nullif(requested_payload->>'id','')::uuid; target_group_id:=nullif(requested_payload->>'scheduleGroupId','')::uuid;
   target_code:=lower(trim(coalesce(requested_payload->>'code',''))); target_name:=trim(coalesce(requested_payload->>'name',''));
@@ -191,37 +230,54 @@ begin
   target_pay_model:=coalesce(requested_payload->>'payModel','none'); target_is_active:=coalesce((requested_payload->>'isActive')::boolean,true);
   target_pay_config:=coalesce(requested_payload->'payConfig','{}'::jsonb); target_availability_config:=coalesce(requested_payload->'availabilityConfig','{}'::jsonb);
   target_scheduling_config:=coalesce(requested_payload->'schedulingConfig','{}'::jsonb); target_statistics_config:=coalesce(requested_payload->'statisticsConfig','{}'::jsonb);
+  -- הסתעפות לפי התנאי target_group_id is null or not exists(select 1 from public.schedule_groups sg where sg.id=target_group_id) then raise ex.
   if target_group_id is null or not exists(select 1 from public.schedule_groups sg where sg.id=target_group_id) then raise exception 'schedule group not found'; end if;
+  -- הסתעפות לפי התנאי target_code='' or target_code !~ '^[a-z0-9_]+$' then raise exception 'invalid job type code'; end if;.
   if target_code='' or target_code !~ '^[a-z0-9_]+$' then raise exception 'invalid job type code'; end if;
+  -- הסתעפות לפי התנאי target_name='' then raise exception 'job type name is required'; end if;.
   if target_name='' then raise exception 'job type name is required'; end if;
+  -- הסתעפות לפי התנאי target_scope not in ('full_time','part_time','flexible','other') then raise exception 'invalid employment scope'; end if.
   if target_scope not in ('full_time','part_time','flexible','other') then raise exception 'invalid employment scope'; end if;
+  -- הסתעפות לפי התנאי target_pay_model not in ('hourly','per_shift','per_day','mixed','none') then raise exception 'invalid pay model'; end if.
   if target_pay_model not in ('hourly','per_shift','per_day','mixed','none') then raise exception 'invalid pay model'; end if;
+  -- הסתעפות לפי התנאי target_id is null.
   if target_id is null then
+    -- הוספת רשומות ל־public.job_types בהתאם לקלט ולתנאים להלן.
     insert into public.job_types(schedule_group_id,code,name,description,is_active,employment_scope,pay_model,pay_config,availability_config,scheduling_config,statistics_config,ai_config)
     values(target_group_id,target_code,target_name,target_description,target_is_active,target_scope,target_pay_model,target_pay_config,target_availability_config,target_scheduling_config,target_statistics_config,'{"allow_suggestions":true,"auto_apply":false}'::jsonb)
     returning id into target_id;
   else
+    -- עדכון רשומות ב־public.job_types בהתאם לקלט ולתנאים להלן.
     update public.job_types set schedule_group_id=target_group_id,code=case when legacy_role is null then target_code else code end,name=target_name,
       description=target_description,is_active=target_is_active,employment_scope=target_scope,pay_model=target_pay_model,pay_config=target_pay_config,
       availability_config=target_availability_config,scheduling_config=target_scheduling_config,statistics_config=target_statistics_config
     where id=target_id;
+    -- הסתעפות לפי התנאי not found then raise exception 'job type not found'; end if;.
     if not found then raise exception 'job type not found'; end if;
   end if;
+  -- מחיקת הרשומות שנבחרו מתוך public.job_type_capabilities בהתאם לקלט ולתנאים להלן.
   delete from public.job_type_capabilities where job_type_id=target_id;
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for capability_value in select value from jsonb_array_elements(coalesce(requested_payload->'capabilities','[]'::jsonb)) loop
+    -- הוספת רשומות ל־public.job_type_capabilities בהתאם לקלט ולתנאים להלן.
     insert into public.job_type_capabilities(job_type_id,capability_key,enabled,source) values(target_id,trim(both '"' from capability_value::text),true,'manual') on conflict(job_type_id,capability_key) do update set enabled=true,source='manual';
   end loop;
+  -- מחיקת הרשומות שנבחרו מתוך public.job_type_default_permissions בהתאם לקלט ולתנאים להלן.
   delete from public.job_type_default_permissions where job_type_id=target_id;
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for permission_value in select value from jsonb_array_elements(coalesce(requested_payload->'defaultPermissions','[]'::jsonb)) loop
+    -- הוספת רשומות ל־public.job_type_default_permissions בהתאם לקלט ולתנאים להלן.
     insert into public.job_type_default_permissions(job_type_id,permission_key,source) values(target_id,trim(both '"' from permission_value::text),'manual') on conflict(job_type_id,permission_key) do nothing;
   end loop;
   return target_id;
 end;
 $function$;
 
+-- פונקציית מסד public.analyze_dynamic_schedule_feasibility: דינמי / שיבוץ / בדיקת היתכנות שיבוץ.
 create or replace function public.analyze_dynamic_schedule_feasibility(requested_job_type_id uuid,requested_year integer,requested_month integer)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -230,10 +286,13 @@ declare
   required_total integer:=0; target_total integer:=0; aggregate_min integer:=0; aggregate_target integer:=0; aggregate_max integer:=0;
   shortage_slots integer:=0; member_json jsonb; min_mode text; max_mode text;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.vi.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.view','users.manage')) then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id; if job.id is null then raise exception 'job type not found'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי period.id is null then return jsonb_build_object('materialized',false,'mode','shadow','message','יש ליצור קודם תקופת איל.
   if period.id is null then return jsonb_build_object('materialized',false,'mode','shadow','message','יש ליצור קודם תקופת אילוצים ב־Shadow Mode.'); end if;
   select coalesce(sum(min_workers),0),coalesce(sum(target_workers),0) into required_total,target_total from public.dynamic_availability_slots where period_id=period.id;
   min_mode:=coalesce(job.scheduling_config->>'minimumMode','soft'); max_mode:=coalesce(job.scheduling_config->>'maximumMode','hard');
@@ -273,6 +332,7 @@ begin
     ) < sl.min_workers
   ) q;
 
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object(
     'materialized',true,'periodId',period.id,'jobTypeId',job.id,'year',requested_year,'month',requested_month,'mode','shadow',
     'requiredAssignments',required_total,'targetAssignments',target_total,'aggregateMinimum',aggregate_min,'aggregateTarget',aggregate_target,'aggregateMaximum',aggregate_max,
@@ -291,6 +351,7 @@ end;
 $function$;
 
 
+-- פונקציית מסד public.dynamic_shadow_candidate_allowed: דינמי / טיוטות שיבוץ במנגנון הדינמי.
 create or replace function public.dynamic_shadow_candidate_allowed(
   requested_draft_id uuid,
   requested_user_id uuid,
@@ -301,6 +362,7 @@ create or replace function public.dynamic_shadow_candidate_allowed(
 )
 returns boolean
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
@@ -311,16 +373,21 @@ declare
   existing record;
 begin
   select * into candidate_slot from public.dynamic_availability_slots where id=requested_slot_id;
+  -- הסתעפות לפי התנאי candidate_slot.id is null then return false; end if;.
   if candidate_slot.id is null then return false; end if;
 
   candidate_start := candidate_slot.shift_date + candidate_slot.start_time;
   candidate_end := candidate_slot.shift_date + candidate_slot.end_time;
+  -- הסתעפות לפי התנאי candidate_slot.end_time <= candidate_slot.start_time then candidate_end := candidate_end + interval '1 day'; end if;.
   if candidate_slot.end_time <= candidate_slot.start_time then candidate_end := candidate_end + interval '1 day'; end if;
 
+  -- הסתעפות לפי התנאי exists(select 1 from public.dynamic_schedule_shadow_assignments a where a.draft_id=requested_draft_id and a.slot_id=requ.
   if exists(select 1 from public.dynamic_schedule_shadow_assignments a where a.draft_id=requested_draft_id and a.slot_id=requested_slot_id and a.user_id=requested_user_id) then return false; end if;
 
+  -- הסתעפות לפי התנאי (select count(*) from public.dynamic_schedule_shadow_assignments a join public.dynamic_availability_slots x on x.id=a.sl.
   if (select count(*) from public.dynamic_schedule_shadow_assignments a join public.dynamic_availability_slots x on x.id=a.slot_id where a.draft_id=requested_draft_id and a.user_id=requested_user_id and x.shift_date=candidate_slot.shift_date) >= requested_max_shifts_per_day then return false; end if;
 
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for existing in
     select x.* from public.dynamic_schedule_shadow_assignments a
     join public.dynamic_availability_slots x on x.id=a.slot_id
@@ -330,11 +397,17 @@ begin
       existing_start timestamp := existing.shift_date + existing.start_time;
       existing_end timestamp := existing.shift_date + existing.end_time;
     begin
+      -- הסתעפות לפי התנאי existing.end_time <= existing.start_time then existing_end := existing_end + interval '1 day'; end if;.
       if existing.end_time <= existing.start_time then existing_end := existing_end + interval '1 day'; end if;
+      -- הסתעפות לפי התנאי candidate_start < existing_end and existing_start < candidate_end then return false; end if;.
       if candidate_start < existing_end and existing_start < candidate_end then return false; end if;
+      -- הסתעפות לפי התנאי requested_no_consecutive and (candidate_start=existing_end or candidate_end=existing_start) then return false; end if;.
       if requested_no_consecutive and (candidate_start=existing_end or candidate_end=existing_start) then return false; end if;
+      -- הסתעפות לפי התנאי requested_min_rest_minutes > 0.
       if requested_min_rest_minutes > 0 then
+        -- הסתעפות לפי התנאי existing_end <= candidate_start and extract(epoch from (candidate_start-existing_end))/60 < requested_min_rest_minutes t.
         if existing_end <= candidate_start and extract(epoch from (candidate_start-existing_end))/60 < requested_min_rest_minutes then return false; end if;
+        -- הסתעפות לפי התנאי candidate_end <= existing_start and extract(epoch from (existing_start-candidate_end))/60 < requested_min_rest_minutes t.
         if candidate_end <= existing_start and extract(epoch from (existing_start-candidate_end))/60 < requested_min_rest_minutes then return false; end if;
       end if;
     end;
@@ -343,21 +416,27 @@ begin
 end;
 $function$;
 
+-- פונקציית מסד public.create_dynamic_schedule_shadow_draft: יצירת דינמי / שיבוץ / טיוטות שיבוץ במנגנון הדינמי / טיוטה.
 create or replace function public.create_dynamic_schedule_shadow_draft(requested_job_type_id uuid,requested_year integer,requested_month integer)
 returns jsonb
 language plpgsql
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=''
 as $function$
 declare
   current_user_id uuid:=auth.uid(); job public.job_types%rowtype; period public.dynamic_availability_periods%rowtype; draft_id uuid;
+  -- feasibility — בדיקת היתכנות שיבוץ.
   feasibility jsonb; sl record; position_no integer; chosen_user uuid; chosen_score numeric; chosen_status text; assigned_required integer:=0; assigned_optional integer:=0; unfilled integer:=0;
   no_consecutive boolean; max_per_day integer; min_rest integer; max_hard boolean; coverage_weight numeric; fairness_weight numeric; preference_weight numeric; optional_weight numeric;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage') then raise exception 'not allowed'; end if;
   select * into job from public.job_types where id=requested_job_type_id; if job.id is null then raise exception 'job type not found'; end if;
   select * into period from public.dynamic_availability_periods where job_type_id=job.id and year=requested_year and month=requested_month;
+  -- הסתעפות לפי התנאי period.id is null then raise exception 'shadow availability period not found'; end if;.
   if period.id is null then raise exception 'shadow availability period not found'; end if;
   feasibility:=public.analyze_dynamic_schedule_feasibility(job.id,requested_year,requested_month);
   no_consecutive:=coalesce((job.scheduling_config#>>'{rules,noConsecutive,enabled}')::boolean,true);
@@ -367,16 +446,20 @@ begin
   coverage_weight:=coalesce((job.scheduling_config#>>'{weights,coverage}')::numeric,1000); fairness_weight:=coalesce((job.scheduling_config#>>'{weights,proportionalFairness}')::numeric,100);
   preference_weight:=coalesce((job.scheduling_config#>>'{weights,preference}')::numeric,30); optional_weight:=coalesce((job.scheduling_config#>>'{weights,targetOptional}')::numeric,15);
 
+  -- הוספת רשומות ל־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_schedule_shadow_drafts(job_type_id,availability_period_id,year,month,status,feasibility_snapshot,rules_snapshot,created_by)
   values(job.id,period.id,requested_year,requested_month,'shadow',feasibility,job.scheduling_config,current_user_id) returning id into draft_id;
 
+  -- הוספת רשומות ל־public.dynamic_schedule_shadow_targets בהתאם לקלט ולתנאים להלן.
   insert into public.dynamic_schedule_shadow_targets(draft_id,user_id,requested_min,requested_target,requested_max,available_slots,proportional_weight,proportional_target)
   select draft_id,(m->>'userId')::uuid,(m->>'minimum')::integer,(m->>'target')::integer,nullif(m->>'maximum','')::integer,
     (m->>'availableSlots')::integer,coalesce((m->>'weight')::numeric,1),coalesce((m->>'proportionalTarget')::numeric,0)
   from jsonb_array_elements(coalesce(feasibility->'members','[]'::jsonb)) m;
 
   -- Pass 1: satisfy minimum staffing for every shift before optional staffing.
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for sl in select * from public.dynamic_availability_slots where period_id=period.id order by shift_date,start_time,id loop
+    -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
     for position_no in 1..sl.min_workers loop
       chosen_user:=null; chosen_score:=null; chosen_status:=null;
       select cand.user_id,cand.score,cand.availability_status into chosen_user,chosen_score,chosen_status
@@ -392,16 +475,21 @@ begin
         order by score desc,t.assigned_count asc,t.user_id
         limit 1
       ) cand;
+      -- הסתעפות לפי התנאי chosen_user is null then unfilled:=unfilled+1; exit; end if;.
       if chosen_user is null then unfilled:=unfilled+1; exit; end if;
+      -- הוספת רשומות ל־public.dynamic_schedule_shadow_assignments בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_shadow_assignments(draft_id,slot_id,user_id,assignment_tier,score,reasons)
       values(draft_id,sl.id,chosen_user,'required',chosen_score,jsonb_build_array('כיסוי משמרת','איזון פרופורציונלי',case when chosen_status='preferred' then 'העדפת עובד' else 'זמין' end));
+      -- עדכון רשומות ב־public.dynamic_schedule_shadow_targets בהתאם לקלט ולתנאים להלן.
       update public.dynamic_schedule_shadow_targets set assigned_count=assigned_count+1 where draft_id=draft_id and user_id=chosen_user;
       assigned_required:=assigned_required+1;
     end loop;
   end loop;
 
   -- Pass 2: only after coverage, try to move each shift from minimum to target staffing.
+  -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
   for sl in select * from public.dynamic_availability_slots where period_id=period.id and target_workers>min_workers order by shift_date,start_time,id loop
+    -- מעבר על תוצאות השאילתה או האוסף ועיבוד כל רשומה בנפרד.
     for position_no in 1..greatest(sl.target_workers-sl.min_workers,0) loop
       chosen_user:=null; chosen_score:=null; chosen_status:=null;
       select cand.user_id,cand.score,cand.availability_status into chosen_user,chosen_score,chosen_status
@@ -415,53 +503,73 @@ begin
           and public.dynamic_shadow_candidate_allowed(draft_id,t.user_id,sl.id,max_per_day,no_consecutive,min_rest)
         order by score desc,t.assigned_count asc,t.user_id limit 1
       ) cand;
+      -- הסתעפות לפי התנאי chosen_user is null then exit; end if;.
       if chosen_user is null then exit; end if;
+      -- הוספת רשומות ל־public.dynamic_schedule_shadow_assignments בהתאם לקלט ולתנאים להלן.
       insert into public.dynamic_schedule_shadow_assignments(draft_id,slot_id,user_id,assignment_tier,score,reasons)
       values(draft_id,sl.id,chosen_user,'target_optional',chosen_score,jsonb_build_array('עובד נוסף עד היעד','איזון פרופורציונלי',case when chosen_status='preferred' then 'העדפת עובד' else 'זמין' end));
+      -- עדכון רשומות ב־public.dynamic_schedule_shadow_targets בהתאם לקלט ולתנאים להלן.
       update public.dynamic_schedule_shadow_targets set assigned_count=assigned_count+1 where draft_id=draft_id and user_id=chosen_user;
       assigned_optional:=assigned_optional+1;
     end loop;
   end loop;
 
+  -- עדכון רשומות ב־public.dynamic_schedule_shadow_drafts בהתאם לקלט ולתנאים להלן.
   update public.dynamic_schedule_shadow_drafts set status=case when unfilled=0 then 'generated' else 'incomplete' end,
     metrics=jsonb_build_object('requiredAssignmentsCreated',assigned_required,'optionalAssignmentsCreated',assigned_optional,'unfilledRequiredPositions',unfilled,'algorithm','coverage_first_proportional_v1'),updated_at=now()
   where id=draft_id;
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('draftId',draft_id,'mode','shadow','requiredAssignmentsCreated',assigned_required,'optionalAssignmentsCreated',assigned_optional,'unfilledRequiredPositions',unfilled,'feasibility',feasibility);
 end;
 $function$;
 
+-- פונקציית מסד public.get_dynamic_schedule_shadow_draft: שליפה או חישוב של דינמי / שיבוץ / טיוטות שיבוץ במנגנון הדינמי / טיוטה.
 create or replace function public.get_dynamic_schedule_shadow_draft(requested_draft_id uuid)
 returns jsonb language plpgsql security definer set search_path='' as $function$
 declare current_user_id uuid:=auth.uid(); d public.dynamic_schedule_shadow_drafts%rowtype;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.vi.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key in ('users.view','users.manage')) then raise exception 'not allowed'; end if;
   select * into d from public.dynamic_schedule_shadow_drafts where id=requested_draft_id; if d.id is null then raise exception 'draft not found'; end if;
+  -- הרכבת תוצאת הפעולה והחזרתה לקורא.
   return jsonb_build_object('draftId',d.id,'jobTypeId',d.job_type_id,'year',d.year,'month',d.month,'status',d.status,'mode','shadow','feasibility',d.feasibility_snapshot,'metrics',d.metrics,
     'targets',coalesce((select jsonb_agg(jsonb_build_object('userId',t.user_id,'displayName',p.display_name,'minimum',t.requested_min,'target',t.requested_target,'maximum',t.requested_max,'availableSlots',t.available_slots,'proportionalTarget',t.proportional_target,'assigned',t.assigned_count) order by p.display_name) from public.dynamic_schedule_shadow_targets t join public.profiles p on p.id=t.user_id where t.draft_id=d.id),'[]'::jsonb),
     'assignments',coalesce((select jsonb_agg(jsonb_build_object('slotId',a.slot_id,'date',s.shift_date,'shiftName',s.shift_name,'startTime',s.start_time,'endTime',s.end_time,'userId',a.user_id,'displayName',p.display_name,'tier',a.assignment_tier,'score',a.score,'reasons',a.reasons) order by s.shift_date,s.start_time,a.assignment_tier,p.display_name) from public.dynamic_schedule_shadow_assignments a join public.dynamic_availability_slots s on s.id=a.slot_id join public.profiles p on p.id=a.user_id where a.draft_id=d.id),'[]'::jsonb)
   );
 end;$function$;
 
+-- פונקציית מסד public.submit_dynamic_scheduling_rule_proposal: הגשת דינמי / כלל.
 create or replace function public.submit_dynamic_scheduling_rule_proposal(requested_job_type_id uuid,requested_text text)
 returns uuid language plpgsql security definer set search_path='' as $function$
 declare current_user_id uuid:=auth.uid(); suggestion_id uuid;
 begin
+  -- הסתעפות לפי התנאי current_user_id is null then raise exception 'not authenticated'; end if;.
   if current_user_id is null then raise exception 'not authenticated'; end if;
+  -- הסתעפות לפי התנאי not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage.
   if not exists(select 1 from public.user_permissions up where up.user_id=current_user_id and up.permission_key='users.manage') then raise exception 'not allowed'; end if;
+  -- הסתעפות לפי התנאי length(trim(coalesce(requested_text,'')))<5 then raise exception 'rule text is too short'; end if;.
   if length(trim(coalesce(requested_text,'')))<5 then raise exception 'rule text is too short'; end if;
+  -- הוספת רשומות ל־public.job_type_ai_suggestions בהתאם לקלט ולתנאים להלן.
   insert into public.job_type_ai_suggestions(job_type_id,suggestion_type,status,input_context,suggestion,created_by)
   values(requested_job_type_id,'scheduling_rule_natural_language','pending',jsonb_build_object('text',trim(requested_text)),jsonb_build_object('state','awaiting_ai_interpretation','autoApply',false),current_user_id)
   returning id into suggestion_id;
   return suggestion_id;
 end;$function$;
 
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.dynamic_shadow_candidate_allowed(uuid,uuid,uuid,integer,boolean,integer) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.analyze_dynamic_schedule_feasibility(uuid,integer,integer) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.create_dynamic_schedule_shadow_draft(uuid,integer,integer) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_schedule_shadow_draft(uuid) to authenticated;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.submit_dynamic_scheduling_rule_proposal(uuid,text) to authenticated;
 
+-- עדכון רשומות ב־public.scheduling_feature_flags בהתאם לקלט ולתנאים להלן.
 update public.scheduling_feature_flags set config=config || jsonb_build_object('phase','5','mode','shadow','availability_engine','shadow','scheduling_engine','shadow','optimizer','coverage_first_proportional_v1'),updated_at=now() where key='dynamic_job_types';
 
 commit;

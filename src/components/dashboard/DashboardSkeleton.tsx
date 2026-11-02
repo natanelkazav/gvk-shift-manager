@@ -1,3 +1,13 @@
+/**
+ * קובץ: src/components/dashboard/DashboardSkeleton.tsx
+ * מטרה: מימוש רכיב תצוגה ואינטראקציה עבור לוח בקרה.
+ * מטרות עיקריות:
+ * - ממשקים ופעולות מרכזיים: DashboardSkeleton.
+ * - קישור מאפיינים ומצב מקומי לתצוגה ולטיפול בפעולות המשתמש.
+ */
+/**
+ * פעולה DashboardSkeleton: לוח בקרה.
+ */
 function DashboardSkeleton() {
   return (
     <div

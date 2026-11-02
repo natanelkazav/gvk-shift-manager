@@ -1,9 +1,16 @@
+-- קובץ: supabase/migrations/20261006234500_statistics_data_bearing_periods.sql
+-- מטרה: הגדרת פעולות מסד נתונים עבור סטטיסטיקה / נתונים / תקופות.
+-- מטרות עיקריות:
+-- - הגדרת פונקציות: public.get_dynamic_statistics_data_periods.
+-- - סדר הפקודות, התנאים וההרשאות בקובץ נשמר כפי שהיה במקור.
 begin;
 
+-- פונקציית מסד public.get_dynamic_statistics_data_periods: שליפה או חישוב של דינמי / סטטיסטיקה / נתונים / תקופות.
 create or replace function public.get_dynamic_statistics_data_periods(requested_job_type_id uuid)
 returns jsonb
 language plpgsql
 stable
+-- הפונקציה רצה בהרשאות הבעלים; בדיקות הרשאה פנימיות והרשאות EXECUTE נבחנות בנפרד.
 security definer
 set search_path=public
 as $$
@@ -11,9 +18,12 @@ declare
   actor uuid:=auth.uid();
   can_global boolean;
   can_own_activity boolean;
+  -- result — תוצאה.
   result jsonb;
 begin
+  -- הסתעפות לפי התנאי actor is null.
   if actor is null then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not authenticated';
   end if;
 
@@ -31,7 +41,9 @@ begin
       where m.job_type_id=requested_job_type_id and m.user_id=actor
     );
 
+  -- הסתעפות לפי התנאי not (can_global or can_own_activity).
   if not (can_global or can_own_activity) then
+    -- עצירת הפעולה עם שגיאה כאשר התנאי בבלוק מתקיים.
     raise exception 'not allowed';
   end if;
 
@@ -127,7 +139,9 @@ begin
 end;
 $$;
 
+-- הסרת ההרשאות המפורטות בפקודה מהתפקידים המצוינים בה.
 revoke all on function public.get_dynamic_statistics_data_periods(uuid) from public;
+-- הקצאת ההרשאות המפורטות בפקודה לתפקידים המצוינים בה.
 grant execute on function public.get_dynamic_statistics_data_periods(uuid) to authenticated;
 
 commit;
