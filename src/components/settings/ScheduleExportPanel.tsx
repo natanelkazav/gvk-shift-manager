@@ -5,6 +5,7 @@ import {
   LoaderCircle,
   RotateCcw,
   Columns3,
+  Save,
 } from 'lucide-react';
 
 import {
@@ -13,6 +14,7 @@ import {
   useState,
 } from 'react';
 
+import { scheduleExportLayoutSettingsService } from '../../services/scheduleExportLayoutSettingsService';
 import { scheduleArchiveService } from '../../services/scheduleArchiveService';
 import { dynamicScheduleExportService } from '../../services/dynamicScheduleExportService';
 import type {
@@ -33,13 +35,13 @@ const hebrewMonths = [
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר',
 ];
 
-type ExportTarget = 'current' | 'next';
+type ExportTarget = string;
 
 const EXPORT_LAYOUT_STORAGE_KEY = 'gvk.dynamicScheduleExport.layout.v2';
 
-function getMonthTarget(target: ExportTarget): { year: number; month: number } {
+function getMonthTarget(offset: number): { year: number; month: number } {
   const now = new Date();
-  const date = new Date(now.getFullYear(), now.getMonth() + (target === 'next' ? 1 : 0), 1, 12, 0, 0, 0);
+  const date = new Date(now.getFullYear(), now.getMonth() + offset, 1, 12);
   return { year: date.getFullYear(), month: date.getMonth() + 1 };
 }
 
@@ -89,7 +91,10 @@ function getModeLabel(mode: ScheduleFileJobTypeOption['workMode']): string {
 }
 
 function ScheduleExportPanel() {
-  const [target, setTarget] = useState<ExportTarget>('current');
+  const [target, setTarget] = useState<ExportTarget>('0');
+  const [snapshot, setSnapshot] = useState<ScheduleExcelLayout | null>(null);
+  const [isLoadingSnapshot, setIsLoadingSnapshot] = useState(false);
+  const [isApprovingSnapshot, setIsApprovingSnapshot] = useState(false);
   const [jobTypes, setJobTypes] = useState<ScheduleFileJobTypeOption[]>([]);
   const [layout, setLayout] = useState<ScheduleExcelLayout>({
     morningRowJobTypeId: null,
@@ -99,14 +104,16 @@ function ScheduleExportPanel() {
     dailyJobTypeId: null,
   });
   const [isLoadingRoles, setIsLoadingRoles] = useState(true);
+  const [isSavingLayout, setIsSavingLayout] = useState(false);
+  const [hasSavedLayout, setHasSavedLayout] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const currentTarget = useMemo(() => getMonthTarget('current'), []);
-  const nextTarget = useMemo(() => getMonthTarget('next'), []);
-  const selectedTarget = target === 'next' ? nextTarget : currentTarget;
+  const selectedTarget = useMemo(() => getMonthTarget(Number(target)), [target]);
+  const isHistorical = Number(target) < 0;
+  const effectiveLayout = isHistorical && snapshot ? snapshot : layout;
 
   useEffect(() => {
     let active = true;
@@ -116,7 +123,19 @@ function ScheduleExportPanel() {
         const options = await dynamicScheduleExportService.getJobTypeOptions();
         if (!active) return;
         setJobTypes(options);
-        setLayout(readStoredLayout(options) ?? dynamicScheduleExportService.createDefaultLayout(options));
+        const saved = await scheduleExportLayoutSettingsService.load();
+        if (!active) return;
+        const validIds = new Set(options.map((option) => option.id));
+        const clean = (value: string | null | undefined): string | null =>
+          value && validIds.has(value) ? value : null;
+        setLayout(saved ? {
+          morningRowJobTypeId: clean(saved.morningRowJobTypeId),
+          eveningRowJobTypeId: clean(saved.eveningRowJobTypeId),
+          nightRowJobTypeId: clean(saved.nightRowJobTypeId),
+          parallelMorningJobTypeId: clean(saved.parallelMorningJobTypeId),
+          dailyJobTypeId: clean(saved.dailyJobTypeId),
+        } : readStoredLayout(options) ?? dynamicScheduleExportService.createDefaultLayout(options));
+        setHasSavedLayout(Boolean(saved));
       } catch (loadError) {
         if (active) setError(getErrorMessage(loadError));
       } finally {
@@ -125,6 +144,31 @@ function ScheduleExportPanel() {
     })();
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    setSnapshot(null);
+    setIsLoadingSnapshot(true);
+    void scheduleExportLayoutSettingsService.loadMonthlySnapshot(selectedTarget.year, selectedTarget.month)
+      .then((saved) => { if (active) setSnapshot(saved); })
+      .catch((err) => { if (active) setError(getErrorMessage(err)); })
+      .finally(() => { if (active) setIsLoadingSnapshot(false); });
+    return () => { active = false; };
+  }, [selectedTarget.year, selectedTarget.month]);
+
+  const approveHistoricalLayout = async (): Promise<void> => {
+    if (!isHistorical || snapshot || isLoadingSnapshot) return;
+    setIsApprovingSnapshot(true);
+    setError(null);
+    try {
+      const approved = await scheduleExportLayoutSettingsService.approveMonthlySnapshot(
+        selectedTarget.year, selectedTarget.month, layout,
+      );
+      setSnapshot(approved);
+      setSuccessMessage('מיפוי החודש אושר ונשמר. לא ניתן לדרוס אותו דרך המסך.');
+    } catch (err) { setError(getErrorMessage(err)); }
+    finally { setIsApprovingSnapshot(false); }
+  };
 
   useEffect(() => {
     if (!isLoadingRoles && jobTypes.length > 0) persistLayout(layout);
@@ -141,13 +185,28 @@ function ScheduleExportPanel() {
   const selectedNames = useMemo(() => {
     const names = new Map(jobTypes.map((jobType) => [jobType.id, jobType.name]));
     return {
-      morning: layout.morningRowJobTypeId ? names.get(layout.morningRowJobTypeId) ?? 'לא נבחר' : 'לא בשימוש',
-      evening: layout.eveningRowJobTypeId ? names.get(layout.eveningRowJobTypeId) ?? 'לא נבחר' : 'לא בשימוש',
-      night: layout.nightRowJobTypeId ? names.get(layout.nightRowJobTypeId) ?? 'לא נבחר' : 'לא בשימוש',
-      parallel: layout.parallelMorningJobTypeId ? names.get(layout.parallelMorningJobTypeId) ?? 'לא נבחר' : 'לא בשימוש',
-      daily: layout.dailyJobTypeId ? names.get(layout.dailyJobTypeId) ?? 'לא נבחר' : 'לא בשימוש',
+      morning: effectiveLayout.morningRowJobTypeId ? names.get(effectiveLayout.morningRowJobTypeId) ?? 'לא נבחר' : 'לא בשימוש',
+      evening: effectiveLayout.eveningRowJobTypeId ? names.get(effectiveLayout.eveningRowJobTypeId) ?? 'לא נבחר' : 'לא בשימוש',
+      night: effectiveLayout.nightRowJobTypeId ? names.get(effectiveLayout.nightRowJobTypeId) ?? 'לא נבחר' : 'לא בשימוש',
+      parallel: effectiveLayout.parallelMorningJobTypeId ? names.get(effectiveLayout.parallelMorningJobTypeId) ?? 'לא נבחר' : 'לא בשימוש',
+      daily: effectiveLayout.dailyJobTypeId ? names.get(effectiveLayout.dailyJobTypeId) ?? 'לא נבחר' : 'לא בשימוש',
     };
-  }, [jobTypes, layout]);
+  }, [jobTypes, effectiveLayout]);
+
+  const saveLayout = async (): Promise<void> => {
+    setIsSavingLayout(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await scheduleExportLayoutSettingsService.save(layout);
+      setHasSavedLayout(true);
+      setSuccessMessage('מיפוי הייצוא נשמר בשרת עבור כל המשתמשים המורשים.');
+    } catch (saveError) {
+      setError(getErrorMessage(saveError));
+    } finally {
+      setIsSavingLayout(false);
+    }
+  };
 
   const resetLayout = (): void => {
     const nextLayout = dynamicScheduleExportService.createDefaultLayout(jobTypes);
@@ -165,7 +224,7 @@ function ScheduleExportPanel() {
       const result = await dynamicScheduleExportService.exportMonth(
         selectedTarget.year,
         selectedTarget.month,
-        layout,
+        effectiveLayout,
       );
       setSuccessMessage(`הקובץ ${result.fileName} נוצר והורד בהצלחה.`);
     } catch (exportError) {
@@ -183,7 +242,7 @@ function ScheduleExportPanel() {
       const { blob, result } = await dynamicScheduleExportService.createMonthFile(
         selectedTarget.year,
         selectedTarget.month,
-        layout,
+        effectiveLayout,
       );
       const response = await scheduleArchiveService.sendScheduleFile(
         blob,
@@ -224,10 +283,11 @@ function ScheduleExportPanel() {
             label="חודש לייצוא"
             value={target}
             disabled={isExporting || isSending}
-            options={[
-              { value: 'current', label: `החודש הנוכחי — ${formatMonthLabel(currentTarget.year, currentTarget.month)}` },
-              { value: 'next', label: `החודש הבא — ${formatMonthLabel(nextTarget.year, nextTarget.month)}` },
-            ]}
+            options={Array.from({ length: 14 }, (_, i) => {
+              const offset = i - 12;
+              const date = getMonthTarget(offset);
+              return { value: String(offset), label: `${offset === 0 ? 'החודש הנוכחי — ' : offset === 1 ? 'החודש הבא — ' : ''}${formatMonthLabel(date.year, date.month)}` };
+            })}
             onChange={(event) => {
               setTarget(event.target.value as ExportTarget);
               setError(null);
@@ -248,6 +308,13 @@ function ScheduleExportPanel() {
               </Button>
             </div>
 
+            {isHistorical ? (
+              <div className="settings-message" role="status">
+                {isLoadingSnapshot ? 'בודק מיפוי חודשי שמור...' : snapshot
+                  ? 'מיפוי היסטורי מאושר נטען. הייצוא משתמש במיפוי השמור של חודש זה.'
+                  : 'אין מיפוי היסטורי שמור. המיפוי המוצג הוא הצעה מהמיפוי המרכזי הנוכחי; יש להוריד את הקובץ, לבדוק אותו ולאשר את המיפוי לפני שליחה ל-Teams.'}
+              </div>
+            ) : null}
             <div className="schedule-export-mapping-grid">
               <div className="schedule-export-mapping-row">
                 <div className="schedule-export-column-badge">C + D · שורה 1</div>
@@ -257,8 +324,8 @@ function ScheduleExportPanel() {
                 </div>
                 <Select
                   label="תפקיד לשורת בוקר"
-                  value={layout.morningRowJobTypeId ?? ''}
-                  disabled={isLoadingRoles || isExporting || isSending}
+                  value={effectiveLayout.morningRowJobTypeId ?? ''}
+                  disabled={isLoadingRoles || isExporting || isSending || isLoadingSnapshot || Boolean(isHistorical && snapshot)}
                   options={selectOptions}
                   onChange={(event) => setLayout((current) => ({ ...current, morningRowJobTypeId: event.target.value || null }))}
                 />
@@ -272,8 +339,8 @@ function ScheduleExportPanel() {
                 </div>
                 <Select
                   label="תפקיד לשורת ערב"
-                  value={layout.eveningRowJobTypeId ?? ''}
-                  disabled={isLoadingRoles || isExporting || isSending}
+                  value={effectiveLayout.eveningRowJobTypeId ?? ''}
+                  disabled={isLoadingRoles || isExporting || isSending || isLoadingSnapshot || Boolean(isHistorical && snapshot)}
                   options={selectOptions}
                   onChange={(event) => setLayout((current) => ({ ...current, eveningRowJobTypeId: event.target.value || null }))}
                 />
@@ -287,8 +354,8 @@ function ScheduleExportPanel() {
                 </div>
                 <Select
                   label="תפקיד לשורת לילה"
-                  value={layout.nightRowJobTypeId ?? ''}
-                  disabled={isLoadingRoles || isExporting || isSending}
+                  value={effectiveLayout.nightRowJobTypeId ?? ''}
+                  disabled={isLoadingRoles || isExporting || isSending || isLoadingSnapshot || Boolean(isHistorical && snapshot)}
                   options={selectOptions}
                   onChange={(event) => setLayout((current) => ({ ...current, nightRowJobTypeId: event.target.value || null }))}
                 />
@@ -302,8 +369,8 @@ function ScheduleExportPanel() {
                 </div>
                 <Select
                   label="תפקיד מקביל בבוקר"
-                  value={layout.parallelMorningJobTypeId ?? ''}
-                  disabled={isLoadingRoles || isExporting || isSending}
+                  value={effectiveLayout.parallelMorningJobTypeId ?? ''}
+                  disabled={isLoadingRoles || isExporting || isSending || isLoadingSnapshot || Boolean(isHistorical && snapshot)}
                   options={selectOptions}
                   onChange={(event) => setLayout((current) => ({ ...current, parallelMorningJobTypeId: event.target.value || null }))}
                 />
@@ -317,8 +384,8 @@ function ScheduleExportPanel() {
                 </div>
                 <Select
                   label="תפקיד יומי"
-                  value={layout.dailyJobTypeId ?? ''}
-                  disabled={isLoadingRoles || isExporting || isSending}
+                  value={effectiveLayout.dailyJobTypeId ?? ''}
+                  disabled={isLoadingRoles || isExporting || isSending || isLoadingSnapshot || Boolean(isHistorical && snapshot)}
                   options={selectOptions}
                   onChange={(event) => setLayout((current) => ({ ...current, dailyJobTypeId: event.target.value || null }))}
                 />
@@ -337,6 +404,14 @@ function ScheduleExportPanel() {
             </div>
           </section>
 
+          <div className="schedule-export-actions">
+            <Button type="button" variant="secondary" disabled={isHistorical || isLoadingRoles || isSavingLayout || isExporting || isSending} onClick={() => void saveLayout()}>
+              <Save size={17} aria-hidden="true" />
+              {isSavingLayout ? 'שומר מיפוי...' : 'שמירת מיפוי בשרת'}
+            </Button>
+            <span>{hasSavedLayout ? 'קיים מיפוי שמור בשרת' : 'המיפוי עדיין לא נשמר בשרת'}</span>
+          </div>
+
           <div className="schedule-export-summary">
             <span>הקובץ שייווצר</span>
             <strong>{`לוח שיבוצים ${formatMonthLabel(selectedTarget.year, selectedTarget.month)}.xlsx`}</strong>
@@ -345,13 +420,20 @@ function ScheduleExportPanel() {
           {error ? <div className="settings-message settings-message-error" role="alert">{error}</div> : null}
           {successMessage ? <div className="settings-message settings-message-success" role="status">{successMessage}</div> : null}
 
+          {isHistorical && !snapshot && !isLoadingSnapshot ? (
+            <div className="schedule-export-actions">
+              <Button type="button" variant="secondary" disabled={isApprovingSnapshot || isExporting || isSending || isLoadingRoles} onClick={() => void approveHistoricalLayout()}>
+                {isApprovingSnapshot ? 'שומר אישור...' : 'בדקתי את הקובץ — אשר מיפוי לחודש זה'}
+              </Button>
+            </div>
+          ) : null}
           <div className="schedule-export-actions">
-            <Button type="button" disabled={isExporting || isSending || isLoadingRoles} onClick={() => void handleExport()}>
+            <Button type="button" disabled={isExporting || isSending || isLoadingRoles || isLoadingSnapshot} onClick={() => void handleExport()}>
               {isExporting ? <LoaderCircle className="schedule-export-spinner" size={17} aria-hidden="true" /> : <Download size={17} aria-hidden="true" />}
               {isExporting ? 'יוצר קובץ...' : 'הורדת קובץ Excel'}
             </Button>
 
-            <Button type="button" variant="secondary" disabled={isExporting || isSending || isLoadingRoles} onClick={() => void handleSendToTeams()}>
+            <Button type="button" variant="secondary" disabled={isExporting || isSending || isLoadingRoles || isLoadingSnapshot || (isHistorical && !snapshot)} onClick={() => void handleSendToTeams()}>
               {isSending ? <LoaderCircle className="schedule-export-spinner" size={17} aria-hidden="true" /> : <CloudUpload size={17} aria-hidden="true" />}
               {isSending ? 'שולח...' : 'שליחה ל-Teams'}
             </Button>

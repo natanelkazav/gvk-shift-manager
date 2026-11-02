@@ -809,425 +809,190 @@ async function loadProfileMap(
   );
 }
 
+interface DynamicPublishedAssignment {
+  id: string;
+  shift_date: string;
+  shift_code: string | null;
+  shift_name: string | null;
+  start_time: string;
+  end_time: string;
+  user_id: string | null;
+  slot_id: string | null;
+}
+
+/** The export is intentionally restricted to the three original Teams columns. */
 async function loadMonthData(
-  adminClient:
-    ReturnType<
-      typeof createClient
-    >,
-  year:
-    number,
-  month:
-    number,
+  adminClient: ReturnType<typeof createClient>,
+  year: number,
+  month: number,
 ): Promise<{
-  dispatcherShifts:
-    ExportDispatcherShift[];
-  driverDays:
-    ExportDriverDay[];
-  morningAssignments:
-    ExportMorningAssignment[];
+  dispatcherShifts: ExportDispatcherShift[];
+  driverDays: ExportDriverDay[];
+  morningAssignments: ExportMorningAssignment[];
 }> {
-  const [
-    dispatcherPeriodResult,
-    driverPeriodResult,
-    morningPeriodResult,
-  ] =
-    await Promise.all([
-      adminClient
-        .from(
-          'schedule_periods',
-        )
-        .select(
-          'id, status',
-        )
-        .eq(
-          'year',
-          year,
-        )
-        .eq(
-          'month',
-          month,
-        )
-        .maybeSingle(),
+  // Resolve the *published* dynamic job types for this month, rather than
+  // legacy_role codes. The manual export panel also excludes legacy roles.
+  const { data: publications, error: publicationsError } = await adminClient
+    .from('dynamic_schedule_publications')
+    .select('id, job_type_id, status, config_snapshot')
+    .eq('year', year)
+    .eq('month', month)
+    .in('status', ['published', 'archived']);
+  if (publicationsError) throw publicationsError;
 
-      adminClient
-        .from(
-          'driver_schedule_periods',
-        )
-        .select(
-          'id, status',
-        )
-        .eq(
-          'year',
-          year,
-        )
-        .eq(
-          'month',
-          month,
-        )
-        .maybeSingle(),
+  const { data: jobs, error: jobsError } = await adminClient
+    .from('job_types')
+    .select('id, name, code, legacy_role');
+  if (jobsError) throw jobsError;
+  const jobById = new Map((jobs ?? []).map((job) => [job.id, job]));
 
-      adminClient
-        .from(
-          'morning_driver_schedule_periods',
-        )
-        .select(
-          'id, status, availability_period_id',
-        )
-        .eq(
-          'year',
-          year,
-        )
-        .eq(
-          'month',
-          month,
-        )
-        .maybeSingle(),
-    ]);
-
-  for (
-    const result
-    of [
-      dispatcherPeriodResult,
-      driverPeriodResult,
-      morningPeriodResult,
-    ]
-  ) {
-    if (
-      result.error
-    ) {
-      throw result.error;
-    }
-  }
-
-  const dispatcherPeriod =
-    dispatcherPeriodResult
-      .data as
-      {
-        id: string;
-        status: string;
-      } |
-      null;
-
-  const driverPeriod =
-    driverPeriodResult
-      .data as
-      {
-        id: string;
-        status: string;
-      } |
-      null;
-
-  const morningPeriod =
-    morningPeriodResult
-      .data as
-      {
-        id: string;
-        status: string;
-        availability_period_id:
-          string;
-      } |
-      null;
-
-  const unpublished:
-    string[] = [];
-
-  if (
-    dispatcherPeriod
-      ?.status !==
-      'published'
-  ) {
-    unpublished.push(
-      'לוח המוקדנים',
-    );
-  }
-
-  if (
-    driverPeriod
-      ?.status !==
-      'published'
-  ) {
-    unpublished.push(
-      'לוח הכוננים',
-    );
-  }
-
-  if (
-    morningPeriod
-      ?.status !==
-      'published'
-  ) {
-    unpublished.push(
-      'לוח כונני הבוקר',
-    );
-  }
-
-  if (
-    unpublished.length >
-      0
-  ) {
-    throw new Error(
-      `לא ניתן לבצע ארכיון חודשי לפני שכל הלוחות פורסמו. חסר פרסום עבור: ${unpublished.join(
-        ', ',
-      )}.`,
-    );
-  }
-
-  const [
-    shiftsResult,
-    driverDaysResult,
-    morningAssignmentsResult,
-    morningShiftsResult,
-  ] =
-    await Promise.all([
-      adminClient
-        .from(
-          'schedule_shifts',
-        )
-        .select(
-          'id, shift_date, starts_at, ends_at, is_premium, holiday_name, assigned_user_id',
-        )
-        .eq(
-          'period_id',
-          dispatcherPeriod!.id,
-        )
-        .order(
-          'starts_at',
-        ),
-
-      adminClient
-        .from(
-          'driver_schedule_days',
-        )
-        .select(
-          'duty_date, assigned_user_id',
-        )
-        .eq(
-          'period_id',
-          driverPeriod!.id,
-        )
-        .order(
-          'duty_date',
-        ),
-
-      adminClient
-        .from(
-          'morning_driver_schedule_assignments',
-        )
-        .select(
-          'availability_shift_id, assignment_slot, assigned_user_id',
-        )
-        .eq(
-          'schedule_period_id',
-          morningPeriod!.id,
-        )
-        .order(
-          'assignment_slot',
-        ),
-
-      adminClient
-        .from(
-          'morning_driver_availability_shifts',
-        )
-        .select(
-          'id, shift_date, start_time, end_time',
-        )
-        .eq(
-          'period_id',
-          morningPeriod!
-            .availability_period_id,
-        )
-        .order(
-          'shift_date',
-        )
-        .order(
-          'sort_order',
-        ),
-    ]);
-
-  for (
-    const result
-    of [
-      shiftsResult,
-      driverDaysResult,
-      morningAssignmentsResult,
-      morningShiftsResult,
-    ]
-  ) {
-    if (
-      result.error
-    ) {
-      throw result.error;
-    }
-  }
-
-  const rawShifts =
-    (
-      shiftsResult.data ??
-      []
-    ) as
-      DispatcherShiftRow[];
-
-  const rawDriverDays =
-    (
-      driverDaysResult.data ??
-      []
-    ) as
-      DriverDayRow[];
-
-  const rawMorningAssignments =
-    (
-      morningAssignmentsResult
-        .data ??
-      []
-    ) as
-      MorningAssignmentRow[];
-
-  const rawMorningShifts =
-    (
-      morningShiftsResult
-        .data ??
-      []
-    ) as
-      MorningAvailabilityShiftRow[];
-
-  const morningShiftMap =
-    new Map(
-      rawMorningShifts.map(
-        (
-          shift,
-        ) => [
-          shift.id,
-          shift,
-        ],
-      ),
-    );
-
-  const profileMap =
-    await loadProfileMap(
-      adminClient,
-      [
-        ...rawShifts.map(
-          (
-            row,
-          ) =>
-            row.assigned_user_id ??
-            '',
-        ),
-        ...rawDriverDays.map(
-          (
-            row,
-          ) =>
-            row.assigned_user_id ??
-            '',
-        ),
-        ...rawMorningAssignments.map(
-          (
-            row,
-          ) =>
-            row.assigned_user_id ??
-            '',
-        ),
-      ],
-    );
-
-  return {
-    dispatcherShifts:
-      rawShifts.map(
-        (
-          row,
-        ) => ({
-          shiftDate:
-            row.shift_date,
-
-          startsAt:
-            row.starts_at,
-
-          endsAt:
-            row.ends_at,
-
-          isPremium:
-            row.is_premium,
-
-          holidayName:
-            row.holiday_name,
-
-          assignedUserName:
-            row.assigned_user_id
-              ? profileMap.get(
-                  row.assigned_user_id,
-                ) ??
-                null
-              : null,
-        }),
-      ),
-
-    driverDays:
-      rawDriverDays.map(
-        (
-          row,
-        ) => ({
-          dutyDate:
-            row.duty_date,
-
-          assignedUserName:
-            row.assigned_user_id
-              ? profileMap.get(
-                  row.assigned_user_id,
-                ) ??
-                null
-              : null,
-        }),
-      ),
-
-    morningAssignments:
-      rawMorningAssignments
-        .map(
-          (
-            row,
-          ) => {
-            const shift =
-              morningShiftMap.get(
-                row
-                  .availability_shift_id,
-              );
-
-            if (
-              !shift
-            ) {
-              return null;
-            }
-
-            return {
-              shiftDate:
-                shift.shift_date,
-
-              startTime:
-                shift.start_time,
-
-              endTime:
-                shift.end_time,
-
-              assignmentSlot:
-                row.assignment_slot,
-
-              assignedUserName:
-                row.assigned_user_id
-                  ? profileMap.get(
-                      row.assigned_user_id,
-                    ) ??
-                    null
-                  : null,
-            };
-          },
-        )
-        .filter(
-          (
-            value,
-          ): value is ExportMorningAssignment =>
-            value !==
-              null,
-        ),
+  type ArchiveRole = 'dispatcher' | 'on_call' | 'morning_driver';
+  const candidates: Record<ArchiveRole, Array<{ id: string; job_type_id: string }>> = {
+    dispatcher: [], on_call: [], morning_driver: [],
   };
+  for (const publication of publications ?? []) {
+    const job = jobById.get(publication.job_type_id);
+    // Never silently export a legacy job type or an orphaned publication.
+    if (!job || job.legacy_role) continue;
+    const snapshot = publication.config_snapshot as {
+      jobType?: { shiftPattern?: { workMode?: unknown } };
+    } | null;
+    const mode = snapshot?.jobType?.shiftPattern?.workMode;
+    const name = String(job.name ?? '');
+    let role: ArchiveRole | null = null;
+    if (mode === 'shifts' && /מוקד|dispatcher|dispatch/i.test(name)) role = 'dispatcher';
+    else if (mode === 'on_call_daily' && /כונ|on.?call|duty/i.test(name)) role = 'on_call';
+    else if (mode === 'on_call_hourly' && /בוקר|morning/i.test(name) && /כונ|on.?call|duty/i.test(name)) role = 'morning_driver';
+    if (role) candidates[role].push({ id: publication.id, job_type_id: publication.job_type_id });
+  }
+
+  const roles: ArchiveRole[] = ['dispatcher', 'on_call', 'morning_driver'];
+  const labels: Record<ArchiveRole, string> = {
+    dispatcher: 'לוח המוקדנים', on_call: 'לוח הכוננים', morning_driver: 'לוח כונני הבוקר',
+  };
+  const selected = roles.map((role) => {
+    const matching = candidates[role];
+    if (matching.length !== 1) {
+      throw new Error(
+        `לא ניתן לזהות פרסום יחיד עבור ${labels[role]} בחודש ${month}/${year}: נמצאו ${matching.length}. ` +
+        'יש לבדוק את סוגי התפקידים והפרסומים; לא נבחר לוח באופן אוטומטי.'
+      );
+    }
+    return matching[0];
+  });
+
+  const results = await Promise.all(selected.map((publication) =>
+    adminClient
+      .from('dynamic_schedule_published_assignments')
+      .select('id, shift_date, shift_code, shift_name, start_time, end_time, user_id, slot_id')
+      .eq('publication_id', publication.id)
+      .order('shift_date')
+      .order('start_time')
+  ));
+  for (const result of results) if (result.error) throw result.error;
+  const [dispatchers, drivers, mornings] = results.map((result) =>
+    (result.data ?? []) as DynamicPublishedAssignment[]
+  );
+  if (!dispatchers.length || !drivers.length || !mornings.length) {
+    throw new Error('אחד הלוחות המפורסמים ריק; הארכיון נעצר כדי לא לשלוח קובץ חסר.');
+  }
+
+  const profileMap = await loadProfileMap(adminClient, [
+    ...dispatchers, ...drivers, ...mornings,
+  ].map((row) => row.user_id ?? ''));
+  const getName = (id: string | null) => id ? profileMap.get(id) ?? null : null;
+
+  // Published assignments are the authoritative edited assignments, not rotation seeds.
+  const dispatcherShifts: ExportDispatcherShift[] = dispatchers.map((row) => ({
+    shiftDate: row.shift_date,
+    startsAt: row.start_time,
+    endsAt: row.end_time,
+    isPremium: false,
+    holidayName: null,
+    assignedUserName: getName(row.user_id),
+  }));
+
+  // Preserve premium / holiday formatting using the original availability slot snapshot.
+  const slotIds = Array.from(new Set(dispatchers.map((row) => row.slot_id).filter((id): id is string => !!id)));
+  if (dispatchers.some((row) => !row.slot_id)) {
+    throw new Error('חלק ממשמרות המוקדנים חסרות מזהה משמרת מקורית; לא ניתן לאמת רכיבי 200%.');
+  }
+  if (slotIds.length) {
+    const { data: slots, error: slotsError } = await adminClient
+      .from('dynamic_availability_slots')
+      .select('id, holiday_name, pay_segments_snapshot')
+      .in('id', slotIds);
+    if (slotsError) throw slotsError;
+    const slotMap = new Map((slots ?? []).map((slot) => [slot.id, slot]));
+    dispatchers.forEach((row, index) => {
+      const slot = row.slot_id ? slotMap.get(row.slot_id) : null;
+      dispatcherShifts[index].holidayName = slot?.holiday_name ?? null;
+      if (!slot) {
+        throw new Error(`לא נמצאו נתוני משמרת מקוריים עבור ${row.shift_date} (${row.slot_id ?? 'ללא מזהה משמרת'}).`);
+      }
+      const segments: unknown = slot.pay_segments_snapshot;
+      if (!Array.isArray(segments)) {
+        throw new Error(`מבנה רכיבי התעריף אינו תקין עבור ${row.shift_date} (${row.slot_id}).`);
+      }
+      dispatcherShifts[index].isPremium = segments.some((segment: unknown) => {
+        if (!segment || typeof segment !== 'object') return false;
+        const pay = segment as Record<string, unknown>;
+        return pay.type === 'premium_hours'
+          && typeof pay.multiplier === 'number'
+          && pay.multiplier >= 2
+          && typeof pay.hours === 'number'
+          && pay.hours > 0;
+      });
+    });
+  }
+
+  const driverByDate = new Map<string, string | null>();
+  for (const row of drivers) {
+    if (driverByDate.has(row.shift_date) && driverByDate.get(row.shift_date) !== row.user_id) {
+      throw new Error(`נמצאו שני כוננים שונים בתאריך ${row.shift_date}; התבנית תומכת בכונן אחד בלבד.`);
+    }
+    driverByDate.set(row.shift_date, row.user_id);
+  }
+  const driverDays: ExportDriverDay[] = [...driverByDate].map(([dutyDate, userId]) => ({
+    dutyDate,
+    assignedUserName: getName(userId),
+  }));
+
+  const morningBySlot = new Map<string, number>();
+  const morningAssignments: ExportMorningAssignment[] = mornings.map((row) => {
+    const key = `${row.shift_date}|${createShiftRange(row.start_time, row.end_time)}`;
+    const assignmentSlot = (morningBySlot.get(key) ?? 0) + 1;
+    morningBySlot.set(key, assignmentSlot);
+    return {
+      shiftDate: row.shift_date,
+      startTime: row.start_time,
+      endTime: row.end_time,
+      assignmentSlot,
+      assignedUserName: getName(row.user_id),
+    };
+  });
+
+  // Fail closed if any actual shift cannot fit the unchanged Teams workbook template.
+  for (const row of dispatcherShifts) {
+    const day = new Date(`${row.shiftDate}T12:00:00Z`).getUTCDay();
+    const ranges = [
+      ...getDayRows(day, false), ...getDayRows(day, true),
+    ].map((item) => item.dispatcherHours);
+    if (!ranges.includes(createShiftRange(row.startsAt, row.endsAt) ?? '')) {
+      throw new Error(`משמרת מוקדן ${row.shiftDate} ${row.startsAt}-${row.endsAt} אינה תואמת לתבנית Teams.`);
+    }
+  }
+  for (const row of morningAssignments) {
+    const day = new Date(`${row.shiftDate}T12:00:00Z`).getUTCDay();
+    const ranges = [
+      ...getDayRows(day, false), ...getDayRows(day, true),
+    ].map((item) => item.morningDriverHours);
+    if (!ranges.includes(createShiftRange(row.startTime, row.endTime) ?? '')) {
+      throw new Error(`משמרת כונן בוקר ${row.shiftDate} ${row.startTime}-${row.endTime} אינה תואמת לתבנית Teams.`);
+    }
+  }
+
+  return { dispatcherShifts, driverDays, morningAssignments };
 }
 
 async function createWorkbook(

@@ -51,6 +51,8 @@ const calculateTheoreticalMaximum = (workspace: DynamicAvailabilityWorkspace | n
 };
 
 const fallbackAvailabilityConfig = {
+  showEmployeePreferences: true,
+  showWeeklyShiftLimit: false,
   enabled: true,
   statuses: ['available', 'unavailable'] as Status[],
   allowNotes: true,

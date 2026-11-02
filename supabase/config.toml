@@ -448,7 +448,7 @@ entrypoint = "./functions/import-calendar-special-days/index.ts"
 # static_files = [ "./functions/import-calendar-special-days/*.html" ]
 
 [functions.send-test-push]
-enabled = true
+enabled = false
 verify_jwt = false
 import_map = "./functions/send-test-push/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
