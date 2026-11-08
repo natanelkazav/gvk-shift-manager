@@ -79,6 +79,7 @@ export type PermissionKey =
 
   | 'contacts.view'
   | 'contacts.edit'
+  | 'contacts.delete'
   | 'contacts.import'
   | 'contacts.changes_view';
 

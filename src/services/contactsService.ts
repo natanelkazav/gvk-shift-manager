@@ -55,6 +55,8 @@ export const contactsService={
   * @param input — קלט.
   */
  async updateContact(input:{id:string;clientId:string;branchName:string|null;roleName:string;fullName:string;phone:string|null;email:string|null;needsReview:boolean}){const {error}=await supabase.rpc('update_contact_record_v2',{requested_contact_id:input.id,requested_client_id:input.clientId,requested_branch_name:input.branchName,requested_role_name:input.roleName,requested_full_name:input.fullName,requested_phone:input.phone,requested_email:input.email,requested_needs_review:input.needsReview}); if(error) throw error;},
+ /** מחיקה לצמיתות, מאובטחת באמצעות הרשאת contacts.delete בצד השרת. */
+ async deleteContact(contactId:string){const {error}=await supabase.rpc('delete_contact_record',{requested_contact_id:contactId});if(error)throw error;},
  /**
   * פעולה אסינכרונית updateEmployeePhone: עדכון מספר טלפון.
   * הפעולה פונה ל־RPC: update_employee_contact_phone.

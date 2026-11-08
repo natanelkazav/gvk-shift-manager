@@ -19,3 +19,12 @@
 .contact-import-decisions label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
 .contact-import-warning{display:block;margin-top:8px;color:#b45309}
 @media(max-width:600px){.contact-import-compare{grid-template-columns:1fr}}
+
+/* כפתור מחיקה מובחן וקריא גם במצב כהה. */
+.contact-card footer .contact-delete-button{color:#b91c1c;border-color:#fca5a5}
+.contact-card footer .contact-delete-button:disabled{opacity:.45;cursor:not-allowed}
+
+/* Group communication actions on the right and management actions on the left (RTL). */
+.contact-card footer{justify-content:flex-start;align-items:center;gap:8px}
+.contact-card footer>.contact-actions{margin-inline-end:auto}
+.contact-card footer button,.contact-card footer .contact-actions a{width:42px;height:42px;box-sizing:border-box;justify-content:center;padding:8px;flex-shrink:0}
